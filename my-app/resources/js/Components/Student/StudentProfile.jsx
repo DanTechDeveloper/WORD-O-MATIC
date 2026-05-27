@@ -32,9 +32,7 @@ export default function StudentProfile() {
                     </div>
                 </div>
                 <div class="hidden md:flex items-center gap-6">
-                    <button class="bg-lime-400 text-slate-950 px-6 py-2 rounded-xl font-black text-label-bold uppercase border-b-4 border-lime-700 hover:bg-purple-900/30 hover:text-lime-400 hover:translate-y-0.5 active:translate-x-1 active:translate-y-1 active:shadow-none transition-all">
-                        Continue Activity
-                    </button>
+                  
                     <div class="flex gap-4">
                         <span class="material-symbols-outlined text-2xl hover:bg-purple-900/30 p-2 rounded-lg cursor-pointer transition-all">
                             stars

@@ -52,7 +52,7 @@ export default function Dashboard() {
                             </p>
                         </div>
                     </Link>
-                    <button className="group bg-surface-container-high border-4 border-lime-400 rounded-3xl p-8 neo-3d-shadow active-3d transition-all text-left flex items-center gap-6">
+                    <Link href="/speakModeLevels" className="group bg-surface-container-high border-4 border-lime-400 rounded-3xl p-8 neo-3d-shadow active-3d transition-all text-left flex items-center gap-6">
                         <div className="bg-lime-400 text-slate-950 w-20 h-20 rounded-2xl flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(26,46,5,1)]">
                             <span
                                 className="material-symbols-outlined text-5xl"
@@ -69,7 +69,7 @@ export default function Dashboard() {
                                 Command the cosmic communications.
                             </p>
                         </div>
-                    </button>
+                    </Link>
                 </section>
                 {/* <!-- Progress & Achievements Bento Grid --> */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-gutter">

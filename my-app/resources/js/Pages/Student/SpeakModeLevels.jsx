@@ -2,17 +2,17 @@ import { Link } from "@inertiajs/react";
 import DashboardLayout from "../../Layouts/Student/DashboardLayout";
 import { useState } from "react";
 
-export default function ReadModeLevels() {
+export default function SpeakModeLevels() {
     // Track which mission is currently in focus
     const [activeIndex, setActiveIndex] = useState(2); // Start with Mission 3 focused
 
     const missions = [
-        { id: 1, status: 'completed', title: 'Glitchy Greeting', subTitle: 'Mastered!', icon: 'check_circle', color: 'lime-400', border: 'lime-400', shadow: '#1a2e05', top: '150px', left: '100px' },
-        { id: 2, status: 'completed', title: 'Syntax Space-Out', subTitle: 'Mastered!', icon: 'check_circle', color: 'lime-400', border: 'lime-400', shadow: '#1a2e05', top: '350px', left: '350px' },
-        { id: 3, status: 'current', title: 'Robot Rhetoric', subTitle: 'Ready to Launch 🚀', icon: 'rocket_launch', color: 'white', border: 'slate-950', shadow: '#55003d', top: '150px', left: '600px' },
-        { id: 4, status: 'locked', title: 'Logic Labyrinth', subTitle: 'Locked: Level 5', icon: 'lock', color: 'on-surface-variant', border: 'dashed border-surface-variant', shadow: 'none', top: '350px', left: '850px' },
-        { id: 5, status: 'locked', title: 'Mastering Matic', subTitle: 'Locked: Level 7', icon: 'lock', color: 'on-surface-variant', border: 'dashed border-surface-variant', shadow: 'none', top: '150px', left: '1100px' },
-        { id: 6, status: 'locked', title: 'Galactic Grammar', subTitle: 'Locked: Boss Battle', icon: 'lock', color: 'on-surface-variant', border: 'dashed border-surface-variant', shadow: 'none', top: '350px', left: '1350px' },
+        { id: 1, status: 'completed', title: 'First Words', subTitle: 'Mastered!', icon: 'check_circle', color: 'amber-400', border: 'amber-400', shadow: '#451a03', top: '150px', left: '100px' },
+        { id: 2, status: 'completed', title: 'Sound Surge', subTitle: 'Mastered!', icon: 'check_circle', color: 'amber-400', border: 'amber-400', shadow: '#451a03', top: '350px', left: '350px' },
+        { id: 3, status: 'current', title: 'Echo Chamber', subTitle: 'Ready to Launch 🚀', icon: 'rocket_launch', color: 'white', border: 'slate-950', shadow: '#55003d', top: '150px', left: '600px' },
+        { id: 4, status: 'locked', title: 'Vocal Voltage', subTitle: 'Locked: Level 5', icon: 'lock', color: 'on-surface-variant', border: 'dashed border-surface-variant', shadow: 'none', top: '350px', left: '850px' },
+        { id: 5, status: 'locked', title: 'Mic Mastery', subTitle: 'Locked: Level 7', icon: 'lock', color: 'on-surface-variant', border: 'dashed border-surface-variant', shadow: 'none', top: '150px', left: '1100px' },
+        { id: 6, status: 'locked', title: 'Speak Supreme', subTitle: 'Locked: Boss Battle', icon: 'lock', color: 'on-surface-variant', border: 'dashed border-surface-variant', shadow: 'none', top: '350px', left: '1350px' },
     ];
 
     const getPathD = () => {
@@ -29,8 +29,8 @@ export default function ReadModeLevels() {
                 const prevCenterY = parseInt(prevMission.top) + 64;
 
                 const midX = (prevCenterX + centerX) / 2;
-                let controlYOffset = 100; // How much the curve "bends"
-                if (index % 2 === 0) { // Alternate the direction of the curve
+                let controlYOffset = 100;
+                if (index % 2 === 0) {
                     controlYOffset *= -1;
                 }
 
@@ -56,28 +56,28 @@ export default function ReadModeLevels() {
     return (
         <DashboardLayout minimal={true}>
                 {/* <!-- Main Container --> */}
-                <div className="bg-surface-container rounded-3xl p-8 md:p-12 border-4 border-surface-variant neo-3d-shadow relative overflow-hidden"> {/* Main container for the whole page content */}
+                <div className="bg-surface-container rounded-3xl p-8 md:p-12 border-4 border-surface-variant neo-3d-shadow relative overflow-hidden">
                     {/* <!-- Mission Map Viewport --> */}
-                    <div className="relative overflow-hidden rounded-2xl bg-slate-950/20 pt-28 pb-10"> {/* Container for the map and its internal header */}
-                        {/* Glass-Morphism Header (now with smaller text) */}
+                    <div className="relative overflow-hidden rounded-2xl bg-slate-950/20 pt-28 pb-10">
+                        {/* Glass-Morphism Header */}
                         <div className="absolute top-0 left-0 right-0 z-10 p-4 bg-white/10 backdrop-blur-md rounded-t-2xl flex flex-col md:flex-row items-center justify-between gap-4">
                             <div className="text-center text-4xl flex-1 text-center md:text-left">
-                                <h2 className="text-on-surface text-4xl font-black uppercase italic"> {/* Reduced from text-xl */}
-                                    Level 4: Word Warrior ⚔️
+                                <h2 className="text-on-surface text-4xl font-black uppercase italic">
+                                    Level 4: Voice Vanguard 🎙️
                                 </h2>
-                                <p className="text-on-surface-variant text-sm font-bold"> {/* Reduced from text-sm */}
-                                    You're 65% of the way to becoming a Syntax Commander!
+                                <p className="text-on-surface-variant text-sm font-bold">
+                                    You're 65% of the way to becoming a Speak Supreme!
                                 </p>
                             </div>
-                           
-                            <div className="bg-lime-400 text-slate-950 px-4 py-1 rounded-lg font-black text-base border-b-2 border-lime-700"> {/* Reduced from text-lg */}
+
+                            <div className="bg-amber-400 text-slate-950 px-4 py-1 rounded-lg font-black text-base border-b-2 border-amber-700">
                                 1,250 XP
                             </div>
                         </div>
-                        
+
                         {/* Navigation Controls */}
                         <div className="absolute inset-y-0 left-0 flex items-center z-20 pl-4 pointer-events-none">
-                            <button 
+                            <button
                                 onClick={handlePrev}
                                 disabled={activeIndex === 0}
                                 className={`p-4 rounded-full bg-surface-container border-4 border-surface-variant text-on-surface neo-3d-shadow active-3d transition-all pointer-events-auto ${activeIndex === 0 ? 'opacity-0 scale-50' : 'opacity-100'}`}
@@ -86,7 +86,7 @@ export default function ReadModeLevels() {
                             </button>
                         </div>
                         <div className="absolute inset-y-0 right-0 flex items-center z-20 pr-4 pointer-events-none">
-                            <button 
+                            <button
                                 onClick={handleNext}
                                 disabled={activeIndex === missions.length - 1}
                                 className={`p-4 rounded-full bg-surface-container border-4 border-surface-variant text-on-surface neo-3d-shadow active-3d transition-all pointer-events-auto ${activeIndex === missions.length - 1 ? 'opacity-0 scale-50' : 'opacity-100'}`}
@@ -98,7 +98,7 @@ export default function ReadModeLevels() {
                         {/* Sliding Track */}
                         <div
                             className="relative h-[550px] transition-transform duration-700 cubic-bezier(0.34, 1.56, 0.64, 1)"
-                            style={{ 
+                            style={{
                                 transform: `translateX(calc(50% - (${parseInt(missions[activeIndex].left)}px + 64px)))`
                             }}
                         >
@@ -108,7 +108,7 @@ export default function ReadModeLevels() {
                                     <path
                                         d={pathD}
                                         fill="none"
-                                        stroke="#A78BFA"
+                                        stroke="#FCD34D"
                                         strokeWidth="8"
                                         strokeDasharray="20 10"
                                         className="opacity-40"
@@ -121,7 +121,7 @@ export default function ReadModeLevels() {
                                     return (
                                         <Link
                                             key={mission.id}
-                                            href={mission.status !== 'locked' ? `/readModeLevels/${mission.id}` : '#'}
+                                            href={mission.status !== 'locked' ? `/speakModeLevels/${mission.id}` : '#'}
                                             onClick={(e) => {
                                                 if (!isFocused) {
                                                     e.preventDefault();
@@ -129,7 +129,7 @@ export default function ReadModeLevels() {
                                                 }
                                             }}
                                             className={`group absolute w-32 h-32 flex flex-col items-center justify-center rounded-full transition-all duration-500 text-center p-2
-                                                ${mission.status === 'completed' ? `bg-lime-400 border-4 border-lime-700 shadow-[4px_4px_0px_0px_#1a2e05]` : ''}
+                                                ${mission.status === 'completed' ? `bg-amber-400 border-4 border-amber-700 shadow-[4px_4px_0px_0px_#451a03]` : ''}
                                                 ${mission.status === 'current' ? `bg-secondary-container border-4 border-slate-950 shadow-[4px_4px_0px_0px_#55003d]` : ''}
                                                 ${mission.status === 'locked' ? `bg-slate-950 border-4 border-dashed border-surface-variant cursor-not-allowed` : ''}
                                                 ${isFocused ? 'scale-125 z-10 opacity-100' : 'scale-90 opacity-40 blur-[1px] hover:opacity-70 hover:blur-0'}
@@ -137,7 +137,7 @@ export default function ReadModeLevels() {
                                             style={{ top: mission.top, left: mission.left }}
                                         >
                                             {mission.status === 'current' && (
-                                                <div className="absolute -top-4 -right-2 z-10 bg-lime-400 text-slate-950 font-black px-3 py-1 rounded-lg border-2 border-slate-950 rotate-12 shadow-[3px_3px_0px_0px_#1a2e05] text-xs">
+                                                <div className="absolute -top-4 -right-2 z-10 bg-amber-400 text-slate-950 font-black px-3 py-1 rounded-lg border-2 border-slate-950 rotate-12 shadow-[3px_3px_0px_0px_#451a03] text-xs">
                                                     CURRENT!
                                                 </div>
                                             )}
@@ -161,9 +161,9 @@ export default function ReadModeLevels() {
 
                     {/* <!-- Footer Action Button --> */}
                     <div className="mt-16 flex justify-center">
-                        <button className="bg-lime-400 text-slate-950 text-2xl font-black px-12 py-5 rounded-2xl border-b-[8px] border-lime-700 active:translate-y-1 active:border-b-4 transition-all uppercase flex items-center gap-3">
+                        <button className="bg-amber-400 text-slate-950 text-2xl font-black px-12 py-5 rounded-2xl border-b-[8px] border-amber-700 active:translate-y-1 active:border-b-4 transition-all uppercase flex items-center gap-3">
                             <span className="material-symbols-outlined text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>
-                                play_circle
+                                mic
                             </span>
                             Continue Adventure
                         </button>

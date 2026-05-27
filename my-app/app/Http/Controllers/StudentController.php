@@ -31,6 +31,9 @@ class StudentController extends Controller
     public function readModeLevels(){
         return Inertia::render("Student/ReadModeLevels");
     }
+    public function speakModeLevels(){
+        return Inertia::render("Student/SpeakModeLevels");
+    }
 
 
 }
