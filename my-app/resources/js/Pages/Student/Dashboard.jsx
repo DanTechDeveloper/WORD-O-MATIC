@@ -34,7 +34,7 @@ export default function Dashboard() {
                 </section>
                 {/* <!-- Mode Selection --> */}
                 <section className="grid grid-cols-1 md:grid-cols-2 gap-gutter mb-12">
-                    <button className="group bg-surface-container-high border-4 border-secondary-container rounded-3xl p-8 neo-3d-shadow active-3d transition-all text-left flex items-center gap-6">
+                    <Link href="/readModeLevels" className="group bg-surface-container-high border-4 border-secondary-container rounded-3xl p-8 neo-3d-shadow active-3d transition-all text-left flex items-center gap-6">
                         <div className="bg-secondary-container text-on-secondary-container w-20 h-20 rounded-2xl flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(85,0,61,1)]">
                             <span
                                 className="material-symbols-outlined text-5xl"
@@ -51,7 +51,7 @@ export default function Dashboard() {
                                 Explore new galaxies of stories.
                             </p>
                         </div>
-                    </button>
+                    </Link>
                     <button className="group bg-surface-container-high border-4 border-lime-400 rounded-3xl p-8 neo-3d-shadow active-3d transition-all text-left flex items-center gap-6">
                         <div className="bg-lime-400 text-slate-950 w-20 h-20 rounded-2xl flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(26,46,5,1)]">
                             <span

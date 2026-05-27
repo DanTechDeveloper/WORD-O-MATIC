@@ -1,5 +1,5 @@
 import DashboardLayout from "@/Layouts/Student/DashboardLayout";
-
+import { Link } from "@inertiajs/react";
 export default function Badges() {
     return (
         <>
@@ -88,7 +88,7 @@ export default function Badges() {
                                         Clear Speaker
                                     </h3>
                                     <p class="font-body-md text-body-md text-on-surface-variant">
-                                        High speaking score
+                                    High speaking score
                                     </p>
                                 </div>
                                 <div class="w-full bg-slate-900 h-4 rounded-full border-2 border-purple-900 overflow-hidden">
@@ -141,15 +141,15 @@ export default function Badges() {
                     </div>
                     {/* <!-- Back Button Section --> */}
                     <div class="mt-16 flex justify-center">
-                        <button class="bg-[#a3e635] text-[#064e3b] font-headline-md text-headline-md px-12 py-6 rounded-2xl border-4 border-[#064e3b] shadow-[0px_8px_0px_0px_#064e3b] active:translate-y-1 active:shadow-[0px_4px_0px_0px_#064e3b] transition-all flex items-center gap-3 active-press">
+                        <Link href="/dashboard" className="bg-[#a3e635] text-[#064e3b] font-headline-md text-headline-md px-12 py-6 rounded-2xl border-4 border-[#064e3b] shadow-[0px_8px_0px_0px_#064e3b] active:translate-y-1 active:shadow-[0px_4px_0px_0px_#064e3b] transition-all flex items-center gap-3 active-press">
                             <span
                                 class="material-symbols-outlined text-4xl"
                                 data-icon="rocket"
                             >
                                 rocket
                             </span>
-                            BACK TO HUB
-                        </button>
+                            BACK TO HOME
+                        </Link>
                     </div>
                 </div>
             </DashboardLayout>

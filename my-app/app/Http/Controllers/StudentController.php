@@ -28,6 +28,9 @@ class StudentController extends Controller
     public function badges(){
         return Inertia::render("Student/Badges");
     }
+    public function readModeLevels(){
+        return Inertia::render("Student/ReadModeLevels");
+    }
 
 
 }

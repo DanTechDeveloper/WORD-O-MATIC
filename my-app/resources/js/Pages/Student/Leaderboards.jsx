@@ -1,4 +1,5 @@
 import DashboardLayout from "../../Layouts/Student/DashboardLayout";
+import { Link } from "@inertiajs/react";
 export default function Leaderboards() {
     return (
         <>
@@ -222,18 +223,18 @@ export default function Leaderboards() {
                     </div>
                     {/* <!-- Call to Action Button --> */}
                     <div className="w-full flex justify-center mb-16">
-                        <button className="group relative px-12 py-6 bg-lime-400 border-4 border-[#3c6e00] rounded-2xl font-headline-md text-headline-md text-[#0c2200] neo-brutalist-shadow-lime active-press-lime transition-all duration-75 uppercase italic flex items-center gap-4">
+                        <Link href="/dashboard" className="group relative px-12 py-6 bg-lime-400 border-4 border-[#3c6e00] rounded-2xl font-headline-md text-headline-md text-[#0c2200] neo-brutalist-shadow-lime active-press-lime transition-all duration-75 uppercase italic flex items-center gap-4">
                             <span
                                 className="material-symbols-outlined text-3xl font-bold"
                                 style={{ fontVariationSettings: "'FILL' 1" }}
                             >
                                 rocket_launch
                             </span>
-                            Back to Mission
+                            Back to Home
                             <span className="material-symbols-outlined text-3xl group-hover:translate-x-2 transition-transform">
                                 arrow_forward
                             </span>
-                        </button>
+                        </Link>
                     </div>
                 </div>
             </DashboardLayout>
