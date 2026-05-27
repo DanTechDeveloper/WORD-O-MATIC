@@ -22,6 +22,12 @@ class StudentController extends Controller
     public function tutorial(){
         return Inertia::render("Student/Tutorial");
     }
+    public function leaderboard(){
+        return Inertia::render("Student/Leaderboards");
+    }
+    public function badges(){
+        return Inertia::render("Student/Badges");
+    }
 
 
 }

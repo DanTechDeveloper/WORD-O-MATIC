@@ -6,7 +6,7 @@ export default function StudentFeatures() {
             <nav className="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-2 h-24 bg-slate-950 border-t-4 border-purple-900 rounded-t-3xl shadow-[0px_-6px_0px_0px_rgba(88,28,135,1)]">
                 <Link
                     class="flex flex-col items-center justify-center bg-lime-400 text-slate-950 rounded-xl p-2 translate-y-[-8px] border-b-4 border-lime-700 active:scale-90 transition-transform duration-150"
-                    href="/student/dashboard"
+                    href="/dashboard"
                 >
                     <span
                         class="material-symbols-outlined text-2xl"
@@ -20,7 +20,7 @@ export default function StudentFeatures() {
                 </Link>
                 <Link
                     class="flex flex-col items-center justify-center text-slate-400 p-2 hover:text-pink-500 transition-colors active:scale-90 transition-transform duration-150"
-                    href="/student/leaderboard"
+                    href="/leaderboards"
                 >
                     <span class="material-symbols-outlined text-2xl">
                         leaderboard
@@ -31,7 +31,7 @@ export default function StudentFeatures() {
                 </Link>
                 <Link
                     class="flex flex-col items-center justify-center text-slate-400 p-2 hover:text-pink-500 transition-colors active:scale-90 transition-transform duration-150"
-                    href="/student/badges"
+                    href="/badges"
                 >
                     <span class="material-symbols-outlined text-2xl">
                         military_tech
@@ -43,7 +43,7 @@ export default function StudentFeatures() {
                 <Link
                     class="flex flex-col items-center justify-center text-slate-400 p-2 hover:text-pink-500 transition-colors active:scale-90 transition-transform duration-150"
                     href="/logout"
-                >
+            >
                     <span class="material-symbols-outlined text-2xl">
                         logout
                     </span>
