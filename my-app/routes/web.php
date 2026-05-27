@@ -7,6 +7,8 @@ use Inertia\Inertia;
 
 Route::get("/", [StudentController::class, "index"]);
 Route::get("/greetings", [StudentController::class, "greetings"]);
+Route::get("/dashboard", [StudentController::class, "dashboard"]);
+Route::get("/tutorial", [StudentController::class, "tutorial"]);
 
 
 
