@@ -1,7 +1,7 @@
 import { router } from "@inertiajs/react";
 import { useState } from "react";
 
-export default function Student() {
+export default function SessionPage() {
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedStudent, setSelectedStudent] = useState("");
 
@@ -18,7 +18,7 @@ export default function Student() {
     const handleSubmit = (e) => {
         e.preventDefault();
         if (selectedStudent) {
-            router.visit("/greetings", {
+            router.visit("/welcome", {
                 method: 'get',
                 data: { name: selectedStudent }
             });

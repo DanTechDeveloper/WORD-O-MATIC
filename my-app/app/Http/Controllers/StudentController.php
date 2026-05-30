@@ -10,7 +10,10 @@ class StudentController extends Controller
 {
     public function index()
     {
-        return Inertia::render("Auth/Student");
+        return Inertia::render("Auth/SessionPage");
+    }
+    public function welcome(){
+        return Inertia::render("Student/Welcome");
     }
     public function dashboard(){
         return Inertia::render("Student/Dashboard");

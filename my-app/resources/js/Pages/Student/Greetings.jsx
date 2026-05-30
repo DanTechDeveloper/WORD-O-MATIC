@@ -60,11 +60,7 @@ export default function Greetings({ name = "ALEX" }) {
                             {name.toUpperCase()}!
                         </span>
                     </h1>
-                    {/* <!-- Subtext --> */}
-                    <p className="text-zinc-400 text-xl md:text-2xl font-bold mb-12 max-w-md uppercase tracking-widest">
-                        The Word-O-Matic is powered up and ready for your
-                        language skills!
-                    </p>
+                   
                     {/* <!-- BEGIN: Call to Action --> */}
                     <div className="w-full flex justify-center">
                         <Link
@@ -85,24 +81,6 @@ export default function Greetings({ name = "ALEX" }) {
                         Ready to solve the Mystery of the Word-O-Matic?
                     </p>
                 </section>
-                {/* <!-- END: Central Content Card --> */}
-                {/* <!-- BEGIN: Footer Branding --> */}
-                <footer className="absolute bottom-8 flex gap-4">
-                    <div className="bg-zinc-900/80 px-4 py-1 rounded-full flex items-center gap-2 shadow-sm border border-zinc-800">
-                        <span className="text-lg">🏫</span>
-                        <span className="text-xs font-black text-white">
-                            GRADE 5 & 6
-                        </span>
-                    </div>
-                    <div className="bg-zinc-900/80 px-4 py-1 rounded-full flex items-center gap-2 shadow-sm border border-zinc-800">
-                        <span className="text-lg">🧩</span>
-                        <span className="text-xs font-black text-lime-400 uppercase">
-                            Language Fun
-                        </span>
-                    </div>
-                </footer>
-                {/* <!-- END: Footer Branding --> */}
-                {/* <!-- Decorative Cog Overlay (Subtle) --> */}
                 <div className="absolute bottom-24 right-24 opacity-10 pointer-events-none">
                     <svg
                         className="text-lime-400 animate-[spin_10s_linear_infinite]"

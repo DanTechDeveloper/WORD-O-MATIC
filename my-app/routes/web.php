@@ -5,6 +5,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 
 Route::get("/", [StudentController::class, "index"]);
+Route::get("/welcome", [StudentController::class, "welcome"]);
 Route::get("/greetings", [StudentController::class, "greetings"]);
 Route::get("/dashboard", [StudentController::class, "dashboard"]);
 Route::get("/tutorial", [StudentController::class, "tutorial"]);
