@@ -26,13 +26,10 @@ export default function StudentProfile() {
                                 </span>{" "}
                                 150 Points
                             </span>
-                            <span class="w-1 h-1 bg-outline rounded-full"></span>
-                            <span class="text-lime-400">Level 3</span>
                         </div>
                     </div>
                 </div>
                 <div class="hidden md:flex items-center gap-6">
-                  
                     <div class="flex gap-4">
                         <span class="material-symbols-outlined text-2xl hover:bg-purple-900/30 p-2 rounded-lg cursor-pointer transition-all">
                             stars
