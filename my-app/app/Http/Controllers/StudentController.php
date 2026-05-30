@@ -34,6 +34,9 @@ class StudentController extends Controller
     public function speakModeLevels(){
         return Inertia::render("Student/SpeakModeLevels");
     }
+    public function gameplaySpeakMode(){
+        return Inertia::render("Student/GameplaySpeakMode");
+    }
     public function gameplayReadMode(){
         return Inertia::render("Student/GameplayReadMode");
     }
