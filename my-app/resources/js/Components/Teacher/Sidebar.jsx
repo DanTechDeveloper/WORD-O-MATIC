@@ -46,7 +46,7 @@ export default function Sidebar() {
                         Reports
                     </Link>
                 </nav>
-                <div className="mt-auto pt-6 border-t border-slate-900">
+                <div className="mt-auto pt-6 border-t border-slate-900 space-y-4">
                     <div className="flex items-center gap-3 p-2 bg-surface-container-low rounded-xl border-2 border-slate-900">
                         <img
                             alt="Robot Assistant"
@@ -62,6 +62,18 @@ export default function Sidebar() {
                             </p>
                         </div>
                     </div>
+
+                    <Link
+                        href="/logout"
+                        method="post"
+                        as="button"
+                        className="w-full flex items-center justify-center gap-2 p-3 bg-rose-500 text-slate-950 rounded-xl border-2 border-slate-950 shadow-[4px_4px_0_0_#4c0519] font-black font-lexend text-xs uppercase tracking-wider hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all"
+                    >
+                        <span className="material-symbols-outlined">
+                            logout
+                        </span>
+                        Logout
+                    </Link>
                 </div>
             </aside>
         </>
