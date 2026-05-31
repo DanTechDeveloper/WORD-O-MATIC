@@ -172,7 +172,7 @@ export default function SpeakModeLevels() {
 
                 {/* <!-- Back Button Section --> */}
                 <div className="mt-12 flex justify-center">
-                    <Link href="/dashboard" className="bg-surface-container-high border-4 border-surface-variant px-8 py-4 rounded-xl text-on-surface font-bold flex items-center gap-2 hover:bg-surface-variant active-3d transition-all uppercase">
+                    <Link href="/student/dashboard" className="bg-surface-container-high border-4 border-surface-variant px-8 py-4 rounded-xl text-on-surface font-bold flex items-center gap-2 hover:bg-surface-variant active-3d transition-all uppercase">
                         <span className="material-symbols-outlined">arrow_back</span>
                         Back to Home
                     </Link>

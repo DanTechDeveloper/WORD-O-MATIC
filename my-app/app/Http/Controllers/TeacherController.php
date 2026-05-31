@@ -21,4 +21,8 @@ class TeacherController extends Controller
     public function reports(){
         return Inertia::render("Teacher/Reports");
     }
+
+    public function studentDetails(){
+        return Inertia::render("Teacher/StudentDetails");
+    }
 }

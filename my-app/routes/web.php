@@ -10,6 +10,7 @@ Route::get("/teacher/login", [TeacherController::class, "login"]);
 Route::get("/teacher/dashboard", [TeacherController::class, "dashboard"]);
 Route::get("/teacher/students", [TeacherController::class, "students"]);
 Route::get("/teacher/reports", [TeacherController::class, "reports"]);
+Route::get("/teacher/studentDetails", [TeacherController::class, "studentDetails"]);
 
 
 Route::get("/", [StudentController::class, "index"]);
