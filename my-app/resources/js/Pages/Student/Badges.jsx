@@ -8,7 +8,7 @@ export default function Badges() {
                     {/* <!-- Section Header --> */}
                     <div className="mb-12 text-center">
                         <h2 className="text-7xl font-bold text-on-background uppercase tracking-tighter mb-4 drop-shadow-[4px_4px_0px_rgba(114,18,255,1)]">
-                            GALACTIC ACHIEVEMENTS
+                             ACHIEVEMENTS
                         </h2>
                         <p className="text-xl font-bold text-on-surface-variant max-w-2xl mx-auto">
                             Your cosmic journey is paying off, Cadet! Check out
@@ -141,7 +141,7 @@ export default function Badges() {
                     </div>
                     {/* <!-- Back Button Section --> */}
                     <div class="mt-16 flex justify-center">
-                        <Link href="/dashboard" className="bg-[#a3e635] text-[#064e3b] font-headline-md text-headline-md px-12 py-6 rounded-2xl border-4 border-[#064e3b] shadow-[0px_8px_0px_0px_#064e3b] active:translate-y-1 active:shadow-[0px_4px_0px_0px_#064e3b] transition-all flex items-center gap-3 active-press">
+                        <Link href="/student/dashboard" className="bg-[#a3e635] text-[#064e3b] font-headline-md text-headline-md px-12 py-6 rounded-2xl border-4 border-[#064e3b] shadow-[0px_8px_0px_0px_#064e3b] active:translate-y-1 active:shadow-[0px_4px_0px_0px_#064e3b] transition-all flex items-center gap-3 active-press">
                             <span
                                 class="material-symbols-outlined text-4xl"
                                 data-icon="rocket"

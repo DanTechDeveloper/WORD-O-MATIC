@@ -7,6 +7,9 @@ use Inertia\Inertia;
 
 class TeacherController extends Controller
 {
+    public function login(){
+        return Inertia::render("Teacher/Login");
+    }
     public function dashboard(){
         return Inertia::render("Teacher/Dashboard");
     }

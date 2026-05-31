@@ -76,7 +76,7 @@ export default function Welcome() {
                     {selectedAvatar && (
                         <div className="mt-12 flex justify-center animate-in fade-in slide-in-from-bottom-8 duration-500">
                             <Link
-                                href="/greetings"
+                                href="/student/greetings"
                                 className="group relative w-full md:w-auto bg-lime-400 hover:bg-lime-300 text-zinc-950 text-2xl md:text-3xl font-black py-5 px-16 rounded-2xl border-b-[6px] border-green-800 tactile-button transition-all flex items-center justify-center gap-4 uppercase tracking-tighter active:scale-95 active:border-b-0 active:translate-y-1"
                             >
                                 <span>Begin Adventure</span>

@@ -8,14 +8,14 @@ export default function Dashboard() {
                     <div className="bg-surface-container rounded-3xl p-8 border-4 border-primary-container neo-3d-shadow flex flex-col md:flex-row items-center justify-between gap-8 overflow-hidden relative">
                         <div className="absolute -right-10 -top-10 w-40 h-40 bg-secondary-container/10 rounded-full blur-3xl"></div>
                         <div className="relative z-10 flex-1">
-                            <h2 className="text-headline-xl font-headline-xl text-primary mb-4 italic">
+                            <h2 className="font-headline-xl text-5xl md:text-7xl text-primary mb-4 italic uppercase leading-none">
                                 READY FOR BLAST OFF?
                             </h2>
                             <p className="text-body-lg font-body-lg text-on-surface-variant mb-6 max-w-md">
                                 You're making cosmic progress! Jump back into
                                 your last session and reach for the stars.
                             </p>
-                            <button className="bg-lime-400 text-slate-950 px-10 py-5 rounded-2xl font-black text-headline-md uppercase border-b-[8px] border-lime-700 primary-active-3d transition-all flex items-center gap-3">
+                            <button className="bg-lime-400 text-slate-950 px-10 py-5 rounded-2xl font-headline-md text-headline-md uppercase border-b-[8px] border-lime-700 primary-active-3d transition-all flex items-center gap-3">
                                 Continue: Speak Level 2
                                 <span className="material-symbols-outlined text-3xl">
                                     arrow_forward
@@ -34,7 +34,7 @@ export default function Dashboard() {
                 </section>
                 {/* <!-- Mode Selection --> */}
                 <section className="grid grid-cols-1 md:grid-cols-2 gap-gutter mb-12">
-                    <Link href="/readModeLevels" className="group bg-surface-container-high border-4 border-secondary-container rounded-3xl p-8 neo-3d-shadow active-3d transition-all text-left flex items-center gap-6">
+                    <Link href="/student/readModeLevels" className="group bg-surface-container-high border-4 border-secondary-container rounded-3xl p-8 neo-3d-shadow active-3d transition-all text-left flex items-center gap-6">
                         <div className="bg-secondary-container text-on-secondary-container w-20 h-20 rounded-2xl flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(85,0,61,1)]">
                             <span
                                 className="material-symbols-outlined text-5xl"
@@ -52,7 +52,7 @@ export default function Dashboard() {
                             </p>
                         </div>
                     </Link>
-                    <Link href="/speakModeLevels" className="group bg-surface-container-high border-4 border-lime-400 rounded-3xl p-8 neo-3d-shadow active-3d transition-all text-left flex items-center gap-6">
+                    <Link href="/student/speakModeLevels" className="group bg-surface-container-high border-4 border-lime-400 rounded-3xl p-8 neo-3d-shadow active-3d transition-all text-left flex items-center gap-6">
                         <div className="bg-lime-400 text-slate-950 w-20 h-20 rounded-2xl flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(26,46,5,1)]">
                             <span
                                 className="material-symbols-outlined text-5xl"

@@ -64,7 +64,7 @@ export default function Greetings({ name = "ALEX" }) {
                     {/* <!-- BEGIN: Call to Action --> */}
                     <div className="w-full flex justify-center">
                         <Link
-                            href="/tutorial"
+                            href="/student/tutorial"
                             className="group relative bg-lime-400 hover:bg-lime-300 text-zinc-950 text-2xl md:text-4xl font-black py-6 px-12 rounded-2xl border-b-[6px] border-green-800 tactile-button transition-all flex items-center gap-4 uppercase tracking-tighter active:scale-95"
                             data-purpose="continue-button"
                             id="continue-btn"

@@ -121,7 +121,7 @@ export default function SpeakModeLevels() {
                                     return (
                                         <Link
                                             key={mission.id}
-                                            href={mission.status !== 'locked' ? `/gameplaySpeakMode` : '#'}
+                                            href={mission.status !== 'locked' ? `/student/gameplaySpeakMode` : '#'}
                                             onClick={(e) => {
                                                 if (!isFocused) {
                                                     e.preventDefault();

@@ -18,7 +18,7 @@ export default function SessionPage() {
     const handleSubmit = (e) => {
         e.preventDefault();
         if (selectedStudent) {
-            router.visit("/welcome", {
+            router.visit("/student/welcome", {
                 method: 'get',
                 data: { name: selectedStudent }
             });

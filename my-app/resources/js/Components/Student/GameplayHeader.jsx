@@ -6,7 +6,7 @@ export default function GameplayHeader() {
             <div className="flex items-center gap-6">
                 {/* <!-- Back Button --> */}
                 <Link
-                    href="/readModeLevels"
+                    href="/student/readModeLevels"
                     className="group flex items-center justify-center w-16 h-16 bg-on-background/5 backdrop-blur-md rounded-2xl border-2 border-on-background/10 shadow-2xl hover:bg-on-background/10 transition-all active:scale-95"
                 >
                     <span className="material-symbols-outlined text-on-background/80 group-hover:text-on-background text-3xl">

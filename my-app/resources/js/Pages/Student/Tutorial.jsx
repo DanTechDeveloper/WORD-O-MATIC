@@ -89,7 +89,7 @@ export default function Tutorial() {
                 {/* CONTINUE TO DASHBOARD - Bottom Center Button */}
                 <div className="absolute bottom-12 left-0 right-0 z-40 flex justify-center pointer-events-none">
                     <Link
-                        href="/dashboard"
+                        href="/student/dashboard"
                         className="pointer-events-auto bg-white/5 hover:bg-white/10 backdrop-blur-xl border border-white/10 text-white px-6 py-3 rounded-xl font-bold text-sm tracking-widest uppercase transition-all hover:scale-105 active:scale-95 flex items-center gap-3"
                     >
                         Continue to Dashboard
