@@ -9,6 +9,9 @@ Route::get('/teacher/dashboard', [TeacherController::class, 'dashboard']);
 Route::get('/teacher/students', [TeacherController::class, 'students']);
 Route::get('/teacher/reports', [TeacherController::class, 'reports']);
 Route::get('/teacher/studentDetails', [TeacherController::class, 'studentDetails']);
+Route::get('/teacher/addStudent', [TeacherController::class, 'addStudent']);
+Route::get('/teacher/wordModules', [TeacherController::class, 'wordModules']);
+Route::get('/teacher/paragraphModules', [TeacherController::class, 'paragraphModules']);
 
 Route::get('/', [StudentController::class, 'index']);
 Route::get('/student/welcome', [StudentController::class, 'welcome']);

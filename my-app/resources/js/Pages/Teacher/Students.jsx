@@ -1,7 +1,9 @@
 import DashboardLayout from "@/Layouts/Teacher/DashboardLayout";
 import { Link } from "@inertiajs/react";
+import { useState } from "react";
+
 export default function Students() {
-   
+
     const students = [
         {
             id: "#GWOM-4421",
@@ -63,6 +65,7 @@ export default function Students() {
         onTrack: "bg-secondary-container text-on-secondary-container border-on-secondary-fixed",
     };
 
+ 
     return (
         <>
             <DashboardLayout>
@@ -77,6 +80,13 @@ export default function Students() {
                             </p>
                         </div>
                         <div className="flex gap-4">
+                            <Link 
+                                href="/teacher/addStudent"
+                                className="bg-purple-500 text-white px-6 py-3 rounded-2xl border-4 border-slate-950 shadow-[6px_6px_0_0_#4c1d95] font-black uppercase italic text-sm tracking-tighter hover:translate-y-1 hover:shadow-[3px_3px_0_0_#4c1d95] transition-all flex items-center gap-2"
+                            >
+                                <span className="material-symbols-outlined">add_circle</span>
+                                Add Student
+                            </Link>
                             <div className="flex items-center bg-slate-900 rounded-2xl border-4 border-slate-800 p-2 shadow-[4px_4px_0_0_#020617]">
                                 <button className="px-4 py-2 bg-lime-400 rounded-lg text-slate-950 font-black shadow-[2px_2px_0_0_#3f6212]">
                                     All
@@ -228,6 +238,7 @@ export default function Students() {
                             </div>
                         </div>
                     </div>
+
             </DashboardLayout>
         </>
     );

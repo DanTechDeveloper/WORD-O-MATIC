@@ -6,6 +6,15 @@ export default function Sidebar() {
     const activeClass = "bg-lime-400 text-slate-950 border-2 border-slate-950 shadow-[6px_6px_0_0_#3f6212] flex items-center gap-3 p-4 rounded-lg font-black font-lexend text-xs uppercase tracking-wider translate-x-[-2px] translate-y-[-2px]";
     const inactiveClass = "text-slate-400 p-4 flex items-center gap-3 hover:text-purple-400 hover:translate-x-1 hover:bg-slate-900/50 transition-all font-black font-lexend text-xs uppercase tracking-wider";
 
+    const navItems = [
+        { label: "Dashboard", href: "/teacher/dashboard", icon: "dashboard" },
+        { label: "Create Student", href: "/teacher/addStudent", icon: "person_add" },
+        { label: "Students", href: "/teacher/students", icon: "person" },
+        { label: "Word Modules", href: "/teacher/wordModules", icon: "abc" },
+        { label: "Paragraph Modules", href: "/teacher/paragraphModules", icon: "description" },
+        { label: "Reports", href: "/teacher/reports", icon: "error" },
+    ];
+
     return (
         <>
             <aside className="fixed left-0 top-0 h-full w-64 flex flex-col p-4 border-r-4 border-slate-900 bg-slate-950 z-50 shadow-[4px_0_0_0_#1e1b4b]">
@@ -15,36 +24,24 @@ export default function Sidebar() {
                     </h1>
                 </div>
                 <nav className="flex-1 space-y-2">
-                    <Link
-                        className={url === '/teacher/dashboard' ? activeClass : inactiveClass}
-                        href="/teacher/dashboard"
-                    >
-                        <span
-                            className="material-symbols-outlined"
-                            data-weight={url === '/teacher/dashboard' ? "fill" : ""}
-                        >
-                            dashboard
-                        </span>
-                        Dashboard
-                    </Link>
-                    <Link
-                        className={url === '/teacher/students' ? activeClass : inactiveClass}
-                        href="/teacher/students"
-                    >
-                        <span className="material-symbols-outlined" data-weight={url === '/teacher/students' ? "fill" : ""}>
-                            group
-                        </span>
-                        Students
-                    </Link>
-                    <Link
-                        className={url === '/teacher/reports' ? activeClass : inactiveClass}
-                        href="/teacher/reports"
-                    >
-                        <span className="material-symbols-outlined" data-weight={url === '/teacher/reports' ? "fill" : ""}>
-                            error
-                        </span>
-                        Reports
-                    </Link>
+                    {navItems.map((item) => {
+                        const isActive = url === item.href;
+                        return (
+                            <Link
+                                key={item.href}
+                                className={isActive ? activeClass : inactiveClass}
+                                href={item.href}
+                            >
+                                <span
+                                    className="material-symbols-outlined"
+                                    data-weight={isActive ? "fill" : ""}
+                                >
+                                    {item.icon}
+                                </span>
+                                {item.label}
+                            </Link>
+                        );
+                    })}
                 </nav>
                 <div className="mt-auto pt-6 border-t border-slate-900 space-y-4">
                     <div className="flex items-center gap-3 p-2 bg-surface-container-low rounded-xl border-2 border-slate-900">
@@ -55,10 +52,10 @@ export default function Sidebar() {
                         />
                         <div>
                             <p className="font-headline-md text-xs text-on-surface">
-                                Professor Bot
+                                Faculty Member
                             </p>
                             <p className="text-[10px] text-slate-500 uppercase font-black">
-                                Galaxy Sector 7
+                                Academic Session
                             </p>
                         </div>
                     </div>

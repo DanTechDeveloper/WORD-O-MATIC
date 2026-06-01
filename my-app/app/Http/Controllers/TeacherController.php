@@ -21,6 +21,21 @@ class TeacherController extends Controller
         return Inertia::render('Teacher/Students');
     }
 
+    public function addStudent()
+    {
+        return Inertia::render('Teacher/AddStudent');
+    }
+
+    public function wordModules()
+    {
+        return Inertia::render('Teacher/Word');
+    }
+
+    public function paragraphModules()
+    {
+        return Inertia::render('Teacher/Paragraph');
+    }
+
     public function reports()
     {
         return Inertia::render('Teacher/Reports');
