@@ -26,13 +26,15 @@ jobs:
       - name: Install Composer Dependencies
         run: composer install --no-interaction --prefer-dist
 
-      - name: Run Migrations
-        run: php artisan migrate --force
-
       - name: Prepare Environment
         run: |
           cp .env.example .env
           php artisan key:generate
+          echo "DB_CONNECTION=sqlite" >> .env
+          echo "DB_DATABASE=:memory:" >> .env
+
+      - name: Run Migrations
+        run: php artisan migrate --force
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
