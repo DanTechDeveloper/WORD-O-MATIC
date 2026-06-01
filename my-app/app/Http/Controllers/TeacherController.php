@@ -2,27 +2,32 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class TeacherController extends Controller
 {
-    public function login(){
-        return Inertia::render("Teacher/Login");
-    }
-    public function dashboard(){
-        return Inertia::render("Teacher/Dashboard");
+    public function login()
+    {
+        return Inertia::render('Teacher/Login');
     }
 
-    public function students(){
-        return Inertia::render("Teacher/Students");
+    public function dashboard()
+    {
+        return Inertia::render('Teacher/Dashboard');
     }
 
-    public function reports(){
-        return Inertia::render("Teacher/Reports");
+    public function students()
+    {
+        return Inertia::render('Teacher/Students');
     }
 
-    public function studentDetails(){
-        return Inertia::render("Teacher/StudentDetails");
+    public function reports()
+    {
+        return Inertia::render('Teacher/Reports');
+    }
+
+    public function studentDetails()
+    {
+        return Inertia::render('Teacher/StudentDetails');
     }
 }
