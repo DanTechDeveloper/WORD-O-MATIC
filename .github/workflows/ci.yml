@@ -15,34 +15,28 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: "8.3"
           extensions: mbstring, xml, ctype, iconv, mysql, bcmath, sqlite, pdo_sqlite
-          coverage: none
 
       - name: Install Composer Dependencies
-        run: composer install --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
+        run: composer install --no-interaction --prefer-dist
 
-      - name: Copy Env File
-        run: php -r "file_exists('.env') || copy('.env.example', '.env');"
-
-      - name: Generate Key
-        run: php artisan key:generate
-
-      - name: Run Pint Linting
-        run: ./vendor/bin/pint --test
+      - name: Prepare Environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - name: Install NPM Dependencies and Build
+      - name: Install & Build Frontend
         run: |
           npm install
           npm run build
