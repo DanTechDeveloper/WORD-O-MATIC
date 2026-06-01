@@ -1,14 +1,15 @@
 import GameplayLayout from "@/Layouts/GameplayLayout";
+import GameplayHeader from "@/Components/Student/GameplayHeader";
 export default function GameplayReadMode() {
     return (
         <>
             <GameplayLayout>
-                {/* <!-- CORE GAMEPLAY AREA: Falling Words & Bombs --> */}
-                <div class="flex-1 w-full relative overflow-visible pointer-events-none">
+                <GameplayHeader navPage={'readModeLevels'} />
+                <div className="flex-1 w-full relative overflow-visible pointer-events-none">
                     {/* <!-- Word 1: Falling Syntax --> */}
-                    <div class="absolute top-[10%] left-[15%] animate-bounce">
-                        <div class="bg-white/90 backdrop-blur-md px-8 py-3 rounded-xl shadow-2xl rotate-[-5deg] border-4 border-indigo-400">
-                            <span class="text-indigo-900 text-4xl font-black tracking-tighter uppercase italic">
+                    <div className="absolute top-[10%] left-[15%] animate-bounce">
+                        <div className="bg-white/90 backdrop-blur-md px-8 py-3 rounded-xl shadow-2xl rotate-[-5deg] border-4 border-indigo-400">
+                            <span className="text-indigo-900 text-4xl font-black tracking-tighter uppercase italic">
                                 Syntax
                             </span>
                         </div>
@@ -41,7 +42,9 @@ export default function GameplayReadMode() {
                                 Grammar
                             </span>
                         </div>
-                        <span className="absolute -top-4 -left-4 text-3xl">🔥</span>
+                        <span className="absolute -top-4 -left-4 text-3xl">
+                            🔥
+                        </span>
                     </div>
                     {/* <!-- Word 4: Distant Word --> */}
                     <div
