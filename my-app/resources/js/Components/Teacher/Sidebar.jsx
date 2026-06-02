@@ -1,18 +1,34 @@
-import { Link, usePage } from '@inertiajs/react';
+import { Link, usePage } from "@inertiajs/react";
 
 export default function Sidebar() {
     const { url } = usePage();
 
-    const activeClass = "bg-lime-400 text-slate-950 border-2 border-slate-950 shadow-[6px_6px_0_0_#3f6212] flex items-center gap-3 p-4 rounded-lg font-black font-lexend text-xs uppercase tracking-wider translate-x-[-2px] translate-y-[-2px]";
-    const inactiveClass = "text-slate-400 p-4 flex items-center gap-3 hover:text-purple-400 hover:translate-x-1 hover:bg-slate-900/50 transition-all font-black font-lexend text-xs uppercase tracking-wider";
+    const activeClass =
+        "bg-lime-400 text-slate-950 border-2 border-slate-950 shadow-[6px_6px_0_0_#3f6212] flex items-center gap-3 p-4 rounded-lg font-black font-lexend text-xs uppercase tracking-wider translate-x-[-2px] translate-y-[-2px]";
+    const inactiveClass =
+        "text-slate-400 p-4 flex items-center gap-3 hover:text-purple-400 hover:translate-x-1 hover:bg-slate-900/50 transition-all font-black font-lexend text-xs uppercase tracking-wider";
 
     const navItems = [
         { label: "Dashboard", href: "/teacher/dashboard", icon: "dashboard" },
-        { label: "Create Student", href: "/teacher/addStudent", icon: "person_add" },
+        { label: "Classes", href: "/teacher/classes", icon: "groups" },
         { label: "Students", href: "/teacher/students", icon: "person" },
         { label: "Word Modules", href: "/teacher/wordModules", icon: "abc" },
-        { label: "Paragraph Modules", href: "/teacher/paragraphModules", icon: "description" },
-        { label: "Reports", href: "/teacher/reports", icon: "error" },
+        {
+            label: "Paragraph Modules",
+            href: "/teacher/paragraphModules",
+            icon: "description",
+        },
+        {
+            label: "Assignments",
+            href: "/teacher/assignments",
+            icon: "assignment",
+        },
+        {
+            label: "Leaderboards",
+            href: "/teacher/leaderboards",
+            icon: "leaderboard",
+        },
+        { label: "Reports", href: "/teacher/reports", icon: "assessment" },
     ];
 
     return (
@@ -29,7 +45,9 @@ export default function Sidebar() {
                         return (
                             <Link
                                 key={item.href}
-                                className={isActive ? activeClass : inactiveClass}
+                                className={
+                                    isActive ? activeClass : inactiveClass
+                                }
                                 href={item.href}
                             >
                                 <span
