@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use Inertia\Inertia;
+use App\Models\StudentModel;
+use Illuminate\Http\Request;
 
 class TeacherController extends Controller
 {
@@ -23,7 +25,25 @@ class TeacherController extends Controller
 
     public function addStudent()
     {
-        return Inertia::render('Teacher/AddStudent');
+        $students = StudentModel::orderBy('id', 'desc')->get();
+        return Inertia::render('Teacher/AddStudent', [
+            'students' => $students,
+        ]); 
+    }
+
+    public function store(Request $request){
+        $request->validate([
+            'fullName' => 'required',
+            'studentID' => 'required',
+        ]);
+
+        $student = StudentModel::create([
+            'fullName' => $request->fullName,
+            'studentID' => $request->studentID,
+        ]);
+
+        $student->save();
+        return redirect()->back();
     }
 
     public function wordModules()

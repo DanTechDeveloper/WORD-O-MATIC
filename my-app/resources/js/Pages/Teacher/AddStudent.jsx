@@ -1,36 +1,14 @@
 import DashboardLayout from "@/Layouts/Teacher/DashboardLayout";
 import { useState } from "react";
-import { Link } from "@inertiajs/react";
+import { Link, useForm } from "@inertiajs/react";
 
-export default function AddStudent() {
-    const [formData, setFormData] = useState({
-        name: "",
-        fleetId: "#GWOM-",
-        sector: "Sector 7-G",
-        wordRisk: "low",
-        paragraphRisk: "low",
+export default function AddStudent({students}) {
+    const { data, setData, post, processing, errors, reset } = useForm({
+        fullName: "",
+        studentID: "",
     });
 
-    // Mock data for "Recently Added" - in a real app, this would come from the backend
-    const [recentStudents, setRecentStudents] = useState([
-        {
-            id: "#GWOM-4421",
-            name: "Leo Jupiter",
-            sector: "Sector 7-G",
-            wordRisk: "high",
-            paragraphRisk: "moderate",
-            gameName: "Leo Jupiter",
-        },
-        {
-            id: "#GWOM-9902",
-            name: "Nova Starlight",
-            sector: "Nebula 4",
-            wordRisk: "low",
-            paragraphRisk: "low",
-            gameName: "Jineper",
-        },
-    ]);
-
+    
     const riskStyles = {
         high: "text-rose-400 bg-rose-400/10 border-rose-500/50",
         moderate: "text-amber-400 bg-amber-400/10 border-amber-500/50",
@@ -39,22 +17,16 @@ export default function AddStudent() {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        const newWarrior = {
-            id: formData.fleetId,
-            name: formData.name,
-            sector: formData.sector,
-            wordRisk: formData.wordRisk,
-            paragraphRisk: formData.paragraphRisk,
-        };
-        setRecentStudents([newWarrior, ...recentStudents]);
-        // Reset form except for Fleet ID prefix
-        setFormData({ ...formData, name: "" });
+        post("/teacher/addStudent", {
+            onSuccess: () => {
+                reset("name");
+                // Optional: handle local state updates if not relying on server-side props
+            },
+        });
     };
 
-    const handlePrint = (studentId) => {
-        console.log("Printing credentials for:", studentId);
-        // window.print() logic or PDF generation would go here
-    };
+  console.table(students);
+
 
     return (
         <DashboardLayout>
@@ -110,14 +82,12 @@ export default function AddStudent() {
                                     type="text"
                                     className="w-full bg-slate-950 border-2 border-slate-800 rounded-xl px-4 py-4 text-white font-bold focus:border-purple-500 outline-none transition-all"
                                     placeholder="e.g. Leo Jupiter"
-                                    value={formData.name}
+                                    value={data.fullName}
                                     onChange={(e) =>
-                                        setFormData({
-                                            ...formData,
-                                            name: e.target.value,
-                                        })
+                                        setData("fullName", e.target.value)
                                     }
                                 />
+                                {errors.fullName && <div className="text-rose-500 text-[10px] font-black uppercase mt-1">{errors.fullName}</div>}
                             </div>
                             <div className="space-y-2">
                                 <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">
@@ -127,14 +97,12 @@ export default function AddStudent() {
                                     required
                                     type="text"
                                     className="w-full bg-slate-950 border-2 border-slate-800 rounded-xl px-4 py-4 text-white font-bold focus:border-purple-500 outline-none transition-all"
-                                    value={formData.fleetId}
+                                    value={data.studentID}
                                     onChange={(e) =>
-                                        setFormData({
-                                            ...formData,
-                                            fleetId: e.target.value,
-                                        })
+                                        setData("studentID", e.target.value)
                                     }
                                 />
+                                {errors.fleetId && <div className="text-rose-500 text-[10px] font-black uppercase mt-1">{errors.fleetId}</div>}
                             </div>
                         </div>
 
@@ -142,7 +110,8 @@ export default function AddStudent() {
                         <div className="flex flex-col justify-end mt-6">
                             <button
                                 type="submit"
-                                className="w-full bg-lime-400 text-slate-950 py-5 rounded-2xl border-4 border-slate-950 shadow-[6px_6px_0_0_#3f6212] font-black uppercase italic tracking-tighter hover:translate-y-1 hover:shadow-[2px_2px_0_0_#3f6212] transition-all flex items-center justify-center gap-3"
+                                disabled={processing}
+                                className={`w-full bg-lime-400 text-slate-950 py-5 rounded-2xl border-4 border-slate-950 shadow-[6px_6px_0_0_#3f6212] font-black uppercase italic tracking-tighter hover:translate-y-1 hover:shadow-[2px_2px_0_0_#3f6212] transition-all flex items-center justify-center gap-3 ${processing ? 'opacity-50 cursor-not-allowed' : ''}`}
                             >
                                 <span className="material-symbols-outlined font-black">
                                     person_add
@@ -160,7 +129,7 @@ export default function AddStudent() {
                             Recently Added Recruits
                         </h2>
                         <span className="bg-slate-950 text-slate-400 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest border border-slate-700">
-                            {recentStudents.length} Active Sessions
+                            {students.length} Active Sessions
                         </span>
                     </div>
 
@@ -181,17 +150,17 @@ export default function AddStudent() {
                             </tr>
                         </thead>
                         <tbody className="divide-y-2 divide-slate-800/30">
-                            {recentStudents.map((student) => (
+                            {students.map((student) => (
                                 <tr
-                                    key={student.id}
+                                    key={student.studentID}
                                     className="hover:bg-slate-800/20 transition-colors group"
                                 >
                                     <td className="px-8 py-5">
                                         <div className="font-black text-white">
-                                            {student.name}
+                                            {student.fullName}
                                         </div>
                                         <div className="text-[10px] text-purple-400 font-black tracking-widest uppercase">
-                                            {student.id}
+                                            {student.studentID}
                                         </div>
                                     </td>
 
@@ -213,7 +182,7 @@ export default function AddStudent() {
                                     </td>
                                 </tr>
                             ))}
-                            {recentStudents.length === 0 && (
+                            {students.length === 0 && (
                                 <tr>
                                     <td
                                         colSpan="4"
