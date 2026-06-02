@@ -1,6 +1,6 @@
 import { Link } from "@inertiajs/react";
 
-export default function GameplayHeader({navPage}) {
+export default function GameplayHeader({ navPage }) {
     return (
         <div className="mt-6 w-full max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-6 mb-12">
             <div className="flex items-center gap-6">
@@ -39,7 +39,6 @@ export default function GameplayHeader({navPage}) {
                         LEVEL 5: LEXICAL LEGEND
                     </span>
                 </div>
-            
             </div>
             {/* <!-- Energy / Timer Bar --> */}
             <div className="w-full md:w-80 flex flex-col gap-2 bg-on-background/5 backdrop-blur-md p-4 rounded-2xl border-2 border-on-background/10 shadow-2xl">

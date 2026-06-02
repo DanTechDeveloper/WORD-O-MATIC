@@ -3,20 +3,18 @@
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\TeacherController;
 use Illuminate\Support\Facades\Route;
-Route::post('/teacher/addStudent', [TeacherController::class, 'store']);
-Route::get('/teacher/addStudent', [TeacherController::class, 'addStudent']);
 
-
-
-
-
-Route::get('/teacher/login', [TeacherController::class, 'login']);
-Route::get('/teacher/dashboard', [TeacherController::class, 'dashboard']);
-Route::get('/teacher/students', [TeacherController::class, 'students']);
-Route::get('/teacher/reports', [TeacherController::class, 'reports']);
-Route::get('/teacher/studentDetails', [TeacherController::class, 'studentDetails']);
-Route::get('/teacher/wordModules', [TeacherController::class, 'wordModules']);
-Route::get('/teacher/paragraphModules', [TeacherController::class, 'paragraphModules']);
+Route::prefix('teacher')->name('teacher.')->group(function () {
+    Route::post('/addStudent', [TeacherController::class, 'store'])->name('addStudent.store');
+    Route::get('/addStudent', [TeacherController::class, 'addStudent'])->name('addStudent');
+    Route::get('/login', [TeacherController::class, 'login'])->name('login');
+    Route::get('/dashboard', [TeacherController::class, 'dashboard'])->name('dashboard');
+    Route::get('/students', [TeacherController::class, 'students'])->name('students');
+    Route::get('/reports', [TeacherController::class, 'reports'])->name('reports');
+    Route::get('/studentDetails', [TeacherController::class, 'studentDetails'])->name('studentDetails');
+    Route::get('/wordModules', [TeacherController::class, 'wordModules'])->name('wordModules');
+    Route::get('/paragraphModules', [TeacherController::class, 'paragraphModules'])->name('paragraphModules');
+});
 
 Route::get('/', [StudentController::class, 'index']);
 Route::get('/student/welcome', [StudentController::class, 'welcome']);
@@ -29,5 +27,3 @@ Route::get('/student/readModeLevels', [StudentController::class, 'readModeLevels
 Route::get('/student/speakModeLevels', [StudentController::class, 'speakModeLevels']);
 Route::get('/student/gameplaySpeakMode', [StudentController::class, 'gameplaySpeakMode']);
 Route::get('/student/gameplayReadMode', [StudentController::class, 'gameplayReadMode']);
-
-?>
