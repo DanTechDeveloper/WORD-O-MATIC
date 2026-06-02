@@ -14,8 +14,8 @@ return new class extends Migration
         Schema::create('create_student_information', function (Blueprint $table) {
             $table->id();
             $table->string('student_id');
-            $table->string('first_name');
-            $table->string('inGameName')->nullable(true);
+            $table->string('name');
+            $table->string('inGameName');
             $table->timestamps();
         });
     }
