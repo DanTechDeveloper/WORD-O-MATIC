@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\StudentModel;
+use App\Models\WordModule;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -56,7 +57,39 @@ class TeacherController extends Controller
 
     public function wordModules()
     {
-        return Inertia::render('Teacher/Word');
+        $modules = WordModule::with('words')->get();
+
+        return Inertia::render('Teacher/Word', [
+            'modules' => $modules,
+        ]);
+    }
+
+    public function updateWordModule(Request $request)
+    {
+        $request->validate([
+            'level' => 'required|integer',
+            'title' => 'required|string|max:255',
+            'words' => 'required|array|size:10',
+        ]);
+
+        $module = WordModule::updateOrCreate(
+            ['level' => $request->level],
+            ['title' => $request->title]
+        );
+
+        // Linisin ang mga lumang salita at palitan ng bago
+        $module->words()->delete();
+
+        foreach ($request->words as $index => $wordText) {
+            if (!empty(trim($wordText))) {
+                $module->words()->create([
+                    'word' => strtoupper(trim($wordText)),
+                    'position' => $index + 1,
+                ]);
+            }
+        }
+
+        return redirect()->back();
     }
 
     public function paragraphModules()
