@@ -3,7 +3,6 @@ import WordInputModal from "@/Components/Teacher/WordInputModal";
 import { useState, useEffect } from "react";
 export default function Word({ modules }) {
     const levels = Array.from({ length: 10 }, (_, i) => i + 1);
-
     const transformModules = (modulesData) => {
         const data = {};
         levels.forEach((level) => {
@@ -12,7 +11,7 @@ export default function Word({ modules }) {
                 words: moduleData
                     ? moduleData.words
                           .sort((a, b) => a.position - b.position)
-                          .map((w) => w.word)
+                          .map((w) => ({ word: w.word, points: w.points }))
                     : [],
                 title: moduleData ? moduleData.title : `Module ${level}`,
             };
