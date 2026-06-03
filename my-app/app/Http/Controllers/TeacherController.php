@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ParagraphModule;
 use App\Models\StudentModel;
 use App\Models\WordModule;
 use Illuminate\Http\Request;
@@ -81,7 +82,7 @@ class TeacherController extends Controller
         $module->words()->delete();
 
         foreach ($request->words as $index => $wordText) {
-            if (!empty(trim($wordText))) {
+            if (! empty(trim($wordText))) {
                 $module->words()->create([
                     'word' => strtoupper(trim($wordText)),
                     'position' => $index + 1,
@@ -94,7 +95,35 @@ class TeacherController extends Controller
 
     public function paragraphModules()
     {
-        return Inertia::render('Teacher/Paragraph');
+        $modules = ParagraphModule::all();
+
+        return Inertia::render('Teacher/Paragraph', [
+            'modules' => $modules,
+        ]);
+    }
+
+    public function updateParagraphModule(Request $request)
+    {
+        $request->validate([
+            'level' => 'required|integer',
+            'title' => 'required|string|max:255',
+            'content' => 'nullable|string',
+        ]);
+
+        $wordCount = ! empty(trim($request->content))
+            ? count(preg_split('/\s+/', trim($request->content), -1, PREG_SPLIT_NO_EMPTY))
+            : 0;
+
+        ParagraphModule::updateOrCreate(
+            ['level' => $request->level],
+            [
+                'title' => $request->title,
+                'content' => $request->content,
+                'total_score' => $wordCount,
+            ]
+        );
+
+        return redirect()->back();
     }
 
     public function reports()

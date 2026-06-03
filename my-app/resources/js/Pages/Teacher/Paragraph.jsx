@@ -3,16 +3,12 @@ import DashboardLayout from "../../Layouts/Teacher/DashboardLayout";
 import ParagraphInputModal from "../../Components/Teacher/ParagraphInputModal";
 import { router } from "@inertiajs/react";
 
-export default function Paragraph() {
 export default function Paragraph({ modules }) {
     const levels = Array.from({ length: 10 }, (_, i) => i + 1);
-    const [entriesByLevel, setEntriesByLevel] = useState(() => {
-        const initialData = {};
 
     const transformModules = (modulesData) => {
         const data = {};
         levels.forEach((level) => {
-            initialData[level] = { entries: [], title: `Module ${level}` };
             const moduleData = modulesData?.find((m) => m.level === level);
             data[level] = {
                 entries: moduleData?.content ? [moduleData.content] : [],
@@ -20,8 +16,6 @@ export default function Paragraph({ modules }) {
                 totalScore: moduleData ? moduleData.total_score : 0,
             };
         });
-        return initialData;
-    });
         return data;
     };
 
@@ -47,30 +41,20 @@ export default function Paragraph({ modules }) {
     };
 
     const handleSaveEntries = (level, newEntries, newTitle) => {
-        setEntriesByLevel((prev) => ({
-            ...prev,
-            [level]: { entries: newEntries, title: newTitle },
-        }));
-        router.put("/teacher/paragraphModules", {
-            level: level,
-            title: newTitle,
-            content: newEntries[0] || "",
-        }, {
-            onSuccess: () => closeModal(),
-        });
+        router.put(
+            "/teacher/paragraphModules",
+            {
+                level: level,
+                title: newTitle,
+                content: newEntries[0] || "",
+            },
+            {
+                onSuccess: () => closeModal(),
+            },
+        );
     };
 
     const calculateModulePoints = (level) => {
-        const data = entriesByLevel[level];
-        if (!data || !data.entries) return 0;
-        return data.entries.reduce(
-            (sum, entry) =>
-                sum +
-                (entry.trim()
-                    ? entry.trim().split(/\s+/).filter(Boolean).length
-                    : 0),
-            0,
-        );
         return entriesByLevel[level]?.totalScore || 0;
     };
 

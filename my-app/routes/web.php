@@ -10,6 +10,9 @@ Route::prefix('teacher')->name('teacher.')->group(function () {
 
     Route::get('/wordModules', [TeacherController::class, 'wordModules'])->name('wordModules');
     Route::put('/wordModules', [TeacherController::class, 'updateWordModule'])->name('wordModules.update');
+
+    
+    Route::get('/paragraphModules', [TeacherController::class, 'paragraphModules'])->name('paragraphModules');
     
     Route::get('/login', [TeacherController::class, 'login'])->name('login');
     Route::get('/dashboard', [TeacherController::class, 'dashboard'])->name('dashboard');
@@ -17,7 +20,6 @@ Route::prefix('teacher')->name('teacher.')->group(function () {
     Route::get('/students', [TeacherController::class, 'students'])->name('students');
     Route::get('/reports', [TeacherController::class, 'reports'])->name('reports');
     Route::get('/studentDetails', [TeacherController::class, 'studentDetails'])->name('studentDetails');
-    Route::get('/paragraphModules', [TeacherController::class, 'paragraphModules'])->name('paragraphModules');
     Route::get('/leaderboards', [TeacherController::class, 'leaderboards'])->name('leaderboards');
     Route::get('/assignments', [TeacherController::class, 'assignments'])->name('assignments');
 });
