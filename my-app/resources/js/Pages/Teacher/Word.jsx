@@ -2,7 +2,6 @@ import DashboardLayout from "@/Layouts/Teacher/DashboardLayout";
 import WordInputModal from "@/Components/Teacher/WordInputModal";
 import { useState, useEffect } from "react";
 export default function Word({ modules }) {
-    // State to store words for each level. Example: { 1: ['apple', 'banana'], 2: ['cat', 'dog'] }
     const levels = Array.from({ length: 10 }, (_, i) => i + 1);
 
     const transformModules = (modulesData) => {

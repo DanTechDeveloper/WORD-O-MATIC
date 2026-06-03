@@ -2,7 +2,7 @@ import { useForm } from "@inertiajs/react";
 import { useEffect } from "react";
 
 // A simple Modal component for demonstration
-export default function WordInputModal({ isOpen, onClose, level, words, title }){
+export default function WordInputModal({ isOpen, onClose, level, words, title }) {
     const { data, setData, put, processing, errors } = useForm({
         level: level || "",
         title: title || "",
@@ -109,4 +109,4 @@ export default function WordInputModal({ isOpen, onClose, level, words, title })
             </div>
         </div>
     );
-};
+}

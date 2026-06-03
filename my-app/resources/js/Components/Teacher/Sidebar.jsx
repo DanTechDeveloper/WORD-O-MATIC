@@ -10,7 +10,7 @@ export default function Sidebar() {
 
     const navItems = [
         { label: "Dashboard", href: "/teacher/dashboard", icon: "dashboard" },
-        { label: "Classes", href: "/teacher/classes", icon: "groups" },
+        // { label: "Classes", href: "/teacher/classes", icon: "groups" },
         { label: "Students", href: "/teacher/students", icon: "person" },
         { label: "Word Modules", href: "/teacher/wordModules", icon: "abc" },
         {
