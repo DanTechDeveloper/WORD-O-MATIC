@@ -1,26 +1,16 @@
 import { router } from "@inertiajs/react";
 import { useState } from "react";
 
-export default function SessionPage() {
+export default function SessionPage({ data }) {
     const [searchQuery, setSearchQuery] = useState("");
-    const [selectedStudent, setSelectedStudent] = useState("");
 
-    const students = [
-        "Juan Dela Cruz",
-        "Maria Santos",
-        "Jose Reyes"
-    ];
+  
 
-    const filteredStudents = students.filter(student =>
-        student.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        if (selectedStudent) {
+    const handleStudentSelect = () => {
+        if (searchQuery) {
             router.visit("/student/welcome", {
-                method: 'get',
-                data: { name: selectedStudent }
+                method: "get",
+                data: { name: searchQuery },
             });
         }
     };
@@ -53,33 +43,7 @@ export default function SessionPage() {
                         </p>
                     </header>
                     {/* <!-- BEGIN: LoginForm --> */}
-                    <form
-                        className="space-y-8"
-                        onSubmit={handleSubmit}
-                    >
-                        {/* <!-- Search Field Group --> */}
-                        <div className="flex flex-col gap-3">
-                            <label
-                                className="text-xl font-black text-white uppercase tracking-wider ml-2"
-                                htmlFor="student-search"
-                            >
-                                Search:
-                            </label>
-                            <div className="relative">
-                                <input
-                                    type="text"
-                                    id="student-search"
-                                    className="w-full p-5 pr-14 text-xl font-semibold rounded-2xl border-4 border-zinc-800 bg-zinc-950 text-white focus:border-lime-400 focus:ring-0 transition-all outline-none tactile-input"
-                                    placeholder="Type to filter students..."
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                />
-                                <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-2xl">
-                                    🔍
-                                </div>
-                            </div>
-                        </div>
-
+                    <div className="space-y-8">
                         {/* <!-- Select Student Group --> */}
                         <div className="flex flex-col gap-3">
                             <label
@@ -92,8 +56,10 @@ export default function SessionPage() {
                                 <select
                                     className="w-full p-5 pl-14 text-xl font-semibold rounded-2xl border-4 border-zinc-800 bg-zinc-950 text-white focus:border-lime-400 focus:ring-0 transition-all outline-none appearance-none cursor-pointer tactile-input"
                                     id="student-select"
-                                    value={selectedStudent}
-                                    onChange={(e) => setSelectedStudent(e.target.value)}
+                                    value={searchQuery}
+                                    onChange={(e) =>
+                                        setSearchQuery(e.target.value)
+                                    }
                                     required
                                 >
                                     <option
@@ -103,9 +69,13 @@ export default function SessionPage() {
                                     >
                                         Pick a name
                                     </option>
-                                    {filteredStudents.map((name) => (
-                                        <option key={name} className="bg-zinc-900" value={name}>
-                                            {name}
+                                    {data.map((value) => (
+                                        <option
+                                            key={value.id}
+                                            className="bg-zinc-900"
+                                            value={value.fullName}
+                                        >
+                                            {value.fullName}
                                         </option>
                                     ))}
                                 </select>
@@ -121,6 +91,7 @@ export default function SessionPage() {
                             <button
                                 className="group relative w-full md:w-auto bg-lime-400 hover:bg-lime-300 text-zinc-950 text-2xl md:text-3xl font-black py-5 px-16 rounded-2xl border-b-[6px] border-green-800 tactile-button transition-all flex items-center justify-center gap-4 uppercase tracking-tighter active:scale-95"
                                 type="submit"
+                                onClick={handleStudentSelect}
                             >
                                 <span>START SESSION</span>
                                 <span className="text-3xl group-hover:scale-125 transition-transform">
@@ -132,7 +103,7 @@ export default function SessionPage() {
                             </p>
                         </div>
                         {/* <!-- END: ActionArea --> */}
-                    </form>
+                    </div>
                     {/* <!-- END: LoginForm --> */}
                     {/* <!-- Background Visual Accents (Inside Card) --> */}
                     <div className="absolute bottom-4 right-4 text-5xl opacity-10 pointer-events-none rotate-12 text-lime-400">

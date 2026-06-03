@@ -2,9 +2,8 @@ import { useState } from "react";
 import { Link } from "@inertiajs/react";
 
 export default function Welcome() {
-    const [name, setName] = useState("");
+    const [inGameName, setInGameName] = useState("");
     const [selectedAvatar, setSelectedAvatar] = useState(null);
-
     const avatars = [
         { id: 1, char: "🐱" },
         { id: 2, char: "🐶" },
@@ -37,8 +36,8 @@ export default function Welcome() {
                         </label>
                         <input
                             type="text"
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
+                            value={inGameName}
+                            onChange={(e) => setInGameName(e.target.value)}
                             className="w-full p-5 text-2xl font-black rounded-2xl border-4 border-zinc-800 bg-zinc-950 text-lime-400 focus:border-lime-400 focus:ring-0 transition-all outline-none tactile-input placeholder:text-zinc-800"
                             placeholder="ENTER NAME"
                             maxLength={15}

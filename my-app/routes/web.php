@@ -33,7 +33,12 @@ Route::prefix('teacher')->name('teacher.')->group(function () {
 
 
 Route::get('/', [StudentController::class, 'index']);
+
+
+
+
 Route::get('/student/welcome', [StudentController::class, 'welcome']);
+
 Route::get('/student/greetings', [StudentController::class, 'greetings']);
 Route::get('/student/dashboard', [StudentController::class, 'dashboard']);
 Route::get('/student/tutorial', [StudentController::class, 'tutorial']);
