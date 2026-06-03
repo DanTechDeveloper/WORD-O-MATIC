@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Hash;
 
 class StudentModel extends Model
 {
@@ -12,6 +13,8 @@ class StudentModel extends Model
     protected $fillable = [
         'fullName',
         'studentID',
+        'pin',
     ];
+
     use HasFactory;
 }

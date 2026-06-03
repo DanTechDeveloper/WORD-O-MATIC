@@ -7,6 +7,7 @@ use App\Models\StudentModel;
 use App\Models\WordModule;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Hash;
 
 class TeacherController extends Controller
 {
@@ -37,11 +38,13 @@ class TeacherController extends Controller
         $request->validate([
             'fullName' => 'required',
             'studentID' => 'required',
+            'pin' => 'required'
         ]);
 
         $student = StudentModel::create([
             'fullName' => $request->fullName,
             'studentID' => $request->studentID,
+            'pin' => Hash::make($request->pin),
         ]);
 
         $student->save();

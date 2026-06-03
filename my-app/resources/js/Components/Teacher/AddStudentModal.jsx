@@ -1,20 +1,28 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
+import { useForm } from "@inertiajs/react";
 
 export default function AddStudentModal({ isOpen, onClose }) {
-    const [fullName, setFullName] = useState("");
-    const [pin, setPin] = useState("");
+    const { data, setData, post, processing, errors, reset } = useForm({
+        fullName: "",
+        pin: "",
+        studentID: ""
+    });
 
     // Function to generate a random 4-digit PIN
     const generatePin = () => {
         const newPin = Math.floor(1000 + Math.random() * 9000).toString();
-        setPin(newPin);
+        setData("pin", newPin);
     };
 
     // Generate a PIN whenever the modal opens
     useEffect(() => {
         if (isOpen) {
-            generatePin();
-            setFullName("");
+            setData({
+                fullName: "",
+                pin: Math.floor(1000 + Math.random() * 9000).toString(),
+            });
+        } else {
+            reset();
         }
     }, [isOpen]);
 
@@ -22,9 +30,12 @@ export default function AddStudentModal({ isOpen, onClose }) {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        console.log("Creating Student:", { fullName, pin });
-        // Implementation for Inertia.post would go here
-        onClose();
+        post("/teacher/addStudent", {
+            onSuccess: () => {
+                onClose();
+                reset();
+            },
+        });
     };
 
     return (
@@ -56,16 +67,44 @@ export default function AddStudentModal({ isOpen, onClose }) {
                     {/* Full Name Input */}
                     <div className="space-y-2">
                         <label className="block text-xs font-black text-slate-500 uppercase tracking-widest ml-2">
+                            STUDENT ID
+                        </label>
+                        <input
+                            required
+                            type="text"
+                            value={data.studentID}
+                            onChange={(e) =>
+                                setData("studentID", e.target.value)
+                            }
+                            className="w-full bg-slate-950 border-4 border-slate-800 rounded-2xl p-4 text-white font-bold focus:border-purple-500 outline-none transition-all placeholder:text-slate-700"
+                            placeholder="e.g. 2023-000001"
+                        />
+                        {errors.studentID && (
+                            <p className="text-rose-500 text-[10px] font-black mt-1 uppercase ml-2">
+                                {errors.studentID}
+                            </p>
+                        )}
+                    </div>
+                    {/* Full Name Input */}
+                    <div className="space-y-2">
+                        <label className="block text-xs font-black text-slate-500 uppercase tracking-widest ml-2">
                             Full Name
                         </label>
                         <input
                             required
                             type="text"
-                            value={fullName}
-                            onChange={(e) => setFullName(e.target.value)}
+                            value={data.fullName}
+                            onChange={(e) =>
+                                setData("fullName", e.target.value)
+                            }
                             className="w-full bg-slate-950 border-4 border-slate-800 rounded-2xl p-4 text-white font-bold focus:border-purple-500 outline-none transition-all placeholder:text-slate-700"
                             placeholder="e.g. LEO JUPITER"
                         />
+                        {errors.fullName && (
+                            <p className="text-rose-500 text-[10px] font-black mt-1 uppercase ml-2">
+                                {errors.fullName}
+                            </p>
+                        )}
                     </div>
 
                     {/* PIN Input with Auto-Gen */}
@@ -77,7 +116,7 @@ export default function AddStudentModal({ isOpen, onClose }) {
                             <input
                                 readOnly
                                 type="text"
-                                value={pin}
+                                value={data.pin}
                                 className="flex-1 bg-slate-950 border-4 border-slate-800 rounded-2xl p-4 text-lime-400 font-black text-2xl tracking-[0.5em] text-center outline-none"
                             />
                             <button
@@ -95,15 +134,23 @@ export default function AddStudentModal({ isOpen, onClose }) {
                             The student will use this PIN to log into their
                             mission console.
                         </p>
+                        {errors.pin && (
+                            <p className="text-rose-500 text-[10px] font-black mt-1 uppercase ml-2">
+                                {errors.pin}
+                            </p>
+                        )}
                     </div>
 
                     {/* Action Buttons */}
                     <div className="pt-4 flex gap-4">
                         <button
                             type="submit"
-                            className="flex-1 bg-lime-400 text-slate-950 font-black uppercase italic py-4 rounded-2xl border-4 border-slate-950 shadow-[6px_6px_0_0_#3f6212] hover:translate-y-0.5 hover:shadow-[3px_3px_0_0_#3f6212] transition-all"
+                            disabled={processing}
+                            className={`flex-1 bg-lime-400 text-slate-950 font-black uppercase italic py-4 rounded-2xl border-4 border-slate-950 shadow-[6px_6px_0_0_#3f6212] hover:translate-y-0.5 hover:shadow-[3px_3px_0_0_#3f6212] transition-all ${processing ? "opacity-50 cursor-not-allowed" : ""}`}
                         >
-                            Initialize Deployment
+                            {processing
+                                ? "Initializing..."
+                                : "Initialize Deployment"}
                         </button>
                     </div>
                 </form>
