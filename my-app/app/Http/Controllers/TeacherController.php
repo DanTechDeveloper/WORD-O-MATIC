@@ -30,14 +30,7 @@ class TeacherController extends Controller
         return Inertia::render('Teacher/Students');
     }
 
-    public function addStudent()
-    {
-        $students = StudentModel::orderBy('id', 'desc')->get();
-
-        return Inertia::render('Teacher/AddStudent', [
-            'students' => $students,
-        ]);
-    }
+   
 
     public function store(Request $request)
     {

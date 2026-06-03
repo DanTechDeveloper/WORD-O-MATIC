@@ -16,7 +16,7 @@ class StudentController extends Controller
     public function index()
     {
         $students = StudentModel::orderBy('fullName', 'asc')->get();
-        return Inertia::render('Auth/SessionPage' , [
+        return Inertia::render('Student/Login' , [
             'data' => $students,
         ]);
     }
