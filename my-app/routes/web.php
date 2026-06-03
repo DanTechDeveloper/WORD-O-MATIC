@@ -11,8 +11,9 @@ Route::prefix('teacher')->name('teacher.')->group(function () {
     Route::get('/wordModules', [TeacherController::class, 'wordModules'])->name('wordModules');
     Route::put('/wordModules', [TeacherController::class, 'updateWordModule'])->name('wordModules.update');
 
-    
     Route::get('/paragraphModules', [TeacherController::class, 'paragraphModules'])->name('paragraphModules');
+
+    Route::put('/paragraphModules', [TeacherController::class, 'updateParagraphModule'])->name('paragraphModules.update');
     
     Route::get('/login', [TeacherController::class, 'login'])->name('login');
     Route::get('/dashboard', [TeacherController::class, 'dashboard'])->name('dashboard');
