@@ -1,85 +1,87 @@
 import { Link } from "@inertiajs/react";
 import DashboardLayout from "../../Layouts/Student/DashboardLayout";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
-export default function ReadModeLevels() {
+export default function ReadModeLevels({ modules }) {
+    // Define the levels that this component will display (up to 6 based on current layout)
+    const levels = Array.from({ length: 6 }, (_, i) => i + 1);
+
+    const transformModulesToMissions = (modulesData, availableLevels) => {
+        // Define only positions, as styling will be dynamic based on status
+        const basePositions = [
+            { top: "150px", left: "100px" },
+            { top: "350px", left: "350px" },
+            { top: "150px", left: "600px" },
+            { top: "350px", left: "850px" },
+            { top: "150px", left: "1100px" },
+            { top: "350px", left: "1350px" },
+        ];
+
+        const transformedMissions = [];
+        availableLevels.forEach((level) => {
+            const moduleData = modulesData?.find((m) => m.level === level);
+            const position = basePositions[level - 1] || {
+                top: "0px",
+                left: "0px",
+            }; // Fallback position
+
+            let status = moduleData?.status || "locked";
+            let title = moduleData?.title || `Module ${level}`;
+            let subTitle = "";
+            let icon = "lock";
+            let textColor = "on-surface-variant"; // Default text/icon color for locked
+
+            if (status === "completed") {
+                subTitle = "Mastered!";
+                icon = "check_circle";
+                textColor = "slate-950"; // Color for completed icon/text
+            } else if (status === "current") {
+                subTitle = "Ready to Launch 🚀";
+                icon = "rocket_launch";
+                textColor = "white"; // Color for current icon/text
+            } else {
+                // locked
+                subTitle = `Locked: Level ${level}`;
+                icon = "lock";
+                textColor = "on-surface-variant";
+            }
+
+            transformedMissions.push({
+                id: level,
+                status: status,
+                title: title,
+                subTitle: subTitle,
+                icon: icon,
+                textColor: textColor,
+                top: position.top,
+                left: position.left,
+            });
+        });
+        return transformedMissions;
+    };
+
+    const [missions, setMissions] = useState(() =>
+        transformModulesToMissions(modules, levels),
+    );
+
+    useEffect(() => {
+        const newMissions = transformModulesToMissions(modules, levels);
+        setMissions(newMissions);
+
+        // Update activeIndex if the missions change
+        const currentMissionIndex = newMissions.findIndex(
+            (m) => m.status === "current",
+        );
+        setActiveIndex(currentMissionIndex !== -1 ? currentMissionIndex : 0); // Default to first mission if no 'current'
+    }, [modules]);
+
     // Track which mission is currently in focus
-    const [activeIndex, setActiveIndex] = useState(2); // Start with Mission 3 focused
-
-    const missions = [
-        {
-            id: 1,
-            status: "completed",
-            title: "Glitchy Greeting",
-            subTitle: "Mastered!",
-            icon: "check_circle",
-            color: "lime-400",
-            border: "lime-400",
-            shadow: "#1a2e05",
-            top: "150px",
-            left: "100px",
-        },
-        {
-            id: 2,
-            status: "completed",
-            title: "Syntax Space-Out",
-            subTitle: "Mastered!",
-            icon: "check_circle",
-            color: "lime-400",
-            border: "lime-400",
-            shadow: "#1a2e05",
-            top: "350px",
-            left: "350px",
-        },
-        {
-            id: 3,
-            status: "current",
-            title: "Robot Rhetoric",
-            subTitle: "Ready to Launch 🚀",
-            icon: "rocket_launch",
-            color: "white",
-            border: "slate-950",
-            shadow: "#55003d",
-            top: "150px",
-            left: "600px",
-        },
-        {
-            id: 4,
-            status: "locked",
-            title: "Logic Labyrinth",
-            subTitle: "Locked: Level 5",
-            icon: "lock",
-            color: "on-surface-variant",
-            border: "dashed border-surface-variant",
-            shadow: "none",
-            top: "350px",
-            left: "850px",
-        },
-        {
-            id: 5,
-            status: "locked",
-            title: "Mastering Matic",
-            subTitle: "Locked: Level 7",
-            icon: "lock",
-            color: "on-surface-variant",
-            border: "dashed border-surface-variant",
-            shadow: "none",
-            top: "150px",
-            left: "1100px",
-        },
-        {
-            id: 6,
-            status: "locked",
-            title: "Galactic Grammar",
-            subTitle: "Locked: Boss Battle",
-            icon: "lock",
-            color: "on-surface-variant",
-            border: "dashed border-surface-variant",
-            shadow: "none",
-            top: "350px",
-            left: "1350px",
-        },
-    ];
+    const [activeIndex, setActiveIndex] = useState(() => {
+        const currentMissionIndex = missions.findIndex(
+            (m) => m.status === "current",
+        );
+        return currentMissionIndex !== -1 ? currentMissionIndex : 0; // Default to first mission if no 'current'
+    });
 
     const getPathD = () => {
         let path = "";
@@ -134,15 +136,11 @@ export default function ReadModeLevels() {
                     <div className="absolute top-0 left-0 right-0 z-10 p-4 bg-white/10 backdrop-blur-md rounded-t-2xl flex flex-col md:flex-row items-center justify-between gap-4">
                         <div className="text-center text-4xl flex-1 text-center md:text-left">
                             <h2 className="text-on-surface text-4xl font-black uppercase italic">
-                                {" "}
-                                {/* Reduced from text-xl */}
-                                Level 4: Word Warrior ⚔️
+                                Level {missions[activeIndex]?.id}:{" "}
+                                {missions[activeIndex]?.title} ⚔️
                             </h2>
                             <p className="text-on-surface-variant text-sm font-bold">
-                                {" "}
-                                {/* Reduced from text-sm */}
-                                You're 65% of the way to becoming a Syntax
-                                Commander!
+                                {missions[activeIndex]?.subTitle}
                             </p>
                         </div>
 
@@ -179,7 +177,7 @@ export default function ReadModeLevels() {
                     <div
                         className="relative h-[550px] transition-transform duration-700 cubic-bezier(0.34, 1.56, 0.64, 1)"
                         style={{
-                            transform: `translateX(calc(50% - (${parseInt(missions[activeIndex].left)}px + 64px)))`,
+                            transform: `translateX(calc(50% - (${parseInt(missions[activeIndex]?.left || "0")}px + 64px)))`,
                         }}
                     >
                         <div className="relative w-[1600px] h-full">
@@ -232,7 +230,7 @@ export default function ReadModeLevels() {
                                             </div>
                                         )}
                                         <span
-                                            className={`material-symbols-outlined text-4xl ${mission.status === "completed" ? "text-slate-950" : mission.status === "current" ? "text-white" : "text-on-surface-variant"}`}
+                                            className={`material-symbols-outlined text-4xl ${mission.textColor}`}
                                             style={{
                                                 fontVariationSettings:
                                                     "'FILL' 1",
@@ -241,7 +239,7 @@ export default function ReadModeLevels() {
                                             {mission.icon}
                                         </span>
                                         <span
-                                            className={`text-[10px] font-black uppercase mt-1 ${mission.status === "completed" ? "text-slate-950" : mission.status === "current" ? "text-white" : "text-on-surface-variant"}`}
+                                            className={`text-[10px] font-black uppercase mt-1 ${mission.textColor}`}
                                         >
                                             MISSION{" "}
                                             {mission.id < 10

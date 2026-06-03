@@ -71,6 +71,8 @@ class TeacherController extends Controller
             'level' => 'required|integer',
             'title' => 'required|string|max:255',
             'words' => 'required|array|size:10',
+            'words.*.word' => 'nullable|string',
+            'words.*.points' => 'required|integer|min:0',
         ]);
 
         $module = WordModule::updateOrCreate(
@@ -81,10 +83,11 @@ class TeacherController extends Controller
         // Linisin ang mga lumang salita at palitan ng bago
         $module->words()->delete();
 
-        foreach ($request->words as $index => $wordText) {
-            if (! empty(trim($wordText))) {
+        foreach ($request->words as $index => $wordData) {
+            if (! empty(trim($wordData['word'] ?? ''))) {
                 $module->words()->create([
-                    'word' => strtoupper(trim($wordText)),
+                    'word' => strtoupper(trim($wordData['word'])),
+                    'points' => $wordData['points'] ?? 1,
                     'position' => $index + 1,
                 ]);
             }
