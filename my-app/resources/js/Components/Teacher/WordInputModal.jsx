@@ -125,10 +125,10 @@ export default function WordInputModal({
                                 <div className="w-24 relative group">
                                     <input
                                         type="number"
-                                        min="0"
+                                        min="1"
                                         className="w-full bg-slate-950 border-2 border-slate-800 rounded-xl px-4 py-4 text-white font-bold focus:outline-none focus:border-lime-500 transition-all text-center"
                                         placeholder="Pts"
-                                        value={data.words[index]?.points || ""}
+                                        value={data.words[index]?.points ?? ""}
                                         onChange={(e) =>
                                             handleChange(
                                                 index,

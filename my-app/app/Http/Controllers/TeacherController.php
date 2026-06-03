@@ -72,7 +72,7 @@ class TeacherController extends Controller
             'title' => 'required|string|max:255',
             'words' => 'required|array|size:10',
             'words.*.word' => 'nullable|string',
-            'words.*.points' => 'required|integer|min:0',
+            'words.*.points' => 'nullable|numeric|min:0',
         ]);
 
         $module = WordModule::updateOrCreate(
@@ -87,7 +87,7 @@ class TeacherController extends Controller
             if (! empty(trim($wordData['word'] ?? ''))) {
                 $module->words()->create([
                     'word' => strtoupper(trim($wordData['word'])),
-                    'points' => $wordData['points'] ?? 1,
+                    'points' => (isset($wordData['points']) && $wordData['points'] !== '') ? (int) $wordData['points'] : 1,
                     'position' => $index + 1,
                 ]);
             }
