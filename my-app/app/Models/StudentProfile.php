@@ -14,9 +14,19 @@ class StudentProfile extends Model
 
     protected $fillable = [
         'user_id',
+        'points',
+        'avatar',
+        'last_active_level',
+        'read_progress',
+        'speak_progress',
+        'unlocked_badges',
         'status',
         'wordRisk',
         'paragraphRisk',
+    ];
+
+    protected $casts = [
+        'unlocked_badges' => 'array',
     ];
 
     public function user()

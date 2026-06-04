@@ -28,6 +28,9 @@ Route::prefix('teacher')->name('teacher.')->group(function () {
 
 Route::get('/', [StudentController::class, 'index'])->name('home');
 Route::post('/', [UserController::class, 'login']);
+
+
+
 Route::prefix('student')->name('student.')->group(function () {
 
     Route::get('/greetings', [StudentController::class, 'greetings'])->name('greetings');
