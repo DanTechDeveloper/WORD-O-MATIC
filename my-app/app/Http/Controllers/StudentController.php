@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use Inertia\Inertia;
-use App\Models\StudentModel;
 use Illuminate\Http\Request;
 use App\Models\WordModule;
 
@@ -12,17 +11,10 @@ class StudentController extends Controller
 
     public function index()
     {
-        $students = StudentModel::orderBy('fullName', 'asc')->get();
-        return Inertia::render('Student/Login' , [
-            'data' => $students,
-        ]);
+        return Inertia::render('Student/Login');
     }
 
-    public function welcome()
-    {
-        return Inertia::render('Student/Welcome');
-    }
-
+   
     public function dashboard()
     {
         return Inertia::render('Student/Dashboard');

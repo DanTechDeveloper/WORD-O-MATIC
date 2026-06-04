@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\ParagraphModule;
-use App\Models\StudentModel;
 use App\Models\WordModule;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -29,7 +28,19 @@ class TeacherController extends Controller
 
     public function students()
     {
-        $students = StudentModel::all();
+        $students = User::with('student')
+            ->where('role', 'student')
+            ->orderBy('name', 'asc')
+            ->get()
+            ->map(fn($user) => [
+                'id'             => $user->id,
+                'fullName'       => $user->name,
+                'studentID'      => $user->student_id,
+                'wordRisk'       => $user->student?->wordRisk ?? 'na',
+                'paragraphRisk'  => $user->student?->paragraphRisk ?? 'na',
+                'status'         => $user->student?->status ?? 'notStarted',
+            ]);
+
         return Inertia::render('Teacher/Students', [
             'data' => $students,
         ]);

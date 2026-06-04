@@ -4,20 +4,23 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Hash;
 
 class StudentModel extends Model
 {
+    use HasFactory;
+
     protected $table = 'students';
     protected $primaryKey = 'id';
+
     protected $fillable = [
-        'fullName', 
-        'studentID',
-        'pin',
+        'user_id',
         'status',
         'wordRisk',
         'paragraphRisk',
     ];
 
-    use HasFactory;
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }
