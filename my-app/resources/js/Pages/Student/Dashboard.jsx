@@ -1,6 +1,7 @@
 import { Link } from "@inertiajs/react";
 import DashboardLayout from "../../Layouts/Student/DashboardLayout";
 export default function Dashboard() {
+    
     return (
         <>
             <DashboardLayout>

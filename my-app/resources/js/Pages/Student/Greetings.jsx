@@ -1,6 +1,9 @@
-import { Link } from "@inertiajs/react";
+import { Link, usePage } from "@inertiajs/react";
 
-export default function Greetings({ name = "ALEX" }) {
+export default function Greetings() {
+    const { auth } = usePage().props;
+    const name = auth?.user?.name || "STUDENT";
+
     return (
         <div className="m-0 p-0 overflow-hidden">
             {/* <!-- BEGIN: Main Background Container --> */}
@@ -44,7 +47,7 @@ export default function Greetings({ name = "ALEX" }) {
                 {/* <!-- END: Decorative Floating Elements --> */}
                 {/* <!-- BEGIN: Central Content Card --> */}
                 <section
-                    className="bg-zinc-900 border-4 border-purple-900 tactile-card rounded-[40px] p-12 md:p-20 relative overflow-hidden flex flex-col items-center text-center max-w-4xl mx-4 z-10"
+                    className="bg-zinc-900 border-4 border-purple-900 tactile-card rounded-[40px] p-12 md:p-20 relative overflow-hidden flex flex-col items-center text-center max-w-4xl mx-4 z-10 w-full md:w-[90%]"
                     data-purpose="greeting-card"
                 >
                     {/* <!-- Top Icon/Speech Bubble Style Decor --> */}
@@ -52,11 +55,11 @@ export default function Greetings({ name = "ALEX" }) {
                         <span className="text-7xl">🤖</span>
                     </div>
                     {/* <!-- Main Headline --> */}
-                    <h1 className="flex flex-col gap-2 mb-8 select-none">
-                        <span className="text-white text-5xl md:text-7xl font-black italic uppercase tracking-tight">
+                    <h1 className="flex flex-col gap-2 mb-8 select-none max-w-full">
+                        <span className="text-white text-4xl md:text-5xl font-black italic uppercase tracking-tight">
                             WELCOME,
                         </span>
-                        <span className="text-lime-400 text-6xl md:text-9xl font-black uppercase tracking-tighter animate-pulse-fast">
+                        <span className="text-lime-400 text-3xl sm:text-5xl md:text-7xl lg:text-8xl font-black uppercase tracking-tight break-words px-4">
                             {name.toUpperCase()}!
                         </span>
                     </h1>

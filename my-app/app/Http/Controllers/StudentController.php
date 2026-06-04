@@ -30,7 +30,7 @@ class StudentController extends Controller
         return Inertia::render('Student/Tutorial');
     }
 
-    public function leaderboard()
+    public function leaderboards()
     {
         return Inertia::render('Student/Leaderboards');
     }

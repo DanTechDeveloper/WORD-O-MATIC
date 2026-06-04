@@ -1,4 +1,8 @@
+import { usePage } from "@inertiajs/react";
+
 export default function StudentProfile() {
+    const { auth } = usePage().props;
+    
     return (
         <>
             <header class="bg-slate-950 text-lime-400 font-['Lexend'] font-bold tracking-tight border-b-4 border-purple-900 shadow-[4px_4px_0px_0px_rgba(112,0,255,1)] flex justify-between items-center px-6 h-20 w-full z-50 sticky top-0">
@@ -12,7 +16,7 @@ export default function StudentProfile() {
                     </div>
                     <div>
                         <h1 class="text-headline-md font-headline-md">
-                            Juan Dela Cruz
+                            {auth?.user?.name || "Student"}
                         </h1>
                         <div class="flex gap-3 text-label-bold font-label-bold uppercase tracking-widest items-center">
                             <span class="flex items-center gap-1 text-secondary-container">
