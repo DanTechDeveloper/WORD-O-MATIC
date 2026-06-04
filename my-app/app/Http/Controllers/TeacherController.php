@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ParagraphModule;
 use App\Models\StudentModel;
 use App\Models\WordModule;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Hash;
@@ -28,7 +29,10 @@ class TeacherController extends Controller
 
     public function students()
     {
-        return Inertia::render('Teacher/Students');
+        $students = StudentModel::all();
+        return Inertia::render('Teacher/Students', [
+            'data' => $students,
+        ]);
     }
 
    
@@ -41,9 +45,9 @@ class TeacherController extends Controller
             'pin' => 'required'
         ]);
 
-        $student = StudentModel::create([
-            'fullName' => $request->fullName,
-            'studentID' => $request->studentID,
+        $student = User::create([
+            'name' => $request->fullName,
+            'student_id' => $request->studentID,
             'pin' => Hash::make($request->pin),
         ]);
 

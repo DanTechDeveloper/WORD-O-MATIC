@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\TeacherController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('teacher')->name('teacher.')->group(function () {
@@ -14,7 +15,7 @@ Route::prefix('teacher')->name('teacher.')->group(function () {
     Route::get('/paragraphModules', [TeacherController::class, 'paragraphModules'])->name('paragraphModules');
 
     Route::put('/paragraphModules', [TeacherController::class, 'updateParagraphModule'])->name('paragraphModules.update');
-    
+
     Route::get('/login', [TeacherController::class, 'login'])->name('login');
     Route::get('/dashboard', [TeacherController::class, 'dashboard'])->name('dashboard');
     Route::get('/classes', [TeacherController::class, 'classes'])->name('classes');
@@ -25,26 +26,17 @@ Route::prefix('teacher')->name('teacher.')->group(function () {
     Route::get('/assignments', [TeacherController::class, 'assignments'])->name('assignments');
 });
 
+Route::get('/', [StudentController::class, 'index'])->name('home');
+Route::post('/', [UserController::class, 'login']);
+Route::prefix('student')->name('student.')->group(function () {
 
-
-
-
-
-
-
-Route::get('/', [StudentController::class, 'index']);
-
-
-
-
-Route::get('/student/welcome', [StudentController::class, 'welcome']);
-
-Route::get('/student/greetings', [StudentController::class, 'greetings']);
-Route::get('/student/dashboard', [StudentController::class, 'dashboard']);
-Route::get('/student/tutorial', [StudentController::class, 'tutorial']);
-Route::get('/student/leaderboards', [StudentController::class, 'leaderboard']);
-Route::get('/student/badges', [StudentController::class, 'badges']);
-Route::get('/student/readModeLevels', [StudentController::class, 'readModeLevels']);
-Route::get('/student/speakModeLevels', [StudentController::class, 'speakModeLevels']);
-Route::get('/student/gameplaySpeakMode', [StudentController::class, 'gameplaySpeakMode']);
-Route::get('/student/gameplayReadMode', [StudentController::class, 'gameplayReadMode']);
+    Route::get('/greetings', [StudentController::class, 'greetings'])->name('greetings');
+    Route::get('/dashboard', [StudentController::class, 'dashboard'])->name('dashboard');
+    Route::get('/tutorial', [StudentController::class, 'tutorial'])->name('tutorial');
+    Route::get('/leaderboards', [StudentController::class, 'leaderboards'])->name('leaderboards');
+    Route::get('/badges', [StudentController::class, 'badges'])->name('badges');
+    Route::get('/readModeLevels', [StudentController::class, 'readModeLevels'])->name('readModeLevels');
+    Route::get('/speakModeLevels', [StudentController::class, 'speakModeLevels'])->name('speakModeLevels');
+    Route::get('/gameplaySpeakMode', [StudentController::class, 'gameplaySpeakMode'])->name('gameplaySpeakMode');
+    Route::get('/gameplayReadMode', [StudentController::class, 'gameplayReadMode'])->name('gameplayReadMode');
+});

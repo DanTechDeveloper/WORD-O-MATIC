@@ -11,9 +11,12 @@ class StudentModel extends Model
     protected $table = 'students';
     protected $primaryKey = 'id';
     protected $fillable = [
-        'fullName',
+        'fullName', 
         'studentID',
         'pin',
+        'status',
+        'wordRisk',
+        'paragraphRisk',
     ];
 
     use HasFactory;

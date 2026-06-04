@@ -10,9 +10,6 @@ use App\Models\WordModule;
 class StudentController extends Controller
 {
 
-
-
-
     public function index()
     {
         $students = StudentModel::orderBy('fullName', 'asc')->get();
