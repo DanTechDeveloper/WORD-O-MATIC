@@ -2,7 +2,7 @@ import { usePage } from "@inertiajs/react";
 
 export default function StudentProfile() {
     const { auth } = usePage().props;
-    
+    console.log(usePage());
     return (
         <>
             <header class="bg-slate-950 text-lime-400 font-['Lexend'] font-bold tracking-tight border-b-4 border-purple-900 shadow-[4px_4px_0px_0px_rgba(112,0,255,1)] flex justify-between items-center px-6 h-20 w-full z-50 sticky top-0">
@@ -28,7 +28,7 @@ export default function StudentProfile() {
                                 >
                                     stars
                                 </span>{" "}
-                                150 Points
+                                {auth?.user?.student?.points} Points
                             </span>
                         </div>
                     </div>

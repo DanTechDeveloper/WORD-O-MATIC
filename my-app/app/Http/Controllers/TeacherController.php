@@ -60,9 +60,19 @@ class TeacherController extends Controller
             'name' => $request->fullName,
             'student_id' => $request->studentID,
             'pin' => Hash::make($request->pin),
+            'role' => 'student',
         ]);
 
-        $student->save();
+        $student->student()->create([
+            'points' => 0,
+            'avatar' => null,
+            'last_active_level' => null,
+            'read_progress' => 0,
+            'speak_progress' => 0,
+            'status' => 'notStarted',
+            'wordRisk' => 'N/A',
+            'paragraphRisk' => 'N/A',
+        ]);
 
         return redirect()->back();
     }
