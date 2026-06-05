@@ -1,8 +1,8 @@
 import DashboardLayout from "@/Layouts/Teacher/DashboardLayout";
 import { Link } from "@inertiajs/react";
 
-export default function StudentDetail() {
-    // Mock Data
+export default function StudentDetail({data}) {
+    
     const student = {
         id: "#GWOM-4421",
         name: "Leo Jupiter",

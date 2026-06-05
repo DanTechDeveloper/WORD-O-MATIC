@@ -4,7 +4,7 @@ import { useState } from "react";
 import AddStudentModal from "@/Components/Teacher/AddStudentModal";
 
 export default function Students({ data }) {
-    console.table(data);
+    console.log(data);
     const riskStyles = {
         high: {
             dot: "bg-error shadow-[0_0_8px_#ffb4ab]",
@@ -207,7 +207,7 @@ export default function Students({ data }) {
                                         </td>
                                         <td className="px-6 py-4 text-slate-400 font-body-md">
                                             <Link
-                                                href="/teacher/studentDetails"
+                                                href={`/teacher/studentDetails/${student.id}`}
                                                 className="bg-lime-400 text-slate-950 px-6 py-3 rounded-2xl border-4 border-slate-950 shadow-[6px_6px_0_0_#3f6212] font-black uppercase italic text-xs tracking-tighter hover:translate-y-0.5 hover:shadow-[3px_3px_0_0_#3f6212] transition-all flex items-center justify-center gap-2"
                                             >
                                                 View

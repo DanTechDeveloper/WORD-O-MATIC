@@ -28,7 +28,7 @@ export default function Dashboard({ data }) {
                                 href="/student/readModeLevels"
                                 className="inline-flex bg-lime-400 text-slate-950 px-10 py-5 rounded-2xl font-headline-md text-headline-md uppercase border-b-[8px] border-lime-700 primary-active-3d hover:bg-lime-300 transition-all items-center gap-3"
                             >
-                                Continue: Level {lastLevel}
+                                Continue: Level {lastLevel || 1}
                                 <span className="material-symbols-outlined text-3xl">
                                     arrow_forward
                                 </span>

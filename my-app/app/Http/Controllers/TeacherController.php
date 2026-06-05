@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ParagraphModule;
 use App\Models\User;
 use App\Models\WordModule;
+use App\Models\StudentProfile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
@@ -43,6 +44,14 @@ class TeacherController extends Controller
 
         return Inertia::render('Teacher/Students', [
             'data' => $students,
+        ]);
+    }
+
+    public function show($studentId)
+    {
+        $student = User::with('student')->where('id', $studentId)->first();
+        return Inertia::render('Teacher/StudentDetails', [
+            'student' => $student,
         ]);
     }
 
@@ -119,7 +128,6 @@ class TeacherController extends Controller
 
         $module->words()->delete();
 
-        // Инициализируем переменную для расчета суммы баллов на стороне сервера
         $totalPoints = 0;
 
         foreach ($request->words as $index => $wordData) {

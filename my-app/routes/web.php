@@ -20,8 +20,8 @@ Route::prefix('teacher')->name('teacher.')->group(function () {
     Route::get('/dashboard', [TeacherController::class, 'dashboard'])->name('dashboard');
     Route::get('/classes', [TeacherController::class, 'classes'])->name('classes');
     Route::get('/students', [TeacherController::class, 'students'])->name('students');
+    Route::get('/studentDetails/{student}', [TeacherController::class, 'show'])->name('studentDetails.show');
     Route::get('/reports', [TeacherController::class, 'reports'])->name('reports');
-    Route::get('/studentDetails', [TeacherController::class, 'studentDetails'])->name('studentDetails');
     Route::get('/leaderboards', [TeacherController::class, 'leaderboards'])->name('leaderboards');
     Route::get('/assignments', [TeacherController::class, 'assignments'])->name('assignments');
 });
