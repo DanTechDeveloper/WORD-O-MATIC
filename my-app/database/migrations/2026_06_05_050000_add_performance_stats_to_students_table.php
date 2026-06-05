@@ -6,7 +6,10 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    
+    /**
+     * Запуск миграции для добавления полей статистики и уровней.
+     * Добавляет 4 колонки согласно спецификации в запросе.
+     */
     public function up(): void
     {
         Schema::table('students', function (Blueprint $table) {

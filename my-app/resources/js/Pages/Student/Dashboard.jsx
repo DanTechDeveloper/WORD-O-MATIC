@@ -1,6 +1,15 @@
-import { Link } from "@inertiajs/react";
+import { Link, usePage } from "@inertiajs/react";
 import DashboardLayout from "../../Layouts/Student/DashboardLayout";
+
 export default function Dashboard() {
+    // Получаем только необходимые данные, переданные из контроллера
+    const { student, auth } = usePage().props;
+
+    // Расчет динамических значений для прогресс-баров
+    const readAccuracy = student?.accuracy || 0;
+    // Масштабируем очки говорения (например, 500 очков = 100% заполнения для визуализации)
+    const speakProgress = Math.min((student?.points || 0) / 5, 100);
+
     return (
         <>
             <DashboardLayout>
@@ -12,15 +21,20 @@ export default function Dashboard() {
                                 READY FOR BLAST OFF?
                             </h2>
                             <p className="text-body-lg font-body-lg text-on-surface-variant mb-6 max-w-md">
+                                Welcome back, {auth.user.name.split(" ")[0]}!
                                 You're making cosmic progress! Jump back into
                                 your last session and reach for the stars.
                             </p>
-                            <button className="bg-lime-400 text-slate-950 px-10 py-5 rounded-2xl font-headline-md text-headline-md uppercase border-b-[8px] border-lime-700 primary-active-3d transition-all flex items-center gap-3">
-                                Continue: Speak Level 2
+                            <Link
+                                href="/student/readModeLevels"
+                                className="inline-flex bg-lime-400 text-slate-950 px-10 py-5 rounded-2xl font-headline-md text-headline-md uppercase border-b-[8px] border-lime-700 primary-active-3d hover:bg-lime-300 transition-all items-center gap-3"
+                            >
+                                Continue: Level{" "}
+                                {student?.last_active_level || 1}
                                 <span className="material-symbols-outlined text-3xl">
                                     arrow_forward
                                 </span>
-                            </button>
+                            </Link>
                         </div>
                         <div className="w-full md:w-1/3 aspect-square bg-slate-900/50 rounded-2xl border-2 border-dashed border-primary-container flex items-center justify-center">
                             <img
@@ -36,7 +50,7 @@ export default function Dashboard() {
                 <section className="grid grid-cols-1 md:grid-cols-2 gap-gutter mb-12">
                     <Link
                         href="/student/readModeLevels"
-                        className="group bg-surface-container-high border-4 border-secondary-container rounded-3xl p-8 neo-3d-shadow active-3d transition-all text-left flex items-center gap-6"
+                        className="group bg-surface-container-high border-4 border-secondary-container rounded-3xl p-8 neo-3d-shadow active-3d hover:border-secondary transition-all text-left flex items-center gap-6"
                     >
                         <div className="bg-secondary-container text-on-secondary-container w-20 h-20 rounded-2xl flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(85,0,61,1)]">
                             <span
@@ -57,7 +71,7 @@ export default function Dashboard() {
                     </Link>
                     <Link
                         href="/student/speakModeLevels"
-                        className="group bg-surface-container-high border-4 border-lime-400 rounded-3xl p-8 neo-3d-shadow active-3d transition-all text-left flex items-center gap-6"
+                        className="group bg-surface-container-high border-4 border-lime-400 rounded-3xl p-8 neo-3d-shadow active-3d hover:border-lime-300 transition-all text-left flex items-center gap-6"
                     >
                         <div className="bg-lime-400 text-slate-950 w-20 h-20 rounded-2xl flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(26,46,5,1)]">
                             <span
@@ -95,24 +109,31 @@ export default function Dashboard() {
                                 <div className="flex justify-between items-end mb-4">
                                     <div>
                                         <h4 className="text-headline-md font-headline-md">
-                                            Read Level 3
+                                            Read Mode Level{" "}
+                                            {student?.read_level || 1}
                                         </h4>
                                     </div>
                                     <span className="text-headline-md font-headline-md text-lime-400">
-                                        70%
+                                        {readAccuracy}%
                                     </span>
                                 </div>
                                 <div className="h-6 w-full bg-slate-950 rounded-full border-2 border-surface-variant relative overflow-hidden">
                                     <div
                                         className="absolute top-0 left-0 h-full bg-secondary-container rounded-full"
-                                        style={{ width: "70%" }}
-                                    ></div>
+                                        style={{
+                                            width: `${readAccuracy}%`,
+                                        }}
+                                    >
+                                        <div className="w-full h-full opacity-20 bg-[linear-gradient(45deg,rgba(255,255,255,0.4)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.4)_50%,rgba(255,255,255,0.4)_75%,transparent_75%,transparent)] bg-[length:20px_20px]"></div>
+                                    </div>
                                     {/* <!-- Progress Bot --> */}
                                     <div
                                         className="absolute top-1/2 -translate-y-1/2 ml-[-12px] flex items-center justify-center"
-                                        style={{ left: "70%" }}
+                                        style={{
+                                            left: `${readAccuracy}%`,
+                                        }}
                                     >
-                                        <span className="material-symbols-outlined text-lime-400 text-3xl animate-pulse">
+                                        <span className="material-symbols-outlined text-white text-3xl animate-bounce">
                                             rocket
                                         </span>
                                     </div>
@@ -123,22 +144,25 @@ export default function Dashboard() {
                                 <div className="flex justify-between items-end mb-4">
                                     <div>
                                         <h4 className="text-headline-md font-headline-md">
-                                            Speak Level 2
+                                            Speak Mode Level{" "}
+                                            {student?.speak_level || 1}
                                         </h4>
                                     </div>
                                     <span className="text-headline-md font-headline-md text-lime-400">
-                                        50%
+                                        {speakProgress}%    
                                     </span>
                                 </div>
                                 <div className="h-6 w-full bg-slate-950 rounded-full border-2 border-surface-variant relative overflow-hidden">
                                     <div
-                                        className="absolute top-0 left-0 h-full bg-primary-container rounded-full"
-                                        style={{ width: "50%" }}
-                                    ></div>
+                                        className="absolute top-0 left-0 h-full bg-primary rounded-full transition-all duration-1000"
+                                        style={{ width: `${speakProgress}%` }}
+                                    >
+                                        <div className="w-full h-full bg-[linear-gradient(45deg,rgba(255,255,255,0.2)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.2)_50%,rgba(255,255,255,0.2)_75%,transparent_75%,transparent)] bg-[length:20px_20px] animate-[stripes_1s_linear_infinite]"></div>
+                                    </div>
                                     {/* <!-- Progress Bot --> */}
                                     <div
                                         className="absolute top-1/2 -translate-y-1/2 ml-[-12px] flex items-center justify-center"
-                                        style={{ left: "50%" }}
+                                        style={{ left: `${speakProgress}%` }}
                                     >
                                         <span className="material-symbols-outlined text-secondary-container text-3xl animate-pulse">
                                             smart_toy
