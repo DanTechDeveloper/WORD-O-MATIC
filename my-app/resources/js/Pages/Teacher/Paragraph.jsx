@@ -39,13 +39,15 @@ export default function Paragraph({ modules }) {
         setIsModalOpen(false);
     };
 
-    const handleSaveEntries = (level, newEntries, newTitle) => {
+    const handleSaveEntries = (level, newEntries, newTitle, newPoints) => {
+        // Отправляем данные на сервер, включая обновленные очки
         router.put(
             "/teacher/paragraphModules",
             {
                 level: level,
                 title: newTitle,
                 content: newEntries[0] || "",
+                total_score: newPoints,
             },
             {
                 onSuccess: () => closeModal(),

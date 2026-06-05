@@ -15,12 +15,27 @@ export default function ParagraphInputModal({
     );
 
     useEffect(() => {
-        setCurrentTitle(title || `Module ${level}`);
-        setCurrentEntry(entries?.[0] || "");
-    }, [level, entries, title]);
+        if (isOpen) {
+            setCurrentTitle(title || `Module ${level}`);
+            setCurrentEntry(entries?.[0] || "");
+        }
+    }, [level, entries, title, isOpen]);
+
+    // Вычисляем количество очков на основе количества слов (реальное время)
+    const calculateTotalPoints = () => {
+        return currentEntry?.trim()
+            ? currentEntry.trim().split(/\s+/).filter(Boolean).length
+            : 0;
+    };
 
     const handleSave = () => {
-        onSave(level, currentEntry.trim() ? [currentEntry] : [], currentTitle);
+        // Передаем вычисленные очки в родительский компонент
+        onSave(
+            level,
+            currentEntry.trim() ? [currentEntry] : [],
+            currentTitle,
+            calculateTotalPoints(),
+        );
         onClose();
     };
 
@@ -42,9 +57,8 @@ export default function ParagraphInputModal({
                         <span className="text-[10px] font-black uppercase leading-none">
                             Module Value
                         </span>
-                        {/* Отображение значения напрямую из пропса бэкенда */}
                         <span className="text-xl font-black italic leading-none">
-                            {totalScore || 0} PTS
+                            {calculateTotalPoints()} PTS
                         </span>
                     </div>
                 </div>
