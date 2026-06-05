@@ -23,6 +23,10 @@ class StudentProfile extends Model
         'status',
         'wordRisk',
         'paragraphRisk',
+        'words_smashed',
+        'accuracy',
+        'read_level',
+        'speak_level',
     ];
 
     protected $casts = [
@@ -32,5 +36,10 @@ class StudentProfile extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function wordProgress()
+    {
+        return $this->hasMany(StudentWordProgress::class, 'user_id', 'user_id');
     }
 }
