@@ -40,7 +40,6 @@ export default function Paragraph({ modules }) {
     };
 
     const handleSaveEntries = (level, newEntries, newTitle, newPoints) => {
-        // Отправляем данные на сервер, включая обновленные очки
         router.put(
             "/teacher/paragraphModules",
             {

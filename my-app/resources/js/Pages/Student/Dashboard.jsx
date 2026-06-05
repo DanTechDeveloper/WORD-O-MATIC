@@ -1,7 +1,6 @@
 import { Link } from "@inertiajs/react";
 import DashboardLayout from "../../Layouts/Student/DashboardLayout";
 export default function Dashboard() {
-    
     return (
         <>
             <DashboardLayout>
@@ -35,7 +34,10 @@ export default function Dashboard() {
                 </section>
                 {/* <!-- Mode Selection --> */}
                 <section className="grid grid-cols-1 md:grid-cols-2 gap-gutter mb-12">
-                    <Link href="/student/readModeLevels" className="group bg-surface-container-high border-4 border-secondary-container rounded-3xl p-8 neo-3d-shadow active-3d transition-all text-left flex items-center gap-6">
+                    <Link
+                        href="/student/readModeLevels"
+                        className="group bg-surface-container-high border-4 border-secondary-container rounded-3xl p-8 neo-3d-shadow active-3d transition-all text-left flex items-center gap-6"
+                    >
                         <div className="bg-secondary-container text-on-secondary-container w-20 h-20 rounded-2xl flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(85,0,61,1)]">
                             <span
                                 className="material-symbols-outlined text-5xl"
@@ -53,7 +55,10 @@ export default function Dashboard() {
                             </p>
                         </div>
                     </Link>
-                    <Link href="/student/speakModeLevels" className="group bg-surface-container-high border-4 border-lime-400 rounded-3xl p-8 neo-3d-shadow active-3d transition-all text-left flex items-center gap-6">
+                    <Link
+                        href="/student/speakModeLevels"
+                        className="group bg-surface-container-high border-4 border-lime-400 rounded-3xl p-8 neo-3d-shadow active-3d transition-all text-left flex items-center gap-6"
+                    >
                         <div className="bg-lime-400 text-slate-950 w-20 h-20 rounded-2xl flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(26,46,5,1)]">
                             <span
                                 className="material-symbols-outlined text-5xl"
@@ -89,9 +94,6 @@ export default function Dashboard() {
                             <div>
                                 <div className="flex justify-between items-end mb-4">
                                     <div>
-                                        <span className="text-label-bold font-label-bold text-secondary-container uppercase">
-                                            Current Mission
-                                        </span>
                                         <h4 className="text-headline-md font-headline-md">
                                             Read Level 3
                                         </h4>
@@ -103,12 +105,12 @@ export default function Dashboard() {
                                 <div className="h-6 w-full bg-slate-950 rounded-full border-2 border-surface-variant relative overflow-hidden">
                                     <div
                                         className="absolute top-0 left-0 h-full bg-secondary-container rounded-full"
-                                        style={{ width: '70%' }}
+                                        style={{ width: "70%" }}
                                     ></div>
                                     {/* <!-- Progress Bot --> */}
                                     <div
                                         className="absolute top-1/2 -translate-y-1/2 ml-[-12px] flex items-center justify-center"
-                                        style={{ left: '70%' }}
+                                        style={{ left: "70%" }}
                                     >
                                         <span className="material-symbols-outlined text-lime-400 text-3xl animate-pulse">
                                             rocket
@@ -120,9 +122,6 @@ export default function Dashboard() {
                             <div>
                                 <div className="flex justify-between items-end mb-4">
                                     <div>
-                                        <span className="text-label-bold font-label-bold text-primary uppercase">
-                                            Training Module
-                                        </span>
                                         <h4 className="text-headline-md font-headline-md">
                                             Speak Level 2
                                         </h4>
@@ -134,12 +133,12 @@ export default function Dashboard() {
                                 <div className="h-6 w-full bg-slate-950 rounded-full border-2 border-surface-variant relative overflow-hidden">
                                     <div
                                         className="absolute top-0 left-0 h-full bg-primary-container rounded-full"
-                                        style={{ width: '50%' }}
+                                        style={{ width: "50%" }}
                                     ></div>
                                     {/* <!-- Progress Bot --> */}
                                     <div
                                         className="absolute top-1/2 -translate-y-1/2 ml-[-12px] flex items-center justify-center"
-                                        style={{ left: '50%' }}
+                                        style={{ left: "50%" }}
                                     >
                                         <span className="material-symbols-outlined text-secondary-container text-3xl animate-pulse">
                                             smart_toy
@@ -162,7 +161,9 @@ export default function Dashboard() {
                                 <div className="w-16 h-16 rounded-full bg-tertiary-container/20 flex items-center justify-center mb-2">
                                     <span
                                         className="material-symbols-outlined text-tertiary text-4xl"
-                                        style={{ fontVariationSettings: "'FILL' 1" }}
+                                        style={{
+                                            fontVariationSettings: "'FILL' 1",
+                                        }}
                                     >
                                         auto_stories
                                     </span>
@@ -175,7 +176,9 @@ export default function Dashboard() {
                                 <div className="w-16 h-16 rounded-full bg-secondary-container/20 flex items-center justify-center mb-2">
                                     <span
                                         className="material-symbols-outlined text-secondary text-4xl"
-                                        style={{ fontVariationSettings: "'FILL' 1" }}
+                                        style={{
+                                            fontVariationSettings: "'FILL' 1",
+                                        }}
                                     >
                                         history_edu
                                     </span>
@@ -188,7 +191,9 @@ export default function Dashboard() {
                                 <div className="w-16 h-16 rounded-full bg-lime-400/10 flex items-center justify-center mb-2">
                                     <span
                                         className="material-symbols-outlined text-lime-400 text-4xl"
-                                        style={{ fontVariationSettings: "'FILL' 1" }}
+                                        style={{
+                                            fontVariationSettings: "'FILL' 1",
+                                        }}
                                     >
                                         volume_up
                                     </span>

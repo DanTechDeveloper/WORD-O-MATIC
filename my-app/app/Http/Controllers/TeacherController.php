@@ -3,11 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\ParagraphModule;
-use App\Models\WordModule;
 use App\Models\User;
+use App\Models\WordModule;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
 use Illuminate\Support\Facades\Hash;
+use Inertia\Inertia;
 
 class TeacherController extends Controller
 {
@@ -32,13 +32,13 @@ class TeacherController extends Controller
             ->where('role', 'student')
             ->orderBy('name', 'asc')
             ->get()
-            ->map(fn($user) => [
-                'id'             => $user->id,
-                'fullName'       => $user->name,
-                'studentID'      => $user->student_id,
-                'wordRisk'       => $user->student?->wordRisk ?? 'na',
-                'paragraphRisk'  => $user->student?->paragraphRisk ?? 'na',
-                'status'         => $user->student?->status ?? 'notStarted',
+            ->map(fn ($user) => [
+                'id' => $user->id,
+                'fullName' => $user->name,
+                'studentID' => $user->student_id,
+                'wordRisk' => $user->student?->wordRisk ?? 'na',
+                'paragraphRisk' => $user->student?->paragraphRisk ?? 'na',
+                'status' => $user->student?->status ?? 'notStarted',
             ]);
 
         return Inertia::render('Teacher/Students', [
@@ -46,14 +46,12 @@ class TeacherController extends Controller
         ]);
     }
 
-   
-
     public function store(Request $request)
     {
         $request->validate([
             'fullName' => 'required',
             'studentID' => 'required',
-            'pin' => 'required'
+            'pin' => 'required',
         ]);
 
         $student = User::create([
@@ -111,6 +109,7 @@ class TeacherController extends Controller
             'words' => 'required|array|size:10',
             'words.*.word' => 'nullable|string',
             'words.*.points' => 'nullable|numeric|min:0',
+            'totalScore' => 'nullable|numeric',
         ]);
 
         $module = WordModule::updateOrCreate(
@@ -120,15 +119,24 @@ class TeacherController extends Controller
 
         $module->words()->delete();
 
+        // Инициализируем переменную для расчета суммы баллов на стороне сервера
+        $totalPoints = 0;
+
         foreach ($request->words as $index => $wordData) {
-            if (! empty(trim($wordData['word'] ?? ''))) {
+            $wordText = trim($wordData['word'] ?? '');
+            if (! empty($wordText)) {
+                $points = (isset($wordData['points']) && $wordData['points'] !== '') ? (int) $wordData['points'] : 1;
+
                 $module->words()->create([
-                    'word' => strtoupper(trim($wordData['word'])),
-                    'points' => (isset($wordData['points']) && $wordData['points'] !== '') ? (int) $wordData['points'] : 1,
+                    'word' => strtoupper($wordText),
+                    'points' => $points,
                     'position' => $index + 1,
                 ]);
+                $totalPoints += $points;
             }
         }
+
+        $module->update(['total_points' => $request->totalScore ?? $totalPoints]);
 
         return redirect()->back();
     }
