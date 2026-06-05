@@ -15,7 +15,13 @@ class StudentController extends Controller
 
     public function dashboard()
     {
-        return Inertia::render('Student/Dashboard');
+        $student = auth()->user()->student()->select([
+        'accuracy', 'read_level', 'speak_level', 'last_active_level',
+        ])->first();
+
+        return Inertia::render('Student/Dashboard', [
+            'data' => $student,
+        ]);
     }
 
     public function greetings()
@@ -49,7 +55,7 @@ class StudentController extends Controller
 
     public function speakModeLevels()
     {
-        
+
         $modules = ParagraphModule::orderBy('level', 'asc')->get();
 
         return Inertia::render('Student/SpeakModeLevels', [

@@ -1,14 +1,11 @@
 import { Link, usePage } from "@inertiajs/react";
 import DashboardLayout from "../../Layouts/Student/DashboardLayout";
 
-export default function Dashboard() {
-    // Получаем только необходимые данные, переданные из контроллера
+export default function Dashboard({data}) {
     const { student, auth } = usePage().props;
-
-    // Расчет динамических значений для прогресс-баров
-    const readAccuracy = student?.accuracy || 0;
-    // Масштабируем очки говорения (например, 500 очков = 100% заполнения для визуализации)
-    const speakProgress = Math.min((student?.points || 0) / 5, 100);
+    console.log(usePage().props)
+    const readAccuracy = data?.accuracy || 0;
+    const speakProgress = Math.min((data?.points || 0) / 5, 100);
 
     return (
         <>
@@ -30,7 +27,7 @@ export default function Dashboard() {
                                 className="inline-flex bg-lime-400 text-slate-950 px-10 py-5 rounded-2xl font-headline-md text-headline-md uppercase border-b-[8px] border-lime-700 primary-active-3d hover:bg-lime-300 transition-all items-center gap-3"
                             >
                                 Continue: Level{" "}
-                                {student?.last_active_level || 1}
+                                {data.last_active_level || 1}
                                 <span className="material-symbols-outlined text-3xl">
                                     arrow_forward
                                 </span>
@@ -110,7 +107,7 @@ export default function Dashboard() {
                                     <div>
                                         <h4 className="text-headline-md font-headline-md">
                                             Read Mode Level{" "}
-                                            {student?.read_level || 1}
+                                            {data.read_level}
                                         </h4>
                                     </div>
                                     <span className="text-headline-md font-headline-md text-lime-400">
@@ -145,11 +142,11 @@ export default function Dashboard() {
                                     <div>
                                         <h4 className="text-headline-md font-headline-md">
                                             Speak Mode Level{" "}
-                                            {student?.speak_level || 1}
+                                            {data.speak_level}
                                         </h4>
                                     </div>
                                     <span className="text-headline-md font-headline-md text-lime-400">
-                                        {speakProgress}%    
+                                        {speakProgress}%
                                     </span>
                                 </div>
                                 <div className="h-6 w-full bg-slate-950 rounded-full border-2 border-surface-variant relative overflow-hidden">
