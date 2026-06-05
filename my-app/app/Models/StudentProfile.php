@@ -19,7 +19,7 @@ class StudentProfile extends Model
         'last_active_level',
         'read_progress',
         'speak_progress',
-        'unlocked_badges',
+        'badges',
         'status',
         'wordRisk',
         'paragraphRisk',
@@ -27,10 +27,6 @@ class StudentProfile extends Model
         'accuracy',
         'read_level',
         'speak_level',
-    ];
-
-    protected $casts = [
-        'unlocked_badges' => 'array',
     ];
 
     public function user()

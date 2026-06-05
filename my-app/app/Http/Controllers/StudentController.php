@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\ParagraphModule;
-use App\Models\StudentProfile;
 use App\Models\WordModule;
 use Inertia\Inertia;
 
@@ -16,16 +15,16 @@ class StudentController extends Controller
 
     public function dashboard()
     {
-    
+
         $data = auth()->user()->student()
             ->select([
-                'last_active_level', 'read_progress', 'speak_progress', 
-                'unlocked_badges', 'read_level', 'speak_level'
+                'last_active_level', 'read_progress', 'speak_progress',
+                'badges', 'read_level', 'speak_level',
             ])
             ->first();
 
-        return Inertia::render('Student/Dashboard',[
-            'data'=> $data
+        return Inertia::render('Student/Dashboard', [
+            'data' => $data,
         ]);
     }
 
