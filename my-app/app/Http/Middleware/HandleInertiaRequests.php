@@ -32,8 +32,6 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'auth' => [
-                // Ограничиваем загрузку данных профиля в глобальном стейте
-                // Загружаем только ID и points для хедера/UI
                 'user' => $request->user() ? $request->user()->load(['student' => function ($query) {
                     $query->select('id', 'user_id', 'points');
                 }]) : null,

@@ -1,11 +1,13 @@
 import { Link, usePage } from "@inertiajs/react";
 import DashboardLayout from "../../Layouts/Student/DashboardLayout";
 
-export default function Dashboard({data}) {
-    const { student, auth } = usePage().props;
-    console.log(usePage().props)
-    const readAccuracy = data?.accuracy || 0;
-    const speakProgress = Math.min((data?.points || 0) / 5, 100);
+export default function Dashboard({ data }) {
+    const readProgress = data?.read_progress;
+    const speakProgress = data?.speak_progress;
+    const lastLevel = data?.last_active_level;
+    console.log(data);
+
+    const { auth } = usePage().props;
 
     return (
         <>
@@ -19,15 +21,14 @@ export default function Dashboard({data}) {
                             </h2>
                             <p className="text-body-lg font-body-lg text-on-surface-variant mb-6 max-w-md">
                                 Welcome back, {auth.user.name.split(" ")[0]}!
-                                You're making cosmic progress! Jump back into
+                                You are making cosmic progress! Jump back into
                                 your last session and reach for the stars.
                             </p>
                             <Link
                                 href="/student/readModeLevels"
                                 className="inline-flex bg-lime-400 text-slate-950 px-10 py-5 rounded-2xl font-headline-md text-headline-md uppercase border-b-[8px] border-lime-700 primary-active-3d hover:bg-lime-300 transition-all items-center gap-3"
                             >
-                                Continue: Level{" "}
-                                {data.last_active_level || 1}
+                                Continue: Level {lastLevel}
                                 <span className="material-symbols-outlined text-3xl">
                                     arrow_forward
                                 </span>
@@ -106,19 +107,18 @@ export default function Dashboard({data}) {
                                 <div className="flex justify-between items-end mb-4">
                                     <div>
                                         <h4 className="text-headline-md font-headline-md">
-                                            Read Mode Level{" "}
-                                            {data.read_level}
+                                            Read Mode Level {data?.read_level}
                                         </h4>
                                     </div>
                                     <span className="text-headline-md font-headline-md text-lime-400">
-                                        {readAccuracy}%
+                                        {readProgress}%
                                     </span>
                                 </div>
                                 <div className="h-6 w-full bg-slate-950 rounded-full border-2 border-surface-variant relative overflow-hidden">
                                     <div
                                         className="absolute top-0 left-0 h-full bg-secondary-container rounded-full"
                                         style={{
-                                            width: `${readAccuracy}%`,
+                                            width: `${readProgress}%`,
                                         }}
                                     >
                                         <div className="w-full h-full opacity-20 bg-[linear-gradient(45deg,rgba(255,255,255,0.4)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.4)_50%,rgba(255,255,255,0.4)_75%,transparent_75%,transparent)] bg-[length:20px_20px]"></div>
@@ -127,7 +127,7 @@ export default function Dashboard({data}) {
                                     <div
                                         className="absolute top-1/2 -translate-y-1/2 ml-[-12px] flex items-center justify-center"
                                         style={{
-                                            left: `${readAccuracy}%`,
+                                            left: `${readProgress}%`,
                                         }}
                                     >
                                         <span className="material-symbols-outlined text-white text-3xl animate-bounce">
@@ -141,8 +141,7 @@ export default function Dashboard({data}) {
                                 <div className="flex justify-between items-end mb-4">
                                     <div>
                                         <h4 className="text-headline-md font-headline-md">
-                                            Speak Mode Level{" "}
-                                            {data.speak_level}
+                                            Speak Mode Level {data?.speak_level}
                                         </h4>
                                     </div>
                                     <span className="text-headline-md font-headline-md text-lime-400">
