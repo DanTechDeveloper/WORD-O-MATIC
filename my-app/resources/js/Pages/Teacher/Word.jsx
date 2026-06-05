@@ -14,6 +14,7 @@ export default function Word({ modules }) {
                           .map((w) => ({ word: w.word, points: w.points }))
                     : [],
                 title: moduleData ? moduleData.title : `Module ${level}`,
+                totalPoints: moduleData ? moduleData.total_points : 0,
             };
         });
         return data;
@@ -68,6 +69,7 @@ export default function Word({ modules }) {
                         </p>
                         <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest truncate w-full px-2">
                             {wordsByLevel[level]?.words?.length || 0} / 10 Words
+                            • {wordsByLevel[level]?.totalPoints || 0} PTS
                         </p>
                         <button
                             className="mt-6 w-full bg-purple-500 text-white px-4 py-3 rounded-xl border-4 border-slate-950 shadow-[4px_4px_0_0_#4c1d95] font-black uppercase italic text-xs tracking-tighter hover:translate-y-0.5 hover:shadow-none transition-all flex items-center justify-center gap-2"

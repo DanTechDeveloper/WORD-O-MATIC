@@ -3,10 +3,10 @@ import DashboardLayout from "../../Layouts/Student/DashboardLayout";
 import { useState, useEffect } from "react";
 
 export default function ReadModeLevels({ modules }) {
-    // Define the levels that this component will display (up to 6 based on current layout)
-    const levels = Array.from({ length: 6 }, (_, i) => i + 1);
+    console.log("Modules data received:", modules); // Debug log
+    const transformModulesToMissions = (modulesData) => {
+        if (!modulesData || !Array.isArray(modulesData)) return [];
 
-    const transformModulesToMissions = (modulesData, availableLevels) => {
         // Define only positions, as styling will be dynamic based on status
         const basePositions = [
             { top: "150px", left: "100px" },
@@ -17,16 +17,25 @@ export default function ReadModeLevels({ modules }) {
             { top: "350px", left: "1350px" },
         ];
 
-        const transformedMissions = [];
-        availableLevels.forEach((level) => {
-            const moduleData = modulesData?.find((m) => m.level === level);
-            const position = basePositions[level - 1] || {
-                top: "0px",
-                left: "0px",
-            }; // Fallback position
+        // Маппинг данных напрямую из массива модулей, полученного от контроллера
+        return modulesData.map((moduleData, index) => {
+            const level = moduleData.level || index + 1;
 
-            let status = moduleData?.status || "locked";
-            let title = moduleData?.title || `Module ${level}`;
+            // Генерация позиции: используем пресеты или вычисляем для длинных списков
+            const position = basePositions[index] || {
+                top: index % 2 === 0 ? "150px" : "350px",
+                left: `${100 + index * 250}px`,
+            };
+
+            // Если это первый элемент (Миссия 01) и его статус не определен или заблокирован,
+            // принудительно устанавливаем 'current', чтобы уровень был доступен для игры.
+            const status =
+                index === 0 &&
+                (!moduleData.status || moduleData.status === "locked")
+                    ? "current"
+                    : moduleData.status || "locked";
+
+            const title = moduleData.title || `Module ${level}`;
             let subTitle = "";
             let icon = "lock";
             let textColor = "on-surface-variant"; // Default text/icon color for locked
@@ -46,42 +55,36 @@ export default function ReadModeLevels({ modules }) {
                 textColor = "on-surface-variant";
             }
 
-            transformedMissions.push({
+            return {
                 id: level,
                 status: status,
+                points: moduleData.total_points || 0, // Использование ключа из Eloquent аксессора
                 title: title,
                 subTitle: subTitle,
                 icon: icon,
                 textColor: textColor,
                 top: position.top,
                 left: position.left,
-            });
+            };
         });
-        return transformedMissions;
     };
 
     const [missions, setMissions] = useState(() =>
-        transformModulesToMissions(modules, levels),
+        transformModulesToMissions(modules),
     );
 
+    const [activeIndex, setActiveIndex] = useState(0);
+
     useEffect(() => {
-        const newMissions = transformModulesToMissions(modules, levels);
+        const newMissions = transformModulesToMissions(modules);
         setMissions(newMissions);
 
-        // Update activeIndex if the missions change
+        // Обновление фокуса на текущую миссию при изменении данных
         const currentMissionIndex = newMissions.findIndex(
             (m) => m.status === "current",
         );
         setActiveIndex(currentMissionIndex !== -1 ? currentMissionIndex : 0); // Default to first mission if no 'current'
     }, [modules]);
-
-    // Track which mission is currently in focus
-    const [activeIndex, setActiveIndex] = useState(() => {
-        const currentMissionIndex = missions.findIndex(
-            (m) => m.status === "current",
-        );
-        return currentMissionIndex !== -1 ? currentMissionIndex : 0; // Default to first mission if no 'current'
-    });
 
     const getPathD = () => {
         let path = "";
@@ -145,9 +148,8 @@ export default function ReadModeLevels({ modules }) {
                         </div>
 
                         <div className="bg-lime-400 text-slate-950 px-4 py-1 rounded-lg font-black text-base border-b-2 border-lime-700">
-                            {" "}
-                            {/* Reduced from text-lg */}
-                            1,250 XP
+                            {/* Динамическое отображение очков для активного уровня */}
+                            {missions[activeIndex]?.points || 0} PTS
                         </div>
                     </div>
                     {/* Navigation Controls */}
@@ -177,14 +179,25 @@ export default function ReadModeLevels({ modules }) {
                     <div
                         className="relative h-[550px] transition-transform duration-700 cubic-bezier(0.34, 1.56, 0.64, 1)"
                         style={{
-                            transform: `translateX(calc(50% - (${parseInt(missions[activeIndex]?.left || "0")}px + 64px)))`,
+                            transform:
+                                missions.length > 0
+                                    ? `translateX(calc(50% - (${parseInt(missions[activeIndex]?.left || "0")}px + 64px)))`
+                                    : "none",
                         }}
                     >
-                        <div className="relative w-[1600px] h-full">
+                        <div
+                            className="relative h-full"
+                            style={{
+                                width:
+                                    missions.length > 6
+                                        ? `${missions.length * 270}px`
+                                        : "1600px",
+                            }}
+                        >
                             {/* SVG Path */}
                             <svg
-                                className="absolute inset-0 w-full h-full"
-                                viewBox="0 0 1600 500"
+                                className="absolute inset-0 h-full"
+                                style={{ width: "100%" }}
                             >
                                 <path
                                     d={pathD}

@@ -14,8 +14,15 @@ class WordModule extends Model
         'title',
     ];
 
+    protected $appends = ['total_points'];
+
     public function words(): HasMany
     {
         return $this->hasMany(Word::class)->orderBy('position');
+    }
+
+    public function getTotalPointsAttribute()
+    {
+        return (int) $this->words->sum('points');
     }
 }

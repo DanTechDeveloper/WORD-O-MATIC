@@ -81,8 +81,25 @@ class TeacherController extends Controller
     {
         $modules = WordModule::with('words')->get();
 
+        $transformedModules = $modules->map(function ($module) {
+            return [
+                'id' => $module->id,
+                'level' => $module->level,
+                'title' => $module->title,
+                'total_points' => $module->total_points,
+                'words' => $module->words->map(function ($word) {
+                    return [
+                        'id' => $word->id,
+                        'word' => $word->word,
+                        'points' => $word->points,
+                        'position' => $word->position,
+                    ];
+                }),
+            ];
+        });
+
         return Inertia::render('Teacher/Word', [
-            'modules' => $modules,
+            'modules' => $transformedModules,
         ]);
     }
 
@@ -101,7 +118,6 @@ class TeacherController extends Controller
             ['title' => $request->title]
         );
 
-        // Linisin ang mga lumang salita at palitan ng bago
         $module->words()->delete();
 
         foreach ($request->words as $index => $wordData) {

@@ -2,19 +2,17 @@
 
 namespace App\Http\Controllers;
 
-use Inertia\Inertia;
-use Illuminate\Http\Request;
+use App\Models\ParagraphModule;
 use App\Models\WordModule;
+use Inertia\Inertia;
 
 class StudentController extends Controller
 {
-
     public function index()
     {
         return Inertia::render('Student/Login');
     }
 
-   
     public function dashboard()
     {
         return Inertia::render('Student/Dashboard');
@@ -43,14 +41,20 @@ class StudentController extends Controller
     public function readModeLevels()
     {
         $modules = WordModule::with('words')->orderBy('level', 'asc')->get();
-        return Inertia::render('Student/ReadModeLevels' ,[
+
+        return Inertia::render('Student/ReadModeLevels', [
             'modules' => $modules,
         ]);
     }
 
     public function speakModeLevels()
     {
-        return Inertia::render('Student/SpeakModeLevels');
+        
+        $modules = ParagraphModule::orderBy('level', 'asc')->get();
+
+        return Inertia::render('Student/SpeakModeLevels', [
+            'modules' => $modules,
+        ]);
     }
 
     public function gameplaySpeakMode()

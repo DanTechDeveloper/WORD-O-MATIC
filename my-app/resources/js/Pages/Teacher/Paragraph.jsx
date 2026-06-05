@@ -5,7 +5,6 @@ import { router } from "@inertiajs/react";
 
 export default function Paragraph({ modules }) {
     const levels = Array.from({ length: 10 }, (_, i) => i + 1);
-
     const transformModules = (modulesData) => {
         const data = {};
         levels.forEach((level) => {
@@ -112,6 +111,7 @@ export default function Paragraph({ modules }) {
                     level={selectedLevel}
                     entries={entriesByLevel[selectedLevel]?.entries}
                     title={entriesByLevel[selectedLevel]?.title}
+                    totalScore={entriesByLevel[selectedLevel]?.totalScore}
                     onSave={handleSaveEntries}
                 />
             </DashboardLayout>

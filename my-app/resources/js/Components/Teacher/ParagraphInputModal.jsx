@@ -1,17 +1,23 @@
-import { useEffect,useState } from "react";
+import { useEffect, useState } from "react";
 
-export default function ParagraphInputModal({ isOpen, onClose, level, entries, title, onSave }) {
-    const [currentEntry, setCurrentEntry] = useState(entries?.[0] || '');
-    const [currentTitle, setCurrentTitle] = useState(title || `Module ${level}`);
+export default function ParagraphInputModal({
+    isOpen,
+    onClose,
+    level,
+    entries,
+    title,
+    totalScore,
+    onSave,
+}) {
+    const [currentEntry, setCurrentEntry] = useState(entries?.[0] || "");
+    const [currentTitle, setCurrentTitle] = useState(
+        title || `Module ${level}`,
+    );
 
     useEffect(() => {
         setCurrentTitle(title || `Module ${level}`);
-        setCurrentEntry(entries?.[0] || '');
+        setCurrentEntry(entries?.[0] || "");
     }, [level, entries, title]);
-
-    const calculateTotalPoints = () => {
-        return currentEntry?.trim() ? currentEntry.trim().split(/\s+/).filter(Boolean).length : 0;
-    };
 
     const handleSave = () => {
         onSave(level, currentEntry.trim() ? [currentEntry] : [], currentTitle);
@@ -25,12 +31,21 @@ export default function ParagraphInputModal({ isOpen, onClose, level, entries, t
             <div className="bg-slate-900 p-10 rounded-[2.5rem] border-4 border-slate-800 shadow-[12px_12px_0_0_#020617] w-full max-w-xl max-h-[90vh] flex flex-col">
                 <div className="mb-6 flex justify-between items-center">
                     <div>
-                        <h2 className="text-3xl font-black text-white uppercase italic tracking-tighter">Level {level} Configuration</h2>
-                        <p className="text-slate-500 font-black uppercase text-[10px] tracking-[0.2em]">Input sentences or paragraphs for this module</p>
+                        <h2 className="text-3xl font-black text-white uppercase italic tracking-tighter">
+                            Level {level} Configuration
+                        </h2>
+                        <p className="text-slate-500 font-black uppercase text-[10px] tracking-[0.2em]">
+                            Input sentences or paragraphs for this module
+                        </p>
                     </div>
                     <div className="bg-sky-400 text-slate-950 px-4 py-2 rounded-2xl border-4 border-slate-950 shadow-[4px_4px_0_0_#075985] flex flex-col items-center scale-75 origin-right">
-                        <span className="text-[10px] font-black uppercase leading-none">Module Value</span>
-                        <span className="text-xl font-black italic leading-none">{calculateTotalPoints()} PTS</span>
+                        <span className="text-[10px] font-black uppercase leading-none">
+                            Module Value
+                        </span>
+                        {/* Отображение значения напрямую из пропса бэкенда */}
+                        <span className="text-xl font-black italic leading-none">
+                            {totalScore || 0} PTS
+                        </span>
                     </div>
                 </div>
 
@@ -69,11 +84,13 @@ export default function ParagraphInputModal({ isOpen, onClose, level, entries, t
                         onClick={handleSave}
                         className="px-8 py-4 bg-sky-400 text-slate-950 rounded-2xl border-4 border-slate-950 shadow-[6px_6px_0_0_#075985] font-black uppercase italic text-xs tracking-tighter hover:translate-y-0.5 hover:shadow-none transition-all flex items-center gap-2"
                     >
-                        <span className="material-symbols-outlined text-sm">save</span>
+                        <span className="material-symbols-outlined text-sm">
+                            save
+                        </span>
                         Save Content
                     </button>
                 </div>
             </div>
         </div>
     );
-};
+}
