@@ -8,16 +8,13 @@ use Inertia\Inertia;
 
 class StudentController extends Controller
 {
-    public function index()
-    {
-        return Inertia::render('Student/Login');
-    }
 
     public function dashboard()
     {
-
         $data = auth()->user()->student()
+            ->with('user:id,name,student_id')
             ->select([
+                'user_id',
                 'last_active_level', 'read_progress', 'speak_progress',
                 'badges', 'read_level', 'speak_level',
             ])

@@ -17,8 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
         ]);
-
-        //
+        // Redirect unauthenticated users to the home route        //
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

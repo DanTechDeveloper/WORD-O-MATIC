@@ -6,32 +6,80 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\ValidationException;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class UserController extends Controller
 {
+    public function index(): Response
+    {
+        return Inertia::render('Auth/Homepage');
+    }
+
     public function login(Request $request)
     {
-        $credentials = $request->validate([
-            'name' => 'required|string',
-            'pin' => 'required|string|size:4',
+        $request->validate([
+            'role' => 'required|in:student,teacher',
+            'mode' => 'required|in:login,register',
         ]);
 
-        // Find the student by name and role
-        $user = User::where('name', $credentials['name'])
-            ->where('role', 'student')
-            ->first();
+        if ($request->role === 'student') {
+            $request->validate([
+                'name' => 'required|string',
+                'pin' => 'required|string',
+            ]);
 
-        // Verify hashed PIN and log the user in
-        if ($user && Hash::check($credentials['pin'], $user->pin)) {
+            $user = User::where('name', $request->name)
+                ->where('role', 'student')
+                ->first();
+
+            if (! $user || ! Hash::check($request->pin, $user->pin)) {
+                return back()->withErrors([
+                    'name' => 'Invalid student credentials.',
+                ]);
+            }
+
             Auth::login($user);
             $request->session()->regenerate();
 
-            return redirect()->intended('/student/greetings');
+            return redirect()->route('student.dashboard');
         }
 
-        throw ValidationException::withMessages([
-            'name' => 'The provided credentials do not match our records.',
+        $request->validate([
+            'username' => 'required|string',
+            'password' => 'required|string',
         ]);
+
+        if ($request->mode === 'register') {
+            $request->validate([
+                'username' => 'required|string|unique:users,username',
+                'password' => 'required|string|min:6',
+            ]);
+
+            User::create([
+                'name' => $request->username,
+                'username' => $request->username,
+                'password' => Hash::make($request->password),
+                'role' => 'teacher',
+            ]);
+
+            return redirect()->route('home')->with('success', 'Registration successful! Please login with your credentials.');
+        }
+
+        // Login Logic
+        $user = User::where('username', $request->username)
+            ->where('role', 'teacher')
+            ->first();
+
+        if (! $user || ! Hash::check($request->password, $user->password)) {
+            return back()->withErrors([
+                'username' => 'Invalid teacher credentials',
+            ]);
+        }
+
+        Auth::login($user);
+        $request->session()->regenerate();
+
+        return redirect()->route('teacher.dashboard');
     }
 }

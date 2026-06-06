@@ -4,7 +4,6 @@ import { useState } from "react";
 import AddStudentModal from "@/Components/Teacher/AddStudentModal";
 
 export default function Students({ data }) {
-    console.log(data);
     const riskStyles = {
         high: {
             dot: "bg-error shadow-[0_0_8px_#ffb4ab]",

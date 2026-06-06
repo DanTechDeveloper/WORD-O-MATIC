@@ -12,10 +12,7 @@ use Inertia\Inertia;
 
 class TeacherController extends Controller
 {
-    public function login()
-    {
-        return Inertia::render('Teacher/Login');
-    }
+  
 
     public function dashboard()
     {
@@ -51,7 +48,7 @@ class TeacherController extends Controller
     {
         $student = User::with('student')->where('id', $studentId)->first();
         return Inertia::render('Teacher/StudentDetails', [
-            'student' => $student,
+            'data' => $student,
         ]);
     }
 

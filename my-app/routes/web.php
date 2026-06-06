@@ -5,6 +5,9 @@ use App\Http\Controllers\TeacherController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
+Route::get('/', [UserController::class, 'index'])->name('home');
+Route::post('/', [UserController::class, 'login']);
+
 Route::prefix('teacher')->name('teacher.')->group(function () {
     Route::post('/addStudent', [TeacherController::class, 'store'])->name('addStudent.store');
     Route::get('/addStudent', [TeacherController::class, 'addStudent'])->name('addStudent');
@@ -16,7 +19,6 @@ Route::prefix('teacher')->name('teacher.')->group(function () {
 
     Route::put('/paragraphModules', [TeacherController::class, 'updateParagraphModule'])->name('paragraphModules.update');
 
-    Route::get('/login', [TeacherController::class, 'login'])->name('login');
     Route::get('/dashboard', [TeacherController::class, 'dashboard'])->name('dashboard');
     Route::get('/classes', [TeacherController::class, 'classes'])->name('classes');
     Route::get('/students', [TeacherController::class, 'students'])->name('students');
@@ -25,9 +27,6 @@ Route::prefix('teacher')->name('teacher.')->group(function () {
     Route::get('/leaderboards', [TeacherController::class, 'leaderboards'])->name('leaderboards');
     Route::get('/assignments', [TeacherController::class, 'assignments'])->name('assignments');
 });
-
-Route::get('/', [StudentController::class, 'index'])->name('home');
-Route::post('/', [UserController::class, 'login']);
 
 Route::prefix('student')->name('student.')->group(function () {
 
