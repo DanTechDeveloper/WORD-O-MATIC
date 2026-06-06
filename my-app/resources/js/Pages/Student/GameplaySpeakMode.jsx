@@ -1,5 +1,6 @@
-import GameplayLayout from "@/Layouts/GameplayLayout";
 import GameplayHeader from "@/Components/Student/GameplayHeader";
+import Microphone from "@/Components/Student/Microphone";
+import SpeakModeMainContent from "@/Components/Student/SpeakModeMainContent";
 export default function GameplaySpeakMode() {
     const storySegments = [
         {
@@ -20,23 +21,11 @@ export default function GameplaySpeakMode() {
 
     return (
         <>
-            <GameplayLayout>
-                <GameplayHeader navPage={'speakModeLevels'}/>
-                <main className="flex-grow overflow-y-auto flex flex-col items-start justify-center max-w-7xl mx-auto w-full py-10 px-8">
-                    <div className="w-full relative">
-                        <div className="font-headline-xl text-left leading-tight tracking-tight select-none text-4xl md:text-5xl lg:text-6xl">
-                            {storySegments.map((segment, index) => (
-                                <span key={index} className={segment.className}>
-                                    {segment.hasCursor && (
-                                        <span className="blinking-cursor"></span>
-                                    )}
-                                    {segment.text}
-                                </span>
-                            ))}
-                        </div>
-                    </div>
-                </main>
-            </GameplayLayout>
+            <div className="bg-background text-on-background font-body-md h-screen flex flex-col overflow-hidden">
+                <GameplayHeader back={"speakModeLevels"} />
+                <SpeakModeMainContent storySegments={storySegments} />
+                <Microphone />
+            </div>
         </>
     );
 }
