@@ -8,7 +8,6 @@ use Inertia\Inertia;
 
 class StudentController extends Controller
 {
-
     public function dashboard()
     {
         $data = auth()->user()->student()
@@ -47,7 +46,7 @@ class StudentController extends Controller
 
     public function readModeLevels()
     {
-        $modules = WordModule::with('words')->orderBy('level', 'asc')->get();
+        $modules = WordModule::orderBy('level', 'asc')->get();
 
         return Inertia::render('Student/ReadModeLevels', [
             'modules' => $modules,
