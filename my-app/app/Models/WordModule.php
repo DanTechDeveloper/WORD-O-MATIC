@@ -17,7 +17,6 @@ class WordModule extends Model
 
     public function words(): HasMany
     {
-        // Упорядочиваем слова по позиции для корректного отображения
         return $this->hasMany(Word::class)->orderBy('position');
     }
 }

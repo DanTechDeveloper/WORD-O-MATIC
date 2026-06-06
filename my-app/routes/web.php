@@ -37,6 +37,6 @@ Route::prefix('student')->name('student.')->group(function () {
     Route::get('/badges', [StudentController::class, 'badges'])->name('badges');
     Route::get('/readModeLevels', [StudentController::class, 'readModeLevels'])->name('readModeLevels');
     Route::get('/speakModeLevels', [StudentController::class, 'speakModeLevels'])->name('speakModeLevels');
-    Route::get('/gameplaySpeakMode', [StudentController::class, 'gameplaySpeakMode'])->name('gameplaySpeakMode');
+    Route::get('/gameplaySpeakMode/{id}', [StudentController::class, 'gameplaySpeakMode'])->name('gameplaySpeakMode');
     Route::get('/gameplayReadMode', [StudentController::class, 'gameplayReadMode'])->name('gameplayReadMode');
 });

@@ -56,16 +56,21 @@ class StudentController extends Controller
     public function speakModeLevels()
     {
 
-        $modules = ParagraphModule::orderBy('level', 'asc')->get();
+        $modules = ParagraphModule::select(['id', 'level', 'title', 'total_score'])
+            ->orderBy('level', 'asc')->get();
 
         return Inertia::render('Student/SpeakModeLevels', [
             'modules' => $modules,
         ]);
     }
 
-    public function gameplaySpeakMode()
+    public function gameplaySpeakMode($id)
     {
-        return Inertia::render('Student/GameplaySpeakMode');
+        $module = ParagraphModule::select('content')->where('id', $id)->first();
+
+        return Inertia::render('Student/GameplaySpeakMode', [
+            'module' => $module,
+        ]);
     }
 
     public function gameplayReadMode()

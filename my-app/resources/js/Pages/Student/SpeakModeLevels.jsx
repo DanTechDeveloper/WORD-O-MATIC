@@ -3,6 +3,7 @@ import DashboardLayout from "../../Layouts/Student/DashboardLayout";
 import { useState, useEffect } from "react";
 
 export default function SpeakModeLevels({ modules }) {
+    console.log(modules);
     const transformModulesToMissions = (modulesData) => {
         if (!modulesData || !Array.isArray(modulesData)) return [];
 
@@ -206,7 +207,7 @@ export default function SpeakModeLevels({ modules }) {
                                         key={mission.id}
                                         href={
                                             mission.status !== "locked"
-                                                ? `/student/gameplaySpeakMode`
+                                                ? `/student/gameplaySpeakMode/${mission.id}`
                                                 : "#"
                                         }
                                         onClick={(e) => {
