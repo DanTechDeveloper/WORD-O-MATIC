@@ -46,9 +46,10 @@ export default function SpeakModeLevels({ modules }) {
 
             return {
                 id: moduleData.id, // Fixed: Use database ID for navigation
-                level: level,      // Display level number
+                level: level, // Display level number
                 status: status,
-                points: moduleData.total_score || 0,
+                points: moduleData.total_score || 0, // Ito ang total items
+                score: moduleData.words_smashed || 0, // Ito ang nakuha ng student
                 title: title,
                 subTitle: subTitle,
                 icon: icon,
@@ -245,6 +246,17 @@ export default function SpeakModeLevels({ modules }) {
                                                 ? `0${mission.level}`
                                                 : mission.level}
                                         </span>
+
+                                        {/* Score Indicator sa loob ng bilog */}
+                                        {mission.status !== "locked" && (
+                                            <span
+                                                className={`text-[10px] font-bold ${mission.textColor} mt-0.5 bg-black/10 px-2 rounded-full`}
+                                            >
+                                                {mission.score} /{" "}
+                                                {mission.points}
+                                            </span>
+                                        )}
+
                                         {isFocused && (
                                             <div className="absolute -bottom-12 w-48 text-center animate-bounce-slow">
                                                 <p className="text-on-surface font-black uppercase text-sm">
@@ -262,7 +274,11 @@ export default function SpeakModeLevels({ modules }) {
                 {/* <!-- Footer Action Button --> */}
                 <div className="mt-16 flex justify-center">
                     <Link
-                        href={currentMission ? `/student/gameplaySpeakMode/${currentMission.id}` : "#"}
+                        href={
+                            currentMission
+                                ? `/student/gameplaySpeakMode/${currentMission.id}`
+                                : "#"
+                        }
                         className="bg-amber-400 text-slate-950 text-2xl font-black px-12 py-5 rounded-2xl border-b-[8px] border-amber-700 active:translate-y-1 active:border-b-4 transition-all uppercase flex items-center gap-3"
                     >
                         <span

@@ -113,8 +113,8 @@ export default function Students({ data }) {
                             <tr className="bg-slate-900 border-b-4 border-slate-800">
                                 <th className="px-6 py-5 font-headline-md text-sm uppercase tracking-widest text-lime-400">
                                     Name
-                                </th>
-
+                                </th>{" "}
+                              
                                 <th className="px-6 py-5 font-headline-md text-sm uppercase tracking-widest text-lime-400">
                                     Word Risk
                                 </th>

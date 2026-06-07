@@ -17,18 +17,13 @@ export default function ReadModeLevels({ modules }) {
             { top: "350px", left: "1350px" },
         ];
 
-        // Маппинг данных напрямую из массива модулей, полученного от контроллера
         return modulesData.map((moduleData, index) => {
             const level = moduleData.level || index + 1;
 
-            // Генерация позиции: используем пресеты или вычисляем для длинных списков
             const position = basePositions[index] || {
                 top: index % 2 === 0 ? "150px" : "350px",
                 left: `${100 + index * 250}px`,
             };
-
-            // Если это первый элемент (Миссия 01) и его статус не определен или заблокирован,
-            // принудительно устанавливаем 'current', чтобы уровень был доступен для игры.
             const status =
                 index === 0 &&
                 (!moduleData.status || moduleData.status === "locked")

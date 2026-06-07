@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ParagraphModule;
 use App\Models\StudentParagraphProgress;
+use App\Models\StudentWordProgress;
 use App\Models\WordModule;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -48,10 +49,46 @@ class StudentController extends Controller
 
     public function readModeLevels()
     {
-        $modules = WordModule::orderBy('level', 'asc')->get();
+        $userId = auth()->id();
+
+        // Kunin ang mga modules kasama ang bilang ng mga salita sa loob nito
+        $modules = WordModule::withCount('words')
+            ->orderBy('level', 'asc')
+            ->get();
+
+        $foundCurrent = false;
+        $transformedModules = $modules->map(function ($module) use ($userId, &$foundCurrent) {
+            $totalWords = $module->words_count;
+
+            // Bilangin kung ilang unique words ang natapos na ng student sa module na ito
+            $completedWords = StudentWordProgress::where('user_id', $userId)
+                ->where('word_module_id', $module->id)
+                ->where('status', 'completed')
+                ->count();
+
+            // Logic: 'completed' kung lahat ng words ay tapos na.
+            // Ang unang module na hindi pa tapos ang magiging 'current'.
+            if ($totalWords > 0 && $completedWords === $totalWords) {
+                $status = 'completed';
+            } elseif (! $foundCurrent) {
+                $status = 'current';
+                $foundCurrent = true;
+            } else {
+                $status = 'locked';
+            }
+
+            return [
+                'id' => $module->id,
+                'level' => $module->level,
+                'title' => $module->title,
+                'total_score' => $totalWords,
+                'status' => $status,
+                'words_smashed' => $completedWords,
+            ];
+        });
 
         return Inertia::render('Student/ReadModeLevels', [
-            'modules' => $modules,
+            'modules' => $transformedModules,
         ]);
     }
 
@@ -87,6 +124,7 @@ class StudentController extends Controller
                 'title' => $module->title,
                 'total_score' => $module->total_score,
                 'status' => $status,
+                'words_smashed' => $progress ? $progress->words_smashed : 0,
             ];
         });
 
