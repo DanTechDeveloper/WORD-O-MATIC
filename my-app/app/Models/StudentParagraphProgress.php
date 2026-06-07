@@ -15,7 +15,7 @@ class StudentParagraphProgress extends Model
         'user_id',
         'paragraph_module_id',
         'status',
-        'score',
+        'words_smashed',
     ];
 
     public function user()

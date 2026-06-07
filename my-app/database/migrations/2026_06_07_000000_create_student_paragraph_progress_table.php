@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
+class CreateStudentParagraphProgressTable extends Migration
 {
     public function up(): void
     {
@@ -13,7 +13,7 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('paragraph_module_id')->constrained('paragraph_modules')->onDelete('cascade');
             $table->string('status')->default('not_started');
-            $table->integer('score')->nullable();
+            $table->integer('words_smashed')->nullable();
             $table->timestamps();
         });
     }
@@ -22,4 +22,4 @@ return new class extends Migration
     {
         Schema::dropIfExists('student_paragraph_progress');
     }
-};
+}
