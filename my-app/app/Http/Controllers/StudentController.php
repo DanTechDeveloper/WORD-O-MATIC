@@ -66,8 +66,32 @@ class StudentController extends Controller
             }])
             ->orderBy('level', 'asc')->get();
 
+        $foundCurrent = false;
+        $transformedModules = $modules->map(function ($module) use (&$foundCurrent) {
+            $progress = $module->studentProgress->first();
+
+            // Logic: Unang module na walang 'completed' status ang magiging 'current'.
+            // Lahat ng bago mag-'current' ay 'completed', lahat ng kasunod ay 'locked'.
+            if ($progress && $progress->status === 'completed') {
+                $status = 'completed';
+            } elseif (! $foundCurrent) {
+                $status = 'current';
+                $foundCurrent = true;
+            } else {
+                $status = 'locked';
+            }
+
+            return [
+                'id' => $module->id,
+                'level' => $module->level,
+                'title' => $module->title,
+                'total_score' => $module->total_score,
+                'status' => $status,
+            ];
+        });
+
         return Inertia::render('Student/SpeakModeLevels', [
-            'modules' => $modules,
+            'modules' => $transformedModules,
         ]);
     }
 

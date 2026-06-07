@@ -18,18 +18,12 @@ export default function SpeakModeLevels({ modules }) {
 
         return modulesData.map((moduleData, index) => {
             const level = moduleData.level || index + 1;
+            const status = moduleData.status || "locked"; // Trust the controller mapping
 
             const position = basePositions[index] || {
                 top: index % 2 === 0 ? "150px" : "350px",
                 left: `${100 + index * 250}px`,
             };
-
-            // Logical fallback: Level 1 is Current if data is missing or locked
-            const status =
-                index === 0 &&
-                (!moduleData.status || moduleData.status === "locked")
-                    ? "current"
-                    : moduleData.status || "locked";
 
             const title = moduleData.title || `Module ${level}`;
             let subTitle = "";
@@ -51,7 +45,8 @@ export default function SpeakModeLevels({ modules }) {
             }
 
             return {
-                id: level,
+                id: moduleData.id, // Fixed: Use database ID for navigation
+                level: level,      // Display level number
                 status: status,
                 points: moduleData.total_score || 0,
                 title: title,
@@ -108,6 +103,7 @@ export default function SpeakModeLevels({ modules }) {
     };
 
     const pathD = getPathD();
+    const currentMission = missions.find((m) => m.status === "current");
 
     const handlePrev = () => {
         setActiveIndex((prev) => Math.max(0, prev - 1));
@@ -127,7 +123,7 @@ export default function SpeakModeLevels({ modules }) {
                     <div className="absolute top-0 left-0 right-0 z-10 p-4 bg-white/10 backdrop-blur-md rounded-t-2xl flex flex-col md:flex-row items-center justify-between gap-4">
                         <div className="text-center text-4xl flex-1 text-center md:text-left">
                             <h2 className="text-on-surface text-4xl font-black uppercase italic">
-                                Level {missions[activeIndex]?.id}:{" "}
+                                Level {missions[activeIndex]?.level}:{" "}
                                 {missions[activeIndex]?.title} 🎙️
                             </h2>
                             <p className="text-on-surface-variant text-sm font-bold">
@@ -245,9 +241,9 @@ export default function SpeakModeLevels({ modules }) {
                                             className={`text-[10px] font-black uppercase mt-1 ${mission.textColor}`}
                                         >
                                             MISSION{" "}
-                                            {mission.id < 10
-                                                ? `0${mission.id}`
-                                                : mission.id}
+                                            {mission.level < 10
+                                                ? `0${mission.level}`
+                                                : mission.level}
                                         </span>
                                         {isFocused && (
                                             <div className="absolute -bottom-12 w-48 text-center animate-bounce-slow">
@@ -265,7 +261,10 @@ export default function SpeakModeLevels({ modules }) {
 
                 {/* <!-- Footer Action Button --> */}
                 <div className="mt-16 flex justify-center">
-                    <button className="bg-amber-400 text-slate-950 text-2xl font-black px-12 py-5 rounded-2xl border-b-[8px] border-amber-700 active:translate-y-1 active:border-b-4 transition-all uppercase flex items-center gap-3">
+                    <Link
+                        href={currentMission ? `/student/gameplaySpeakMode/${currentMission.id}` : "#"}
+                        className="bg-amber-400 text-slate-950 text-2xl font-black px-12 py-5 rounded-2xl border-b-[8px] border-amber-700 active:translate-y-1 active:border-b-4 transition-all uppercase flex items-center gap-3"
+                    >
                         <span
                             className="material-symbols-outlined text-3xl"
                             style={{ fontVariationSettings: "'FILL' 1" }}
@@ -273,7 +272,7 @@ export default function SpeakModeLevels({ modules }) {
                             mic
                         </span>
                         Continue Adventure
-                    </button>
+                    </Link>
                 </div>
             </div>
 
