@@ -18,17 +18,13 @@ export default function ReadModeLevels({ modules }) {
         ];
 
         return modulesData.map((moduleData, index) => {
-            const level = moduleData.level || index + 1;
+            const level = moduleData.level;
 
             const position = basePositions[index] || {
                 top: index % 2 === 0 ? "150px" : "350px",
                 left: `${100 + index * 250}px`,
-            };
-            const status =
-                index === 0 &&
-                (!moduleData.status || moduleData.status === "locked")
-                    ? "current"
-                    : moduleData.status || "locked";
+            }; // Trust the controller mapping
+            const status = moduleData.status || "locked";
 
             const title = moduleData.title || `Module ${level}`;
             let subTitle = "";
@@ -51,9 +47,11 @@ export default function ReadModeLevels({ modules }) {
             }
 
             return {
-                id: level,
+                id: moduleData.id, // Fixed: Use database ID for navigation
+                level: level, // Display level number
                 status: status,
-                points: moduleData.total_points || 0,
+                points: moduleData.total_score || 0, // Ito ang total items
+                score: moduleData.words_smashed || 0, // Ito ang nakuha ng student
                 title: title,
                 subTitle: subTitle,
                 icon: icon,
@@ -82,6 +80,7 @@ export default function ReadModeLevels({ modules }) {
     }, [modules]);
 
     const getPathD = () => {
+        // ... (getPathD function remains largely the same)
         let path = "";
         missions.forEach((mission, index) => {
             const centerX = parseInt(mission.left) + 64;
@@ -111,6 +110,7 @@ export default function ReadModeLevels({ modules }) {
     };
 
     const pathD = getPathD();
+    const currentMission = missions.find((m) => m.status === "current");
 
     const handlePrev = () => {
         setActiveIndex((prev) => Math.max(0, prev - 1));
@@ -134,7 +134,7 @@ export default function ReadModeLevels({ modules }) {
                     <div className="absolute top-0 left-0 right-0 z-10 p-4 bg-white/10 backdrop-blur-md rounded-t-2xl flex flex-col md:flex-row items-center justify-between gap-4">
                         <div className="text-center text-4xl flex-1 text-center md:text-left">
                             <h2 className="text-on-surface text-4xl font-black uppercase italic">
-                                Level {missions[activeIndex]?.id}:{" "}
+                                Level {missions[activeIndex]?.level}:{" "}
                                 {missions[activeIndex]?.title} ⚔️
                             </h2>
                             <p className="text-on-surface-variant text-sm font-bold">
@@ -254,6 +254,16 @@ export default function ReadModeLevels({ modules }) {
                                                 ? `0${mission.id}`
                                                 : mission.id}
                                         </span>
+
+                                        {/* Score Indicator sa loob ng bilog */}
+                                        {mission.status !== "locked" && (
+                                            <span
+                                                className={`text-[10px] font-bold ${mission.textColor} mt-0.5 bg-black/10 px-2 rounded-full`}
+                                            >
+                                                {mission.score} /{" "}
+                                                {mission.points}
+                                            </span>
+                                        )}
                                         {isFocused && (
                                             <div className="absolute -bottom-12 w-48 text-center animate-bounce-slow">
                                                 <p className="text-on-surface font-black uppercase text-sm">
@@ -269,7 +279,14 @@ export default function ReadModeLevels({ modules }) {
                 </div>
                 {/* <!-- Footer Action Button --> */}
                 <div className="mt-16 flex justify-center">
-                    <button className="bg-lime-400 text-slate-950 text-2xl font-black px-12 py-5 rounded-2xl border-b-[8px] border-lime-700 active:translate-y-1 active:border-b-4 transition-all uppercase flex items-center gap-3">
+                    <Link
+                        href={
+                            currentMission
+                                ? `/student/gameplayReadMode/${currentMission.id}`
+                                : "#"
+                        }
+                        className="bg-lime-400 text-slate-950 text-2xl font-black px-12 py-5 rounded-2xl border-b-[8px] border-lime-700 active:translate-y-1 active:border-b-4 transition-all uppercase flex items-center gap-3"
+                    >
                         <span
                             className="material-symbols-outlined text-3xl"
                             style={{ fontVariationSettings: "'FILL' 1" }}
@@ -277,7 +294,7 @@ export default function ReadModeLevels({ modules }) {
                             play_circle
                         </span>
                         Continue Adventure
-                    </button>
+                    </Link>
                 </div>
             </div>
 
