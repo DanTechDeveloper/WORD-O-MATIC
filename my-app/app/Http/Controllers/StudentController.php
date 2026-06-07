@@ -181,8 +181,55 @@ class StudentController extends Controller
         return redirect()->back();
     }
 
-    public function gameplayReadMode()
+    public function gameplayReadMode($id)
     {
-        return Inertia::render('Student/GameplayReadMode');
+        // Fetch module with words and calculate student progress
+        $module = WordModule::with('words')
+            ->select(['id', 'level', 'title', 'total_points'])
+            ->findOrFail($id);
+
+        $userId = auth()->id();
+        $completedWordsCount = StudentWordProgress::where('user_id', $userId)
+            ->where('word_module_id', $id)
+            ->where('status', 'completed')
+            ->count();
+
+        return Inertia::render('Student/GameplayReadMode', [
+            'module' => $module,
+            'userProgress' => $completedWordsCount,
+        ]);
+    }
+
+    public function saveWordProgress(Request $request)
+    {
+        $request->validate([
+            'word_id' => 'required|exists:words,id',
+            'word_module_id' => 'required|exists:word_modules,id',
+            'status' => 'required|string|in:completed,not_started',
+        ]);
+
+        $userId = auth()->id();
+
+        // Update status for the specific word
+        StudentWordProgress::updateOrCreate(
+            [
+                'user_id' => $userId,
+                'word_id' => $request->word_id,
+                'word_module_id' => $request->word_module_id,
+            ],
+            ['status' => $request->status]
+        );
+
+        // Update the global cumulative read progress in StudentProfile
+        $totalCompleted = StudentWordProgress::where('user_id', $userId)
+            ->where('status', 'completed')
+            ->count();
+
+        $studentProfile = auth()->user()->student;
+        if ($studentProfile) {
+            $studentProfile->update(['read_progress' => $totalCompleted]);
+        }
+
+        return redirect()->back();
     }
 }

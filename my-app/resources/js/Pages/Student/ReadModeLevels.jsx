@@ -53,7 +53,7 @@ export default function ReadModeLevels({ modules }) {
             return {
                 id: level,
                 status: status,
-                points: moduleData.total_points || 0, // Использование ключа из Eloquent аксессора
+                points: moduleData.total_points || 0,
                 title: title,
                 subTitle: subTitle,
                 icon: icon,
@@ -212,7 +212,7 @@ export default function ReadModeLevels({ modules }) {
                                         key={mission.id}
                                         href={
                                             mission.status !== "locked"
-                                                ? `/student/gameplayReadMode`
+                                                ? `/student/gameplayReadMode/${mission.id}`
                                                 : "#"
                                         }
                                         onClick={(e) => {
