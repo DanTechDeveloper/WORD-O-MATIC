@@ -10,6 +10,7 @@ class StudentProfile extends Model
     use HasFactory;
 
     protected $table = 'students';
+
     protected $primaryKey = 'id';
 
     protected $fillable = [
@@ -37,5 +38,10 @@ class StudentProfile extends Model
     public function wordProgress()
     {
         return $this->hasMany(StudentWordProgress::class, 'user_id', 'user_id');
+    }
+
+    public function paragraphProgress()
+    {
+        return $this->hasMany(StudentParagraphProgress::class, 'user_id', 'user_id');
     }
 }

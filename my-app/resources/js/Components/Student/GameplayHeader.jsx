@@ -1,6 +1,6 @@
 import { Link } from "@inertiajs/react";
 
-export default function GameplayHeader({ back }) {
+export default function GameplayHeader({ back, level }) {
     return (
         <div className="mt-6 w-full max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-6 mb-12">
             <div className="flex items-center gap-6">
@@ -36,7 +36,7 @@ export default function GameplayHeader({ back }) {
             <div className="hidden lg:flex flex-col items-center">
                 <div className="bg-on-background/10 backdrop-blur-sm px-8 py-2 rounded-full border-2 border-on-background/20 mb-2 shadow-lg">
                     <span className="text-on-background font-black tracking-tight text-sm italic uppercase">
-                        LEVEL 5: LEXICAL LEGEND
+                        {`LEVEL ${level}`}
                     </span>
                 </div>
             </div>

@@ -13,7 +13,7 @@ class Word extends Model
         'word_module_id',
         'word',
         'position',
-        'points'
+        'points',
     ];
 
     public function wordModule(): BelongsTo

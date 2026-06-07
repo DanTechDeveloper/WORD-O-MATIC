@@ -39,4 +39,5 @@ Route::prefix('student')->name('student.')->group(function () {
     Route::get('/speakModeLevels', [StudentController::class, 'speakModeLevels'])->name('speakModeLevels');
     Route::get('/gameplaySpeakMode/{id}', [StudentController::class, 'gameplaySpeakMode'])->name('gameplaySpeakMode');
     Route::get('/gameplayReadMode', [StudentController::class, 'gameplayReadMode'])->name('gameplayReadMode');
+    Route::post('/saveParagraphProgress', [StudentController::class, 'saveParagraphProgress'])->name('saveParagraphProgress');
 });

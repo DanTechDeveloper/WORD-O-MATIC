@@ -5,9 +5,9 @@ import { useState } from "react";
 
 export default function GameplaySpeakMode({ module }) {
     const [currentWordIndex, setCurrentWordIndex] = useState(0);
-
     // Split the content into individual words
     const words = module?.content ? module.content.split(/\s+/) : [];
+    console.log(module);
 
     // Function to move to the next word (this will be triggered by your Speech Recognition logic)
     const handleNextWord = () => {
@@ -17,7 +17,12 @@ export default function GameplaySpeakMode({ module }) {
     return (
         <>
             <div className="bg-background text-on-background font-body-md h-screen flex flex-col overflow-hidden">
-                <GameplayHeader back={"speakModeLevels"} />
+                <GameplayHeader
+                    back={"speakModeLevels"}
+                    level={`${module.level} - ${module.title}`}
+                />
+
+
                 <SpeakModeMainContent
                     words={words}
                     currentWordIndex={currentWordIndex}
