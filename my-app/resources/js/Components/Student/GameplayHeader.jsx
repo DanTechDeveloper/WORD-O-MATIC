@@ -1,4 +1,44 @@
-export default function GameplayHeader({ level, onOpenSettings }) {
+import { useState, useEffect } from "react";
+
+export default function GameplayHeader({
+    level,
+    onOpenSettings,
+    isActive,
+    isPaused,
+    wordsSmashed = 0,
+    onTimeUp,
+}) {
+    const [timeLeft, setTimeLeft] = useState(60);
+
+    // Timer Logic
+    useEffect(() => {
+        if (!isActive || isPaused) return;
+
+        const timer = setInterval(() => {
+            setTimeLeft((prev) => {
+                if (prev <= 1) {
+                    clearInterval(timer);
+                    if (onTimeUp) onTimeUp();
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+
+        return () => clearInterval(timer);
+    }, [isActive, isPaused, onTimeUp]);
+
+    // Reset timer when game becomes active (starts or restarts)
+    useEffect(() => {
+        if (isActive && timeLeft === 0) {
+            setTimeLeft(60);
+        }
+    }, [isActive]);
+
+    const isLowTime = timeLeft <= 10;
+    const totalTime = 60;
+    const percentage = (timeLeft / totalTime) * 100;
+
     return (
         <div className="mt-6 w-full max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-6 mb-12">
             <div className="flex items-center gap-6">
@@ -25,7 +65,7 @@ export default function GameplayHeader({ level, onOpenSettings }) {
                             Words Smashed
                         </p>
                         <p className="text-on-background text-3xl font-black leading-none italic">
-                            1,240
+                            {wordsSmashed.toLocaleString()}
                         </p>
                     </div>
                 </div>
@@ -45,14 +85,29 @@ export default function GameplayHeader({ level, onOpenSettings }) {
                     <p className="text-on-background/60 text-xs font-black uppercase tracking-widest leading-none">
                         Energy / Timer
                     </p>
-                    <p className="text-lime-400 text-xs font-black leading-none uppercase animate-pulse">
-                        🚀 Hyper-Drive!
-                    </p>
+                    <div className="flex flex-col items-end">
+                        <p
+                            className={`text-4xl font-black leading-none italic ${isLowTime ? "text-red-500 animate-pulse" : "text-lime-400"}`}
+                        >
+                            {timeLeft}s
+                        </p>
+                        <p
+                            className={`text-[10px] font-black uppercase tracking-tighter ${isLowTime ? "text-red-400" : "text-lime-400/50"}`}
+                        >
+                            {isLowTime
+                                ? "⚠️ Critical Time!"
+                                : "🚀 Hyper-Drive!"}
+                        </p>
+                    </div>
                 </div>
                 <div className="h-4 w-full bg-on-background/10 rounded-full overflow-hidden border-2 border-on-background/5 p-0.5">
                     <div
-                        className="h-full bg-gradient-to-r from-primary via-fuchsia-500 to-lime-400 rounded-full shadow-[0_0_15px_rgba(132,204,22,0.4)]"
-                        style={{ width: "75%" }}
+                        className={`h-full rounded-full transition-all duration-1000 ease-linear ${
+                            isLowTime
+                                ? "bg-red-500 shadow-[0_0_20px_rgba(239,68,68,0.6)]"
+                                : "bg-gradient-to-r from-primary via-fuchsia-500 to-lime-400 shadow-[0_0_15px_rgba(132,204,22,0.4)]"
+                        }`}
+                        style={{ width: `${percentage}%` }}
                     ></div>
                 </div>
             </div>

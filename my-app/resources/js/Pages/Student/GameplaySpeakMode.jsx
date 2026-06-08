@@ -1,24 +1,30 @@
 import GameplayHeader from "@/Components/Student/GameplayHeader";
 import Microphone from "@/Components/Student/Microphone";
 import SpeakModeMainContent from "@/Components/Student/SpeakModeMainContent";
-import { useState, useEffect, useRef } from "react";
+import { useState, useCallback } from "react";
 import { router } from "@inertiajs/react";
+
+// Import new hooks
+import { useCountdown } from "@/hooks/Student/useCountdown";
+import { useMicrophonePermission } from "@/hooks/Student/useMicrophonePermission";
+import { useSpeechRecognition } from "@/hooks/Student/useSpeechRecognition";
 
 export default function GameplaySpeakMode({ module }) {
     const [currentWordIndex, setCurrentWordIndex] = useState(0);
     const [gameState, setGameState] = useState("IDLE"); // IDLE, COUNTDOWN, ACTIVE, DENIED
-    const [countdownValue, setCountdownValue] = useState(3);
+    // countdownValue is now managed by useCountdown
 
     // Settings and Audio State
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [musicVolume, setMusicVolume] = useState(50);
     const [sfxVolume, setSfxVolume] = useState(70);
 
-    const recognitionRef = useRef(null);
     // Split the content into individual words
     const words = module?.content ? module.content.split(/\s+/) : [];
 
-    const handleNextWord = () => {
+    // --- Custom Hooks ---
+
+    const handleNextWord = useCallback(() => {
         setCurrentWordIndex((prev) => {
             const next = prev + 1;
             if (next >= words.length) {
@@ -26,8 +32,43 @@ export default function GameplaySpeakMode({ module }) {
             }
             return Math.min(next, words.length);
         });
-    };
+    }, [words.length]);
 
+    // 1. Microphone Permission Hook
+    const { permissionState, requestPermission } = useMicrophonePermission();
+
+    // Function to initiate game start, now using the permission hook
+    const initiateGameStart = useCallback(async () => {
+        if (permissionState === "granted") {
+            setGameState("COUNTDOWN");
+        } else {
+            const granted = await requestPermission();
+            if (granted) {
+                setGameState("COUNTDOWN");
+            } else {
+                setGameState("DENIED");
+            }
+        }
+    }, [permissionState, requestPermission]);
+
+    // 2. Countdown Hook
+    const countdownValue = useCountdown(gameState, () =>
+        setGameState("ACTIVE"),
+    );
+
+    // 3. Speech Recognition Hook
+    useSpeechRecognition(
+        gameState === "ACTIVE", // isActive
+        isSettingsOpen, // isPaused
+        words,
+        currentWordIndex,
+        handleNextWord, // onWordRecognized
+        () => setGameState("DENIED"), // onPermissionDenied (from recognition error)
+    );
+
+    // --- End Custom Hooks ---
+
+    // Original handleRestart and handleExit functions
     const handleRestart = () => {
         window.location.reload();
     };
@@ -35,107 +76,6 @@ export default function GameplaySpeakMode({ module }) {
     const handleExit = () => {
         router.visit("/student/speakModeLevels");
     };
-
-    const startProcess = async () => {
-        try {
-            await navigator.mediaDevices.getUserMedia({ audio: true });
-            if (gameState === "DENIED") {
-                window.location.reload();
-            } else {
-                setGameState("COUNTDOWN");
-                setCountdownValue(3);
-            }
-        } catch (err) {
-            setGameState("DENIED");
-        }
-    };
-
-    useEffect(() => {
-        const checkPermissionAndInit = async () => {
-            if (navigator.permissions && navigator.permissions.query) {
-                try {
-                    const result = await navigator.permissions.query({
-                        name: "microphone",
-                    });
-                    if (result.state === "granted") {
-                        startProcess();
-                    } else {
-                        setGameState("DENIED");
-                    }
-                } catch (e) {
-                    startProcess();
-                }
-            } else {
-                startProcess();
-            }
-        };
-        checkPermissionAndInit();
-    }, []);
-
-    // Countdown Logic
-    useEffect(() => {
-        if (gameState !== "COUNTDOWN") return;
-
-        const timer = setInterval(() => {
-            setCountdownValue((prev) => {
-                if (prev === 3) return 2;
-                if (prev === 2) return 1;
-                if (prev === 1) return "GO!";
-                if (prev === "GO!") {
-                    clearInterval(timer);
-                    setTimeout(() => setGameState("ACTIVE"), 800); // 0.8s buffer
-                    return "GO!";
-                }
-                return prev;
-            });
-        }, 1000);
-
-        return () => clearInterval(timer);
-    }, [gameState]);
-
-    // Speech Recognition Logic
-    useEffect(() => {
-        if (gameState !== "ACTIVE" || isSettingsOpen) {
-            if (recognitionRef.current) {
-                recognitionRef.current.stop();
-            }
-            return;
-        }
-
-        const SpeechRecognition =
-            window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) return;
-
-        const recognition = new SpeechRecognition();
-        recognition.continuous = true;
-        recognition.interimResults = true;
-        recognition.lang = "en-US";
-
-        recognition.onresult = (event) => {
-            const lastResult =
-                event.results[
-                    event.results.length - 1
-                ][0].transcript.toLowerCase();
-            const currentTarget = words[currentWordIndex]
-                ?.toLowerCase()
-                .replace(/[^\w]/g, "");
-
-            if (currentTarget && lastResult.includes(currentTarget)) {
-                handleNextWord();
-            }
-        };
-
-        recognition.onend = () => {
-            if (gameState === "ACTIVE") recognition.start();
-        };
-
-        recognition.start();
-        recognitionRef.current = recognition;
-
-        return () => {
-            if (recognitionRef.current) recognitionRef.current.stop();
-        };
-    }, [gameState, currentWordIndex, isSettingsOpen]);
 
     return (
         <>
@@ -180,7 +120,7 @@ export default function GameplaySpeakMode({ module }) {
                                     word-smashing mission!
                                 </p>
                                 <button
-                                    onClick={startProcess}
+                                    onClick={initiateGameStart}
                                     className="w-full bg-lime-400 text-slate-950 text-2xl font-black py-6 rounded-2xl uppercase shadow-[0_10px_0_0_#1a2e05] active:translate-y-1 active:shadow-none transition-all duration-75"
                                 >
                                     Allow Access
@@ -270,6 +210,10 @@ export default function GameplaySpeakMode({ module }) {
                 <GameplayHeader
                     level={`${module.level} - ${module.title}`}
                     onOpenSettings={() => setIsSettingsOpen(true)}
+                    isActive={gameState === "ACTIVE"}
+                    isPaused={isSettingsOpen}
+                    wordsSmashed={currentWordIndex}
+                    onTimeUp={() => setGameState("IDLE")}
                 />
 
                 <SpeakModeMainContent
@@ -278,8 +222,10 @@ export default function GameplaySpeakMode({ module }) {
                 />
 
                 <div>
-                    <Microphone
-                        onClick={gameState === "IDLE" ? startProcess : null}
+                    <Microphone // The Microphone component's onClick should trigger game start
+                        onClick={
+                            gameState === "IDLE" ? initiateGameStart : null
+                        }
                         isListening={gameState === "ACTIVE"}
                         disabled={gameState === "COUNTDOWN"}
                     />
