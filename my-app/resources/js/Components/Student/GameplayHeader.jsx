@@ -94,7 +94,7 @@ export default function GameplayHeader({
                         <p
                             className={`text-[10px] font-black uppercase tracking-tighter ${isLowTime ? "text-red-400" : "text-lime-400/50"}`}
                         >
-                            {isLowTime
+                            {isLowTime && timeLeft > 0
                                 ? "⚠️ Critical Time!"
                                 : "🚀 Hyper-Drive!"}
                         </p>
