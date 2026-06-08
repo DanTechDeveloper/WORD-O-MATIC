@@ -63,7 +63,7 @@ class UserController extends Controller
                 'role' => 'teacher',
             ]);
 
-            return redirect()->route('home')->with('success', 'Registration successful! Please login with your credentials.');
+            return redirect()->route('teacher.dashboard')->with('success', 'Registration successful! Please login with your credentials.');
         }
 
         // Login Logic
