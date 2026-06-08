@@ -133,7 +133,6 @@ export default function SpeakModeLevels({ modules }) {
                         </div>
 
                         <div className="bg-amber-400 text-slate-950 px-4 py-1 rounded-lg font-black text-base border-b-2 border-amber-700">
-                            {/* Динамическое отображение очков из массива миссий */}
                             {missions[activeIndex]?.points || 0} PTS
                         </div>
                     </div>

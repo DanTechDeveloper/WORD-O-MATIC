@@ -18,7 +18,7 @@ export default function ReadModeLevels({ modules }) {
         ];
 
         return modulesData.map((moduleData, index) => {
-            const level = moduleData.level;
+            const level = moduleData.level || index + 1;
 
             const position = basePositions[index] || {
                 top: index % 2 === 0 ? "150px" : "350px",
@@ -143,7 +143,6 @@ export default function ReadModeLevels({ modules }) {
                         </div>
 
                         <div className="bg-lime-400 text-slate-950 px-4 py-1 rounded-lg font-black text-base border-b-2 border-lime-700">
-                            {/* Динамическое отображение очков для активного уровня */}
                             {missions[activeIndex]?.points || 0} PTS
                         </div>
                     </div>
@@ -249,10 +248,10 @@ export default function ReadModeLevels({ modules }) {
                                         <span
                                             className={`text-[10px] font-black uppercase mt-1 ${mission.textColor}`}
                                         >
-                                            MISSION{" "}
-                                            {mission.id < 10
-                                                ? `0${mission.id}`
-                                                : mission.id}
+                                          MISSION{" "}
+                                            {mission.level < 10
+                                                ? `0${mission.level}`
+                                                : mission.level}
                                         </span>
 
                                         {/* Score Indicator sa loob ng bilog */}
