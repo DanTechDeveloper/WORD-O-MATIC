@@ -1,18 +1,17 @@
-import { Link } from "@inertiajs/react";
-
-export default function GameplayHeader({ back, level }) {
+export default function GameplayHeader({ level, onOpenSettings }) {
     return (
         <div className="mt-6 w-full max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-6 mb-12">
             <div className="flex items-center gap-6">
                 {/* <!-- Back Button --> */}
-                <Link
-                    href={`/student/${back}`}
+                <button
+                    type="button"
+                    onClick={onOpenSettings}
                     className="group flex items-center justify-center w-16 h-16 bg-on-background/5 backdrop-blur-md rounded-2xl border-2 border-on-background/10 shadow-2xl hover:bg-on-background/10 transition-all active:scale-95"
                 >
                     <span className="material-symbols-outlined text-on-background/80 group-hover:text-on-background text-3xl">
-                        arrow_back
+                        settings
                     </span>
-                </Link>
+                </button>
 
                 {/* <!-- Score Tracker --> */}
                 <div className="flex items-center gap-4 bg-on-background/5 backdrop-blur-md p-4 rounded-2xl border-2 border-on-background/10 shadow-2xl">

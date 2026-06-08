@@ -231,9 +231,11 @@ export default function Dashboard({ data }) {
                                 </span>
                             </div>
                         </div>
-                        <button className="mt-8 w-full py-4 bg-surface-variant text-on-surface-variant rounded-xl font-label-bold uppercase border-b-4 border-slate-900 active-3d transition-all">
+                        <Link
+                            href="/student/badges"
+                            className="mt-8 w-full py-4 bg-surface-container-high text-on-surface-variant rounded-xl font-label-bold uppercase border-b-4 border-slate-900 active-3d transition-all">
                             View All Badges
-                        </button>
+                        </Link>
                     </section>
                 </div>
             </DashboardLayout>

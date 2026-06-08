@@ -2,10 +2,24 @@ import GameplayHeader from "@/Components/Student/GameplayHeader";
 import Microphone from "@/Components/Student/Microphone";
 import ReadModeMainContent from "@/Components/Student/ReadModeMainContent";
 import { useState, useEffect } from "react";
+import { router } from "@inertiajs/react";
 
 export default function GameplayReadMode({ module }) {
     const [gameState, setGameState] = useState("IDLE"); // IDLE, COUNTDOWN, ACTIVE, DENIED
     const [countdownValue, setCountdownValue] = useState(3);
+
+    // Settings and Audio State
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+    const [musicVolume, setMusicVolume] = useState(50);
+    const [sfxVolume, setSfxVolume] = useState(70);
+
+    const handleRestart = () => {
+        window.location.reload();
+    };
+
+    const handleExit = () => {
+        router.visit("/student/readModeLevels");
+    };
 
     const startProcess = async () => {
         try {
@@ -116,9 +130,86 @@ export default function GameplayReadMode({ module }) {
                     </div>
                 )}
 
+                {/* Settings Modal */}
+                {isSettingsOpen && (
+                    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/80 backdrop-blur-2xl p-6">
+                        <div className="relative bg-on-background/10 border-2 border-white/10 p-10 rounded-[3rem] w-full max-w-lg shadow-2xl overflow-hidden">
+                            <h2 className="text-white text-5xl font-black uppercase italic mb-10 text-center tracking-tighter">
+                                Paused
+                            </h2>
+
+                            {/* Audio Sliders */}
+                            <div className="space-y-8 mb-12">
+                                <div className="space-y-4">
+                                    <div className="flex justify-between items-center text-white/60 font-black uppercase tracking-widest text-xs">
+                                        <span>Music Volume</span>
+                                        <span className="text-lime-400">
+                                            {musicVolume}%
+                                        </span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="100"
+                                        value={musicVolume}
+                                        onChange={(e) =>
+                                            setMusicVolume(e.target.value)
+                                        }
+                                        className="w-full h-3 bg-white/10 rounded-full appearance-none cursor-pointer accent-primary"
+                                    />
+                                </div>
+
+                                <div className="space-y-4">
+                                    <div className="flex justify-between items-center text-white/60 font-black uppercase tracking-widest text-xs">
+                                        <span>Sound FX</span>
+                                        <span className="text-fuchsia-400">
+                                            {sfxVolume}%
+                                        </span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="100"
+                                        value={sfxVolume}
+                                        onChange={(e) =>
+                                            setSfxVolume(e.target.value)
+                                        }
+                                        className="w-full h-3 bg-white/10 rounded-full appearance-none cursor-pointer accent-fuchsia-500"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div className="flex flex-col gap-4">
+                                <button
+                                    onClick={() => setIsSettingsOpen(false)}
+                                    className="w-full bg-lime-400 text-slate-950 text-xl font-black py-5 rounded-2xl uppercase shadow-[0_6px_0_0_#1a2e05] active:translate-y-1 active:shadow-none transition-all"
+                                >
+                                    Resume Mission
+                                </button>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <button
+                                        onClick={handleRestart}
+                                        className="bg-white/5 border-2 border-white/10 text-white text-sm font-black py-4 rounded-2xl uppercase hover:bg-white/10 transition-all"
+                                    >
+                                        Restart
+                                    </button>
+                                    <button
+                                        onClick={handleExit}
+                                        className="bg-white/5 border-2 border-white/10 text-white text-sm font-black py-4 rounded-2xl uppercase hover:bg-white/10 transition-all"
+                                    >
+                                        Exit to Map
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 <GameplayHeader
-                    back={"readModeLevels"}
                     level={`${module.level} - ${module.title}`}
+                    onOpenSettings={() => setIsSettingsOpen(true)}
                 />
 
                 <ReadModeMainContent />
