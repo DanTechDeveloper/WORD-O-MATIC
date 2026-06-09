@@ -1,4 +1,4 @@
-export default function DeniedModal({ gameState, initiateGameStart }) {
+export default function DeniedModal({ gameState }) {
     return (
         <>
             {gameState === "DENIED" && (
@@ -27,12 +27,6 @@ export default function DeniedModal({ gameState, initiateGameStart }) {
                                 Please authorize system access to continue
                                 word-smashing mission!
                             </p>
-                            <button
-                                onClick={initiateGameStart}
-                                className="w-full bg-lime-400 text-slate-950 text-2xl font-black py-6 rounded-2xl uppercase shadow-[0_10px_0_0_#1a2e05] active:translate-y-1 active:shadow-none transition-all duration-75"
-                            >
-                                Allow Access
-                            </button>
                         </div>
                     </div>
                 </div>

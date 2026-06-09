@@ -1,10 +1,18 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 export function useCountdown(gameState, onCountdownEnd) {
     const [countdownValue, setCountdownValue] = useState(3);
+    const onCountdownEndRef = useRef(onCountdownEnd);
 
     useEffect(() => {
-        if (gameState !== "COUNTDOWN") return;
+        onCountdownEndRef.current = onCountdownEnd;
+    }, [onCountdownEnd]);
+
+    useEffect(() => {
+        if (gameState !== "COUNTDOWN") {
+            setCountdownValue(3);
+            return;
+        }
 
         const timer = setInterval(() => {
             setCountdownValue((prev) => {
@@ -13,7 +21,7 @@ export function useCountdown(gameState, onCountdownEnd) {
                 if (prev === 1) return "GO!";
                 if (prev === "GO!") {
                     clearInterval(timer);
-                    setTimeout(() => onCountdownEnd(), 800); // 0.8s buffer
+                    setTimeout(() => onCountdownEndRef.current(), 800); // 0.8s buffer
                     return "GO!";
                 }
                 return prev;
@@ -21,7 +29,7 @@ export function useCountdown(gameState, onCountdownEnd) {
         }, 1000);
 
         return () => clearInterval(timer);
-    }, [gameState, onCountdownEnd]);
+    }, [gameState]);
 
     return countdownValue;
 }

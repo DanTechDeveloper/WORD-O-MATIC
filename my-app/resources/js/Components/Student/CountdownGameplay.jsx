@@ -1,4 +1,4 @@
-export default function CountdownGameplay(gameState, countdownValue) {
+export default function CountdownGameplay({ gameState, countdownValue }) {
     return (
         <>
             {gameState === "COUNTDOWN" && (

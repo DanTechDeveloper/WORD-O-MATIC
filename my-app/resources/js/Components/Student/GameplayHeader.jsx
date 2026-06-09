@@ -28,9 +28,9 @@ export default function GameplayHeader({
         return () => clearInterval(timer);
     }, [isActive, isPaused, onTimeUp]);
 
-    // Reset timer when game becomes active (starts or restarts)
+    // Reset timer when game is not active (Idle, Countdown, GameOver)
     useEffect(() => {
-        if (isActive && timeLeft === 0) {
+        if (!isActive) {
             setTimeLeft(60);
         }
     }, [isActive]);

@@ -1,8 +1,9 @@
+import { Link } from "@inertiajs/react";
+
 export default function GameOverModal({
     gameState,
     currentWordIndex,
     totalWords,
-    handleExit,
     onPlayAgain,
 }) {
     if (gameState !== "GAMEOVER") return null;
@@ -20,7 +21,7 @@ export default function GameOverModal({
 
                 <div className="relative z-10">
                     <h2 className="text-white text-4xl font-black uppercase mb-4">
-                        Mission Complete!
+                        GAME OVER!
                     </h2>
 
                     <div className="space-y-4 mb-10 text-left">
@@ -54,12 +55,12 @@ export default function GameOverModal({
                             Play Again
                         </button>
 
-                        <button
-                            onClick={handleExit}
+                        <Link
+                        href="/student/speakModeLevels"
                             className="w-full bg-white/5 border-2 border-white/10 text-white text-xl font-black py-5 rounded-2xl uppercase"
                         >
                             Back To Map
-                        </button>
+                        </Link>
                     </div>
                 </div>
             </div>

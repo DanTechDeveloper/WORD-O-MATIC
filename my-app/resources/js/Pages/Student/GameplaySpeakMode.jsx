@@ -1,10 +1,9 @@
 import GameplayHeader from "@/Components/Student/GameplayHeader";
 import Microphone from "@/Components/Student/Microphone";
 import SpeakModeMainContent from "@/Components/Student/SpeakModeMainContent";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { router } from "@inertiajs/react";
 import GameOverModal from "@/Components/Student/GameOverModal";
-import CountDownGameplay from "@/Components/Student/CountdownGameplay";
 import DeniedModal from "@/Components/Student/DeniedModal";
 import SettingsModal from "@/Components/Student/SettingsModal";
 
@@ -55,6 +54,14 @@ export default function GameplaySpeakMode({ module }) {
         }
     }, [permissionState, requestPermission]);
 
+    // Permission check on mount: If already granted, start countdown.
+    // Otherwise, handle initial permission prompt.
+    useEffect(() => {
+        if (gameState === "IDLE") {
+            initiateGameStart();
+        }
+    }, [initiateGameStart, gameState]);
+
     // 2. Countdown Hook
     const countdownValue = useCountdown(gameState, () =>
         setGameState("ACTIVE"),
@@ -83,7 +90,7 @@ export default function GameplaySpeakMode({ module }) {
 
     const handlePlayAgain = useCallback(() => {
         setCurrentWordIndex(0);
-        setGameState("IDLE");
+        setGameState("COUNTDOWN");
     }, []);
 
     return (
@@ -94,18 +101,8 @@ export default function GameplaySpeakMode({ module }) {
                     currentWordIndex={currentWordIndex}
                     totalWords={totalWords}
                     onPlayAgain={handlePlayAgain}
-                    onExit={handleExit}
                 />
-                {/* Countdown Overlay */}
-                <CountDownGameplay
-                    gameState={gameState}
-                    countdownValue={countdownValue}
-                />
-
-                <DeniedModal
-                    gameState={gameState}
-                    initiateGameStart={initiateGameStart}
-                />
+                <DeniedModal gameState={gameState} />
 
                 <SettingsModal
                     isOpen={isSettingsOpen}
@@ -130,6 +127,8 @@ export default function GameplaySpeakMode({ module }) {
                 <SpeakModeMainContent
                     words={words}
                     currentWordIndex={currentWordIndex}
+                    gameState={gameState}
+                    countdownValue={countdownValue}
                 />
 
                 <div>
