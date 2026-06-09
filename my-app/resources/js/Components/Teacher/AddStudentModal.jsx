@@ -5,7 +5,8 @@ export default function AddStudentModal({ isOpen, onClose }) {
     const { data, setData, post, processing, errors, reset } = useForm({
         fullName: "",
         pin: "",
-        studentID: ""
+        studentID: "",
+        section: "",
     });
 
     // Function to generate a random 4-digit PIN
@@ -19,6 +20,8 @@ export default function AddStudentModal({ isOpen, onClose }) {
         if (isOpen) {
             setData({
                 fullName: "",
+                studentID: "",
+                section: "",
                 pin: Math.floor(1000 + Math.random() * 9000).toString(),
             });
         } else {
@@ -84,8 +87,26 @@ export default function AddStudentModal({ isOpen, onClose }) {
                                 {errors.studentID}
                             </p>
                         )}
-                    </div>
+                    </div>{" "}
                     {/* Full Name Input */}
+                    <div className="space-y-2">
+                        <label className="block text-xs font-black text-slate-500 uppercase tracking-widest ml-2">
+                            SECTION
+                        </label>
+                        <input
+                            required
+                            type="text"
+                            value={data.section}
+                            onChange={(e) => setData("section", e.target.value)}
+                            className="w-full bg-slate-950 border-4 border-slate-800 rounded-2xl p-4 text-white font-bold focus:border-purple-500 outline-none transition-all placeholder:text-slate-700"
+                            placeholder="e.g. 6-STEM-B"
+                        />
+                        {errors.section && (
+                            <p className="text-rose-500 text-[10px] font-black mt-1 uppercase ml-2">
+                                {errors.section}
+                            </p>
+                        )}
+                    </div>
                     <div className="space-y-2">
                         <label className="block text-xs font-black text-slate-500 uppercase tracking-widest ml-2">
                             Full Name
@@ -106,7 +127,6 @@ export default function AddStudentModal({ isOpen, onClose }) {
                             </p>
                         )}
                     </div>
-
                     {/* PIN Input with Auto-Gen */}
                     <div className="space-y-2">
                         <label className="block text-xs font-black text-slate-500 uppercase tracking-widest ml-2">
@@ -140,7 +160,6 @@ export default function AddStudentModal({ isOpen, onClose }) {
                             </p>
                         )}
                     </div>
-
                     {/* Action Buttons */}
                     <div className="pt-4 flex gap-4">
                         <button

@@ -155,6 +155,7 @@ class StudentController extends Controller
             'words_smashed' => 'required|integer|min:0',
         ]);
 
+        
         $userId = auth()->id();
 
         $module = ParagraphModule::findOrFail($request->module_id);

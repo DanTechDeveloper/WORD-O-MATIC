@@ -28,6 +28,7 @@ class StudentProfile extends Model
         'accuracy',
         'read_level',
         'speak_level',
+        'section'
     ];
 
     public function user()

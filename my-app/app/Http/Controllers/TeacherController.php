@@ -57,6 +57,7 @@ class TeacherController extends Controller
         $request->validate([
             'fullName' => 'required',
             'studentID' => 'required',
+            'section' => 'required',
             'pin' => 'required',
         ]);
 
@@ -76,6 +77,7 @@ class TeacherController extends Controller
             'status' => 'notStarted',
             'wordRisk' => 'N/A',
             'paragraphRisk' => 'N/A',
+            'section' => $request->section,
         ]);
 
         return redirect()->back();

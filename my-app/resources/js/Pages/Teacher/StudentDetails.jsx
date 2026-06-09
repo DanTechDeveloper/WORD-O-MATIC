@@ -2,8 +2,10 @@ import DashboardLayout from "@/Layouts/Teacher/DashboardLayout";
 import { Link } from "@inertiajs/react";
 
 export default function StudentDetail({ data }) {
+    console.table(data);
     const student = {
         id: data.student_id,
+        section: data.student?.section,
         name: data.name,
         avatar:
             data.student?.avatar ||
@@ -97,8 +99,11 @@ export default function StudentDetail({ data }) {
                             <h1 className="text-4xl font-black text-white uppercase italic tracking-tighter">
                                 {student.name}
                             </h1>
+                            <p className="mt-2 text-slate-500 font-black uppercase text-sm tracking-widest">
+                                Student ID: {student.id}
+                            </p>
                             <p className="text-slate-500 font-black uppercase text-sm tracking-widest">
-                                Fleet ID: {student.id}
+                                Section: {student.section}
                             </p>
                         </div>
                     </div>
