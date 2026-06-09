@@ -157,15 +157,21 @@ class StudentController extends Controller
 
         $userId = auth()->id();
 
+        $module = ParagraphModule::findOrFail($request->module_id);
+        $accuracy = ($module->total_score > 0)
+            ? ($request->words_smashed / $module->total_score) * 100
+            : 0;
+
         // Update high score only if the current attempt is better
         $progress = StudentParagraphProgress::firstOrCreate(
             ['user_id' => $userId, 'paragraph_module_id' => $request->module_id],
-            ['words_smashed' => 0, 'status' => 'not_started']
+            ['words_smashed' => 0, 'accuracy' => 0, 'status' => 'not_started']
         );
 
         if ($request->words_smashed > $progress->words_smashed) {
             $progress->update([
                 'words_smashed' => $request->words_smashed,
+                'accuracy' => round($accuracy, 2),
                 'status' => 'completed',
             ]);
 
