@@ -1,7 +1,7 @@
 import GameplayHeader from "@/Components/Student/GameplayHeader";
 import Microphone from "@/Components/Student/Microphone";
 import SpeakModeMainContent from "@/Components/Student/SpeakModeMainContent";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { router } from "@inertiajs/react";
 import GameOverModal from "@/Components/Student/GameOverModal";
 import DeniedModal from "@/Components/Student/DeniedModal";
@@ -23,7 +23,10 @@ export default function GameplaySpeakMode({ module }) {
     const [sfxVolume, setSfxVolume] = useState(70);
 
     // Split the content into individual words
-    const words = module?.content ? module.content.split(/\s+/) : [];
+    const words = useMemo(
+        () => (module?.content ? module.content.split(/\s+/) : []),
+        [module?.content],
+    );
     const totalWords = words.length;
     // --- Custom Hooks ---
 
@@ -62,10 +65,17 @@ export default function GameplaySpeakMode({ module }) {
         }
     }, [initiateGameStart, gameState]);
 
+    const handleOpenSettings = useCallback(() => {
+        setIsSettingsOpen(true);
+    }, []);
+    const handleTimeUp = useCallback(() => {
+        setGameState("GAMEOVER");
+    }, []);
+
     // 2. Countdown Hook
     const countdownValue = useCountdown(gameState, () =>
         setGameState("ACTIVE"),
-    );
+    ); // This callback is already stable
 
     // 3. Speech Recognition Hook
     useSpeechRecognition(
@@ -117,11 +127,11 @@ export default function GameplaySpeakMode({ module }) {
 
                 <GameplayHeader
                     level={`${module.level} - ${module.title}`}
-                    onOpenSettings={() => setIsSettingsOpen(true)}
+                    onOpenSettings={handleOpenSettings}
                     isActive={gameState === "ACTIVE"}
                     isPaused={isSettingsOpen}
                     wordsSmashed={currentWordIndex}
-                    onTimeUp={() => setGameState("GAMEOVER")}
+                    onTimeUp={handleTimeUp}
                 />
 
                 <SpeakModeMainContent

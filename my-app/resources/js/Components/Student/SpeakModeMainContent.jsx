@@ -1,4 +1,6 @@
-export default function SpeakModeMainContent({
+import { memo } from "react";
+
+const SpeakModeMainContent = memo(function SpeakModeMainContent({
     words,
     currentWordIndex,
     gameState,
@@ -9,7 +11,7 @@ export default function SpeakModeMainContent({
             <main className="flex-grow overflow-y-auto flex flex-col items-start justify-center max-w-7xl mx-auto w-full py-10 px-8">
                 {gameState === "COUNTDOWN" ? (
                     <div className="w-full flex items-center justify-center">
-                        <span className="text-[12rem] mt-10 font-black text-lime-400 italic animate-bounce drop-shadow-[0_0_50px_rgba(163,230,53,0.8)]">
+                        <span className="text-[12rem] font-black text-lime-400 italic animate-bounce drop-shadow-[0_0_50px_rgba(163,230,53,0.8)]">
                             {countdownValue}
                         </span>
                     </div>
@@ -36,4 +38,6 @@ export default function SpeakModeMainContent({
             </main>
         </>
     );
-}
+});
+
+export default SpeakModeMainContent;

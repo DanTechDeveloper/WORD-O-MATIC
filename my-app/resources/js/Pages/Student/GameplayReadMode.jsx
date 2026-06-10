@@ -2,7 +2,7 @@ import GameplayHeader from "@/Components/Student/GameplayHeader";
 import Microphone from "@/Components/Student/Microphone";
 import ReadModeMainContent from "@/Components/Student/ReadModeMainContent";
 import { router } from "@inertiajs/react";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import GameOverModal from "@/Components/Student/GameOverModal";
 import DeniedModal from "@/Components/Student/DeniedModal";
 import SettingsModal from "@/Components/Student/SettingsModal";
@@ -24,8 +24,11 @@ export default function GameplayReadMode({ module }) {
     const [sfxVolume, setSfxVolume] = useState(70);
 
     // Split the content into individual words
-    const words = module?.content ? module.content.split(/\s+/) : [];
-    const totalWords = words.length;
+    const speechRecognitionWords = useMemo(
+        () => (module?.words ? module.words.map((w) => w.word) : []),
+        [module?.words],
+    );
+    const totalWords = speechRecognitionWords.length;
 
     const handleRestart = () => {
         window.location.reload();
@@ -36,16 +39,16 @@ export default function GameplayReadMode({ module }) {
     };
 
     const handleNextWord = useCallback(() => {
-        setIsShaking(true); // Trigger screen shake
+        setIsShaking(true);
         setTimeout(() => setIsShaking(false), 300); // Stop shaking after 300ms
         setCurrentWordIndex((prev) => {
             const next = prev + 1;
-            if (next >= words.length) {
+            if (next >= totalWords) {
                 setGameState("GAMEOVER");
             }
             return Math.min(next, totalWords);
-        });
-    }, [words.length, totalWords]);
+        }); // totalWords is now derived from speechRecognitionWords
+    }, [totalWords]);
 
     // --- Custom Hooks ---
 
@@ -74,16 +77,23 @@ export default function GameplayReadMode({ module }) {
         }
     }, [initiateGameStart, gameState]);
 
+    const handleOpenSettings = useCallback(() => {
+        setIsSettingsOpen(true);
+    }, []);
+    const handleTimeUp = useCallback(() => {
+        setGameState("GAMEOVER");
+    }, []);
+
     // 2. Countdown Hook
     const countdownValue = useCountdown(gameState, () =>
         setGameState("ACTIVE"),
-    );
+    ); // This callback is already stable
 
     // 3. Speech Recognition Hook
     useSpeechRecognition(
         gameState === "ACTIVE", // isActive
         isSettingsOpen, // isPaused
-        words,
+        speechRecognitionWords, // Use the correctly derived array of strings
         currentWordIndex,
         handleNextWord, // onWordRecognized
         () => setGameState("DENIED"), // onPermissionDenied (from recognition error)
@@ -133,18 +143,19 @@ export default function GameplayReadMode({ module }) {
             >
                 <GameplayHeader
                     level={`${module.level} - ${module.title}`}
-                    onOpenSettings={() => setIsSettingsOpen(true)}
+                    onOpenSettings={handleOpenSettings}
                     isActive={gameState === "ACTIVE"}
                     isPaused={isSettingsOpen}
                     wordsSmashed={currentWordIndex}
-                    onTimeUp={() => setGameState("GAMEOVER")}
+                    onTimeUp={handleTimeUp}
                 />
 
                 <ReadModeMainContent
-                    words={module.words}
+                    words={module.words} // This is correct for ReadModeMainContent (array of objects)
                     currentIndex={currentWordIndex}
                     gameState={gameState}
                     countdownValue={countdownValue}
+                    isExploding={isShaking} // Pass the isShaking state as isExploding
                 />
 
                 <div>

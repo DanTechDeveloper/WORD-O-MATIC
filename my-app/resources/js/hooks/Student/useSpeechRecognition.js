@@ -10,17 +10,33 @@ export function useSpeechRecognition(
     onRecognitionError, // New callback for generic errors
 ) {
     const recognitionRef = useRef(null);
-    const gameStateRef = useRef(isActive); // Use isActive directly
+    const gameStateRef = useRef(isActive);
+    const isPausedRef = useRef(isPaused);
     const currentWordIndexRef = useRef(currentWordIndex);
+    const wordsRef = useRef(words);
+    const onWordRecognizedRef = useRef(onWordRecognized);
+    const onPermissionDeniedRef = useRef(onPermissionDenied);
+    const onRecognitionErrorRef = useRef(onRecognitionError);
     const processingRef = useRef(false);
 
+    // Consolidate ref synchronization into a single effect
     useEffect(() => {
         gameStateRef.current = isActive;
-    }, [isActive]);
-
-    useEffect(() => {
+        isPausedRef.current = isPaused;
         currentWordIndexRef.current = currentWordIndex;
-    }, [currentWordIndex]);
+        wordsRef.current = words;
+        onWordRecognizedRef.current = onWordRecognized;
+        onPermissionDeniedRef.current = onPermissionDenied;
+        onRecognitionErrorRef.current = onRecognitionError;
+    }, [
+        isActive,
+        isPaused,
+        currentWordIndex,
+        words,
+        onWordRecognized,
+        onPermissionDenied,
+        onRecognitionError,
+    ]);
 
     useEffect(() => {
         if (!isActive || isPaused) {
@@ -51,17 +67,19 @@ export function useSpeechRecognition(
                         event.results.length - 1
                     ][0].transcript.toLowerCase();
 
-                const transcriptWords = transcript
-                    .replace(/[^\w\s]/g, "")
-                    .split(/\s+/);
+                // Remove punctuation from transcript for better matching
+                const cleanTranscript = transcript.replace(/[^\w\s]/g, "");
 
-                const currentTarget = words[currentWordIndexRef.current]
+                const currentTarget = wordsRef.current[
+                    currentWordIndexRef.current
+                ]
                     ?.toLowerCase()
-                    .replace(/[^\w]/g, "");
+                    .replace(/[^\w\s]/g, "")
+                    .trim();
 
-                if (currentTarget && transcriptWords.includes(currentTarget)) {
+                if (currentTarget && cleanTranscript.includes(currentTarget)) {
                     processingRef.current = true;
-                    onWordRecognized(); // Callback to parent
+                    onWordRecognizedRef.current(); // Callback to parent
                     setTimeout(() => {
                         processingRef.current = false;
                     }, 300);
@@ -71,15 +89,16 @@ export function useSpeechRecognition(
             recognition.onerror = (event) => {
                 console.error("Speech Recognition Error:", event.error);
                 if (event.error === "not-allowed") {
-                    onPermissionDenied(); // Callback to parent
+                    onPermissionDeniedRef.current(); // Callback to parent
                 } else {
-                    if (onRecognitionError) onRecognitionError(event.error);
+                    if (onRecognitionErrorRef.current)
+                        onRecognitionErrorRef.current(event.error);
                 }
             };
 
             recognition.onend = () => {
-                if (gameStateRef.current && !isPaused) {
-                    // Check isActive and not paused
+                // Use isPausedRef to avoid stale closure from the instantiation scope
+                if (gameStateRef.current && !isPausedRef.current) {
                     try {
                         recognitionRef.current.start();
                     } catch (e) {
@@ -104,12 +123,5 @@ export function useSpeechRecognition(
         return () => {
             if (recognitionRef.current) recognitionRef.current.stop();
         };
-    }, [
-        isActive,
-        isPaused,
-        words,
-        onWordRecognized,
-        onPermissionDenied,
-        onRecognitionError,
-    ]);
+    }, [isActive, isPaused]);
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, memo } from "react";
 
 const FRUIT_COLORS = [
     { shadow: "#FF3B30", bubble: "bg-red-500/40" }, // Watermelon Red
@@ -10,7 +10,7 @@ const FRUIT_COLORS = [
     { shadow: "#FF2D55", bubble: "bg-pink-500/40" }, // Dragonfruit Pink
 ];
 
-export default function ReadModeMainContent({
+const ReadModeMainContent = memo(function ReadModeMainContent({
     words,
     currentIndex,
     gameState,
@@ -93,4 +93,6 @@ export default function ReadModeMainContent({
             )}
         </div>
     );
-}
+});
+
+export default ReadModeMainContent;

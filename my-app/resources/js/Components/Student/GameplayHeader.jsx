@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, memo } from "react";
 
-export default function GameplayHeader({
+const GameplayHeader = memo(function GameplayHeader({
     level,
     onOpenSettings,
     isActive,
@@ -113,4 +113,6 @@ export default function GameplayHeader({
             </div>
         </div>
     );
-}
+});
+
+export default GameplayHeader;
