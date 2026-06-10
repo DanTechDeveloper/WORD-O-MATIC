@@ -71,6 +71,12 @@ export default function GameplaySpeakMode({ module }) {
     const handleTimeUp = useCallback(() => {
         setGameState("GAMEOVER");
     }, []);
+    const handleCloseSettings = useCallback(() => {
+        setIsSettingsOpen(false);
+    }, []);
+    const handlePermissionDenied = useCallback(() => {
+        setGameState("DENIED");
+    }, []);
 
     // 2. Countdown Hook
     const countdownValue = useCountdown(gameState, () =>
@@ -84,7 +90,7 @@ export default function GameplaySpeakMode({ module }) {
         words,
         currentWordIndex,
         handleNextWord, // onWordRecognized
-        () => setGameState("DENIED"), // onPermissionDenied (from recognition error)
+        handlePermissionDenied, // onPermissionDenied (from recognition error)
     );
 
     // --- End Custom Hooks ---
@@ -116,7 +122,7 @@ export default function GameplaySpeakMode({ module }) {
 
                 <SettingsModal
                     isOpen={isSettingsOpen}
-                    onClose={() => setIsSettingsOpen(false)}
+                    onClose={handleCloseSettings}
                     musicVolume={musicVolume}
                     setMusicVolume={setMusicVolume}
                     sfxVolume={sfxVolume}
