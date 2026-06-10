@@ -2,6 +2,7 @@ import GameplayHeader from "@/Components/Student/GameplayHeader";
 import Microphone from "@/Components/Student/Microphone";
 import ReadModeMainContent from "@/Components/Student/ReadModeMainContent";
 import { router } from "@inertiajs/react";
+import { useState, useCallback, useEffect } from "react";
 import GameOverModal from "@/Components/Student/GameOverModal";
 import DeniedModal from "@/Components/Student/DeniedModal";
 import SettingsModal from "@/Components/Student/SettingsModal";
@@ -13,6 +14,7 @@ import { useSpeechRecognition } from "@/hooks/Student/useSpeechRecognition";
 
 export default function GameplayReadMode({ module }) {
     const [currentWordIndex, setCurrentWordIndex] = useState(0);
+    const [isShaking, setIsShaking] = useState(false); // State for screen shake effect
     const [gameState, setGameState] = useState("IDLE"); // IDLE, COUNTDOWN, ACTIVE, DENIED, GAMEOVER
     // countdownValue is now managed by useCountdown
 
@@ -34,6 +36,8 @@ export default function GameplayReadMode({ module }) {
     };
 
     const handleNextWord = useCallback(() => {
+        setIsShaking(true); // Trigger screen shake
+        setTimeout(() => setIsShaking(false), 300); // Stop shaking after 300ms
         setCurrentWordIndex((prev) => {
             const next = prev + 1;
             if (next >= words.length) {
@@ -113,7 +117,20 @@ export default function GameplayReadMode({ module }) {
                 onExit={handleExit}
             />
 
-            <div className="bg-background text-on-background font-body-md h-screen flex flex-col overflow-hidden">
+            <style>
+                {`
+                    @keyframes shake {
+                        0% { transform: translateX(0); }
+                        25% { transform: translateX(-5px); }
+                        50% { transform: translateX(5px); }
+                        75% { transform: translateX(-5px); }
+                        100% { transform: translateX(0); }
+                    }
+                `}
+            </style>
+            <div
+                className={`bg-background text-on-background font-body-md h-screen flex flex-col overflow-hidden ${isShaking ? "animate-[shake_0.3s_ease-in-out]" : ""}`}
+            >
                 <GameplayHeader
                     level={`${module.level} - ${module.title}`}
                     onOpenSettings={() => setIsSettingsOpen(true)}
@@ -124,10 +141,9 @@ export default function GameplayReadMode({ module }) {
                 />
 
                 <ReadModeMainContent
-                    words={words}
-                    currentWordIndex={currentWordIndex}
-                    gameState={gameState}
-                    countdownValue={countdownValue}
+                    words={module.words}
+                    currentIndex={currentWordIndex}
+                    isActive={gameState === "ACTIVE"}
                 />
 
                 <div>
