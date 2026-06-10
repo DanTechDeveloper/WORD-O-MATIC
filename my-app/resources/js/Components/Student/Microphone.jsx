@@ -1,4 +1,10 @@
-export default function Microphone({ onClick, isListening, disabled }) {
+import { memo } from "react";
+
+const Microphone = memo(function Microphone({
+    onClick,
+    isListening,
+    disabled,
+}) {
     return (
         <>
             {/* <!-- CENTER BOTTOM: Sonic Microphone UI --> */}
@@ -64,4 +70,6 @@ export default function Microphone({ onClick, isListening, disabled }) {
             </div>
         </>
     );
-}
+});
+
+export default Microphone;
