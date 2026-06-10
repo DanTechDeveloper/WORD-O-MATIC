@@ -143,7 +143,8 @@ export default function GameplayReadMode({ module }) {
                 <ReadModeMainContent
                     words={module.words}
                     currentIndex={currentWordIndex}
-                    isActive={gameState === "ACTIVE"}
+                    gameState={gameState}
+                    countdownValue={countdownValue}
                 />
 
                 <div>

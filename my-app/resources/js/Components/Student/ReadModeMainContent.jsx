@@ -13,9 +13,11 @@ const FRUIT_COLORS = [
 export default function ReadModeMainContent({
     words,
     currentIndex,
-    isActive,
+    gameState,
+    countdownValue,
     isExploding,
 }) {
+    const isActive = gameState === "ACTIVE";
     const currentWord =
         words && words.length > currentIndex ? words[currentIndex] : null;
     const [randomLeft, setRandomLeft] = useState("50%");
@@ -55,27 +57,39 @@ export default function ReadModeMainContent({
                 `}
             </style>
 
-            {isActive && currentWord && (
-                <div
-                    key={currentIndex} // Key to re-trigger animation on index change
-                    className="absolute flex flex-col items-center justify-center animate-fruit-ninja"
-                    style={{ left: randomLeft, transform: "translateX(-50%)" }} // Apply random horizontal position and center it
-                >
-                    <div className="text-center">
-                        <p
-                            className={`text-7xl font-black italic tracking-widest uppercase transition-colors duration-300 ${
-                                isExploding ? "animate-blast" : ""
-                            }`}
-                            style={{
-                                color: activeColor.shadow,
-                                fontFamily:
-                                    '"Arial Black", "Arial Bold", Gadget, sans-serif',
-                            }}
-                        >
-                            {currentWord.word}
-                        </p>
-                    </div>
+            {gameState === "COUNTDOWN" ? (
+                <div className="flex-1 flex items-center justify-center">
+                    <span className="text-[12rem] mt-10 font-black text-lime-400 italic animate-bounce drop-shadow-[0_0_50px_rgba(163,230,53,0.8)]">
+                        {countdownValue}
+                    </span>
                 </div>
+            ) : (
+                isActive &&
+                currentWord && (
+                    <div
+                        key={currentIndex} // Key to re-trigger animation on index change
+                        className="absolute flex flex-col items-center justify-center animate-fruit-ninja"
+                        style={{
+                            left: randomLeft,
+                            transform: "translateX(-50%)",
+                        }} // Apply random horizontal position and center it
+                    >
+                        <div className="text-center">
+                            <p
+                                className={`text-7xl font-black italic tracking-widest uppercase transition-colors duration-300 ${
+                                    isExploding ? "animate-blast" : ""
+                                }`}
+                                style={{
+                                    color: activeColor.shadow,
+                                    fontFamily:
+                                        '"Arial Black", "Arial Bold", Gadget, sans-serif',
+                                }}
+                            >
+                                {currentWord.word}
+                            </p>
+                        </div>
+                    </div>
+                )
             )}
         </div>
     );
