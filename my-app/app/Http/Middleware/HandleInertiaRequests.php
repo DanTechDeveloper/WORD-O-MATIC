@@ -33,7 +33,7 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'auth' => [
                 'user' => $request->user() ? $request->user()->load(['student' => function ($query) {
-                    $query->select('id', 'user_id', 'points');
+                    $query->select('id', 'user_id', 'points', 'avatar');
                 }]) : null,
             ],
         ];
