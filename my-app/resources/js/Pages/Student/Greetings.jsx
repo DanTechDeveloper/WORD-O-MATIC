@@ -1,39 +1,103 @@
-import { Link, usePage } from "@inertiajs/react";
+import { Link, usePage, router } from "@inertiajs/react";
+import { useState, useEffect } from "react";
+
+const AVATARS = ["🤖", "🐶", "🐱", "🦊", "🦁", "🐸", "🦄", "🐼"];
 
 export default function Greetings() {
     const { auth } = usePage().props;
     const name = auth?.user?.name || "STUDENT";
 
+    const [phase, setPhase] = useState("splash"); // splash, avatar, ready
+    const [selectedAvatar, setSelectedAvatar] = useState("🤖");
+
+    useEffect(() => {
+        if (phase === "splash") {
+            const timer = setTimeout(() => {
+                setPhase("avatar");
+            }, 2500);
+            return () => clearTimeout(timer);
+        }
+    }, [phase]);
+
+    const handleAvatarSelect = (avatar) => {
+        setSelectedAvatar(avatar);
+        // Placeholder for backend persistence
+        /*
+        router.post('/student/profile/avatar', { avatar }, {
+            preserveScroll: true,
+            onSuccess: () => setPhase("ready")
+        });
+        */
+        setPhase("ready");
+    };
+
     return (
         <div className="m-0 p-0 overflow-hidden">
+            <style>
+                {`
+                    @keyframes scan {
+                        0% { top: -10%; }
+                        100% { top: 110%; }
+                    }
+                    @keyframes flicker {
+                        0% { opacity: 1; }
+                        50% { opacity: 0.8; }
+                        100% { opacity: 1; }
+                    }
+                    .animate-scan {
+                        animation: scan 3s linear infinite;
+                    }
+                    .animate-flicker {
+                        animation: flicker 0.1s infinite;
+                    }
+                `}
+            </style>
+
             {/* <!-- BEGIN: Main Background Container --> */}
             <main className="min-h-screen w-full flex flex-col items-center justify-center relative overflow-hidden bg-zinc-950">
+                {/* <!-- Phase 1: Splash Screen Overlay --> */}
+                {phase === "splash" && (
+                    <div className="fixed inset-0 z-[100] bg-zinc-950 flex flex-col items-center justify-center">
+                        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                            <div className="w-full h-1 bg-lime-400/20 absolute animate-scan shadow-[0_0_15px_rgba(163,230,53,0.5)]"></div>
+                        </div>
+                        <div className="text-center animate-flicker">
+                            <h2 className="text-lime-400 text-6xl md:text-8xl font-black italic tracking-tighter mb-4">
+                                WORD-O-MATIC
+                            </h2>
+                            <p className="text-white font-mono tracking-[0.5em] text-sm md:text-lg uppercase opacity-70">
+                                System Booting...
+                            </p>
+                        </div>
+                    </div>
+                )}
+
                 {/* <!-- BEGIN: Decorative Floating Elements --> */}
                 {/* <!-- Top Left Robot --> */}
                 <div
                     className="absolute top-10 left-10 text-6xl floating-emoji"
-                    style={{ animationDelay: '0s' }}
+                    style={{ animationDelay: "0s" }}
                 >
                     🤖
                 </div>
                 {/* <!-- Top Right Stars --> */}
                 <div
                     className="absolute top-20 right-20 text-5xl floating-emoji"
-                    style={{ animationDelay: '1s' }}
+                    style={{ animationDelay: "1s" }}
                 >
                     🌟
                 </div>
                 {/* <!-- Bottom Left Rocket --> */}
                 <div
                     className="absolute bottom-20 left-20 text-7xl floating-emoji"
-                    style={{ animationDelay: '2s' }}
+                    style={{ animationDelay: "2s" }}
                 >
                     🚀
                 </div>
                 {/* <!-- Bottom Right Party Popper --> */}
                 <div
                     className="absolute bottom-10 right-10 text-6xl floating-emoji"
-                    style={{ animationDelay: '0.5s' }}
+                    style={{ animationDelay: "0.5s" }}
                 >
                     🎉
                 </div>
@@ -45,14 +109,43 @@ export default function Greetings() {
                     ✨
                 </div>
                 {/* <!-- END: Decorative Floating Elements --> */}
+
+                {/* <!-- Phase 2: Avatar Selection Overlay --> */}
+                {phase === "avatar" && (
+                    <div className="fixed inset-0 z-[90] bg-zinc-950/90 backdrop-blur-xl flex flex-col items-center justify-center p-6">
+                        <div className="max-w-2xl w-full text-center">
+                            <h2 className="text-white text-4xl md:text-6xl font-black uppercase italic tracking-tight mb-12">
+                                SELECT YOUR{" "}
+                                <span className="text-purple-500">HERO</span>
+                            </h2>
+                            <div className="grid grid-cols-4 gap-4 md:gap-8">
+                                {AVATARS.map((emoji, index) => (
+                                    <button
+                                        key={index}
+                                        onClick={() =>
+                                            handleAvatarSelect(emoji)
+                                        }
+                                        className="text-5xl md:text-7xl p-4 md:p-8 rounded-3xl bg-zinc-900 border-4 border-zinc-800 hover:border-lime-400 hover:bg-zinc-800 transition-all hover:scale-110 active:scale-95"
+                                    >
+                                        {emoji}
+                                    </button>
+                                ))}
+                            </div>
+                            <p className="mt-12 text-zinc-500 font-bold uppercase tracking-widest animate-pulse">
+                                Tap to choose your avatar
+                            </p>
+                        </div>
+                    </div>
+                )}
+
                 {/* <!-- BEGIN: Central Content Card --> */}
                 <section
-                    className="bg-zinc-900 border-4 border-purple-900 tactile-card rounded-[40px] p-12 md:p-20 relative overflow-hidden flex flex-col items-center text-center max-w-4xl mx-4 z-10 w-full md:w-[90%]"
+                    className={`bg-zinc-900 border-4 border-purple-900 tactile-card rounded-[40px] p-12 md:p-20 relative overflow-hidden flex flex-col items-center text-center max-w-4xl mx-4 z-10 w-full md:w-[90%] transition-opacity duration-1000 ${phase === "ready" ? "opacity-100" : "opacity-0"}`}
                     data-purpose="greeting-card"
                 >
                     {/* <!-- Top Icon/Speech Bubble Style Decor --> */}
                     <div className="mb-6 animate-bounce-slow">
-                        <span className="text-7xl">🤖</span>
+                        <span className="text-7xl">{selectedAvatar}</span>
                     </div>
                     {/* <!-- Main Headline --> */}
                     <h1 className="flex flex-col gap-2 mb-8 select-none max-w-full">
@@ -63,7 +156,7 @@ export default function Greetings() {
                             {name.toUpperCase()}!
                         </span>
                     </h1>
-                   
+
                     {/* <!-- BEGIN: Call to Action --> */}
                     <div className="w-full flex justify-center">
                         <Link
