@@ -30,6 +30,12 @@ export default function GameplaySpeakMode({ module }) {
     const totalWords = words.length;
     // --- Custom Hooks ---
 
+    // Calculate derived score (Defaulting to 1 point per word for string content)
+    const currentScore = useMemo(() => {
+        // Note: ParagraphModule does not provide per-word points in the current DB response
+        return currentWordIndex;
+    }, [currentWordIndex]);
+
     const handleNextWord = useCallback(() => {
         setCurrentWordIndex((prev) => {
             const next = prev + 1;
@@ -57,7 +63,7 @@ export default function GameplaySpeakMode({ module }) {
         }
     }, [permissionState, requestPermission]);
 
-    // Permission check on mount: If already granted, start countdown.
+    // Permission check on mount: If already granted, start countdown.word
     // Otherwise, handle initial permission prompt.
     useEffect(() => {
         if (gameState === "IDLE") {
@@ -115,6 +121,7 @@ export default function GameplaySpeakMode({ module }) {
                 <GameOverModal
                     gameState={gameState}
                     currentWordIndex={currentWordIndex}
+                    score={currentScore}
                     totalWords={totalWords}
                     onPlayAgain={handlePlayAgain}
                 />
@@ -136,7 +143,7 @@ export default function GameplaySpeakMode({ module }) {
                     onOpenSettings={handleOpenSettings}
                     isActive={gameState === "ACTIVE"}
                     isPaused={isSettingsOpen}
-                    wordsSmashed={currentWordIndex}
+                    wordsSmashed={currentScore}
                     onTimeUp={handleTimeUp}
                 />
 
@@ -149,9 +156,6 @@ export default function GameplaySpeakMode({ module }) {
 
                 <div>
                     <Microphone // The Microphone component's onClick should trigger game start
-                        onClick={
-                            gameState === "IDLE" ? initiateGameStart : null
-                        }
                         isListening={gameState === "ACTIVE"}
                         disabled={gameState === "COUNTDOWN"}
                     />

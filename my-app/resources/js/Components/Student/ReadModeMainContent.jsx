@@ -48,8 +48,12 @@ const ReadModeMainContent = memo(function ReadModeMainContent({
                         animation: fruitNinjaFall 2s ease-out forwards; /* Slower fall over 2 seconds */
                     }
                     @keyframes blast {
-                        0% { transform: scale(1); opacity: 1; filter: brightness(1); }
-                        100% { transform: scale(3.5); opacity: 0; filter: brightness(2); }
+                        0% { transform: scale(1) translate(0, 0); opacity: 1; filter: brightness(1); }
+                        10% { transform: scale(1.1) translate(-3px, 3px); filter: brightness(1.5); }
+                        20% { transform: scale(1.2) translate(3px, -3px); filter: brightness(2); }
+                        30% { transform: scale(1.3) translate(-3px, -3px); filter: brightness(1.5); }
+                        40% { transform: scale(1.4) translate(3px, 3px); filter: brightness(2); }
+                        100% { transform: scale(4.5); opacity: 0; filter: brightness(3); }
                     }
                     .animate-blast {
                         animation: blast 0.5s ease-out forwards;
@@ -76,13 +80,18 @@ const ReadModeMainContent = memo(function ReadModeMainContent({
                     >
                         <div className="text-center">
                             <p
-                                className={`text-7xl font-black italic tracking-widest uppercase transition-colors duration-300 ${
+                                className={`text-8xl font-black tracking-tight uppercase transition-all duration-300 ${
                                     isExploding ? "animate-blast" : ""
                                 }`}
                                 style={{
-                                    color: activeColor.shadow,
+                                    color: "#FFFFFF",
                                     fontFamily:
-                                        '"Arial Black", "Arial Bold", Gadget, sans-serif',
+                                        'Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif',
+                                    textShadow: `
+                                        2px 2px 0px ${activeColor.shadow},
+                                        4px 4px 0px ${activeColor.shadow},
+                                        6px 6px 0px rgba(0,0,0,0.3)
+                                    `,
                                 }}
                             >
                                 {currentWord.word}

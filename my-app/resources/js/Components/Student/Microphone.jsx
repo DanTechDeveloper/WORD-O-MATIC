@@ -1,17 +1,12 @@
 import { memo } from "react";
 
-const Microphone = memo(function Microphone({
-    onClick,
-    isListening,
-    disabled,
-}) {
+const Microphone = memo(function Microphone({ isListening, disabled }) {
     return (
         <>
             {/* <!-- CENTER BOTTOM: Sonic Microphone UI --> */}
             <div className="relative z-50 flex flex-col items-center gap-6 mb-3">
                 {/* <!-- Sonic Microphone Outer Ring --> */}
                 <button
-                    onClick={onClick}
                     disabled={disabled}
                     className={`relative group outline-none transition-all duration-300 ${disabled ? "opacity-50 grayscale cursor-not-allowed" : "active:scale-95"}`}
                 >

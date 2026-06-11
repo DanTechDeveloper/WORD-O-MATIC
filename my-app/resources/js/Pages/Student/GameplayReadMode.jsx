@@ -30,6 +30,13 @@ export default function GameplayReadMode({ module }) {
     );
     const totalWords = speechRecognitionWords.length;
 
+    // Calculate derived score based on database points
+    const currentScore = useMemo(() => {
+        return module.words
+            .slice(0, currentWordIndex)
+            .reduce((sum, w) => sum + (w.points || 0), 0);
+    }, [module.words, currentWordIndex]);
+
     const handleRestart = () => {
         window.location.reload();
     };
@@ -111,6 +118,7 @@ export default function GameplayReadMode({ module }) {
             <GameOverModal
                 gameState={gameState}
                 currentWordIndex={currentWordIndex}
+                score={currentScore}
                 totalWords={totalWords}
                 onPlayAgain={handlePlayAgain}
             />
@@ -146,7 +154,7 @@ export default function GameplayReadMode({ module }) {
                     onOpenSettings={handleOpenSettings}
                     isActive={gameState === "ACTIVE"}
                     isPaused={isSettingsOpen}
-                    wordsSmashed={currentWordIndex}
+                    wordsSmashed={currentScore}
                     onTimeUp={handleTimeUp}
                 />
 
@@ -159,10 +167,7 @@ export default function GameplayReadMode({ module }) {
                 />
 
                 <div>
-                    <Microphone // The Microphone component's onClick should trigger game start
-                        onClick={
-                            gameState === "IDLE" ? initiateGameStart : null
-                        }
+                    <Microphone
                         isListening={gameState === "ACTIVE"}
                         disabled={gameState === "COUNTDOWN"}
                     />
