@@ -3,8 +3,8 @@
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\TeacherController;
 use App\Http\Controllers\UserController;
+use App\Http\Middleware\CheckStudentOnboarding;
 use Illuminate\Support\Facades\Route;
-use App\Http\Middleware\EnsureUserRole;
 
 Route::get('/', [UserController::class, 'index'])->name('login');
 Route::post('/', [UserController::class, 'login']);
@@ -35,7 +35,7 @@ Route::middleware(['auth'])->group(function () {
 
     Route::prefix('student')
         ->name('student.')
-        ->middleware('role:student')
+        ->middleware(['role:student', CheckStudentOnboarding::class])
         ->group(function () {
             Route::get('/greetings', [StudentController::class, 'greetings'])->name('greetings');
             Route::get('/dashboard', [StudentController::class, 'dashboard'])->name('dashboard');
