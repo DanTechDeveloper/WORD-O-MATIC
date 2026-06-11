@@ -5,9 +5,26 @@ const SpeakModeMainContent = memo(function SpeakModeMainContent({
     currentWordIndex,
     gameState,
     countdownValue,
+    interimMatch,
 }) {
     return (
         <>
+            <style>
+                {`
+                    @keyframes pulse-glow {
+                        0%, 100% {
+                            opacity: 1;
+                            filter: drop-shadow(0 0 10px rgba(163,230,53,0.5));
+                            transform: scale(1.10);
+                        }
+                        50% {
+                            opacity: 0.7;
+                            filter: drop-shadow(0 0 25px rgba(163,230,53,0.9));
+                            transform: scale(1.15);
+                        }
+                    }
+                `}
+            </style>
             <main className="flex-grow overflow-y-auto flex flex-col items-start justify-center max-w-7xl mx-auto w-full py-10 px-8">
                 {gameState === "COUNTDOWN" ? (
                     <div className="w-full flex items-center justify-center">
@@ -25,9 +42,16 @@ const SpeakModeMainContent = memo(function SpeakModeMainContent({
                                         index < currentWordIndex
                                             ? "opacity-20 text-on-background" // Spoken: low opacity
                                             : index === currentWordIndex
-                                              ? "text-lime-400 opacity-100 scale-110 drop-shadow-[0_0_10px_rgba(163,230,53,0.5)]" // Current: Highlighted
+                                              ? interimMatch
+                                                ? "text-lime-400 opacity-100 scale-110 drop-shadow-[0_0_10px_rgba(163,230,53,0.5)]" // Interim: pulsing
+                                                : "text-lime-400 opacity-100 scale-110 drop-shadow-[0_0_10px_rgba(163,230,53,0.5)]" // Current: Highlighted
                                               : "opacity-60 text-on-background/50" // Future: default
                                     }`}
+                                    style={
+                                        index === currentWordIndex && interimMatch
+                                            ? { animation: "pulse-glow 0.8s ease-in-out infinite" }
+                                            : undefined
+                                    }
                                 >
                                     {word}
                                 </span>

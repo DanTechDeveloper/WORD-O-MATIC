@@ -15,6 +15,7 @@ import { useSpeechRecognition } from "@/hooks/Student/useSpeechRecognition";
 export default function GameplaySpeakMode({ module }) {
     const [currentWordIndex, setCurrentWordIndex] = useState(0);
     const [gameState, setGameState] = useState("IDLE"); // IDLE, COUNTDOWN, ACTIVE, DENIED
+    const [interimMatch, setInterimMatch] = useState(false);
     // countdownValue is now managed by useCountdown
 
     // Settings and Audio State
@@ -83,6 +84,9 @@ export default function GameplaySpeakMode({ module }) {
     const handlePermissionDenied = useCallback(() => {
         setGameState("DENIED");
     }, []);
+    const handleInterimMatch = useCallback((isMatch) => {
+        setInterimMatch(isMatch);
+    }, []);
 
     // 2. Countdown Hook
     const countdownValue = useCountdown(gameState, () =>
@@ -97,6 +101,7 @@ export default function GameplaySpeakMode({ module }) {
         currentWordIndex,
         handleNextWord, // onWordRecognized
         handlePermissionDenied, // onPermissionDenied (from recognition error)
+        handleInterimMatch, // onInterimMatch (dual-layer feedback)
     );
 
     // --- End Custom Hooks ---
@@ -152,6 +157,7 @@ export default function GameplaySpeakMode({ module }) {
                     currentWordIndex={currentWordIndex}
                     gameState={gameState}
                     countdownValue={countdownValue}
+                    interimMatch={interimMatch}
                 />
 
                 <div>

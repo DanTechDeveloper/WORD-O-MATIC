@@ -14,8 +14,8 @@ import { useSpeechRecognition } from "@/hooks/Student/useSpeechRecognition";
 
 export default function GameplayReadMode({ module }) {
     const [currentWordIndex, setCurrentWordIndex] = useState(0);
-    const [isShaking, setIsShaking] = useState(false); // State for screen shake effect
     const [gameState, setGameState] = useState("IDLE"); // IDLE, COUNTDOWN, ACTIVE, DENIED, GAMEOVER
+    const [interimMatch, setInterimMatch] = useState(false);
     // countdownValue is now managed by useCountdown
 
     // Settings and Audio State
@@ -46,8 +46,6 @@ export default function GameplayReadMode({ module }) {
     };
 
     const handleNextWord = useCallback(() => {
-        setIsShaking(true);
-        setTimeout(() => setIsShaking(false), 300); // Stop shaking after 300ms
         setCurrentWordIndex((prev) => {
             const next = prev + 1;
             if (next >= totalWords) {
@@ -91,6 +89,10 @@ export default function GameplayReadMode({ module }) {
         setGameState("GAMEOVER");
     }, []);
 
+    const handleInterimMatch = useCallback((isMatch) => {
+        setInterimMatch(isMatch);
+    }, []);
+
     // 2. Countdown Hook
     const countdownValue = useCountdown(gameState, () =>
         setGameState("ACTIVE"),
@@ -104,6 +106,7 @@ export default function GameplayReadMode({ module }) {
         currentWordIndex,
         handleNextWord, // onWordRecognized
         () => setGameState("DENIED"), // onPermissionDenied (from recognition error)
+        handleInterimMatch, // onInterimMatch (dual-layer feedback)
     );
 
     // --- End Custom Hooks ---
@@ -134,21 +137,7 @@ export default function GameplayReadMode({ module }) {
                 onRestart={handleRestart}
                 onExit={handleExit}
             />
-
-            <style>
-                {`
-                    @keyframes shake {
-                        0% { transform: translateX(0); }
-                        25% { transform: translateX(-5px); }
-                        50% { transform: translateX(5px); }
-                        75% { transform: translateX(-5px); }
-                        100% { transform: translateX(0); }
-                    }
-                `}
-            </style>
-            <div
-                className={`bg-background text-on-background font-body-md h-screen flex flex-col overflow-hidden ${isShaking ? "animate-[shake_0.3s_ease-in-out]" : ""}`}
-            >
+            <div className="bg-background text-on-background font-body-md h-screen flex flex-col overflow-hidden">
                 <GameplayHeader
                     level={`${module.level} - ${module.title}`}
                     onOpenSettings={handleOpenSettings}
@@ -163,7 +152,8 @@ export default function GameplayReadMode({ module }) {
                     currentIndex={currentWordIndex}
                     gameState={gameState}
                     countdownValue={countdownValue}
-                    isExploding={isShaking} // Pass the isShaking state as isExploding
+                    isExploding={false}
+                    interimMatch={interimMatch}
                 />
 
                 <div>

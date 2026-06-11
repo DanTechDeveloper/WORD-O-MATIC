@@ -16,6 +16,7 @@ const ReadModeMainContent = memo(function ReadModeMainContent({
     gameState,
     countdownValue,
     isExploding,
+    interimMatch,
 }) {
     const isActive = gameState === "ACTIVE";
     const currentWord =
@@ -58,6 +59,16 @@ const ReadModeMainContent = memo(function ReadModeMainContent({
                     .animate-blast {
                         animation: blast 0.5s ease-out forwards;
                     }
+                    @keyframes pulse-glow-read {
+                        0%, 100% {
+                            filter: brightness(1) drop-shadow(0 0 10px rgba(163,230,53,0.5));
+                            transform: translateX(-50%) scale(1);
+                        }
+                        50% {
+                            filter: brightness(1.3) drop-shadow(0 0 30px rgba(163,230,53,0.9));
+                            transform: translateX(-50%) scale(1.05);
+                        }
+                    }
                 `}
             </style>
 
@@ -92,6 +103,9 @@ const ReadModeMainContent = memo(function ReadModeMainContent({
                                         4px 4px 0px ${activeColor.shadow},
                                         6px 6px 0px rgba(0,0,0,0.3)
                                     `,
+                                    ...(interimMatch && !isExploding
+                                        ? { animation: "pulse-glow-read 0.8s ease-in-out infinite" }
+                                        : {}),
                                 }}
                             >
                                 {currentWord.word}
