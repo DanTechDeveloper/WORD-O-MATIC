@@ -42,7 +42,7 @@ class UserController extends Controller
             Auth::login($user);
             $request->session()->regenerate();
 
-            return redirect()->route('student.dashboard');
+            return redirect()->route('student.greetings');
         }
 
         $request->validate([
