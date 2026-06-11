@@ -11,6 +11,15 @@ use Inertia\Response;
 
 class UserController extends Controller
 {
+
+    public function logout(Request $request)
+    {
+        Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+        return redirect()->route('login');
+    }
+
     public function index(): Response
     {
         return Inertia::render('Auth/Homepage');

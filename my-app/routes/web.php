@@ -6,10 +6,14 @@ use App\Http\Controllers\UserController;
 use App\Http\Middleware\CheckStudentOnboarding;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', [UserController::class, 'index'])->name('login');
-Route::post('/', [UserController::class, 'login']);
+Route::middleware('guest')->group(function () {
+    Route::get('/', [UserController::class, 'index'])->name('login');
+    Route::post('/', [UserController::class, 'login']);
+});
 
 Route::middleware(['auth'])->group(function () {
+    Route::post('/logout', [UserController::class, 'logout'])->name('logout');
+
     Route::prefix('teacher')
         ->name('teacher.')
         ->middleware('role:teacher')
