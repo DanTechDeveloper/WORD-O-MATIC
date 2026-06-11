@@ -39,9 +39,16 @@ Route::middleware(['auth'])->group(function () {
 
     Route::prefix('student')
         ->name('student.')
-        ->middleware(['role:student', CheckStudentOnboarding::class])
+        ->middleware(['role:student'])
         ->group(function () {
             Route::get('/greetings', [StudentController::class, 'greetings'])->name('greetings');
+            Route::post('/avatar', [StudentController::class, 'updateAvatar'])->name('avatar');
+        });
+
+    Route::prefix('student')
+        ->name('student.')
+        ->middleware(['role:student', CheckStudentOnboarding::class])
+        ->group(function () {
             Route::get('/dashboard', [StudentController::class, 'dashboard'])->name('dashboard');
             Route::get('/tutorial', [StudentController::class, 'tutorial'])->name('tutorial');
             Route::get('/leaderboards', [StudentController::class, 'leaderboards'])->name('leaderboards');

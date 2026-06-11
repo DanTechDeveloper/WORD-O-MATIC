@@ -3,12 +3,19 @@
 namespace App\Http\Controllers;
 
 use App\Models\ParagraphModule;
+use App\Models\Student;
 use App\Models\StudentParagraphProgress;
 use App\Models\StudentWordProgress;
 use App\Models\WordModule;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-
+/**
+ * Update the authenticated student's avatar.
+ *
+ * @param  Request  $request
+ * @return JsonResponse
+ */
 class StudentController extends Controller
 {
     public function dashboard()
@@ -29,12 +36,35 @@ class StudentController extends Controller
 
     public function greetings()
     {
+        $user = auth()->user();
+        if ($user) {
+            $user->load('student');
+        }
         return Inertia::render('Student/Greetings');
     }
 
     public function tutorial()
     {
         return Inertia::render('Student/Tutorial');
+    }
+
+    public function updateAvatar(Request $request)
+    {
+        $request->validate([
+            'avatar_url' => ['required', 'string'],
+        ]);
+
+        $user = auth()->user();
+
+        if ($user && $user->student) {
+            $user->student->update([
+                'avatar' => $request->avatar_url,
+            ]);
+
+            return redirect()->back()->with('success', 'Avatar updated successfully!');
+        }
+
+        return redirect()->back()->with('error', 'Student profile not found.');
     }
 
     public function leaderboards()

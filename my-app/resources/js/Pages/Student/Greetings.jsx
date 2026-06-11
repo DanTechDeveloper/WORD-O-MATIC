@@ -37,9 +37,13 @@ const AVATARS = [
 export default function Greetings() {
     const { auth } = usePage().props;
     const name = auth?.user?.name || "STUDENT";
+    const studentAvatarUrl = auth?.user?.student?.avatar;
 
-    const [phase, setPhase] = useState("splash"); // splash, avatar, ready
-    const [selectedAvatar, setSelectedAvatar] = useState(AVATARS[0]);
+    const [phase, setPhase] = useState(studentAvatarUrl ? "ready" : "splash"); // splash, avatar, ready
+    const [selectedAvatar, setSelectedAvatar] = useState(() => {
+        const found = AVATARS.find((a) => a.url === studentAvatarUrl);
+        return found || AVATARS[0];
+    });
 
     useEffect(() => {
         if (phase === "splash") {
@@ -52,14 +56,19 @@ export default function Greetings() {
 
     const handleAvatarSelect = (avatar) => {
         setSelectedAvatar(avatar);
-        // Placeholder for backend persistence
-        /*
-        router.post('/student/profile/avatar', { avatar }, {
-            preserveScroll: true,
-            onSuccess: () => setPhase("ready")
-        });
-        */
-        setPhase("ready");
+        router.post(
+            "/student/avatar",
+            { avatar_url: avatar.url },
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setPhase("ready");
+                },
+                onError: (errors) => {
+                    console.error("Failed to update avatar:", errors);
+                },
+            },
+        );
     };
 
     return (
