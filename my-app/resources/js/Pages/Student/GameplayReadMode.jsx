@@ -15,6 +15,7 @@ import { useSpeechRecognition } from "@/hooks/Student/useSpeechRecognition";
 export default function GameplayReadMode({ module }) {
     const [currentWordIndex, setCurrentWordIndex] = useState(0);
     const [currentScore, setCurrentScore] = useState(0);
+    const [wordsSmashed, setWordsSmashed] = useState(0);
     const [gameState, setGameState] = useState("IDLE"); // IDLE, COUNTDOWN, ACTIVE, DENIED, GAMEOVER
     const [isMispronounced, setIsMispronounced] = useState(false);
     const [showPointsFeedback, setShowPointsFeedback] = useState(false);
@@ -51,8 +52,12 @@ export default function GameplayReadMode({ module }) {
         setCurrentWordIndex((prev) => {
             const next = prev + 1;
             if (next >= totalWords) {
-                setGameState("GAMEOVER");
-                return prev; // Stay on the last word if game is over
+                // Huwag agad tapusin ang laro.
+                // Bigyan ng 1.2 seconds ang UI para ipakita ang huling points.
+                setTimeout(() => {
+                    setGameState("GAMEOVER");
+                }, 1200);
+                return next; // Allow index to reach totalWords for correct score counting
             }
             return next;
         }); // totalWords is now derived from speechRecognitionWords
@@ -63,6 +68,7 @@ export default function GameplayReadMode({ module }) {
         // Removed `index` parameter
         const points = module.words[currentWordIndex]?.points || 0; // Use currentWordIndex from state
         setCurrentScore((prev) => prev + points);
+        setWordsSmashed((prev) => prev + 1);
         setPointsFeedbackValue(points);
         setShowPointsFeedback(true);
         setTimeout(() => setShowPointsFeedback(false), 500);
@@ -76,9 +82,8 @@ export default function GameplayReadMode({ module }) {
         setIsMispronounced(true);
         moveToNextWord(); // Move to next word immediately
         // Clear mispronounced state after a short delay for visual feedback
-        requestAnimationFrame(() => {
             setIsMispronounced(false);
-        });
+        
     }, [moveToNextWord]); // Removed scoreEmphasize from dependencies as it's not directly used here.
 
     // State for score emphasis in GameplayHeader
@@ -146,6 +151,7 @@ export default function GameplayReadMode({ module }) {
     const onPlayAgain = useCallback(() => {
         setCurrentWordIndex(0);
         setCurrentScore(0);
+        setWordsSmashed(0);
         setGameState("COUNTDOWN");
     }, []);
 
@@ -167,7 +173,7 @@ export default function GameplayReadMode({ module }) {
             <div className="bg-background text-on-background font-body-md h-screen flex flex-col overflow-hidden">
                 <GameOverModal
                     gameState={gameState}
-                    currentWordIndex={currentWordIndex}
+                    currentWordIndex={wordsSmashed}
                     totalWords={totalWords}
                     onPlayAgain={onPlayAgain}
                     backToMapUrl={"/student/readModeLevels"}
@@ -186,7 +192,8 @@ export default function GameplayReadMode({ module }) {
 
                 <ReadModeMainContent
                     words={module.words}
-                    currentIndex={currentWordIndex}
+                    // Siguraduhin na ang UI ay laging nasa huling valid word habang naghihintay ng Game Over
+                    currentIndex={Math.min(currentWordIndex, totalWords - 1)}
                     gameState={gameState}
                     countdownValue={countdownValue}
                     isExploding={false}

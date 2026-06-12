@@ -14,12 +14,14 @@ export function useSpeechRecognition({
     const gameStateRef = useRef(isActive);
     const isPausedRef = useRef(isPaused);
     const targetWordRef = useRef(targetWord);
+    const normalizedTargetRef = useRef("");
     const onWordRecognizedRef = useRef(onWordRecognized);
     const onPermissionDeniedRef = useRef(onPermissionDenied);
     // Removed interim matching
     const onMispronouncedRef = useRef(onMispronounced);
     const onRecognitionErrorRef = useRef(onRecognitionError);
     // Removed processing lock
+    const lastProcessedIndexRef = useRef(-1);
     // Removed resultIndex tracking
     const isMountedRef = useRef(false);
 
@@ -37,6 +39,10 @@ export function useSpeechRecognition({
         gameStateRef.current = isActive;
         isPausedRef.current = isPaused;
         targetWordRef.current = targetWord; // Update targetWordRef
+        normalizedTargetRef.current = (targetWord || "")
+            .toLowerCase()
+            .replace(/[^\w\s]/g, "")
+            .trim();
         onWordRecognizedRef.current = onWordRecognized;
         onPermissionDeniedRef.current = onPermissionDenied;
         onMispronouncedRef.current = onMispronounced;
@@ -67,33 +73,38 @@ export function useSpeechRecognition({
             recognition.lang = "en-US";
 
             recognition.onresult = (event) => {
-                const result = event.results[event.resultIndex];
+                const target = normalizedTargetRef.current;
 
-                if (!result) return;
+                if (!target) return;
 
-                const transcript = (result[0]?.transcript || "")
-                    .toLowerCase()
-                    .replace(/[^\w\s]/g, "")
-                    .trim();
+                // Iterate through all new results starting from event.resultIndex
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    // Prevent re-processing the same result index
+                    if (i <= lastProcessedIndexRef.current) continue;
 
-                const target = (targetWordRef.current || "")
-                    .toLowerCase()
-                    .replace(/[^\w\s]/g, "")
-                    .trim();
+                    const result = event.results[i];
 
-                if (!target || !transcript) return;
+                    if (!result) continue;
 
-                const isMatch = transcript === target;
+                    const transcript = (result[0]?.transcript || "")
+                        .toLowerCase()
+                        .replace(/[^\w\s]/g, "")
+                        .trim();
 
-                // FINAL RESULT ONLY = source of truth
-                if (result.isFinal) {
-                    if (isMatch) {
-                        onWordRecognizedRef.current?.();
-                    } else if (transcript.length > 0) {
-                        onMispronouncedRef.current?.();
+                    if (!transcript) continue;
+
+                    const isMatch = transcript === target;
+
+                    // FINAL RESULT ONLY = source of truth
+                    if (result.isFinal) {
+                        lastProcessedIndexRef.current = i;
+                        
+                        if (isMatch) {
+                            onWordRecognizedRef.current?.();
+                        } else if (transcript.length > 0) {
+                            onMispronouncedRef.current?.();
+                        }
                     }
-
-                    return;
                 }
             };
             recognition.onerror = (event) => {
@@ -115,6 +126,7 @@ export function useSpeechRecognition({
             };
 
             recognition.onend = () => {
+                lastProcessedIndexRef.current = -1; // Reset for new session
                 // Use isPausedRef to avoid stale closure from the instantiation scope
                 if (
                     isMountedRef.current &&
