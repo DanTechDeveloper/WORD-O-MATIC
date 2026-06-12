@@ -63,64 +63,39 @@ export function useSpeechRecognition({
         if (!recognitionRef.current) {
             const recognition = new SpeechRecognition();
             recognition.continuous = true;
-            recognition.interimResults = true;
+            recognition.interimResults = false;
             recognition.lang = "en-US";
 
             recognition.onresult = (event) => {
-                // Removed processing lock
+                const result = event.results[event.resultIndex];
 
-                const resultIndex = event.resultIndex;
-                const lastResult = event.results[resultIndex];
-                const result = lastResult[0];
-                const transcript = result.transcript.toLowerCase();
-                // Removed confidence checks
+                if (!result) return;
 
-                const cleanTranscript = transcript
-                    .replace(/[^\w\s]/g, "")
-                    .trim();
-                const currentTarget = targetWordRef.current;
-                if (!currentTarget) return;
-
-                const cleanTarget = currentTarget
+                const transcript = (result[0]?.transcript || "")
                     .toLowerCase()
                     .replace(/[^\w\s]/g, "")
                     .trim();
-                // Removed regex
-                const isMatch = cleanTranscript === cleanTarget; // Exact comparison
 
-                // SUCCESS PATH: Match found (Interim or Final)
-                // Removed confidence checks
-                if (isMatch && lastResult.isFinal) {
-                    // Modified to only consider final results
-                    // Removed resultIndex tracking
-                    // Removed processing lock
-                    // Removed resultIndex tracking
+                const target = (targetWordRef.current || "")
+                    .toLowerCase()
+                    .replace(/[^\w\s]/g, "")
+                    .trim();
 
-                    // Removed interim matching
-                    // Removed interim matching
-                    if (onWordRecognizedRef.current)
-                        onWordRecognizedRef.current();
+                if (!target || !transcript) return;
 
-                    // Removed processing lock
-                    // Removed processing lock
-                    // Removed processing lock
-                    // Removed resultIndex tracking
+                const isMatch = transcript === target;
+
+                // FINAL RESULT ONLY = source of truth
+                if (result.isFinal) {
+                    if (isMatch) {
+                        onWordRecognizedRef.current?.();
+                    } else if (transcript.length > 0) {
+                        onMispronouncedRef.current?.();
+                    }
+
                     return;
                 }
-
-                // FAILURE PATH: Only trigger mispronunciation on Final result
-                if (lastResult.isFinal) {
-                    // Removed interim matching
-                    // Removed interim matching
-
-                    // Only trigger mispronounce if the user actually said something substantial
-                    if (cleanTranscript.length > 0 && !isMatch) {
-                        if (onMispronouncedRef.current)
-                            onMispronouncedRef.current();
-                    }
-                } // Removed interim feedback block
             };
-
             recognition.onerror = (event) => {
                 if (event.error === "aborted") {
                     console.warn(
@@ -160,30 +135,22 @@ export function useSpeechRecognition({
 
     // Approach 2: Strictly manage start/stop without re-binding listeners
     useEffect(() => {
-        if (!recognitionRef.current) return;
+        const recognition = recognitionRef.current;
+
+        if (!recognition) return;
 
         if (isActive && !isPaused) {
             try {
-                recognitionRef.current.start();
-            } catch (e) {
-                // Instance might already be running
+                recognition.start();
+            } catch {
+                // already running
             }
         } else {
             try {
-                recognitionRef.current.stop();
-            } catch (e) {
-                // Instance might already be stopped
+                recognition.stop();
+            } catch {
+                // already stopped
             }
         }
-
-        return () => {
-            if (recognitionRef.current) {
-                try {
-                    recognitionRef.current.stop();
-                } catch (e) {
-                    // Ignore errors on unmount
-                }
-            }
-        };
     }, [isActive, isPaused]);
 }
