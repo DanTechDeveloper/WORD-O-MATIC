@@ -3,26 +3,24 @@ import { useEffect, useRef } from "react";
 export function useSpeechRecognition({
     isActive,
     isPaused,
-    words,
-    currentWordIndex,
+    targetWord,
     onWordRecognized,
     onPermissionDenied,
-    onInterimMatch,
+    // Removed interim matching
     onMispronounced,
     onRecognitionError,
 }) {
     const recognitionRef = useRef(null);
     const gameStateRef = useRef(isActive);
     const isPausedRef = useRef(isPaused);
-    const currentWordIndexRef = useRef(currentWordIndex);
-    const wordsRef = useRef(words);
+    const targetWordRef = useRef(targetWord);
     const onWordRecognizedRef = useRef(onWordRecognized);
     const onPermissionDeniedRef = useRef(onPermissionDenied);
-    const onInterimMatchRef = useRef(onInterimMatch);
+    // Removed interim matching
     const onMispronouncedRef = useRef(onMispronounced);
     const onRecognitionErrorRef = useRef(onRecognitionError);
-    const processingRef = useRef(false);
-    const lastProcessedIndexRef = useRef(-1); // Prevents duplicate processing of segments
+    // Removed processing lock
+    // Removed resultIndex tracking
     const isMountedRef = useRef(false);
 
     // Track hook mount/unmount lifecycle
@@ -38,21 +36,17 @@ export function useSpeechRecognition({
     useEffect(() => {
         gameStateRef.current = isActive;
         isPausedRef.current = isPaused;
-        currentWordIndexRef.current = currentWordIndex;
-        wordsRef.current = words;
+        targetWordRef.current = targetWord; // Update targetWordRef
         onWordRecognizedRef.current = onWordRecognized;
         onPermissionDeniedRef.current = onPermissionDenied;
-        onInterimMatchRef.current = onInterimMatch;
         onMispronouncedRef.current = onMispronounced;
         onRecognitionErrorRef.current = onRecognitionError;
     }, [
         isActive,
         isPaused,
-        currentWordIndex,
-        words,
+        targetWord, // Dependency changed
         onWordRecognized,
         onPermissionDenied,
-        onInterimMatch,
         onMispronounced,
         onRecognitionError,
     ]);
@@ -73,65 +67,58 @@ export function useSpeechRecognition({
             recognition.lang = "en-US";
 
             recognition.onresult = (event) => {
-                if (processingRef.current) return;
+                // Removed processing lock
 
                 const resultIndex = event.resultIndex;
                 const lastResult = event.results[resultIndex];
                 const result = lastResult[0];
                 const transcript = result.transcript.toLowerCase();
-                const confidence = result.confidence;
+                // Removed confidence checks
 
                 const cleanTranscript = transcript
                     .replace(/[^\w\s]/g, "")
                     .trim();
-                const targetWord =
-                    wordsRef.current[currentWordIndexRef.current];
-                if (!targetWord) return;
+                const currentTarget = targetWordRef.current;
+                if (!currentTarget) return;
 
-                const cleanTarget = targetWord
+                const cleanTarget = currentTarget
                     .toLowerCase()
                     .replace(/[^\w\s]/g, "")
                     .trim();
-                const regex = new RegExp(`\\b${cleanTarget}\\b`, "i");
-                const isMatch = regex.test(cleanTranscript);
+                // Removed regex
+                const isMatch = cleanTranscript === cleanTarget; // Exact comparison
 
                 // SUCCESS PATH: Match found (Interim or Final)
-                // We allow interim success if confidence is high to avoid "No Response" lag
-                if (isMatch && (lastResult.isFinal || confidence > 0.1)) {
-                    if (lastProcessedIndexRef.current !== resultIndex) {
-                        processingRef.current = true;
-                        lastProcessedIndexRef.current = resultIndex;
+                // Removed confidence checks
+                if (isMatch && lastResult.isFinal) {
+                    // Modified to only consider final results
+                    // Removed resultIndex tracking
+                    // Removed processing lock
+                    // Removed resultIndex tracking
 
-                        if (onInterimMatchRef.current)
-                            onInterimMatchRef.current(false);
-                        if (onWordRecognizedRef.current)
-                            onWordRecognizedRef.current();
+                    // Removed interim matching
+                    // Removed interim matching
+                    if (onWordRecognizedRef.current)
+                        onWordRecognizedRef.current();
 
-                        setTimeout(() => {
-                            processingRef.current = false;
-                        }, 200);
-                    }
+                    // Removed processing lock
+                    // Removed processing lock
+                    // Removed processing lock
+                    // Removed resultIndex tracking
                     return;
                 }
 
                 // FAILURE PATH: Only trigger mispronunciation on Final result
                 if (lastResult.isFinal) {
-                    if (onInterimMatchRef.current)
-                        onInterimMatchRef.current(false);
+                    // Removed interim matching
+                    // Removed interim matching
 
                     // Only trigger mispronounce if the user actually said something substantial
                     if (cleanTranscript.length > 0 && !isMatch) {
                         if (onMispronouncedRef.current)
                             onMispronouncedRef.current();
                     }
-                } else {
-                    // INTERIM FEEDBACK: Signal match state only if user is speaking
-                    if (onInterimMatchRef.current) {
-                        onInterimMatchRef.current(
-                            cleanTranscript.length > 0 ? isMatch : null,
-                        );
-                    }
-                }
+                } // Removed interim feedback block
             };
 
             recognition.onerror = (event) => {

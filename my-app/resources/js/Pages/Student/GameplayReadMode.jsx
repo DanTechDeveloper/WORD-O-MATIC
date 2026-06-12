@@ -16,7 +16,6 @@ export default function GameplayReadMode({ module }) {
     const [currentWordIndex, setCurrentWordIndex] = useState(0);
     const [currentScore, setCurrentScore] = useState(0);
     const [gameState, setGameState] = useState("IDLE"); // IDLE, COUNTDOWN, ACTIVE, DENIED, GAMEOVER
-    const [interimMatch, setInterimMatch] = useState(false);
     const [isMispronounced, setIsMispronounced] = useState(false);
     const [showPointsFeedback, setShowPointsFeedback] = useState(false);
     const [pointsFeedbackValue, setPointsFeedbackValue] = useState(0);
@@ -47,33 +46,39 @@ export default function GameplayReadMode({ module }) {
         router.visit("/student/readModeLevels");
     };
 
+    // Point 4: Missing boundary guard
     const moveToNextWord = useCallback(() => {
         setCurrentWordIndex((prev) => {
             const next = prev + 1;
             if (next >= totalWords) {
                 setGameState("GAMEOVER");
+                return prev; // Stay on the last word if game is over
             }
-            return Math.min(next, totalWords);
+            return next;
         }); // totalWords is now derived from speechRecognitionWords
     }, [totalWords]);
 
+    // Point 1 & 2: Stale currentWordIndex & advancing word in two places
     const handleWordRecognized = useCallback(() => {
-        const points = module.words[currentWordIndex]?.points || 0; // Get points from module.words
-        setCurrentScore((prev) => prev + points); // Increment score
-        setPointsFeedbackValue(points); // Set points for feedback
-        setShowPointsFeedback(true); // Show feedback
-        setTimeout(() => setShowPointsFeedback(false), 500); // Hide feedback after 500ms
-        setScoreEmphasize(true); // Emphasize score in header
-        setTimeout(() => setScoreEmphasize(false), 500); // Stop emphasizing after 500ms
-        moveToNextWord(); // Move to next word
-    }, [currentWordIndex, module.words, moveToNextWord]);
+        // Removed `index` parameter
+        const points = module.words[currentWordIndex]?.points || 0; // Use currentWordIndex from state
+        setCurrentScore((prev) => prev + points);
+        setPointsFeedbackValue(points);
+        setShowPointsFeedback(true);
+        setTimeout(() => setShowPointsFeedback(false), 500);
+        setScoreEmphasize(true);
+        setTimeout(() => setScoreEmphasize(false), 500);
+        moveToNextWord(); // Parent controls progression
+    }, [currentWordIndex, module.words, moveToNextWord]); // Added currentWordIndex to dependencies
 
+    // Point 3: setTimeout mispronounce is unnecessary latency
     const handleMispronounce = useCallback(() => {
         setIsMispronounced(true);
-        setTimeout(() => {
+        moveToNextWord(); // Move to next word immediately
+        // Clear mispronounced state after a short delay for visual feedback
+        requestAnimationFrame(() => {
             setIsMispronounced(false);
-            moveToNextWord();
-        }, 200);
+        });
     }, [moveToNextWord]); // Removed scoreEmphasize from dependencies as it's not directly used here.
 
     // State for score emphasis in GameplayHeader
@@ -118,26 +123,22 @@ export default function GameplayReadMode({ module }) {
         setGameState("GAMEOVER");
     }, []);
 
-    const handleInterimMatch = useCallback((isMatch) => {
-        setInterimMatch(isMatch);
-    }, []);
-
     // 2. Countdown Hook
     const countdownValue = useCountdown(gameState, () =>
         setGameState("ACTIVE"),
     ); // This callback is already stable
 
     // 3. Speech Recognition Hook
+    // Point 5: Speech hook is now correct but slightly over-injected
+    const targetWord = speechRecognitionWords[currentWordIndex];
     useSpeechRecognition({
         isActive: gameState === "ACTIVE",
         isPaused: isSettingsOpen,
-        words: speechRecognitionWords,
-        currentWordIndex: currentWordIndex,
+        targetWord: targetWord, // Changed from words, currentWordIndex
         onWordRecognized: handleWordRecognized,
         onPermissionDenied: () => setGameState("DENIED"),
-        onInterimMatch: handleInterimMatch,
-        onMispronounced: handleMispronounce,
-        onRecognitionError: undefined,
+        onMispronounced: handleMispronounce, // Removed interim matching
+        onRecognitionError: undefined, // Removed interim matching
     });
 
     // --- End Custom Hooks ---
@@ -192,7 +193,6 @@ export default function GameplayReadMode({ module }) {
                     isMispronounced={isMispronounced}
                     showPointsFeedback={showPointsFeedback}
                     pointsFeedbackValue={pointsFeedbackValue}
-                    interimMatch={interimMatch}
                 />
 
                 <div>
