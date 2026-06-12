@@ -1,11 +1,7 @@
-import GameplayHeader from "@/Components/Student/GameplayHeader";
-import Microphone from "@/Components/Student/Microphone";
 import SpeakModeMainContent from "@/Components/Student/SpeakModeMainContent";
+import GameplayShell from "@/Components/Student/GameplayShell";
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { router } from "@inertiajs/react";
-import GameOverModal from "@/Components/Student/GameOverModal";
-import DeniedModal from "@/Components/Student/DeniedModal";
-import SettingsModal from "@/Components/Student/SettingsModal";
 
 // Import new hooks
 import { useCountdown } from "@/hooks/Student/useCountdown";
@@ -121,52 +117,32 @@ export default function GameplaySpeakMode({ module }) {
     }, []);
 
     return (
-        <>
-            <div className="bg-background text-on-background font-body-md h-screen flex flex-col overflow-hidden">
-                <GameOverModal
-                    gameState={gameState}
-                    currentWordIndex={currentWordIndex}
-                    score={currentScore}
-                    totalWords={totalWords}
-                    onPlayAgain={handlePlayAgain}
-                />
-                <DeniedModal gameState={gameState} />
-
-                <SettingsModal
-                    isOpen={isSettingsOpen}
-                    onClose={handleCloseSettings}
-                    musicVolume={musicVolume}
-                    setMusicVolume={setMusicVolume}
-                    sfxVolume={sfxVolume}
-                    setSfxVolume={setSfxVolume}
-                    onRestart={handleRestart}
-                    onExit={handleExit}
-                />
-
-                <GameplayHeader
-                    level={`${module.level} - ${module.title}`}
-                    onOpenSettings={handleOpenSettings}
-                    isActive={gameState === "ACTIVE"}
-                    isPaused={isSettingsOpen}
-                    wordsSmashed={currentScore}
-                    onTimeUp={handleTimeUp}
-                />
-
-                <SpeakModeMainContent
-                    words={words}
-                    currentWordIndex={currentWordIndex}
-                    gameState={gameState}
-                    countdownValue={countdownValue}
-                    interimMatch={interimMatch}
-                />
-
-                <div>
-                    <Microphone // The Microphone component's onClick should trigger game start
-                        isListening={gameState === "ACTIVE"}
-                        disabled={gameState === "COUNTDOWN"}
-                    />
-                </div>
-            </div>
-        </>
+        <GameplayShell
+            module={module}
+            gameState={gameState}
+            currentWordIndex={currentWordIndex}
+            totalWords={totalWords}
+            currentScore={currentScore}
+            onPlayAgain={handlePlayAgain}
+            backToMapUrl="/student/speakModeLevels"
+            isSettingsOpen={isSettingsOpen}
+            onOpenSettings={handleOpenSettings}
+            onCloseSettings={handleCloseSettings}
+            musicVolume={musicVolume}
+            setMusicVolume={setMusicVolume}
+            sfxVolume={sfxVolume}
+            setSfxVolume={setSfxVolume}
+            onRestart={handleRestart}
+            onExit={handleExit}
+            onTimeUp={handleTimeUp}
+        >
+            <SpeakModeMainContent
+                words={words}
+                currentWordIndex={currentWordIndex}
+                gameState={gameState}
+                countdownValue={countdownValue}
+                interimMatch={interimMatch}
+            />
+        </GameplayShell>
     );
 }

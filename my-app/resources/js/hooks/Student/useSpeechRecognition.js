@@ -1,70 +1,16 @@
 import { useEffect, useRef } from "react";
 
-/**
- * Calculates Levenshtein distance to determine word similarity
- */
-const getLevenshteinDistance = (a, b) => {
-    const matrix = [];
-    for (let i = 0; i <= b.length; i++) matrix[i] = [i];
-    for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
-
-    for (let i = 1; i <= b.length; i++) {
-        for (let j = 1; j <= a.length; j++) {
-            if (b.charAt(i - 1) === a.charAt(j - 1)) {
-                matrix[i][j] = matrix[i - 1][j - 1];
-            } else {
-                matrix[i][j] = Math.min(
-                    matrix[i - 1][j - 1] + 1,
-                    matrix[i][j - 1] + 1,
-                    matrix[i - 1][j] + 1,
-                );
-            }
-        }
-    }
-    return matrix[b.length][a.length];
-};
-
-const getSimilarity = (s1, s2) => {
-    const longer = s1.length > s2.length ? s1 : s2;
-    if (longer.length === 0) return 1.0;
-    return (longer.length - getLevenshteinDistance(s1, s2)) / longer.length;
-};
-
-/**
- * Checks if the transcript matches the target word.
- * Returns true for exact (word boundary) or fuzzy match.
- */
-const checkMatch = (cleanTranscript, currentTarget) => {
-    // Word Boundary Matching (prevents substring matches)
-    const wordBoundaryRegex = new RegExp(
-        `\\b${currentTarget}\\b`,
-        "i",
-    );
-    const isExactMatch = wordBoundaryRegex.test(cleanTranscript);
-
-    // Fuzzy Matching (for mispronunciations or engine errors)
-    // Only apply fuzzy matching if the word is long enough to avoid ambiguity
-    let isFuzzyMatch = false;
-    if (!isExactMatch && currentTarget.length > 3) {
-        const wordsInTranscript = cleanTranscript.split(/\s+/);
-        isFuzzyMatch = wordsInTranscript.some(
-            (word) => getSimilarity(word, currentTarget) >= 0.85,
-        );
-    }
-
-    return isExactMatch || isFuzzyMatch;
-};
-
-export function useSpeechRecognition(
+export function useSpeechRecognition({
     isActive,
     isPaused,
     words,
     currentWordIndex,
     onWordRecognized,
     onPermissionDenied,
-    onInterimMatch, // New: callback(bool) — true = possible match, false = clear
+    onInterimMatch,
+    onMispronounced,
     onRecognitionError,
-) {
+}) {
     const recognitionRef = useRef(null);
     const gameStateRef = useRef(isActive);
     const isPausedRef = useRef(isPaused);
@@ -73,8 +19,20 @@ export function useSpeechRecognition(
     const onWordRecognizedRef = useRef(onWordRecognized);
     const onPermissionDeniedRef = useRef(onPermissionDenied);
     const onInterimMatchRef = useRef(onInterimMatch);
+    const onMispronouncedRef = useRef(onMispronounced);
     const onRecognitionErrorRef = useRef(onRecognitionError);
     const processingRef = useRef(false);
+    const lastProcessedIndexRef = useRef(-1); // Prevents duplicate processing of segments
+    const isMountedRef = useRef(false);
+
+    // Track hook mount/unmount lifecycle
+    useEffect(() => {
+        isMountedRef.current = true;
+        return () => {
+            isMountedRef.current = false;
+            if (recognitionRef.current) recognitionRef.current.abort();
+        };
+    }, []);
 
     // Consolidate ref synchronization into a single effect
     useEffect(() => {
@@ -85,6 +43,7 @@ export function useSpeechRecognition(
         onWordRecognizedRef.current = onWordRecognized;
         onPermissionDeniedRef.current = onPermissionDenied;
         onInterimMatchRef.current = onInterimMatch;
+        onMispronouncedRef.current = onMispronounced;
         onRecognitionErrorRef.current = onRecognitionError;
     }, [
         isActive,
@@ -94,17 +53,12 @@ export function useSpeechRecognition(
         onWordRecognized,
         onPermissionDenied,
         onInterimMatch,
+        onMispronounced,
         onRecognitionError,
     ]);
 
+    // Approach 2: Persistent Engine Instance initialized once on mount
     useEffect(() => {
-        if (!isActive || isPaused) {
-            if (recognitionRef.current) {
-                recognitionRef.current.stop();
-            }
-            return;
-        }
-
         const SpeechRecognition =
             window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) {
@@ -121,8 +75,8 @@ export function useSpeechRecognition(
             recognition.onresult = (event) => {
                 if (processingRef.current) return;
 
-                const lastResultIndex = event.results.length - 1;
-                const lastResult = event.results[lastResultIndex];
+                const resultIndex = event.resultIndex;
+                const lastResult = event.results[resultIndex];
                 const result = lastResult[0];
                 const transcript = result.transcript.toLowerCase();
                 const confidence = result.confidence;
@@ -130,38 +84,52 @@ export function useSpeechRecognition(
                 const cleanTranscript = transcript
                     .replace(/[^\w\s]/g, "")
                     .trim();
+                const targetWord =
+                    wordsRef.current[currentWordIndexRef.current];
+                if (!targetWord) return;
 
-                const currentTarget = wordsRef.current[
-                    currentWordIndexRef.current
-                ]
-                    ?.toLowerCase()
+                const cleanTarget = targetWord
+                    .toLowerCase()
                     .replace(/[^\w\s]/g, "")
                     .trim();
+                const regex = new RegExp(`\\b${cleanTarget}\\b`, "i");
+                const isMatch = regex.test(cleanTranscript);
 
-                if (!currentTarget) return;
-
-                const isMatch = checkMatch(cleanTranscript, currentTarget);
-
-                if (lastResult.isFinal) {
-                    // --- FINAL RESULT: confirm or reject ---
-                    if (isMatch && confidence > 0.7) {
+                // SUCCESS PATH: Match found (Interim or Final)
+                // We allow interim success if confidence is high to avoid "No Response" lag
+                if (isMatch && (lastResult.isFinal || confidence > 0.1)) {
+                    if (lastProcessedIndexRef.current !== resultIndex) {
                         processingRef.current = true;
-                        // Clear interim state, then confirm
-                        if (onInterimMatchRef.current) onInterimMatchRef.current(false);
-                        onWordRecognizedRef.current();
+                        lastProcessedIndexRef.current = resultIndex;
+
+                        if (onInterimMatchRef.current)
+                            onInterimMatchRef.current(false);
+                        if (onWordRecognizedRef.current)
+                            onWordRecognizedRef.current();
+
                         setTimeout(() => {
                             processingRef.current = false;
-                        }, 500);
-                    } else {
-                        // Final result did not match — clear any interim highlight
-                        if (onInterimMatchRef.current) onInterimMatchRef.current(false);
+                        }, 200);
+                    }
+                    return;
+                }
+
+                // FAILURE PATH: Only trigger mispronunciation on Final result
+                if (lastResult.isFinal) {
+                    if (onInterimMatchRef.current)
+                        onInterimMatchRef.current(false);
+
+                    // Only trigger mispronounce if the user actually said something substantial
+                    if (cleanTranscript.length > 0 && !isMatch) {
+                        if (onMispronouncedRef.current)
+                            onMispronouncedRef.current();
                     }
                 } else {
-                    // --- INTERIM RESULT: show/clear preview ---
-                    if (isMatch) {
-                        if (onInterimMatchRef.current) onInterimMatchRef.current(true);
-                    } else {
-                        if (onInterimMatchRef.current) onInterimMatchRef.current(false);
+                    // INTERIM FEEDBACK: Signal match state only if user is speaking
+                    if (onInterimMatchRef.current) {
+                        onInterimMatchRef.current(
+                            cleanTranscript.length > 0 ? isMatch : null,
+                        );
                     }
                 }
             };
@@ -186,7 +154,11 @@ export function useSpeechRecognition(
 
             recognition.onend = () => {
                 // Use isPausedRef to avoid stale closure from the instantiation scope
-                if (gameStateRef.current && !isPausedRef.current) {
+                if (
+                    isMountedRef.current &&
+                    gameStateRef.current &&
+                    !isPausedRef.current
+                ) {
                     try {
                         recognitionRef.current.start();
                     } catch (e) {
@@ -197,19 +169,34 @@ export function useSpeechRecognition(
 
             recognitionRef.current = recognition;
         }
+    }, []); // Empty dependency array ensures persistent instance
 
-        try {
-            recognitionRef.current.start();
-        } catch (e) {
-            // Instance might already be running, or other error
-            console.warn(
-                "Attempted to start recognition, but it might already be running or encountered an error:",
-                e,
-            );
+    // Approach 2: Strictly manage start/stop without re-binding listeners
+    useEffect(() => {
+        if (!recognitionRef.current) return;
+
+        if (isActive && !isPaused) {
+            try {
+                recognitionRef.current.start();
+            } catch (e) {
+                // Instance might already be running
+            }
+        } else {
+            try {
+                recognitionRef.current.stop();
+            } catch (e) {
+                // Instance might already be stopped
+            }
         }
 
         return () => {
-            if (recognitionRef.current) recognitionRef.current.stop();
+            if (recognitionRef.current) {
+                try {
+                    recognitionRef.current.stop();
+                } catch (e) {
+                    // Ignore errors on unmount
+                }
+            }
         };
     }, [isActive, isPaused]);
 }

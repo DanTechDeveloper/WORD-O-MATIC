@@ -4,9 +4,12 @@ const GameplayHeader = memo(function GameplayHeader({
     level,
     onOpenSettings,
     isActive,
+    scoreEmphasize,
     isPaused,
     wordsSmashed = 0,
     onTimeUp,
+    showPointsFeedback,
+    pointsFeedbackValue,
 }) {
     const [timeLeft, setTimeLeft] = useState(60);
 
@@ -60,13 +63,29 @@ const GameplayHeader = memo(function GameplayHeader({
                             sword_rose
                         </span>
                     </div>
-                    <div>
+                    <div className="relative">
                         <p className="text-on-background/60 text-xs font-black uppercase tracking-widest leading-none mb-1">
                             Words Smashed
                         </p>
                         <p className="text-on-background text-3xl font-black leading-none italic">
-                            {wordsSmashed.toLocaleString()}
+                            <span
+                                className={
+                                    scoreEmphasize ? "animate-score-pulse" : ""
+                                }
+                            >
+                                {wordsSmashed.toLocaleString()}
+                            </span>
                         </p>
+                        {showPointsFeedback && pointsFeedbackValue > 0 && (
+                            <div
+                                className="absolute -top-10 left-0 text-lime-400 text-5xl font-black uppercase animate-points-feedback whitespace-nowrap drop-shadow-[0_0_10px_rgba(163,230,53,0.5)]"
+                                style={{
+                                    animationDuration: "0.5s",
+                                }}
+                            >
+                                +{pointsFeedbackValue}
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

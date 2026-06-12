@@ -1,10 +1,8 @@
 export default function SettingsModal({
     isOpen,
     onClose,
-    musicVolume,
-    setMusicVolume,
-    sfxVolume,
-    setSfxVolume,
+    audio,
+    onUpdateAudio,
     onRestart,
     onExit,
 }) {
@@ -23,15 +21,17 @@ export default function SettingsModal({
                         <div className="flex justify-between items-center text-white/60 font-black uppercase tracking-widest text-xs">
                             <span>Music Volume</span>
                             <span className="text-lime-400">
-                                {musicVolume}%
+                                {audio.music}%
                             </span>
                         </div>
                         <input
                             type="range"
                             min="0"
                             max="100"
-                            value={musicVolume}
-                            onChange={(e) => setMusicVolume(e.target.value)}
+                            value={audio.music}
+                            onChange={(e) =>
+                                onUpdateAudio("music", e.target.value)
+                            }
                             className="w-full h-3 bg-white/10 rounded-full appearance-none cursor-pointer accent-primary"
                         />
                     </div>
@@ -40,15 +40,17 @@ export default function SettingsModal({
                         <div className="flex justify-between items-center text-white/60 font-black uppercase tracking-widest text-xs">
                             <span>Sound FX</span>
                             <span className="text-fuchsia-400">
-                                {sfxVolume}%
+                                {audio.sfx}%
                             </span>
                         </div>
                         <input
                             type="range"
                             min="0"
                             max="100"
-                            value={sfxVolume}
-                            onChange={(e) => setSfxVolume(e.target.value)}
+                            value={audio.sfx}
+                            onChange={(e) =>
+                                onUpdateAudio("sfx", e.target.value)
+                            }
                             className="w-full h-3 bg-white/10 rounded-full appearance-none cursor-pointer accent-fuchsia-500"
                         />
                     </div>

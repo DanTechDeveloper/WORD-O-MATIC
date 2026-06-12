@@ -1,11 +1,11 @@
-import GameplayHeader from "@/Components/Student/GameplayHeader";
-import Microphone from "@/Components/Student/Microphone";
 import ReadModeMainContent from "@/Components/Student/ReadModeMainContent";
 import { router } from "@inertiajs/react";
-import { useState, useCallback, useEffect, useMemo } from "react";
+import GameplayHeader from "@/Components/Student/GameplayHeader";
+import Microphone from "@/Components/Student/Microphone";
 import GameOverModal from "@/Components/Student/GameOverModal";
 import DeniedModal from "@/Components/Student/DeniedModal";
 import SettingsModal from "@/Components/Student/SettingsModal";
+import { useState, useCallback, useEffect, useMemo } from "react";
 
 // Import new hooks
 import { useCountdown } from "@/hooks/Student/useCountdown";
@@ -14,28 +14,30 @@ import { useSpeechRecognition } from "@/hooks/Student/useSpeechRecognition";
 
 export default function GameplayReadMode({ module }) {
     const [currentWordIndex, setCurrentWordIndex] = useState(0);
+    const [currentScore, setCurrentScore] = useState(0);
     const [gameState, setGameState] = useState("IDLE"); // IDLE, COUNTDOWN, ACTIVE, DENIED, GAMEOVER
     const [interimMatch, setInterimMatch] = useState(false);
+    const [isMispronounced, setIsMispronounced] = useState(false);
+    const [showPointsFeedback, setShowPointsFeedback] = useState(false);
+    const [pointsFeedbackValue, setPointsFeedbackValue] = useState(0);
     // countdownValue is now managed by useCountdown
 
     // Settings and Audio State
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-    const [musicVolume, setMusicVolume] = useState(50);
-    const [sfxVolume, setSfxVolume] = useState(70);
+    const [audioSettings, setAudioSettings] = useState({
+        music: 50,
+        sfx: 70,
+    });
 
-    // Split the content into individual words
+    const updateAudioSetting = useCallback((key, value) => {
+        setAudioSettings((prev) => ({ ...prev, [key]: value }));
+    }, []);
+
     const speechRecognitionWords = useMemo(
         () => (module?.words ? module.words.map((w) => w.word) : []),
         [module?.words],
     );
     const totalWords = speechRecognitionWords.length;
-
-    // Calculate derived score based on database points
-    const currentScore = useMemo(() => {
-        return module.words
-            .slice(0, currentWordIndex)
-            .reduce((sum, w) => sum + (w.points || 0), 0);
-    }, [module.words, currentWordIndex]);
 
     const handleRestart = () => {
         window.location.reload();
@@ -45,7 +47,7 @@ export default function GameplayReadMode({ module }) {
         router.visit("/student/readModeLevels");
     };
 
-    const handleNextWord = useCallback(() => {
+    const moveToNextWord = useCallback(() => {
         setCurrentWordIndex((prev) => {
             const next = prev + 1;
             if (next >= totalWords) {
@@ -54,6 +56,28 @@ export default function GameplayReadMode({ module }) {
             return Math.min(next, totalWords);
         }); // totalWords is now derived from speechRecognitionWords
     }, [totalWords]);
+
+    const handleWordRecognized = useCallback(() => {
+        const points = module.words[currentWordIndex]?.points || 0; // Get points from module.words
+        setCurrentScore((prev) => prev + points); // Increment score
+        setPointsFeedbackValue(points); // Set points for feedback
+        setShowPointsFeedback(true); // Show feedback
+        setTimeout(() => setShowPointsFeedback(false), 500); // Hide feedback after 500ms
+        setScoreEmphasize(true); // Emphasize score in header
+        setTimeout(() => setScoreEmphasize(false), 500); // Stop emphasizing after 500ms
+        moveToNextWord(); // Move to next word
+    }, [currentWordIndex, module.words, moveToNextWord]);
+
+    const handleMispronounce = useCallback(() => {
+        setIsMispronounced(true);
+        setTimeout(() => {
+            setIsMispronounced(false);
+            moveToNextWord();
+        }, 200);
+    }, [moveToNextWord]); // Removed scoreEmphasize from dependencies as it's not directly used here.
+
+    // State for score emphasis in GameplayHeader
+    const [scoreEmphasize, setScoreEmphasize] = useState(false);
 
     // --- Custom Hooks ---
 
@@ -85,6 +109,11 @@ export default function GameplayReadMode({ module }) {
     const handleOpenSettings = useCallback(() => {
         setIsSettingsOpen(true);
     }, []);
+
+    const handleCloseSettings = useCallback(() => {
+        setIsSettingsOpen(false);
+    }, []);
+
     const handleTimeUp = useCallback(() => {
         setGameState("GAMEOVER");
     }, []);
@@ -99,60 +128,70 @@ export default function GameplayReadMode({ module }) {
     ); // This callback is already stable
 
     // 3. Speech Recognition Hook
-    useSpeechRecognition(
-        gameState === "ACTIVE", // isActive
-        isSettingsOpen, // isPaused
-        speechRecognitionWords, // Use the correctly derived array of strings
-        currentWordIndex,
-        handleNextWord, // onWordRecognized
-        () => setGameState("DENIED"), // onPermissionDenied (from recognition error)
-        handleInterimMatch, // onInterimMatch (dual-layer feedback)
-    );
+    useSpeechRecognition({
+        isActive: gameState === "ACTIVE",
+        isPaused: isSettingsOpen,
+        words: speechRecognitionWords,
+        currentWordIndex: currentWordIndex,
+        onWordRecognized: handleWordRecognized,
+        onPermissionDenied: () => setGameState("DENIED"),
+        onInterimMatch: handleInterimMatch,
+        onMispronounced: handleMispronounce,
+        onRecognitionError: undefined,
+    });
 
     // --- End Custom Hooks ---
 
-    const handlePlayAgain = useCallback(() => {
+    const onPlayAgain = useCallback(() => {
         setCurrentWordIndex(0);
+        setCurrentScore(0);
         setGameState("COUNTDOWN");
     }, []);
 
+    // Grouped props to clean up the return block
+    const headerProps = {
+        level: module ? `${module.level} - ${module.title}` : "",
+        isActive: gameState === "ACTIVE",
+        isPaused: isSettingsOpen,
+        wordsSmashed: currentScore,
+        onOpenSettings: handleOpenSettings,
+        onTimeUp: handleTimeUp,
+        scoreEmphasize,
+        showPointsFeedback,
+        pointsFeedbackValue,
+    };
+
     return (
         <>
-            <GameOverModal
-                gameState={gameState}
-                currentWordIndex={currentWordIndex}
-                score={currentScore}
-                totalWords={totalWords}
-                onPlayAgain={handlePlayAgain}
-            />
-            <DeniedModal gameState={gameState} />
-
-            <SettingsModal
-                isOpen={isSettingsOpen}
-                onClose={() => setIsSettingsOpen(false)}
-                musicVolume={musicVolume}
-                setMusicVolume={setMusicVolume}
-                sfxVolume={sfxVolume}
-                setSfxVolume={setSfxVolume}
-                onRestart={handleRestart}
-                onExit={handleExit}
-            />
             <div className="bg-background text-on-background font-body-md h-screen flex flex-col overflow-hidden">
-                <GameplayHeader
-                    level={`${module.level} - ${module.title}`}
-                    onOpenSettings={handleOpenSettings}
-                    isActive={gameState === "ACTIVE"}
-                    isPaused={isSettingsOpen}
-                    wordsSmashed={currentScore}
-                    onTimeUp={handleTimeUp}
+                <GameOverModal
+                    gameState={gameState}
+                    currentWordIndex={currentWordIndex}
+                    totalWords={totalWords}
+                    onPlayAgain={onPlayAgain}
+                    backToMapUrl={"/student/readModeLevels"}
+                />
+                <DeniedModal gameState={gameState} />
+                <SettingsModal
+                    isOpen={isSettingsOpen}
+                    onClose={handleCloseSettings}
+                    audio={audioSettings}
+                    onUpdateAudio={updateAudioSetting}
+                    onRestart={handleRestart}
+                    onExit={handleExit}
                 />
 
+                <GameplayHeader {...headerProps} />
+
                 <ReadModeMainContent
-                    words={module.words} // This is correct for ReadModeMainContent (array of objects)
+                    words={module.words}
                     currentIndex={currentWordIndex}
                     gameState={gameState}
                     countdownValue={countdownValue}
                     isExploding={false}
+                    isMispronounced={isMispronounced}
+                    showPointsFeedback={showPointsFeedback}
+                    pointsFeedbackValue={pointsFeedbackValue}
                     interimMatch={interimMatch}
                 />
 

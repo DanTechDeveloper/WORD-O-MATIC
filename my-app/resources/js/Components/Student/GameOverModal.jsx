@@ -5,6 +5,7 @@ export default function GameOverModal({
     currentWordIndex,
     totalWords,
     onPlayAgain,
+    backToMapUrl = "/student/speakModeLevels",
 }) {
     if (gameState !== "GAMEOVER") return null;
 
@@ -56,7 +57,7 @@ export default function GameOverModal({
                         </button>
 
                         <Link
-                        href="/student/speakModeLevels"
+                            href={backToMapUrl}
                             className="w-full bg-white/5 border-2 border-white/10 text-white text-xl font-black py-5 rounded-2xl uppercase"
                         >
                             Back To Map
