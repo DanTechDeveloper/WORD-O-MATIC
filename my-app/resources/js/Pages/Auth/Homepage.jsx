@@ -14,7 +14,6 @@ export default function Homepage() {
     });
 
     const handleSubmit = (e) => {
-        console.log(data);
         e.preventDefault();
         post("/", {
             onFinish: () => reset("pin", "password"),

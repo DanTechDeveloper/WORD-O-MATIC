@@ -18,12 +18,17 @@ class CheckStudentOnboarding
         if ($user && $user->role === 'student') {
             $hasAvatar = $user->student && ! empty($user->student->avatar);
 
-            if (! $hasAvatar && ! $request->routeIs('student.greetings')) {
-                return redirect()->route('student.greetings');
-            }
-
-            if ($hasAvatar && $request->routeIs('student.greetings')) {
-                return redirect()->route('student.dashboard');
+            // Scenario: New student or student without an avatar
+            if (! $hasAvatar) {
+                if (! $request->routeIs(['student.splashScreen', 'student.avatarSelection', 'student.updateAvatar'])) {
+                    return redirect()->route('student.splashScreen');
+                }
+            } 
+            // Scenario: Student already has an avatar - prevent returning to splash/selection
+            else {
+                if ($request->routeIs(['student.splashScreen', 'student.avatarSelection'])) {
+                    return redirect()->route('student.greetings');
+                }
             }
         }
 

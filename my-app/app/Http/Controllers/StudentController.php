@@ -18,6 +18,14 @@ use Inertia\Inertia;
  */
 class StudentController extends Controller
 {
+    public function splashScreen()
+    {
+        return Inertia::render("Student/SplashScreen");
+    }
+    public function avatarSelection()
+    {
+        return Inertia::render("Student/AvatarSelection");
+    }
     public function dashboard()
     {
         $data = auth()->user()->student()
@@ -61,7 +69,7 @@ class StudentController extends Controller
                 'avatar' => $request->avatar_url,
             ]);
 
-            return redirect()->back()->with('success', 'Avatar updated successfully!');
+            return redirect()->route('student.greetings')->with('success', 'Avatar updated successfully!');
         }
 
         return redirect()->back()->with('error', 'Student profile not found.');

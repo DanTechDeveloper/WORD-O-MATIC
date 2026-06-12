@@ -51,7 +51,10 @@ class UserController extends Controller
             Auth::login($user);
             $request->session()->regenerate();
 
-            return redirect()->route('student.dashboard');
+            $hasAvatar = $user->student && ! empty($user->student->avatar);
+            return $hasAvatar 
+                ? redirect()->route('student.dashboard') 
+                : redirect()->route('student.splashScreen');
         }
 
         $request->validate([

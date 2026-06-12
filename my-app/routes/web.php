@@ -39,16 +39,15 @@ Route::middleware(['auth'])->group(function () {
 
     Route::prefix('student')
         ->name('student.')
-        ->middleware(['role:student'])
-        ->group(function () {
-            Route::get('/greetings', [StudentController::class, 'greetings'])->name('greetings');
-            Route::post('/avatar', [StudentController::class, 'updateAvatar'])->name('avatar');
-        });
-
-    Route::prefix('student')
-        ->name('student.')
         ->middleware(['role:student', CheckStudentOnboarding::class])
         ->group(function () {
+            // Onboarding Routes (now protected by the same middleware to prevent re-entry)
+            Route::get('/splashScreen', [StudentController::class, 'splashScreen'])->name('splashScreen');
+            Route::get('/avatarSelection', [StudentController::class, 'avatarSelection'])->name('avatarSelection');
+            Route::post('/avatar', [StudentController::class, 'updateAvatar'])->name('updateAvatar');
+            Route::get('/greetings', [StudentController::class, 'greetings'])->name('greetings');
+
+            // Main Application Routes
             Route::get('/dashboard', [StudentController::class, 'dashboard'])->name('dashboard');
             Route::get('/tutorial', [StudentController::class, 'tutorial'])->name('tutorial');
             Route::get('/leaderboards', [StudentController::class, 'leaderboards'])->name('leaderboards');
