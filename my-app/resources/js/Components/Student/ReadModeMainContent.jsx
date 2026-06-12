@@ -1,13 +1,13 @@
 import { useEffect, useState, memo } from "react";
 
 const FRUIT_COLORS = [
-    { shadow: "#FF3B30", bubble: "bg-red-500/40" }, // Watermelon Red
-    { shadow: "#4CD964", bubble: "bg-green-500/40" }, // Lime Green
-    { shadow: "#FF9500", bubble: "bg-orange-500/40" }, // Orange
-    { shadow: "#FFCC00", bubble: "bg-yellow-500/40" }, // Lemon Yellow
-    { shadow: "#5856D6", bubble: "bg-purple-500/40" }, // Grape Purple
-    { shadow: "#007AFF", bubble: "bg-blue-500/40" }, // Blueberry Blue
-    { shadow: "#FF2D55", bubble: "bg-pink-500/40" }, // Dragonfruit Pink
+    { shadow: "#FF3B30", bubble: "bg-red-500/40" },
+    { shadow: "#4CD964", bubble: "bg-green-500/40" },
+    { shadow: "#FF9500", bubble: "bg-orange-500/40" },
+    { shadow: "#FFCC00", bubble: "bg-yellow-500/40" },
+    { shadow: "#5856D6", bubble: "bg-purple-500/40" },
+    { shadow: "#007AFF", bubble: "bg-blue-500/40" },
+    { shadow: "#FF2D55", bubble: "bg-pink-500/40" },
 ];
 
 const ReadModeMainContent = memo(function ReadModeMainContent({

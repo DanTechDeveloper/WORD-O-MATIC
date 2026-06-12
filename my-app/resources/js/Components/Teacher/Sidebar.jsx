@@ -79,8 +79,9 @@ export default function Sidebar() {
                     </div>
 
                     <Link
-                        href="/"
+                        href="/logout"m
                         as="button"
+                        method="POST"
                         className="w-full flex items-center justify-center gap-2 p-3 bg-rose-500 text-slate-950 rounded-xl border-2 border-slate-950 shadow-[4px_4px_0_0_#4c0519] font-black font-lexend text-xs uppercase tracking-wider hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all"
                     >
                         <span className="material-symbols-outlined">
