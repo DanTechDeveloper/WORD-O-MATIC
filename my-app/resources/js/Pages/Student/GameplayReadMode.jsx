@@ -4,8 +4,8 @@ import GameplayHeader from "@/Components/Student/GameplayHeader";
 import Microphone from "@/Components/Student/Microphone";
 import GameOverModal from "@/Components/Student/GameOverModal";
 import DeniedModal from "@/Components/Student/DeniedModal";
-import SettingsModal from "@/Components/Student/SettingsModal";d
-import { useState, useCallback, useEffect, useMemo } from "react";
+import SettingsModal from "@/Components/Student/SettingsModal";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 
 // Import new hooks
 import { useCountdown } from "@/hooks/Student/useCountdown";
@@ -20,6 +20,8 @@ export default function GameplayReadMode({ module }) {
     const [isMispronounced, setIsMispronounced] = useState(false);
     const [showPointsFeedback, setShowPointsFeedback] = useState(false);
     const [pointsFeedbackValue, setPointsFeedbackValue] = useState(0);
+
+    const hasSaved = useRef(false);
     // countdownValue is now managed by useCountdown
 
     // Settings and Audio State
@@ -62,14 +64,30 @@ export default function GameplayReadMode({ module }) {
             currentWordIndex >= totalWords &&
             totalWords > 0
         ) {
+            // Persistence triggers IMMEDIATELY to win the race against user clicks
+            if (!hasSaved.current && wordsSmashed > 0) {
+                hasSaved.current = true;
+                router.post(
+                    "/student/saveWordProgress",
+                    {
+                        module_id: module.id,
+                        words_smashed: wordsSmashed,
+                    },
+                    {
+                        preserveScroll: true,
+                        onSuccess: () =>
+                            console.log("Progress saved successfully!"),
+                    },
+                );
+            }
+
             const timer = setTimeout(() => {
-                // Set to COMPLETED if any words were smashed,
-                // otherwise GAMEOVER (All Mistake)
-                setGameState(wordsSmashed > 0 ? "COMPLETED" : "GAMEOVER");
+                const finalState = wordsSmashed > 0 ? "COMPLETED" : "GAMEOVER";
+                setGameState(finalState);
             }, 1200);
             return () => clearTimeout(timer);
         }
-    }, [currentWordIndex, totalWords, wordsSmashed, gameState]);
+    }, [currentWordIndex, totalWords, wordsSmashed, gameState, module.id]);
 
     // Point 1 & 2: Stale currentWordIndex & advancing word in two places
     const handleWordRecognized = useCallback(() => {
@@ -134,8 +152,21 @@ export default function GameplayReadMode({ module }) {
     }, []);
 
     const handleTimeUp = useCallback(() => {
+        if (!hasSaved.current && wordsSmashed > 0) {
+            hasSaved.current = true;
+            router.post(
+                "/student/saveWordProgress",
+                {
+                    module_id: module.id,
+                    words_smashed: wordsSmashed,
+                },
+                {
+                    preserveScroll: true,
+                },
+            );
+        }
         setGameState("GAMEOVER");
-    }, []);
+    }, [module.id, wordsSmashed]);
 
     // 2. Countdown Hook
     const countdownValue = useCountdown(gameState, () =>

@@ -60,5 +60,10 @@ class User extends Authenticatable
     {
         return $this->hasOne(StudentProfile::class, 'user_id');
     }
+
+    public function wordProgress()
+    {
+        return $this->hasMany(StudentWordProgress::class, 'user_id');
+    }
 }
 ?>

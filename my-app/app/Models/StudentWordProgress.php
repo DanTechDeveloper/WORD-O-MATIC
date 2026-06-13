@@ -14,8 +14,9 @@ class StudentWordProgress extends Model
     protected $fillable = [
         'user_id',
         'word_module_id',
-        'word_id',
         'status',
+        'words_smashed',
+        'accuracy',
     ];
 
     public function user()
@@ -23,12 +24,7 @@ class StudentWordProgress extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function word()
-    {
-        return $this->belongsTo(Word::class);
-    }
-
-    public function module()
+    public function wordModule()
     {
         return $this->belongsTo(WordModule::class, 'word_module_id');
     }

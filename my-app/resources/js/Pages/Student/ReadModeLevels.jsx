@@ -25,6 +25,7 @@ export default function ReadModeLevels({ modules }) {
                 left: `${100 + index * 250}px`,
             }; // Trust the controller mapping
             const status = moduleData.status || "locked";
+            const totalPoints = moduleData.total_points || 0;
 
             const title = moduleData.title || `Module ${level}`;
             let subTitle = "";
@@ -50,8 +51,8 @@ export default function ReadModeLevels({ modules }) {
                 id: moduleData.id, // Fixed: Use database ID for navigation
                 level: level, // Display level number
                 status: status,
-                points: moduleData.total_score || 0, // Ito ang total items
-                score: moduleData.words_smashed || 0, // Ito ang nakuha ng student
+                points: totalPoints, // Ito ang total items
+                // score: moduleData.words_smashed || 0, // Ito ang nakuha ng student
                 title: title,
                 subTitle: subTitle,
                 icon: icon,
