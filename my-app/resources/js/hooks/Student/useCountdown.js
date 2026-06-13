@@ -20,8 +20,8 @@ export function useCountdown(gameState, onCountdownEnd) {
                 if (prev === 2) return 1;
                 if (prev === 1) return "GO!";
                 if (prev === "GO!") {
-                    clearInterval(timer);
-                    setTimeout(() => onCountdownEndRef.current(), 800); // 0.8s buffer
+                    clearInterval(timer); // Clear the interval immediately
+                    onCountdownEndRef.current(); // Call the callback immediately
                     return "GO!";
                 }
                 return prev;

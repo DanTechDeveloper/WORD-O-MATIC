@@ -35,6 +35,8 @@ export function useSpeechRecognition({
     const onRecognitionErrorRef = useRef(onRecognitionError);
     onRecognitionErrorRef.current = onRecognitionError;
 
+    const hasMatchedCurrentRef = useRef(false);
+
     // Removed processing lock
     const lastProcessedIndexRef = useRef(-1);
     const isMountedRef = useRef(false);
@@ -60,16 +62,14 @@ export function useSpeechRecognition({
         if (!recognitionRef.current) {
             const recognition = new SpeechRecognition();
             recognition.continuous = true;
-            recognition.interimResults = false;
+            recognition.interimResults = true;
             recognition.lang = "en-US";
 
             recognition.onresult = (event) => {
-                const target = (targetWordRef.current || "")
-                    .toLowerCase()
-                    .replace(/[^\w\s]/g, "")
-                    .trim();
+                const target = targetWordRef.current.toLowerCase().trim();
 
-                if (!target) return;
+                if (!target ) return;
+                console.log(event.results);
 
                 // Iterate through all new results starting from event.resultIndex
                 for (let i = event.resultIndex; i < event.results.length; ++i) {
@@ -80,23 +80,30 @@ export function useSpeechRecognition({
 
                     if (!result) continue;
 
-                    const transcript = (result[0]?.transcript || "")
+                    const transcript = (result[0]?.transcript)
                         .toLowerCase()
                         .replace(/[^\w\s]/g, "")
                         .trim();
 
                     if (!transcript) continue;
 
-                    const isMatch = transcript === target;
+                    // Mas mabilis na detection: tinitingnan kung nandoon ang target word sa loob ng transcript
+                    const wordsInTranscript = transcript.split(/\s+/);
+                    const isMatch = wordsInTranscript.includes(target);
 
-                    // FINAL RESULT ONLY = source of truth
+                    if (isMatch && !hasMatchedCurrentRef.current) {
+                        hasMatchedCurrentRef.current = true;
+                        onWordRecognizedRef.current?.();
+                        return;
+                    }
+
                     if (result.isFinal) {
                         lastProcessedIndexRef.current = i;
-
-                        if (isMatch) {
-                            onWordRecognizedRef.current?.();
-                        } else if (transcript.length > 0) {
-                            onMispronouncedRef.current?.();
+                        if (
+                            !hasMatchedCurrentRef.current &&
+                            transcript.length > 0
+                        ) {
+                            onMispronouncedRef.current?.(transcript);
                         }
                     }
                 }
@@ -121,6 +128,7 @@ export function useSpeechRecognition({
 
             recognition.onend = () => {
                 lastProcessedIndexRef.current = -1; // Reset for new session
+                hasMatchedCurrentRef.current = false;
                 // Use isPausedRef to avoid stale closure from the instantiation scope
                 if (
                     isMountedRef.current &&
@@ -138,6 +146,10 @@ export function useSpeechRecognition({
             recognitionRef.current = recognition;
         }
     }, []); // Empty dependency array ensures persistent instance
+
+    useEffect(() => {
+        hasMatchedCurrentRef.current = false;
+    }, [targetWord]);
 
     // Approach 2: Strictly manage start/stop without re-binding listeners
     useEffect(() => {
