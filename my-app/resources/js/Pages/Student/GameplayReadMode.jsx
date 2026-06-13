@@ -4,7 +4,7 @@ import GameplayHeader from "@/Components/Student/GameplayHeader";
 import Microphone from "@/Components/Student/Microphone";
 import GameOverModal from "@/Components/Student/GameOverModal";
 import DeniedModal from "@/Components/Student/DeniedModal";
-import SettingsModal from "@/Components/Student/SettingsModal";
+import SettingsModal from "@/Components/Student/SettingsModal";d
 import { useState, useCallback, useEffect, useMemo } from "react";
 
 // Import new hooks
@@ -51,17 +51,25 @@ export default function GameplayReadMode({ module }) {
     const moveToNextWord = useCallback(() => {
         setCurrentWordIndex((prev) => {
             const next = prev + 1;
-            if (next >= totalWords) {
-                // Huwag agad tapusin ang laro.
-                // Bigyan ng 1.2 seconds ang UI para ipakita ang huling points.
-                setTimeout(() => {
-                    setGameState("GAMEOVER");
-                }, 1200);
-                return next; // Allow index to reach totalWords for correct score counting
-            }
             return next;
         }); // totalWords is now derived from speechRecognitionWords
     }, [totalWords]);
+
+    // Evaluate game state when all words are processed
+    useEffect(() => {
+        if (
+            gameState === "ACTIVE" &&
+            currentWordIndex >= totalWords &&
+            totalWords > 0
+        ) {
+            const timer = setTimeout(() => {
+                // Set to COMPLETED if any words were smashed,
+                // otherwise GAMEOVER (All Mistake)
+                setGameState(wordsSmashed > 0 ? "COMPLETED" : "GAMEOVER");
+            }, 1200);
+            return () => clearTimeout(timer);
+        }
+    }, [currentWordIndex, totalWords, wordsSmashed, gameState]);
 
     // Point 1 & 2: Stale currentWordIndex & advancing word in two places
     const handleWordRecognized = useCallback(() => {
@@ -80,10 +88,11 @@ export default function GameplayReadMode({ module }) {
     // Point 3: setTimeout mispronounce is unnecessary latency
     const handleMispronounce = useCallback(() => {
         setIsMispronounced(true);
-        moveToNextWord(); // Move to next word immediately
-        // Clear mispronounced state after a short delay for visual feedback
+        // Bigyan ng oras ang user na makita ang "shake" animation
+        setTimeout(() => {
             setIsMispronounced(false);
-        
+            moveToNextWord();
+        }, 500);
     }, [moveToNextWord]); // Removed scoreEmphasize from dependencies as it's not directly used here.
 
     // State for score emphasis in GameplayHeader
@@ -173,7 +182,7 @@ export default function GameplayReadMode({ module }) {
             <div className="bg-background text-on-background font-body-md h-screen flex flex-col overflow-hidden">
                 <GameOverModal
                     gameState={gameState}
-                    currentWordIndex={wordsSmashed}
+                    wordsSmashed={wordsSmashed}
                     totalWords={totalWords}
                     onPlayAgain={onPlayAgain}
                     backToMapUrl={"/student/readModeLevels"}

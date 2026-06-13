@@ -2,34 +2,43 @@ import { Link } from "@inertiajs/react";
 
 export default function GameOverModal({
     gameState,
-    currentWordIndex,
+    wordsSmashed,
     totalWords,
     onPlayAgain,
     backToMapUrl = "/student/speakModeLevels",
 }) {
-    if (gameState !== "GAMEOVER") return null;
+    // Only show the modal if the game has ended
+    if (gameState !== "GAMEOVER" && gameState !== "COMPLETED") return null;
 
     const accuracy =
-        totalWords > 0
-            ? ((currentWordIndex / totalWords) * 100).toFixed(2)
-            : 0;
+        totalWords > 0 ? ((wordsSmashed / totalWords) * 100).toFixed(2) : 0;
 
     return (
         <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/80 backdrop-blur-xl p-6">
             <div className="absolute w-96 h-96 bg-gradient-to-tr from-primary via-fuchsia-500 to-lime-400 blur-[120px] opacity-30 animate-pulse"></div>
 
             <div className="relative bg-white/5 backdrop-blur-3xl p-12 rounded-[3.5rem] border-2 border-white/10 shadow-2xl max-w-md text-center overflow-hidden">
-
                 <div className="relative z-10">
-                    <h2 className="text-white text-4xl font-black uppercase mb-4">
-                        GAME OVER!
-                    </h2>
+                    {gameState === "COMPLETED" &&
+                    parseFloat(accuracy) >= 100 ? (
+                        <h2 className="text-white text-4xl font-black uppercase mb-4">
+                            PERFECT!
+                        </h2>
+                    ) : gameState === "COMPLETED" ? (
+                        <h2 className="text-white text-4xl font-black uppercase mb-4">
+                            MISSION COMPLETE!
+                        </h2>
+                    ) : (
+                        <h2 className="text-white text-4xl font-black uppercase mb-4">
+                            GAME OVER!
+                        </h2>
+                    )}
 
                     <div className="space-y-4 mb-10 text-left">
                         <p className="text-white text-2xl font-black">
                             Words Smashed:{" "}
                             <span className="text-lime-400">
-                                {currentWordIndex}
+                                {wordsSmashed}
                             </span>
                         </p>
 
@@ -42,9 +51,7 @@ export default function GameOverModal({
 
                         <p className="text-white text-2xl font-black">
                             Accuracy Rate:{" "}
-                            <span className="text-primary">
-                                {accuracy}%
-                            </span>
+                            <span className="text-primary">{accuracy}%</span>
                         </p>
                     </div>
 
