@@ -92,6 +92,14 @@ export default function GameplayReadMode({ module }) {
     // Point 1 & 2: Stale currentWordIndex & advancing word in two places
     const handleWordRecognized = useCallback(() => {
         // Removed `index` parameter
+        const wordObj = module.words[currentWordIndex];
+        if (wordObj) {
+            router.post("/student/updateWordMastery", {
+                word_id: wordObj.id,
+                status: "mastered",
+            }, { preserveScroll: true, preserveState: true });
+        }
+
         const points = module.words[currentWordIndex]?.points || 0; // Use currentWordIndex from state
         setCurrentScore((prev) => prev + points);
         setWordsSmashed((prev) => prev + 1);
@@ -105,6 +113,14 @@ export default function GameplayReadMode({ module }) {
 
     // Point 3: setTimeout mispronounce is unnecessary latency
     const handleMispronounce = useCallback(() => {
+        const wordObj = module.words[currentWordIndex];
+        if (wordObj) {
+            router.post("/student/updateWordMastery", {
+                word_id: wordObj.id,
+                status: "training",
+            }, { preserveScroll: true, preserveState: true });
+        }
+
         setIsMispronounced(true);
         // Bigyan ng oras ang user na makita ang "shake" animation
         setTimeout(() => {

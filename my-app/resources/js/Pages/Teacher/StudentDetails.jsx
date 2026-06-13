@@ -2,7 +2,7 @@ import DashboardLayout from "@/Layouts/Teacher/DashboardLayout";
 import { Link } from "@inertiajs/react";
 
 export default function StudentDetail({ data }) {
-    console.table(data);
+    console.log(data);
     const student = {
         id: data.student_id,
         section: data.student?.section,
@@ -48,26 +48,7 @@ export default function StudentDetail({ data }) {
                 color: "bg-cyan-400",
             },
         ],
-        curriculum: [
-            {
-                level: "Level 1: Basic Foundations",
-                mastered: [
-                    "Apple",
-                    "Banana",
-                    "Cat",
-                    "Dog",
-                    "Egg",
-                    "Fan",
-                    "Goat",
-                ],
-                training: ["Hat"],
-            },
-            {
-                level: "Level 2: Simple Objects",
-                mastered: ["Igloo", "Jar", "Kite"],
-                training: ["Lamp", "Mouse", "Nest"],
-            },
-        ],
+        curriculum: data.curriculum || [],
     };
 
     return (

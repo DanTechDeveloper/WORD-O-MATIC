@@ -46,9 +46,31 @@ class TeacherController extends Controller
 
     public function show($studentId)
     {
-        $student = User::with('student')->where('id', $studentId)->first();
+        $user = User::with(['student'])->findOrFail($studentId);
+
+        // Fetch all modules and their words
+        $modules = WordModule::with('words')->orderBy('level', 'asc')->get();
+
+        // Fetch word-level progress for this student
+        $progress = \DB::table('student_word_mastery')
+            ->where('user_id', $studentId)
+            ->get()
+            ->groupBy('word_id');
+
+        $curriculum = $modules->map(function ($module) use ($progress) {
+            return [
+                'level' => "Level {$module->level}: {$module->title}",
+                'mastered' => $module->words->filter(function ($word) use ($progress) {
+                    return isset($progress[$word->id]) && $progress[$word->id][0]->status === 'mastered';
+                })->pluck('word')->values(),
+                'training' => $module->words->filter(function ($word) use ($progress) {
+                    return !isset($progress[$word->id]) || $progress[$word->id][0]->status === 'training';
+                })->pluck('word')->values(),
+            ];
+        });
+
         return Inertia::render('Teacher/StudentDetails', [
-            'data' => $student,
+            'data' => array_merge($user->toArray(), ['curriculum' => $curriculum]),
         ]);
     }
 

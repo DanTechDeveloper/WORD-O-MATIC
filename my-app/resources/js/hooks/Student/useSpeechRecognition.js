@@ -11,18 +11,32 @@ export function useSpeechRecognition({
     onRecognitionError,
 }) {
     const recognitionRef = useRef(null);
+
+    // Point 1: Sync refs synchronously in the hook body to avoid Effect delay
     const gameStateRef = useRef(isActive);
+    gameStateRef.current = isActive;
+
     const isPausedRef = useRef(isPaused);
+    isPausedRef.current = isPaused;
+
     const targetWordRef = useRef(targetWord);
-    const normalizedTargetRef = useRef("");
+    targetWordRef.current = targetWord;
+
     const onWordRecognizedRef = useRef(onWordRecognized);
+    onWordRecognizedRef.current = onWordRecognized;
+
     const onPermissionDeniedRef = useRef(onPermissionDenied);
+    onPermissionDeniedRef.current = onPermissionDenied;
+
     // Removed interim matching
     const onMispronouncedRef = useRef(onMispronounced);
+    onMispronouncedRef.current = onMispronounced;
+
     const onRecognitionErrorRef = useRef(onRecognitionError);
+    onRecognitionErrorRef.current = onRecognitionError;
+
     // Removed processing lock
     const lastProcessedIndexRef = useRef(-1);
-    // Removed resultIndex tracking
     const isMountedRef = useRef(false);
 
     // Track hook mount/unmount lifecycle
@@ -33,29 +47,6 @@ export function useSpeechRecognition({
             if (recognitionRef.current) recognitionRef.current.abort();
         };
     }, []);
-
-    // Consolidate ref synchronization into a single effect
-    useEffect(() => {
-        gameStateRef.current = isActive;
-        isPausedRef.current = isPaused;
-        targetWordRef.current = targetWord; // Update targetWordRef
-        normalizedTargetRef.current = (targetWord || "")
-            .toLowerCase()
-            .replace(/[^\w\s]/g, "")
-            .trim();
-        onWordRecognizedRef.current = onWordRecognized;
-        onPermissionDeniedRef.current = onPermissionDenied;
-        onMispronouncedRef.current = onMispronounced;
-        onRecognitionErrorRef.current = onRecognitionError;
-    }, [
-        isActive,
-        isPaused,
-        targetWord, // Dependency changed
-        onWordRecognized,
-        onPermissionDenied,
-        onMispronounced,
-        onRecognitionError,
-    ]);
 
     // Approach 2: Persistent Engine Instance initialized once on mount
     useEffect(() => {
@@ -73,7 +64,10 @@ export function useSpeechRecognition({
             recognition.lang = "en-US";
 
             recognition.onresult = (event) => {
-                const target = normalizedTargetRef.current;
+                const target = (targetWordRef.current || "")
+                    .toLowerCase()
+                    .replace(/[^\w\s]/g, "")
+                    .trim();
 
                 if (!target) return;
 
@@ -98,7 +92,7 @@ export function useSpeechRecognition({
                     // FINAL RESULT ONLY = source of truth
                     if (result.isFinal) {
                         lastProcessedIndexRef.current = i;
-                        
+
                         if (isMatch) {
                             onWordRecognizedRef.current?.();
                         } else if (transcript.length > 0) {

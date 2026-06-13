@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ParagraphModule;
 use App\Models\Student;
 use App\Models\StudentParagraphProgress;
+use App\Models\StudentWordMastery;
 use App\Models\StudentWordProgress;
 use App\Models\WordModule;
 use Illuminate\Http\JsonResponse;
@@ -179,6 +180,21 @@ class StudentController extends Controller
                 'total_points' => StudentWordProgress::where('user_id', $userId)->sum('words_smashed'),
             ]);
         }
+
+        return redirect()->back();
+    }
+
+    public function updateWordMastery(Request $request)
+    {
+        $request->validate([
+            'word_id' => 'required|exists:words,id',
+            'status' => 'required|in:mastered,training',
+        ]);
+
+        StudentWordMastery::updateOrCreate(
+            ['user_id' => auth()->id(), 'word_id' => $request->word_id],
+            ['status' => $request->status]
+        );
 
         return redirect()->back();
     }
