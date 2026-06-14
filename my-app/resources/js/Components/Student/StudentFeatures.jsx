@@ -3,82 +3,56 @@ import { Link, usePage } from "@inertiajs/react";
 export default function StudentFeatures() {
     const { url } = usePage();
 
-    const getLinkClasses = (path) => {
-        const isActive = url.startsWith(path);
-        const base =
-            "flex flex-col items-center justify-center p-2 active:scale-90 transition-transform duration-150";
-        const active =
-            "bg-lime-400 text-slate-950 rounded-xl translate-y-[-8px] border-b-4 border-lime-700";
-        const inactive = "text-slate-400 hover:text-pink-500 transition-colors";
+    const activeClass =
+        "bg-lime-400 text-slate-950 border-2 border-slate-950 shadow-[6px_6px_0_0_#3f6212] flex items-center gap-3 p-4 rounded-lg font-black font-lexend text-xs uppercase tracking-wider translate-x-[-2px] translate-y-[-2px]";
+    const inactiveClass =
+        "text-slate-400 p-4 flex items-center gap-3 hover:text-purple-400 hover:translate-x-1 hover:bg-slate-900/50 transition-all font-black font-lexend text-xs uppercase tracking-wider";
 
-        return `${base} ${isActive ? active : inactive}`;
-    };
+    const navItems = [
+        {
+            label: "Dashboard",
+            href: "/student/dashboard",
+            icon: "rocket_launch",
+        },
+        {
+            label: "Leaderboards",
+            href: "/student/leaderboards",
+            icon: "leaderboard",
+        },
+        { label: "Badges", href: "/student/badges", icon: "military_tech" },
+    ];
 
     return (
         <>
-            <nav className="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-2 h-24 bg-slate-950 border-t-4 border-purple-900 rounded-t-3xl shadow-[0px_-6px_0px_0px_rgba(88,28,135,1)]">
-                <Link
-                    className={getLinkClasses("/student/dashboard")}
-                    href="/student/dashboard"
-                >
-                    <span
-                        className="material-symbols-outlined text-2xl"
-                        style={{
-                            fontVariationSettings: `'FILL' ${url.startsWith("/dashboard") ? 1 : 0}`,
-                        }}
-                    >
-                        rocket_launch
-                    </span>
-                    <span className="font-['Lexend'] text-[10px] font-black uppercase">
-                        Home
-                    </span>
-                </Link>
-                <Link
-                    className={getLinkClasses("/student/leaderboards")}
-                    href="/student/leaderboards"
-                >
-                    <span
-                        className="material-symbols-outlined text-2xl"
-                        style={{
-                            fontVariationSettings: `'FILL' ${url.startsWith("/student/leaderboards") ? 1 : 0}`,
-                        }}
-                    >
-                        leaderboard
-                    </span>
-                    <span className="font-['Lexend'] text-[10px] font-black uppercase">
-                        Leaderboard
-                    </span>
-                </Link>
-                <Link
-                    className={getLinkClasses("/student/badges")}
-                    href="/student/badges"
-                >
-                    <span
-                        className="material-symbols-outlined text-2xl"
-                        style={{
-                            fontVariationSettings: `'FILL' ${url.startsWith("/student/badges") ? 1 : 0}`,
-                        }}
-                    >
-                        military_tech
-                    </span>
-                    <span className="font-['Lexend'] text-[10px] font-black uppercase">
-                        Badges
-                    </span>
-                </Link>
-                <Link
-                    className={getLinkClasses("/logout")}
-                    href="/logout"
-                    method="post"
-                    as="button"
-                >
-                    <span className="material-symbols-outlined text-2xl">
-                        logout
-                    </span>
-                    <span className="font-['Lexend'] text-[10px] font-black uppercase">
-                        Logout
-                    </span>
-                </Link>
-            </nav>
+            <aside className="fixed left-0 top-0 h-full w-64 flex flex-col p-4 border-r-4 border-slate-900 bg-slate-950 z-50 shadow-[4px_0_0_0_#1e1b4b]">
+                  <div className="mb-8">
+                    <h1 className="text-2xl font-black text-purple-500 uppercase italic tracking-tighter">
+                        WORD-O-MATIC
+                    </h1>
+                </div>
+                <nav className="flex-1 space-y-2 mt-4">
+                    {navItems.map((item) => {
+                        const isActive = url === item.href;
+                        return (
+                            <Link
+                                key={item.href}
+                                className={
+                                    isActive ? activeClass : inactiveClass
+                                }
+                                href={item.href}
+                            >
+                                <span
+                                    className="material-symbols-outlined"
+                                    data-weight={isActive ? "fill" : ""}
+                                >
+                                    {item.icon}
+                                </span>
+                                {item.label}
+                            </Link>
+                        );
+                    })}
+                </nav>
+            </aside>
         </>
     );
 }

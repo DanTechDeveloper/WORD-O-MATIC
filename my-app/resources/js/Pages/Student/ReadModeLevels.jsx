@@ -123,16 +123,23 @@ export default function ReadModeLevels({ modules }) {
 
     return (
         <DashboardLayout minimal={true}>
-            {/* <!-- Main Container --> */}
-            <div className="bg-surface-container rounded-3xl p-8 md:p-12 border-4 border-surface-variant neo-3d-shadow relative overflow-hidden">
-                {" "}
-                {/* Main container for the whole page content */}
+            <div className="bg-surface-container rounded-3xl p-6 md:p-10 border-4 border-surface-variant neo-3d-shadow h-full overflow-hidden">
+                {/* <!-- Main Container --> */}
                 {/* <!-- Mission Map Viewport --> */}
                 <div className="relative overflow-hidden rounded-2xl bg-slate-950/20 pt-28 pb-10">
                     {" "}
                     {/* Container for the map and its internal header */}
                     {/* Glass-Morphism Header (now with smaller text) */}
-                    <div className="absolute top-0 left-0 right-0 z-10 p-4 bg-white/10 backdrop-blur-md rounded-t-2xl flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div className="absolute top-0 left-0 right-0 z-10 p-4 bg-white/10 backdrop-blur-md rounded-t-2xl flex flex-col md:flex-row items-center gap-4">
+                        <Link
+                            href="/student/dashboard"
+                            className="bg-surface-container-high border-4 border-surface-variant p-2 rounded-full text-on-surface flex items-center justify-center hover:bg-surface-variant active-3d transition-all aspect-square shadow-lg"
+                        >
+                            <span className="material-symbols-outlined text-5xl">
+                                arrow_back
+                            </span>
+                        </Link>
+
                         <div className="text-center text-4xl flex-1 text-center md:text-left">
                             <h2 className="text-on-surface text-4xl font-black uppercase italic">
                                 Level {missions[activeIndex]?.level}:{" "}
@@ -249,7 +256,7 @@ export default function ReadModeLevels({ modules }) {
                                         <span
                                             className={`text-[10px] font-black uppercase mt-1 ${mission.textColor}`}
                                         >
-                                          MISSION{" "}
+                                            MISSION{" "}
                                             {mission.level < 10
                                                 ? `0${mission.level}`
                                                 : mission.level}
@@ -277,38 +284,6 @@ export default function ReadModeLevels({ modules }) {
                         </div>
                     </div>
                 </div>
-                {/* <!-- Footer Action Button --> */}
-                <div className="mt-16 flex justify-center">
-                    <Link
-                        href={
-                            currentMission
-                                ? `/student/gameplayReadMode/${currentMission.id}`
-                                : "#"
-                        }
-                        className="bg-lime-400 text-slate-950 text-2xl font-black px-12 py-5 rounded-2xl border-b-[8px] border-lime-700 active:translate-y-1 active:border-b-4 transition-all uppercase flex items-center gap-3"
-                    >
-                        <span
-                            className="material-symbols-outlined text-3xl"
-                            style={{ fontVariationSettings: "'FILL' 1" }}
-                        >
-                            play_circle
-                        </span>
-                        Continue Adventure
-                    </Link>
-                </div>
-            </div>
-
-            {/* <!-- Back Button Section --> */}
-            <div className="mt-12 flex justify-center">
-                <Link
-                    href="/student/dashboard"
-                    className="bg-surface-container-high border-4 border-surface-variant px-8 py-4 rounded-xl text-on-surface font-bold flex items-center gap-2 hover:bg-surface-variant active-3d transition-all uppercase"
-                >
-                    <span className="material-symbols-outlined">
-                        arrow_back
-                    </span>
-                    Back to Home
-                </Link>
             </div>
         </DashboardLayout>
     );

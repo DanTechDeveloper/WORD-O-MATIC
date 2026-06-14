@@ -1,10 +1,12 @@
-import { usePage } from "@inertiajs/react";
+import { usePage, Link } from "@inertiajs/react";
 
-export default function StudentProfile() {
+export default function StudentProfile({ minimal = false }) {
     const { auth } = usePage().props;
     return (
         <>
-            <header class="bg-slate-950 text-lime-400 font-['Lexend'] font-bold tracking-tight border-b-4 border-purple-900 shadow-[4px_4px_0px_0px_rgba(112,0,255,1)] flex justify-between items-center px-6 h-20 w-full z-50 sticky top-0">
+            <header
+                class={`fixed top-0 right-0 ${minimal ? "left-0" : "left-64"} h-20 flex items-center justify-between px-8 z-40 bg-slate-950 border-b-4 border-purple-900 shadow-[0_4px_0_0_#1e1b4b]`}
+            >
                 <div class="flex items-center gap-4">
                     <div class="w-12 h-12 rounded-full border-2 border-lime-400 overflow-hidden shadow-[2px_2px_0px_0px_rgba(163,230,53,1)]">
                         <img
@@ -28,21 +30,23 @@ export default function StudentProfile() {
                                     stars
                                 </span>
                                 <span>
-                                    {auth?.user?.student?.points ?? 0} TOTAL POINTS
+                                    {auth?.user?.student?.points ?? 0} TOTAL
+                                    POINTS
                                 </span>
                             </span>
                         </div>
                     </div>
                 </div>
-                <div class="hidden md:flex items-center gap-6">
-                    <div class="flex gap-4">
-                        <span class="material-symbols-outlined text-2xl hover:bg-purple-900/30 p-2 rounded-lg cursor-pointer transition-all">
-                            stars
-                        </span>
-                        <span class="material-symbols-outlined text-2xl hover:bg-purple-900/30 p-2 rounded-lg cursor-pointer transition-all">
-                            workspace_premium
-                        </span>
-                    </div>
+                <div class="flex items-center gap-4">
+                    <Link
+                        href="/logout"
+                        method="post"
+                        as="button"
+                        class="flex items-center gap-2 bg-pink-600 text-white px-4 py-2 rounded-xl border-b-4 border-pink-900 active:translate-y-1 active:border-b-0 transition-all font-black text-xs uppercase"
+                    >
+                        <span class="material-symbols-outlined">logout</span>
+                        <span class="hidden sm:inline">Exit</span>
+                    </Link>
                 </div>
             </header>
         </>
