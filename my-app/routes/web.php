@@ -38,6 +38,7 @@ Route::middleware(['auth'])->group(function () {
              Route::get('/reports', [TeacherController::class, 'reports'])->name('reports');
              Route::get('/leaderboards', [TeacherController::class, 'leaderboards'])->name('leaderboards');
              Route::get('/assignments', [TeacherController::class, 'assignments'])->name('assignments');
+             Route::get('/badges', [TeacherController::class, 'badges'])->name('badges');
          });
 
      Route::prefix('student')

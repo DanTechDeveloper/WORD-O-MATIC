@@ -227,4 +227,8 @@ class TeacherController extends Controller
     {
         return Inertia::render('Teacher/Classes');
     }
+
+    public function badges(){
+        return Inertia::render("Teacher/Badges");
+    }
 }

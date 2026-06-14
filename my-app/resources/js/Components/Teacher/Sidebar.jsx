@@ -19,9 +19,9 @@ export default function Sidebar() {
             icon: "description",
         },
         {
-            label: "Assignments",
-            href: "/teacher/assignments",
-            icon: "assignment",
+            label: "Badges",
+            href: "/teacher/badges",
+            icon: "stars",
         },
         {
             label: "Leaderboards",
