@@ -26,15 +26,6 @@ export default function Dashboard({ data }) {
                                     ! Jump back into your last session and reach
                                     for the stars.
                                 </p>
-                                <Link
-                                    href="/student/readModeLevels"
-                                    className="inline-flex bg-lime-400 text-slate-950 px-8 py-4 rounded-xl font-bold text-xl hover:bg-lime-300 hover:scale-[1.02] transition-all items-center gap-3 shadow-md"
-                                >
-                                    Continue: Level {lastLevel || 1}
-                                    <span className="material-symbols-outlined text-2xl">
-                                        arrow_forward
-                                    </span>
-                                </Link>
                             </div>
                             <div className="w-full md:w-1/3 aspect-square bg-slate-900/30 rounded-2xl border border-dashed border-primary-container/30 flex items-center justify-center">
                                 <img
