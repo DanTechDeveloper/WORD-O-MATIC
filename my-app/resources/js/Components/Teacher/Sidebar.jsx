@@ -18,11 +18,7 @@ export default function Sidebar() {
             href: "/teacher/paragraphModules",
             icon: "description",
         },
-        {
-            label: "Badges",
-            href: "/teacher/badges",
-            icon: "stars",
-        },
+    
         {
             label: "Leaderboards",
             href: "/teacher/leaderboards",

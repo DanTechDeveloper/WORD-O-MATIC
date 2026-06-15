@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Badges;
 use App\Models\ParagraphModule;
 use App\Models\Student;
 use App\Models\StudentParagraphProgress;
@@ -74,6 +75,19 @@ class StudentController extends Controller
                 'avatar' => $request->avatar_url,
             ]);
 
+            // Award "Profile Pioneer" badge
+            $badge = Badges::where('slug', 'profile-pioneer')->first();
+            if ($badge) {
+                $changes = $user->badges()->syncWithoutDetaching([
+                    $badge->id => ['earned_at' => now()],
+                ]);
+
+                // Kung may laman ang 'attached', ibig sabihin first time itong nakuha
+                if (! empty($changes['attached'])) {
+                    return redirect()->route('student.greetings')->with('new_badge', $badge);
+                }
+            }
+
             return redirect()->route('student.greetings')->with('success', 'Avatar updated successfully!');
         }
 
@@ -87,7 +101,28 @@ class StudentController extends Controller
 
     public function badges()
     {
-        return Inertia::render('Student/Badges');
+        $user = auth()->user();
+
+        $allBadges = Badges::all();
+
+        $userBadgeIds = $user->badges()
+            ->pluck('badge_id')
+            ->flip();
+
+        $badges = $allBadges->map(function ($badge) use ($userBadgeIds) {
+            return [
+                'id' => $badge->id,
+                'name' => $badge->name,
+                'slug' => $badge->slug,
+                'description' => $badge->description,
+                'requirement' => $badge->requirement,
+                'is_earned' => isset($userBadgeIds[$badge->id]),
+            ];
+        });
+
+        return Inertia::render('Student/Badges', [
+            'badges' => $badges,
+        ]);
     }
 
     public function readModeLevels()
@@ -292,6 +327,4 @@ class StudentController extends Controller
 
         return redirect()->back();
     }
-
-   
 }

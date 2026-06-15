@@ -2,6 +2,7 @@ import { usePage, Link } from "@inertiajs/react";
 
 export default function StudentProfile({ minimal = false }) {
     const { auth } = usePage().props;
+    console.log(usePage());
     return (
         <>
             <header
@@ -12,7 +13,7 @@ export default function StudentProfile({ minimal = false }) {
                         <img
                             alt="A vibrant digital portrait of a young student avatar with a friendly expression, styled in a neo-brutalist aesthetic. The background features a cosmic galactic theme with deep purples and electric lime accents. Soft studio lighting highlights the character's features against a sharp-edged, high-contrast digital environment. The overall mood is energetic, futuristic, and encouraging for a learning app."
                             class="w-full h-full object-cover"
-                            src="https://lh3.googleusercontent.com/aida-public/AB6AXuAYo_e8fj85gruWkP_O8JBEEakj4EYcfboECPU5VzJr-zOVhThgJsDLGDSoFtuNXrfFAiHnoILZAENO1-ebCnlV5fSu48-LSNcruUbzLzRces7674qDYk-jJk-DJRVXmMYnCcIiWlbOKh7uVLERK71e8fEhGbjP-1IM6RUichHh-FW6OIBJPh_n6KWQRg6Z29G_lg8BLQ6vD4Z0nLkJu-A_0FPfHEx1q21dKYbtqvryqnMqbMmWoCZNcwXpidWAxg27nAX-5OaMeYRl"
+                            src={auth?.user?.avatar_url}
                         />
                     </div>
                     <div>

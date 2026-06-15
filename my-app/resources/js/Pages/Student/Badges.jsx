@@ -1,180 +1,133 @@
 import DashboardLayout from "@/Layouts/Student/DashboardLayout";
 import { Link } from "@inertiajs/react";
 
-export default function Badges() {
-    // Temporary mockup data - in production, this should come from props
-    const achievements = [
-        {
-            id: "avatar-selection",
-            title: "Avatar Ready",
-            description: "Completed avatar selection",
-            requirement: "Choose your cosmic identity in the selection screen.",
-            icon: "👤",
-            progress: 100,
-            isLocked: false,
-            statusLabel: "UNLOCKED",
-            colors: {
-                bg: "bg-[#a3e635]",
-                text: "text-[#064e3b]",
-                shadow: "shadow-[#14532d]",
-                border: "border-[#064e3b]",
-                title: "text-[#a3e635]",
-            },
+/**
+ * UI Configuration Mapping
+ * Keys match the 'slug' provided by the backend response.
+ */
+const BADGE_UI_CONFIG = {
+    "profile-pioneer": {
+        icon: "👤",
+        statusLabel: "UNLOCKED",
+        colors: {
+            bg: "bg-[#a3e635]",
+            text: "text-[#064e3b]",
+            shadow: "shadow-[#14532d]",
+            border: "border-[#064e3b]",
+            title: "text-[#a3e635]",
         },
+    },
+    "story-finisher": {
+        icon: "📚",
+        statusLabel: "FINISHED",
+        colors: {
+            bg: "bg-[#a3e635]",
+            text: "text-[#064e3b]",
+            shadow: "shadow-[#14532d]",
+            border: "border-[#064e3b]",
+            title: "text-[#a3e635]",
+        },
+    },
+    "word-master": {
+        icon: "🥇",
+        statusLabel: "MASTERED",
+        colors: {
+            bg: "bg-primary-container",
+            text: "text-white",
+            shadow: "shadow-[#7000ff]",
+            border: "border-slate-950",
+            title: "text-primary",
+        },
+    },
+    "clear-speaker": {
+        icon: "🥈",
+        statusLabel: "EXPERT",
+        colors: {
+            bg: "bg-secondary-container",
+            text: "text-white",
+            shadow: "shadow-[#890064]",
+            border: "border-slate-950",
+            title: "text-secondary",
+        },
+    },
+    // Add mappings for other hardcoded IDs to maintain consistency
+    "tutorial-completion": {
+        icon: "🚀",
+        statusLabel: "COMPLETED",
+        colors: {
+            bg: "bg-primary-container",
+            text: "text-white",
+            shadow: "shadow-[#7000ff]",
+            border: "border-slate-950",
+            title: "text-primary",
+        },
+    },
+    "on-fire": {
+        icon: "🔥",
+        statusLabel: "STREAK",
+        colors: {
+            bg: "bg-primary-container",
+            text: "text-white",
+            shadow: "shadow-[#7000ff]",
+            border: "border-slate-950",
+            title: "text-primary",
+        },
+    },
+    default: {
+        icon: "⭐",
+        statusLabel: "LOCKED",
+        colors: {
+            bg: "bg-slate-700",
+            text: "text-white",
+            shadow: "shadow-slate-900",
+            border: "border-slate-950",
+            title: "text-slate-400",
+        },
+    },
+};
+
+export default function Badges({ badges }) {
+    // 1. Map dynamic badges from the backend response
+    const dynamicAchievements = (badges || []).map((badge) => {
+        const ui = BADGE_UI_CONFIG[badge.slug] || BADGE_UI_CONFIG.default;
+        return {
+            id: badge.id,
+            title: badge.name,
+            description: badge.description,
+            requirement: badge.requirement,
+            icon: ui.icon,
+            progress: badge.is_earned ? 100 : 0,
+            isLocked: !badge.is_earned,
+            statusLabel: ui.statusLabel,
+            colors: ui.colors,
+        };
+    });
+
+    // 2. Keep the other hardcoded ones that aren't in the response yet
+    // These will be removed once your backend provides them in the 'badges' prop
+    const legacyHardcoded = [
         {
             id: "tutorial-completion",
             title: "Tutorial Master",
             description: "Completed both tutorial modes",
             requirement: "Learn the basics of Read and Speak modes.",
-            icon: "🚀",
+            ...BADGE_UI_CONFIG["tutorial-completion"],
             progress: 100,
             isLocked: false,
-            statusLabel: "COMPLETED",
-            colors: {
-                bg: "bg-primary-container",
-                text: "text-white",
-                shadow: "shadow-[#7000ff]",
-                border: "border-slate-950",
-                title: "text-primary",
-            },
-        },
-        {
-            id: "word-explorer",
-            title: "Word Explorer",
-            description: "10 correctly pronounced words",
-            requirement: "Maintain accuracy across 10 distinct words.",
-            icon: "🥉",
-            progress: 100,
-            isLocked: false,
-            statusLabel: "BRONZE",
-            colors: {
-                bg: "bg-secondary-container",
-                text: "text-white",
-                shadow: "shadow-[#890064]",
-                border: "border-slate-950",
-                title: "text-secondary",
-            },
-        },
-        {
-            id: "word-builder",
-            title: "Word Builder",
-            description: "50 correctly pronounced words",
-            requirement: "Expand your vocabulary to 50 mastered words.",
-            icon: "🥈",
-            progress: 60,
-            isLocked: true,
-            statusLabel: "LOCKED",
-            colors: {
-                bg: "bg-[#a3e635]",
-                text: "text-[#064e3b]",
-                shadow: "shadow-[#14532d]",
-                border: "border-[#064e3b]",
-                title: "text-[#a3e635]",
-            },
-        },
-        {
-            id: "word-master",
-            title: "Word Master",
-            description: "100 correctly pronounced words",
-            requirement: "Show mastery by pronouncing 100 words correctly.",
-            icon: "🥇",
-            progress: 30,
-            isLocked: true,
-            statusLabel: "LOCKED",
-            colors: {
-                bg: "bg-primary-container",
-                text: "text-white",
-                shadow: "shadow-[#7000ff]",
-                border: "border-slate-950",
-                title: "text-primary",
-            },
-        },
-        {
-            id: "speech-legend",
-            title: "Speech Legend",
-            description: "200 correctly pronounced words",
-            requirement: "Reach legendary status with 200 words.",
-            icon: "🏆",
-            progress: 15,
-            isLocked: true,
-            statusLabel: "LOCKED",
-            colors: {
-                bg: "bg-secondary-container",
-                text: "text-white",
-                shadow: "shadow-[#890064]",
-                border: "border-slate-950",
-                title: "text-secondary",
-            },
-        },
-        {
-            id: "consistent-learner",
-            title: "Consistent Learner",
-            description: "3 correct words in a row",
-            requirement: "Get 3 words right without missing a beat.",
-            icon: "🔥",
-            progress: 100,
-            isLocked: false,
-            statusLabel: "STREAK!",
-            colors: {
-                bg: "bg-[#a3e635]",
-                text: "text-[#064e3b]",
-                shadow: "shadow-[#14532d]",
-                border: "border-[#064e3b]",
-                title: "text-[#a3e635]",
-            },
         },
         {
             id: "on-fire",
             title: "On Fire",
             description: "5 correct words in a row",
             requirement: "Keep the momentum going for 5 correct words.",
-            icon: "🔥",
+            ...BADGE_UI_CONFIG["on-fire"],
             progress: 80,
             isLocked: true,
-            statusLabel: "LOCKED",
-            colors: {
-                bg: "bg-primary-container",
-                text: "text-white",
-                shadow: "shadow-[#7000ff]",
-                border: "border-slate-950",
-                title: "text-primary",
-            },
         },
-        {
-            id: "perfect-run",
-            title: "Perfect Run 10/10",
-            description: "10 correct words in a row",
-            requirement: "Achieve the ultimate streak of 10 words.",
-            icon: "🔥",
-            progress: 0,
-            isLocked: true,
-            statusLabel: "LOCKED",
-            colors: {
-                bg: "bg-secondary-container",
-                text: "text-white",
-                shadow: "shadow-[#890064]",
-                border: "border-slate-950",
-                title: "text-secondary",
-            },
-        },
-        {
-            id: "lesson-finisher",
-            title: "Lesson Finisher",
-            description: "Completed first module",
-            requirement: "Finish all challenges in your first module.",
-            icon: "📚",
-            progress: 100,
-            isLocked: false,
-            statusLabel: "MASTERED",
-            colors: {
-                bg: "bg-[#a3e635]",
-                text: "text-[#064e3b]",
-                shadow: "shadow-[#14532d]",
-                border: "border-[#064e3b]",
-                title: "text-[#a3e635]",
-            },
-        },
-    ];
+        // Add any others here...
+    ].filter((h) => !dynamicAchievements.some((d) => d.slug === h.id));
+
+    const achievements = [...dynamicAchievements, ...legacyHardcoded];
 
     return (
         <DashboardLayout>
