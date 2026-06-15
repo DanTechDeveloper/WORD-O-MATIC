@@ -1,4 +1,5 @@
 import { usePage, router } from "@inertiajs/react";
+import { useState } from "react";
 
 const AVATARS = [
     {
@@ -34,11 +35,15 @@ const AVATARS = [
 ];
 
 export default function AvatarSelection() {
+    const [isUpdating, setIsUpdating] = useState(false);
+
     const handleAvatarSelect = (avatar) => {
+        setIsUpdating(true);
         router.post(
             route("student.updateAvatar"),
             { avatar_url: avatar.url },
             {
+                onFinish: () => setIsUpdating(false),
                 onError: (errors) => {
                     console.error("Failed to update avatar:", errors);
                 },
@@ -48,6 +53,17 @@ export default function AvatarSelection() {
 
     return (
         <div className="fixed inset-0 z-[90] bg-zinc-950 flex flex-col items-center justify-center p-6">
+            {/* Loading Overlay */}
+            {isUpdating && (
+                <div className="absolute inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center">
+                    <div className="text-lime-400 animate-spin">
+                        <span className="material-symbols-outlined text-6xl">
+                            sync
+                        </span>
+                    </div>
+                </div>
+            )}
+
             <div className="max-w-2xl w-full text-center">
                 <h2 className="text-white text-4xl md:text-6xl font-black uppercase italic tracking-tight mb-12">
                     SELECT YOUR <span className="text-purple-500">HERO</span>

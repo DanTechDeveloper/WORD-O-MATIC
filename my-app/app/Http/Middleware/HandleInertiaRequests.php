@@ -36,6 +36,12 @@ class HandleInertiaRequests extends Middleware
                     $query->select('id', 'user_id', 'points', 'avatar');
                 }]) : null,
             ],
+            // I-share ang flash messages sa lahat ng Inertia pages
+            'flash' => [
+                'success' => $request->session()->get('success'),
+                'error' => $request->session()->get('error'),
+                'new_badge' => $request->session()->get('new_badge'),
+            ],
         ];
     }
 }

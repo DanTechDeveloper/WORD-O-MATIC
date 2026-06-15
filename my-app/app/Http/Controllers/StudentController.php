@@ -82,9 +82,13 @@ class StudentController extends Controller
                     $badge->id => ['earned_at' => now()],
                 ]);
 
-                // Kung may laman ang 'attached', ibig sabihin first time itong nakuha
                 if (! empty($changes['attached'])) {
-                    return redirect()->route('student.greetings')->with('new_badge', $badge);
+                    return redirect()->route('student.greetings')->with('new_badge', [
+                        'name' => $badge->name,
+                        'description' => $badge->description,
+                        'slug' => $badge->slug,
+                        'icon' => $badge->icon,
+                    ]);
                 }
             }
 

@@ -18,24 +18,28 @@ class BadgesSeeder extends Seeder
                 'slug' => 'word-master',
                 'description' => 'Recognized for mastering all words within a specific module.',
                 'requirement' => 'Complete a word module with 100% mastery.',
+                'icon' => '🏆'
             ],
             [
                 'name' => 'Story Finisher',
                 'slug' => 'story-finisher',
                 'description' => 'Awarded for completing a full story or paragraph module.',
                 'requirement' => 'Reach the end of any paragraph module.',
+                'icon' => '📚'
             ],
             [
                 'name' => 'Clear Speaker',
                 'slug' => 'clear-speaker',
                 'description' => 'Earned by maintaining high accuracy in speaking exercises.',
                 'requirement' => 'Maintain over 90% accuracy in speaking tasks.',
+                'icon' => '🎤'
             ],
             [
                 'name' => 'Profile Pioneer',
                 'slug' => 'profile-pioneer',
                 'description' => 'Awarded for successfully personalizing your profile with an avatar.',
                 'requirement' => 'Set a custom avatar in your profile settings.',
+                'icon' => '👤'
             ],
         ];
 

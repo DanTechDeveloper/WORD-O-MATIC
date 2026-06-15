@@ -2,7 +2,7 @@ import { usePage, Link } from "@inertiajs/react";
 
 export default function StudentProfile({ minimal = false }) {
     const { auth } = usePage().props;
-    console.log(usePage());
+    const avatar  = auth.user.student.avatar;
     return (
         <>
             <header
@@ -11,9 +11,7 @@ export default function StudentProfile({ minimal = false }) {
                 <div class="flex items-center gap-4">
                     <div class="w-12 h-12 rounded-full border-2 border-lime-400 overflow-hidden shadow-[2px_2px_0px_0px_rgba(163,230,53,1)]">
                         <img
-                            alt="A vibrant digital portrait of a young student avatar with a friendly expression, styled in a neo-brutalist aesthetic. The background features a cosmic galactic theme with deep purples and electric lime accents. Soft studio lighting highlights the character's features against a sharp-edged, high-contrast digital environment. The overall mood is energetic, futuristic, and encouraging for a learning app."
-                            class="w-full h-full object-cover"
-                            src={auth?.user?.avatar_url}
+                            src={avatar}
                         />
                     </div>
                     <div>

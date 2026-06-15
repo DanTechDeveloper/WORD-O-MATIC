@@ -1,12 +1,53 @@
 import { Link, usePage } from "@inertiajs/react";
+import { useState, useEffect } from "react";
 
 export default function Greetings() {
-    const { auth } = usePage().props;
+    const { auth, flash } = usePage().props;
     const name = auth?.user?.name || "STUDENT";
+
     const studentAvatarUrl = auth?.user?.student?.avatar;
+    const [showBadgeModal, setShowBadgeModal] = useState(false);
+    useEffect(() => {
+        if (flash?.new_badge) {
+            setShowBadgeModal(true);
+        }
+    }, [flash?.new_badge]);
+    console.log(flash);
 
     return (
         <div className="m-0 p-0 overflow-hidden">
+            {/* Badge Unlock Modal Overlay */}
+            {showBadgeModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/95 backdrop-blur-md transition-all duration-500">
+                    <div className="bg-zinc-900 border-8 border-lime-400 p-12 rounded-[48px] max-w-2xl w-full text-center shadow-[0_0_100px_rgba(163,230,53,0.4)] relative overflow-hidden">
+                       
+
+                        <div className="text-9xl md:text-[12rem] mb-8 animate-bounce drop-shadow-[0_20px_50px_rgba(163,230,53,0.3)]">
+                            {flash.new_badge.icon || "🏆"}
+                        </div>
+
+                        <h2 className="text-lime-400 text-6xl md:text-8xl font-black uppercase mb-4 drop-shadow-[0_5px_15px_rgba(0,0,0,0.5)] leading-tight italic tracking-tighter">
+                            UNLOCKED!
+                        </h2>
+
+                        <div className="space-y-2 mb-10 relative z-10">
+                            <p className="text-white text-3xl md:text-5xl font-black uppercase tracking-tight">
+                                {flash.new_badge.name}
+                            </p>
+                            <p className="text-lime-400/70 text-lg md:text-xl font-bold italic">
+                                {flash.new_badge.description}
+                            </p>
+                        </div>
+
+                        <button
+                            onClick={() => setShowBadgeModal(false)}
+                            className="w-full bg-lime-400 hover:bg-lime-300 text-zinc-950 font-black py-6 rounded-2xl border-b-8 border-green-800 text-3xl active:translate-y-1 active:border-b-4 transition-all uppercase tracking-widest"
+                        >
+                            CLAIM REWARD!
+                        </button>
+                    </div>
+                </div>
+            )}
             {/* <!-- BEGIN: Main Background Container --> */}
             <main className="min-h-screen w-full flex flex-col items-center justify-center relative overflow-hidden bg-zinc-950">
                 {/* <!-- BEGIN: Decorative Floating Elements --> */}

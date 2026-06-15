@@ -5,7 +5,6 @@ export default function Dashboard({ data }) {
     const readProgress = data?.read_progress;
     const speakProgress = data?.speak_progress;
     const lastLevel = data?.last_active_level;
-    console.log(data);
 
     const { auth } = usePage().props;
 
