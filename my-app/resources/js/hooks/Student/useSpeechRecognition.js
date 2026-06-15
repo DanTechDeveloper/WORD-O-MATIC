@@ -126,19 +126,29 @@ export function useSpeechRecognition({
             };
 
             recognition.onend = () => {
-                lastProcessedIndexRef.current = -1; // Reset for new session
+                lastProcessedIndexRef.current = -1;
                 hasMatchedCurrentRef.current = false;
-                // Use isPausedRef to avoid stale closure from the instantiation scope
+
+                // Double-check current state before restart
                 if (
                     isMountedRef.current &&
                     gameStateRef.current &&
                     !isPausedRef.current
                 ) {
-                    try {
-                        recognitionRef.current.start();
-                    } catch (e) {
-                        console.warn("Recognition restart failed:", e);
-                    }
+                    // Use setTimeout to avoid potential call stack issues
+                    setTimeout(() => {
+                        if (
+                            isMountedRef.current &&
+                            gameStateRef.current &&
+                            !isPausedRef.current
+                        ) {
+                            try {
+                                recognitionRef.current?.start();
+                            } catch (e) {
+                                console.warn("Recognition restart failed:", e);
+                            }
+                        }
+                    }, 0);
                 }
             };
 
