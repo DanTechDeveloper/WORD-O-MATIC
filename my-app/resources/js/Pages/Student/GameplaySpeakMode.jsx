@@ -43,8 +43,11 @@ export default function GameplaySpeakMode({ module }) {
     const totalWords = words.length;
 
     const moveToNextWord = useCallback(() => {
-        setCurrentWordIndex((prev) => prev + 1);
-    }, []);
+        setCurrentWordIndex((prev) => {
+            const next = prev + 1;
+            return next;
+        });
+    }, [totalWords]);
 
     const handleWordRecognized = useCallback(() => {
         const points = 1; // Standard point for speak mode words
@@ -57,8 +60,16 @@ export default function GameplaySpeakMode({ module }) {
         setScoreEmphasize(true);
         setTimeout(() => setScoreEmphasize(false), 500);
 
-        moveToNextWord();
-    }, [moveToNextWord]);
+        // Judgement delay para sa huling salita
+        if (currentWordIndex >= totalWords - 1) {
+            setTimeout(() => {
+                moveToNextWord();
+            }, 600); // Bigyan ng oras na makita ang puntos at feedback sa huling salita
+        } else {
+            moveToNextWord();
+        }
+    }, [moveToNextWord, currentWordIndex, totalWords]);
+    // Added currentWordIndex and totalWords to fix stale closure and logic check
 
     const handleMispronounce = useCallback(() => {
         // Note: Paragraph mode does not have individual word mastery tracking

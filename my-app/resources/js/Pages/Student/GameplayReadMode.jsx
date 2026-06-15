@@ -94,10 +94,14 @@ export default function GameplayReadMode({ module }) {
         // Removed `index` parameter
         const wordObj = module.words[currentWordIndex];
         if (wordObj) {
-            router.post("/student/updateWordMastery", {
-                word_id: wordObj.id,
-                status: "mastered",
-            }, { preserveScroll: true, preserveState: true });
+            router.post(
+                "/student/updateWordMastery",
+                {
+                    word_id: wordObj.id,
+                    status: "mastered",
+                },
+                { preserveScroll: true, preserveState: true },
+            );
         }
 
         const points = module.words[currentWordIndex]?.points || 0; // Use currentWordIndex from state
@@ -115,10 +119,14 @@ export default function GameplayReadMode({ module }) {
     const handleMispronounce = useCallback(() => {
         const wordObj = module.words[currentWordIndex];
         if (wordObj) {
-            router.post("/student/updateWordMastery", {
-                word_id: wordObj.id,
-                status: "training",
-            }, { preserveScroll: true, preserveState: true });
+            router.post(
+                "/student/updateWordMastery",
+                {
+                    word_id: wordObj.id,
+                    status: "training",
+                },
+                { preserveScroll: true, preserveState: true },
+            );
         }
 
         setIsMispronounced(true);
