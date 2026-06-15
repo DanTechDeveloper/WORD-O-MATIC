@@ -34,17 +34,24 @@ export default function GameplaySpeakMode({ module }) {
 
     // Refs
     const hasSaved = useRef(false);
+    const isMountedRef = useRef(true);
     const currentWordIndexRef = useRef(0);
+    const completionTimerRef = useRef(null);
+
     useEffect(() => {
         currentWordIndexRef.current = currentWordIndex;
     }, [currentWordIndex]);
+
     // ✅ New Bug #2 fix: cancel mispronounce delay on time-up / unmount.
     const mispronounceTimerRef = useRef(null);
 
     // ✅ Cleanup on unmount — prevent post-unmount state updates.
     useEffect(() => {
         return () => {
+            isMountedRef.current = false;
             clearTimeout(mispronounceTimerRef.current);
+            if (completionTimerRef.current)
+                clearTimeout(completionTimerRef.current);
         };
     }, []);
 
@@ -109,10 +116,13 @@ export default function GameplaySpeakMode({ module }) {
             // Persist immediately to win the race against user clicks.
             persistProgress();
 
-            const timer = setTimeout(() => {
-                setGameState(wordsSmashed > 0 ? "COMPLETED" : "GAMEOVER");
+            if (completionTimerRef.current)
+                clearTimeout(completionTimerRef.current);
+            completionTimerRef.current = setTimeout(() => {
+                if (isMountedRef.current) {
+                    setGameState(wordsSmashed > 0 ? "COMPLETED" : "GAMEOVER");
+                }
             }, 1200);
-            return () => clearTimeout(timer);
         }
     }, [
         currentWordIndex,
@@ -236,6 +246,9 @@ export default function GameplaySpeakMode({ module }) {
     const handlePlayAgain = useCallback(() => {
         hasSaved.current = false;
         clearTimeout(mispronounceTimerRef.current);
+        if (completionTimerRef.current) {
+            clearTimeout(completionTimerRef.current);
+        }
         currentWordIndexRef.current = 0;
         setCurrentWordIndex(0);
         setCurrentScore(0);
@@ -250,7 +263,7 @@ export default function GameplaySpeakMode({ module }) {
         level: module ? `${module.level} - ${module.title}` : "",
         isActive: gameState === "ACTIVE",
         isPaused: isSettingsOpen,
-        wordsSmashed: currentScore,
+        wordsSmashed: wordsSmashed,
         onOpenSettings: handleOpenSettings,
         onTimeUp: handleTimeUp,
         scoreEmphasize,
