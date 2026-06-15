@@ -65,29 +65,28 @@ export function useSpeechRecognition({
             recognition.interimResults = true;
             recognition.lang = "en-US";
 
+            // In the persistent instance useEffect:
             recognition.onresult = (event) => {
+                // Bug #1 fix: guard against buffered results after stop/pause
+                if (!gameStateRef.current || isPausedRef.current) return;
+
                 const target = targetWordRef.current.toLowerCase().trim();
+                if (!target) return;
 
-                if (!target ) return;
-                console.log(event.results);
-
-                // Iterate through all new results starting from event.resultIndex
                 for (let i = event.resultIndex; i < event.results.length; ++i) {
-                    // Prevent re-processing the same result index
                     if (i <= lastProcessedIndexRef.current) continue;
 
                     const result = event.results[i];
-
                     if (!result) continue;
 
-                    const transcript = (result[0]?.transcript)
+                    // Bug #2 fix: null-coalesce before chaining
+                    const transcript = (result[0]?.transcript ?? "")
                         .toLowerCase()
                         .replace(/[^\w\s]/g, "")
                         .trim();
 
                     if (!transcript) continue;
 
-                    // Mas mabilis na detection: tinitingnan kung nandoon ang target word sa loob ng transcript
                     const wordsInTranscript = transcript.split(/\s+/);
                     const isMatch = wordsInTranscript.includes(target);
 

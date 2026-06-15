@@ -7,39 +7,49 @@ import DeniedModal from "@/Components/Student/DeniedModal";
 import SettingsModal from "@/Components/Student/SettingsModal";
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 
-// Import new hooks
 import { useCountdown } from "@/hooks/Student/useCountdown";
 import { useMicrophonePermission } from "@/hooks/Student/useMicrophonePermission";
 import { useSpeechRecognition } from "@/hooks/Student/useSpeechRecognition";
 
 export default function GameplayReadMode({ module }) {
+    // ✅ Fix #6: All useState declarations grouped at the top,
+    //    before any useCallback that references their setters.
     const [currentWordIndex, setCurrentWordIndex] = useState(0);
     const [currentScore, setCurrentScore] = useState(0);
     const [wordsSmashed, setWordsSmashed] = useState(0);
-    const [gameState, setGameState] = useState("IDLE"); // IDLE, COUNTDOWN, ACTIVE, DENIED, GAMEOVER
+    // ✅ Fix #3: "COMPLETED" is now a documented, valid state.
+    //    IDLE → COUNTDOWN → ACTIVE → GAMEOVER | COMPLETED
+    //                              ↘ DENIED (permission error)
+    const [gameState, setGameState] = useState("IDLE");
     const [isMispronounced, setIsMispronounced] = useState(false);
     const [showPointsFeedback, setShowPointsFeedback] = useState(false);
     const [pointsFeedbackValue, setPointsFeedbackValue] = useState(0);
+    // ✅ Fix #6: Was previously declared after handleWordRecognized,
+    //    which used setScoreEmphasize before it was initialized in scope.
+    const [scoreEmphasize, setScoreEmphasize] = useState(false);
 
-    const hasSaved = useRef(false);
-    // countdownValue is now managed by useCountdown
-
-    // Settings and Audio State
+    // Settings State
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [audioSettings, setAudioSettings] = useState({
         music: 50,
         sfx: 70,
     });
 
-    const updateAudioSetting = useCallback((key, value) => {
-        setAudioSettings((prev) => ({ ...prev, [key]: value }));
-    }, []);
+    // Refs
+    const hasSaved = useRef(false);
+    // ✅ Fix #4: Track the mispronounce delay so it can be cancelled
+    //    if the game ends (time up / all words done) before it fires.
+    const mispronounceTimerRef = useRef(null);
+
+    // --- Derived values ---
 
     const speechRecognitionWords = useMemo(
         () => (module?.words ? module.words.map((w) => w.word) : []),
         [module?.words],
     );
     const totalWords = speechRecognitionWords.length;
+
+    // --- Navigation helpers ---
 
     const handleRestart = () => {
         window.location.reload();
@@ -49,62 +59,66 @@ export default function GameplayReadMode({ module }) {
         router.visit("/student/readModeLevels");
     };
 
-    // Point 4: Missing boundary guard
+    // ✅ Fix #5: Clamp index at totalWords so rapid recognition
+    //    events can't push currentWordIndex past the array bounds.
     const moveToNextWord = useCallback(() => {
-        setCurrentWordIndex((prev) => {
-            const next = prev + 1;
-            return next;
-        }); // totalWords is now derived from speechRecognitionWords
+        setCurrentWordIndex((prev) => Math.min(prev + 1, totalWords));
     }, [totalWords]);
 
-    // Evaluate game state when all words are processed
+    // --- Progress persistence helper (called from two places) ---
+
+    const persistProgress = useCallback(() => {
+        if (!hasSaved.current && wordsSmashed > 0) {
+            hasSaved.current = true;
+            router.post(
+                "/student/saveWordProgress",
+                {
+                    module_id: module.id,
+                    words_smashed: wordsSmashed,
+                },
+                {
+                    preserveScroll: true,
+                    onSuccess: () => console.log("Progress saved successfully!"),
+                },
+            );
+        }
+    }, [module.id, wordsSmashed]);
+
+    // --- Game-over evaluation ---
+
     useEffect(() => {
         if (
             gameState === "ACTIVE" &&
             currentWordIndex >= totalWords &&
             totalWords > 0
         ) {
-            // Persistence triggers IMMEDIATELY to win the race against user clicks
-            if (!hasSaved.current && wordsSmashed > 0) {
-                hasSaved.current = true;
-                router.post(
-                    "/student/saveWordProgress",
-                    {
-                        module_id: module.id,
-                        words_smashed: wordsSmashed,
-                    },
-                    {
-                        preserveScroll: true,
-                        onSuccess: () =>
-                            console.log("Progress saved successfully!"),
-                    },
-                );
-            }
+            // Persist immediately to win the race against user clicks.
+            persistProgress();
 
             const timer = setTimeout(() => {
-                const finalState = wordsSmashed > 0 ? "COMPLETED" : "GAMEOVER";
-                setGameState(finalState);
+                // ✅ Fix #3: Both states are now handled consistently.
+                //    Pass gameState to GameOverModal so it can render
+                //    different copy for "Great job!" vs "Time's up!".
+                setGameState(wordsSmashed > 0 ? "COMPLETED" : "GAMEOVER");
             }, 1200);
+
             return () => clearTimeout(timer);
         }
-    }, [currentWordIndex, totalWords, wordsSmashed, gameState, module.id]);
+    }, [currentWordIndex, totalWords, wordsSmashed, gameState, persistProgress]);
 
-    // Point 1 & 2: Stale currentWordIndex & advancing word in two places
+    // --- Speech recognition callbacks ---
+
     const handleWordRecognized = useCallback(() => {
-        // Removed `index` parameter
         const wordObj = module.words[currentWordIndex];
         if (wordObj) {
             router.post(
                 "/student/updateWordMastery",
-                {
-                    word_id: wordObj.id,
-                    status: "mastered",
-                },
+                { word_id: wordObj.id, status: "mastered" },
                 { preserveScroll: true, preserveState: true },
             );
         }
 
-        const points = module.words[currentWordIndex]?.points || 0; // Use currentWordIndex from state
+        const points = module.words[currentWordIndex]?.points || 0;
         setCurrentScore((prev) => prev + points);
         setWordsSmashed((prev) => prev + 1);
         setPointsFeedbackValue(points);
@@ -112,40 +126,57 @@ export default function GameplayReadMode({ module }) {
         setTimeout(() => setShowPointsFeedback(false), 500);
         setScoreEmphasize(true);
         setTimeout(() => setScoreEmphasize(false), 500);
-        moveToNextWord(); // Parent controls progression
-    }, [currentWordIndex, module.words, moveToNextWord]); // Added currentWordIndex to dependencies
 
-    // Point 3: setTimeout mispronounce is unnecessary latency
+        moveToNextWord();
+    }, [currentWordIndex, module.words, moveToNextWord]);
+
+    // ✅ Fix #1: Added currentWordIndex and module.words to the dependency array.
+    //    Without this, handleMispronounce always captured currentWordIndex = 0,
+    //    so the wrong word_id was sent to the API on every mispronunciation.
     const handleMispronounce = useCallback(() => {
         const wordObj = module.words[currentWordIndex];
         if (wordObj) {
             router.post(
                 "/student/updateWordMastery",
-                {
-                    word_id: wordObj.id,
-                    status: "training",
-                },
+                { word_id: wordObj.id, status: "training" },
                 { preserveScroll: true, preserveState: true },
             );
         }
 
         setIsMispronounced(true);
-        // Bigyan ng oras ang user na makita ang "shake" animation
-        setTimeout(() => {
+
+        // ✅ Fix #4: Clear any pending timer before scheduling a new one,
+        //    and store the id so it can be cancelled on unmount or game-end.
+        clearTimeout(mispronounceTimerRef.current);
+        mispronounceTimerRef.current = setTimeout(() => {
             setIsMispronounced(false);
             moveToNextWord();
         }, 500);
-    }, [moveToNextWord]); // Removed scoreEmphasize from dependencies as it's not directly used here.
+    }, [currentWordIndex, module.words, moveToNextWord]);
 
-    // State for score emphasis in GameplayHeader
-    const [scoreEmphasize, setScoreEmphasize] = useState(false);
+    // ✅ Fix #4: Cancel any pending mispronounce transition on unmount.
+    useEffect(() => {
+        return () => clearTimeout(mispronounceTimerRef.current);
+    }, []);
 
-    // --- Custom Hooks ---
+    // --- Settings ---
 
-    // 1. Microphone Permission Hook
+    const updateAudioSetting = useCallback((key, value) => {
+        setAudioSettings((prev) => ({ ...prev, [key]: value }));
+    }, []);
+
+    const handleOpenSettings = useCallback(() => {
+        setIsSettingsOpen(true);
+    }, []);
+
+    const handleCloseSettings = useCallback(() => {
+        setIsSettingsOpen(false);
+    }, []);
+
+    // --- Microphone permission ---
+
     const { permissionState, requestPermission } = useMicrophonePermission();
 
-    // Function to initiate game start, now using the permission hook
     const initiateGameStart = useCallback(async () => {
         if (permissionState === "granted") {
             setGameState("COUNTDOWN");
@@ -159,67 +190,58 @@ export default function GameplayReadMode({ module }) {
         }
     }, [permissionState, requestPermission]);
 
-    // Permission check on mount: If already granted, start countdown.
-    // Otherwise, handle initial permission prompt.
     useEffect(() => {
         if (gameState === "IDLE") {
             initiateGameStart();
         }
     }, [initiateGameStart, gameState]);
 
-    const handleOpenSettings = useCallback(() => {
-        setIsSettingsOpen(true);
-    }, []);
-
-    const handleCloseSettings = useCallback(() => {
-        setIsSettingsOpen(false);
-    }, []);
+    // --- Time-up handler ---
 
     const handleTimeUp = useCallback(() => {
-        if (!hasSaved.current && wordsSmashed > 0) {
-            hasSaved.current = true;
-            router.post(
-                "/student/saveWordProgress",
-                {
-                    module_id: module.id,
-                    words_smashed: wordsSmashed,
-                },
-                {
-                    preserveScroll: true,
-                },
-            );
-        }
+        // ✅ Fix #4: Also cancel any pending mispronounce timer when time runs out
+        //    so moveToNextWord doesn't fire after the game has ended.
+        clearTimeout(mispronounceTimerRef.current);
+        persistProgress();
         setGameState("GAMEOVER");
-    }, [module.id, wordsSmashed]);
+    }, [persistProgress]);
 
-    // 2. Countdown Hook
+    // --- Countdown ---
+
     const countdownValue = useCountdown(gameState, () =>
         setGameState("ACTIVE"),
-    ); // This callback is already stable
+    );
 
-    // 3. Speech Recognition Hook
-    // Point 5: Speech hook is now correct but slightly over-injected
+    // --- Speech Recognition ---
+
     const targetWord = speechRecognitionWords[currentWordIndex];
+
     useSpeechRecognition({
         isActive: gameState === "ACTIVE",
         isPaused: isSettingsOpen,
-        targetWord: targetWord, // Changed from words, currentWordIndex
+        targetWord: targetWord,
         onWordRecognized: handleWordRecognized,
         onPermissionDenied: () => setGameState("DENIED"),
-        onMispronounced: handleMispronounce, // Removed interim matching
-        onRecognitionError: undefined, // Removed interim matching
+        onMispronounced: handleMispronounce,
+        onRecognitionError: undefined,
     });
 
-    // --- End Custom Hooks ---
+    // --- Play again ---
 
+    // ✅ Fix #2: Reset hasSaved so progress is correctly persisted
+    //    on a second (or subsequent) playthrough.
     const onPlayAgain = useCallback(() => {
+        hasSaved.current = false;
+        clearTimeout(mispronounceTimerRef.current);
         setCurrentWordIndex(0);
         setCurrentScore(0);
         setWordsSmashed(0);
+        setIsMispronounced(false);
         setGameState("COUNTDOWN");
     }, []);
 
-    // Grouped props to clean up the return block
+    // --- Render ---
+
     const headerProps = {
         level: module ? `${module.level} - ${module.title}` : "",
         isActive: gameState === "ACTIVE",
@@ -235,6 +257,12 @@ export default function GameplayReadMode({ module }) {
     return (
         <>
             <div className="bg-background text-on-background font-body-md h-screen flex flex-col overflow-hidden">
+                {/*
+                 * ✅ Fix #3: GameOverModal now receives both "GAMEOVER" and "COMPLETED".
+                 *    The modal component should branch on gameState to show the right copy:
+                 *    "COMPLETED" → "Great job! You finished all words!"
+                 *    "GAMEOVER"  → "Time's up!" or "No words smashed"
+                 */}
                 <GameOverModal
                     gameState={gameState}
                     wordsSmashed={wordsSmashed}
@@ -256,7 +284,6 @@ export default function GameplayReadMode({ module }) {
 
                 <ReadModeMainContent
                     words={module.words}
-                    // Siguraduhin na ang UI ay laging nasa huling valid word habang naghihintay ng Game Over
                     currentIndex={Math.min(currentWordIndex, totalWords - 1)}
                     gameState={gameState}
                     countdownValue={countdownValue}
