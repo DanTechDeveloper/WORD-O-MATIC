@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useMicrophonePermission } from "@/hooks/Student/useMicrophonePermission";
-import { useSpeechRecognition } from "@/hooks/Student/useSpeechRecognition";
+import { useSpeechRecognition } from "@/hooks/Student/useWordSpeechRecognition";
 import { useCountdown } from "@/hooks/Student/useCountdown";
 
 export default function Microphone() {

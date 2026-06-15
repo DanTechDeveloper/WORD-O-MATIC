@@ -9,7 +9,7 @@ import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 
 import { useCountdown } from "@/hooks/Student/useCountdown";
 import { useMicrophonePermission } from "@/hooks/Student/useMicrophonePermission";
-import { useSpeechRecognition } from "@/hooks/Student/useSpeechRecognition";
+import { useWordSpeechRecognition } from "@/hooks/Student/useWordSpeechRecognition";
 
 export default function GameplayReadMode({ module }) {
     // ✅ Fix #6: All useState declarations grouped at the top,
@@ -167,7 +167,7 @@ export default function GameplayReadMode({ module }) {
         mispronounceTimerRef.current = setTimeout(() => {
             setIsMispronounced(false);
             moveToNextWord();
-        }, 500);
+        }, 100); // Mabilis na transition pagkatapos ng pagkakamali
     }, [module.words, moveToNextWord]);
 
     // ✅ Fix #4: Cancel any pending mispronounce transition on unmount.
@@ -240,7 +240,7 @@ export default function GameplayReadMode({ module }) {
         );
     }, [speechRecognitionWords, currentWordIndex]);
 
-    useSpeechRecognition({
+    useWordSpeechRecognition({
         isActive: gameState === "ACTIVE",
         isPaused: isSettingsOpen,
         targetWord: targetWord,

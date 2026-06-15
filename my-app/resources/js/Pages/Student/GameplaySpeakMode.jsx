@@ -9,7 +9,7 @@ import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 
 import { useCountdown } from "@/hooks/Student/useCountdown";
 import { useMicrophonePermission } from "@/hooks/Student/useMicrophonePermission";
-import { useSpeechRecognition } from "@/hooks/Student/useSpeechRecognition";
+import { useSentenceSpeechRecognition } from "@/hooks/Student/useSentenceSpeechRecognition";
 
 export default function GameplaySpeakMode({ module }) {
     // All state at the top.
@@ -159,7 +159,7 @@ export default function GameplaySpeakMode({ module }) {
         mispronounceTimerRef.current = setTimeout(() => {
             setIsMispronounced(false);
             moveToNextWord();
-        }, 500);
+        }, 100); // Reduced for snappier feedback
     }, [moveToNextWord]);
 
     // --- Settings ---
@@ -229,7 +229,7 @@ export default function GameplaySpeakMode({ module }) {
         );
     }, [words, currentWordIndex]);
 
-    useSpeechRecognition({
+    useSentenceSpeechRecognition({
         isActive: gameState === "ACTIVE",
         isPaused: isSettingsOpen,
         targetWord: targetWord,

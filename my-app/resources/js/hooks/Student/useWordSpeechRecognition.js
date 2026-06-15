@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 
-export function useSpeechRecognition({
+export function useWordSpeechRecognition({
     isActive,
     isPaused,
     targetWord,
@@ -40,12 +40,15 @@ export function useSpeechRecognition({
     // Removed processing lock
     const lastProcessedIndexRef = useRef(-1);
     const isMountedRef = useRef(false);
+    const mispronounceTimeoutRef = useRef(null);
 
     // Track hook mount/unmount lifecycle
     useEffect(() => {
         isMountedRef.current = true;
         return () => {
             isMountedRef.current = false;
+            if (mispronounceTimeoutRef.current)
+                clearTimeout(mispronounceTimeoutRef.current);
             if (recognitionRef.current) recognitionRef.current.abort();
         };
     }, []);
@@ -70,13 +73,17 @@ export function useSpeechRecognition({
                 // Bug #1 fix: guard against buffered results after stop/pause
                 if (!gameStateRef.current || isPausedRef.current) return;
 
+                // Agad na i-clear ang timer kapag may bagong boses na narinig
+                if (mispronounceTimeoutRef.current)
+                    clearTimeout(mispronounceTimeoutRef.current);
+
                 const target = targetWordRef.current.toLowerCase().trim();
                 if (!target) return;
 
                 // Fix for onMispronounced firing on partial transcripts:
                 // Track whether we matched across all results in this event
                 let matchedThisEvent = false;
-                let lastFinalTranscript = "";
+                let latestTranscript = "";
 
                 for (let i = event.resultIndex; i < event.results.length; ++i) {
                     if (i <= lastProcessedIndexRef.current) continue;
@@ -92,17 +99,11 @@ export function useSpeechRecognition({
 
                     if (!transcript) continue;
 
-                    // Store the last final transcript for potential mispronounce
-                    if (result.isFinal) {
-                        lastFinalTranscript = transcript;
-                    }
+                    // Kunin ang pinakabagong transcript (kahit interim)
+                    latestTranscript = transcript;
 
-                    // HYBRID APPROACH: Exact word match for single words, substring for phrases
-                    const isSingleWord = target.split(/\s+/).length === 1;
                     const wordsInTranscript = transcript.split(/\s+/);
-                    const isMatch = isSingleWord 
-                        ? wordsInTranscript.includes(target)  // Exact word for single letters/words
-                        : transcript.includes(target);         // Substring for phrases
+                    const isMatch = wordsInTranscript.includes(target);
 
                     if (isMatch && !hasMatchedCurrentRef.current) {
                         hasMatchedCurrentRef.current = true;
@@ -116,13 +117,22 @@ export function useSpeechRecognition({
                     }
                 }
 
-                // Only call onMispronounced if we processed all results without matching
+                // Sa halip na hintayin ang isFinal, mag-trigger tayo pagkatapos ng maikling katahimikan
                 if (
                     !matchedThisEvent &&
                     !hasMatchedCurrentRef.current &&
-                    lastFinalTranscript
+                    latestTranscript
                 ) {
-                    onMispronouncedRef.current?.(lastFinalTranscript);
+                    mispronounceTimeoutRef.current = setTimeout(() => {
+                        if (
+                            isMountedRef.current &&
+                            gameStateRef.current &&
+                            !isPausedRef.current &&
+                            !hasMatchedCurrentRef.current
+                        ) {
+                            onMispronouncedRef.current?.(latestTranscript);
+                        }
+                    }, 900); // 900ms silence = fail.
                 }
             };
 
@@ -177,6 +187,8 @@ export function useSpeechRecognition({
 
     useEffect(() => {
         hasMatchedCurrentRef.current = false;
+        if (mispronounceTimeoutRef.current)
+            clearTimeout(mispronounceTimeoutRef.current);
     }, [targetWord]);
 
     // Approach 2: Strictly manage start/stop without re-binding listeners
