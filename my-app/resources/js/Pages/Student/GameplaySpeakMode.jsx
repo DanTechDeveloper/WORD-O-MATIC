@@ -34,6 +34,10 @@ export default function GameplaySpeakMode({ module }) {
 
     // Refs
     const hasSaved = useRef(false);
+    const currentWordIndexRef = useRef(0);
+    useEffect(() => {
+        currentWordIndexRef.current = currentWordIndex;
+    }, [currentWordIndex]);
     // ✅ New Bug #2 fix: cancel mispronounce delay on time-up / unmount.
     const mispronounceTimerRef = useRef(null);
 
@@ -68,7 +72,11 @@ export default function GameplaySpeakMode({ module }) {
     // ✅ Inherited Bug #2 fix: clamp so rapid recognition can't push
     //    currentWordIndex past the array bounds.
     const moveToNextWord = useCallback(() => {
-        setCurrentWordIndex((prev) => Math.min(prev + 1, totalWords));
+        setCurrentWordIndex((prev) => {
+            const next = Math.min(prev + 1, totalWords);
+            currentWordIndexRef.current = next;
+            return next;
+        });
     }, [totalWords]);
 
     // ✅ Gap fix: extracted so both handleTimeUp and the game-over
@@ -206,7 +214,9 @@ export default function GameplaySpeakMode({ module }) {
     // Sanitize targetWord by removing punctuation to ensure it matches the
     // speech recognition transcript, which also has punctuation stripped.
     const targetWord = useMemo(() => {
-        return words[currentWordIndex]?.replace(/[^\w\s]/g, "") || "";
+        return (
+            words[currentWordIndex]?.replace(/[^\w\s]/g, "").toLowerCase() || ""
+        );
     }, [words, currentWordIndex]);
 
     useSpeechRecognition({
@@ -226,6 +236,7 @@ export default function GameplaySpeakMode({ module }) {
     const handlePlayAgain = useCallback(() => {
         hasSaved.current = false;
         clearTimeout(mispronounceTimerRef.current);
+        currentWordIndexRef.current = 0;
         setCurrentWordIndex(0);
         setCurrentScore(0);
         setWordsSmashed(0);

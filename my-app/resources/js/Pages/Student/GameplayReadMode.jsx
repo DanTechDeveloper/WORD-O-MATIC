@@ -37,6 +37,11 @@ export default function GameplayReadMode({ module }) {
 
     // Refs
     const hasSaved = useRef(false);
+    // ✅ Fix: use a ref for the index to prevent stale closures in speech callbacks.
+    const currentWordIndexRef = useRef(0);
+    useEffect(() => {
+        currentWordIndexRef.current = currentWordIndex;
+    }, [currentWordIndex]);
     // ✅ Fix #4: Track the mispronounce delay so it can be cancelled
     //    if the game ends (time up / all words done) before it fires.
     const mispronounceTimerRef = useRef(null);
@@ -62,7 +67,11 @@ export default function GameplayReadMode({ module }) {
     // ✅ Fix #5: Clamp index at totalWords so rapid recognition
     //    events can't push currentWordIndex past the array bounds.
     const moveToNextWord = useCallback(() => {
-        setCurrentWordIndex((prev) => Math.min(prev + 1, totalWords));
+        setCurrentWordIndex((prev) => {
+            const next = Math.min(prev + 1, totalWords);
+            currentWordIndexRef.current = next;
+            return next;
+        });
     }, [totalWords]);
 
     // --- Progress persistence helper (called from two places) ---
@@ -78,7 +87,8 @@ export default function GameplayReadMode({ module }) {
                 },
                 {
                     preserveScroll: true,
-                    onSuccess: () => console.log("Progress saved successfully!"),
+                    onSuccess: () =>
+                        console.log("Progress saved successfully!"),
                 },
             );
         }
@@ -104,12 +114,18 @@ export default function GameplayReadMode({ module }) {
 
             return () => clearTimeout(timer);
         }
-    }, [currentWordIndex, totalWords, wordsSmashed, gameState, persistProgress]);
+    }, [
+        currentWordIndex,
+        totalWords,
+        wordsSmashed,
+        gameState,
+        persistProgress,
+    ]);
 
     // --- Speech recognition callbacks ---
 
     const handleWordRecognized = useCallback(() => {
-        const wordObj = module.words[currentWordIndex];
+        const wordObj = module.words[currentWordIndexRef.current];
         if (wordObj) {
             router.post(
                 "/student/updateWordMastery",
@@ -118,7 +134,7 @@ export default function GameplayReadMode({ module }) {
             );
         }
 
-        const points = module.words[currentWordIndex]?.points || 0;
+        const points = module.words[currentWordIndexRef.current]?.points || 0;
         setCurrentScore((prev) => prev + points);
         setWordsSmashed((prev) => prev + 1);
         setPointsFeedbackValue(points);
@@ -128,13 +144,13 @@ export default function GameplayReadMode({ module }) {
         setTimeout(() => setScoreEmphasize(false), 500);
 
         moveToNextWord();
-    }, [currentWordIndex, module.words, moveToNextWord]);
+    }, [module.words, moveToNextWord]);
 
     // ✅ Fix #1: Added currentWordIndex and module.words to the dependency array.
     //    Without this, handleMispronounce always captured currentWordIndex = 0,
     //    so the wrong word_id was sent to the API on every mispronunciation.
     const handleMispronounce = useCallback(() => {
-        const wordObj = module.words[currentWordIndex];
+        const wordObj = module.words[currentWordIndexRef.current];
         if (wordObj) {
             router.post(
                 "/student/updateWordMastery",
@@ -152,7 +168,7 @@ export default function GameplayReadMode({ module }) {
             setIsMispronounced(false);
             moveToNextWord();
         }, 500);
-    }, [currentWordIndex, module.words, moveToNextWord]);
+    }, [module.words, moveToNextWord]);
 
     // ✅ Fix #4: Cancel any pending mispronounce transition on unmount.
     useEffect(() => {
@@ -214,7 +230,15 @@ export default function GameplayReadMode({ module }) {
 
     // --- Speech Recognition ---
 
-    const targetWord = speechRecognitionWords[currentWordIndex];
+    // ✅ Fix: Sanitize target word by removing punctuation to ensure matches
+    // with the transcript provided by the Web Speech API.
+    const targetWord = useMemo(() => {
+        return (
+            speechRecognitionWords[currentWordIndex]
+                ?.replace(/[^\w\s]/g, "")
+                .toLowerCase() || ""
+        );
+    }, [speechRecognitionWords, currentWordIndex]);
 
     useSpeechRecognition({
         isActive: gameState === "ACTIVE",
@@ -233,6 +257,7 @@ export default function GameplayReadMode({ module }) {
     const onPlayAgain = useCallback(() => {
         hasSaved.current = false;
         clearTimeout(mispronounceTimerRef.current);
+        currentWordIndexRef.current = 0;
         setCurrentWordIndex(0);
         setCurrentScore(0);
         setWordsSmashed(0);

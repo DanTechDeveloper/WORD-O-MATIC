@@ -73,6 +73,11 @@ export function useSpeechRecognition({
                 const target = targetWordRef.current.toLowerCase().trim();
                 if (!target) return;
 
+                // Fix for onMispronounced firing on partial transcripts:
+                // Track whether we matched across all results in this event
+                let matchedThisEvent = false;
+                let lastFinalTranscript = "";
+
                 for (let i = event.resultIndex; i < event.results.length; ++i) {
                     if (i <= lastProcessedIndexRef.current) continue;
 
@@ -87,24 +92,33 @@ export function useSpeechRecognition({
 
                     if (!transcript) continue;
 
+                    // Store the last final transcript for potential mispronounce
+                    if (result.isFinal) {
+                        lastFinalTranscript = transcript;
+                    }
+
                     const wordsInTranscript = transcript.split(/\s+/);
                     const isMatch = wordsInTranscript.includes(target);
 
                     if (isMatch && !hasMatchedCurrentRef.current) {
                         hasMatchedCurrentRef.current = true;
+                        matchedThisEvent = true;
                         onWordRecognizedRef.current?.();
                         break;
                     }
 
                     if (result.isFinal) {
                         lastProcessedIndexRef.current = i;
-                        if (
-                            !hasMatchedCurrentRef.current &&
-                            transcript.length > 0
-                        ) {
-                            onMispronouncedRef.current?.(transcript);
-                        }
                     }
+                }
+
+                // Only call onMispronounced if we processed all results without matching
+                if (
+                    !matchedThisEvent &&
+                    !hasMatchedCurrentRef.current &&
+                    lastFinalTranscript
+                ) {
+                    onMispronouncedRef.current?.(lastFinalTranscript);
                 }
             };
             recognition.onerror = (event) => {
