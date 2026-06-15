@@ -73,7 +73,6 @@ export default function ReadModeLevels({ modules }) {
         const newMissions = transformModulesToMissions(modules);
         setMissions(newMissions);
 
-        // Обновление фокуса на текущую миссию при изменении данных
         const currentMissionIndex = newMissions.findIndex(
             (m) => m.status === "current",
         );
@@ -111,7 +110,6 @@ export default function ReadModeLevels({ modules }) {
     };
 
     const pathD = getPathD();
-    const currentMission = missions.find((m) => m.status === "current");
 
     const handlePrev = () => {
         setActiveIndex((prev) => Math.max(0, prev - 1));

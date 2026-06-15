@@ -1,7 +1,10 @@
 import DashboardLayout from "@/Layouts/Teacher/DashboardLayout";
 import { Link } from "@inertiajs/react";
+import { useState } from "react";
 
 export default function StudentDetail({ data }) {
+    const [activeMode, setActiveMode] = useState("read");
+
     console.log(data);
     const student = {
         id: data.student_id,
@@ -242,6 +245,40 @@ export default function StudentDetail({ data }) {
                             </div>
                         ))}
                     </div>
+                </div>
+            </div>
+
+            {/* Mode Selector Bar */}
+            <div className="flex justify-center mt-12">
+                {" "}
+                {/* Changed mb-12 to mt-12 */}
+                <div className="bg-slate-950 p-2 rounded-[2rem] border-4 border-slate-800 flex gap-2 shadow-[8px_8px_0_0_#020617]">
+                    <button
+                        onClick={() => setActiveMode("read")}
+                        className={`px-8 py-4 rounded-2xl font-black uppercase italic tracking-tighter transition-all flex items-center gap-3 ${
+                            activeMode === "read"
+                                ? "bg-lime-400 text-slate-950 shadow-[0_0_20px_rgba(163,230,53,0.4)]"
+                                : "text-slate-500 hover:text-white hover:bg-slate-900"
+                        }`}
+                    >
+                        <span className="material-symbols-outlined font-black">
+                            menu_book
+                        </span>
+                        Read Mode
+                    </button>
+                    <button
+                        onClick={() => setActiveMode("speak")}
+                        className={`px-8 py-4 rounded-2xl font-black uppercase italic tracking-tighter transition-all flex items-center gap-3 ${
+                            activeMode === "speak"
+                                ? "bg-cyan-400 text-slate-950 shadow-[0_0_20px_rgba(34,211,238,0.4)]"
+                                : "text-slate-500 hover:text-white hover:bg-slate-900"
+                        }`}
+                    >
+                        <span className="material-symbols-outlined font-black">
+                            mic
+                        </span>
+                        Speak Mode
+                    </button>
                 </div>
             </div>
         </DashboardLayout>
