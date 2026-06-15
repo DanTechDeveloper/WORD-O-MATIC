@@ -97,8 +97,12 @@ export function useSpeechRecognition({
                         lastFinalTranscript = transcript;
                     }
 
+                    // HYBRID APPROACH: Exact word match for single words, substring for phrases
+                    const isSingleWord = target.split(/\s+/).length === 1;
                     const wordsInTranscript = transcript.split(/\s+/);
-                    const isMatch = wordsInTranscript.includes(target);
+                    const isMatch = isSingleWord 
+                        ? wordsInTranscript.includes(target)  // Exact word for single letters/words
+                        : transcript.includes(target);         // Substring for phrases
 
                     if (isMatch && !hasMatchedCurrentRef.current) {
                         hasMatchedCurrentRef.current = true;
@@ -121,6 +125,7 @@ export function useSpeechRecognition({
                     onMispronouncedRef.current?.(lastFinalTranscript);
                 }
             };
+
             recognition.onerror = (event) => {
                 if (event.error === "aborted") {
                     console.warn(
