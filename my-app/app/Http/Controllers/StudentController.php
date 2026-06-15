@@ -242,16 +242,17 @@ class StudentController extends Controller
     {
         $userId = auth()->id();
 
-        // Retrieve modules with the authenticated user's specific progress for each level.
         $modules = ParagraphModule::select(['id', 'level', 'title', 'total_score'])
-            ->with(['studentProgress' => function ($query) use ($userId) {
-                $query->where('user_id', $userId);
-            }])
-            ->orderBy('level', 'asc')->get();
+            ->orderBy('level', 'asc')
+            ->get();
+
+        $progressRecords = StudentParagraphProgress::where('user_id', $userId)
+            ->get()
+            ->keyBy('paragraph_module_id');
 
         $foundCurrent = false;
-        $transformedModules = $modules->map(function ($module) use (&$foundCurrent) {
-            $progress = $module->studentProgress->first();
+        $transformedModules = $modules->map(function ($module) use ($progressRecords, &$foundCurrent) {
+            $progress = $progressRecords->get($module->id);
 
             // Logic: Unang module na walang 'completed' status ang magiging 'current'.
             // Lahat ng bago mag-'current' ay 'completed', lahat ng kasunod ay 'locked'.
@@ -268,8 +269,10 @@ class StudentController extends Controller
                 'id' => $module->id,
                 'level' => $module->level,
                 'title' => $module->title,
-                'total_score' => $module->total_score,
+                'total_points' => $module->total_score,
+                'status' => $status,
                 'words_smashed' => $progress ? $progress->words_smashed : 0,
+                'score' => $progress ? $progress->words_smashed : 0,
             ];
         });
 
@@ -301,32 +304,29 @@ class StudentController extends Controller
         ]);
 
         $userId = auth()->id();
-
         $module = ParagraphModule::findOrFail($request->module_id);
+
         $accuracy = ($module->total_score > 0)
             ? ($request->words_smashed / $module->total_score) * 100
             : 0;
 
-        // Update high score only if the current attempt is better
-        $progress = StudentParagraphProgress::firstOrCreate(
+        $progress = StudentParagraphProgress::updateOrCreate(
             ['user_id' => $userId, 'paragraph_module_id' => $request->module_id],
-            ['words_smashed' => 0, 'accuracy' => 0, 'status' => 'not_started']
-        );
-
-        if ($request->words_smashed > $progress->words_smashed) {
-            $progress->update([
-                'words_smashed' => $request->words_smashed,
+            [
+                'words_smashed' => max($request->words_smashed, 0),
                 'accuracy' => round($accuracy, 2),
                 'status' => 'completed',
+            ]
+        );
+
+        $student = auth()->user()->student;
+        if ($student && $module->level >= $student->speak_level) {
+            $student->update([
+                'speak_level' => $module->level + 1,
+                'speak_progress' => StudentParagraphProgress::where('user_id', $userId)->where('status', 'completed')->count(),
+                'total_points' => StudentWordProgress::where('user_id', $userId)->sum('words_smashed') +
+                                 StudentParagraphProgress::where('user_id', $userId)->sum('words_smashed'),
             ]);
-
-            // Update the global total in StudentProfile (students table)
-            $total = StudentParagraphProgress::where('user_id', $userId)->sum('words_smashed');
-
-            $studentProfile = auth()->user()->student;
-            if ($studentProfile) {
-                $studentProfile->update(['words_smashed' => $total]);
-            }
         }
 
         return redirect()->back();

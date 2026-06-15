@@ -1,7 +1,5 @@
 import { useEffect, useRef } from "react";
 
-const GUARD_DURATION = 500; // ms to ignore recognition results after a word change
-
 export function useSpeechRecognition({
     isActive,
     isPaused,
@@ -38,7 +36,6 @@ export function useSpeechRecognition({
     onRecognitionErrorRef.current = onRecognitionError;
 
     const hasMatchedCurrentRef = useRef(false);
-    const lastWordChangeTimeRef = useRef(0);
 
     // Removed processing lock
     const lastProcessedIndexRef = useRef(-1);
@@ -69,13 +66,10 @@ export function useSpeechRecognition({
             recognition.lang = "en-US";
 
             recognition.onresult = (event) => {
-                // Time-based guard to prevent audio bleeding from the previous word
-                if (Date.now() - lastWordChangeTimeRef.current < GUARD_DURATION)
-                    return;
-
                 const target = targetWordRef.current.toLowerCase().trim();
 
-                if (!target) return;
+                if (!target ) return;
+                console.log(event.results);
 
                 // Iterate through all new results starting from event.resultIndex
                 for (let i = event.resultIndex; i < event.results.length; ++i) {
@@ -100,7 +94,7 @@ export function useSpeechRecognition({
                     if (isMatch && !hasMatchedCurrentRef.current) {
                         hasMatchedCurrentRef.current = true;
                         onWordRecognizedRef.current?.();
-                        return;
+                        break;
                     }
 
                     if (result.isFinal) {
@@ -155,7 +149,6 @@ export function useSpeechRecognition({
 
     useEffect(() => {
         hasMatchedCurrentRef.current = false;
-        lastWordChangeTimeRef.current = Date.now();
     }, [targetWord]);
 
     // Approach 2: Strictly manage start/stop without re-binding listeners
