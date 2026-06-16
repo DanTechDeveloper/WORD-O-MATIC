@@ -3,20 +3,79 @@
 namespace App\Http\Controllers;
 
 use App\Models\ParagraphModule;
+use App\Models\StudentParagraphProgress;
+use App\Models\StudentWordProgress;
 use App\Models\User;
 use App\Models\WordModule;
-use App\Models\StudentProfile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
 
 class TeacherController extends Controller
 {
-  
-
     public function dashboard()
     {
-        return Inertia::render('Teacher/Dashboard');
+        $totalStudents = User::where('role', 'student')->count();
+        $avgReadAccuracy = StudentWordProgress::avg('accuracy') ?? 0;
+        $avgSpeakAccuracy = StudentParagraphProgress::avg('accuracy') ?? 0;
+        $totalClassPoints = (StudentWordProgress::sum('words_smashed') ?? 0) +
+        (StudentParagraphProgress::sum('words_smashed') ?? 0);
+
+        // Section Performance Aggregation
+        $sections = \DB::table('students')->select('section')->distinct()->pluck('section');
+
+        $sectionPerformance = $sections->map(function ($section) {
+            $studentIds = \DB::table('students')->where('section', $section)->pluck('user_id');
+
+            $readAcc = StudentWordProgress::whereIn('user_id', $studentIds)->avg('accuracy') ?? 0;
+            $speakAcc = StudentParagraphProgress::whereIn('user_id', $studentIds)->avg('accuracy') ?? 0;
+            $points = (StudentWordProgress::whereIn('user_id', $studentIds)->sum('words_smashed') ?? 0) +
+                      (StudentParagraphProgress::whereIn('user_id', $studentIds)->sum('words_smashed') ?? 0);
+
+            $overall = ($readAcc + $speakAcc) / 2;
+            $status = $overall >= 80 ? 'On Track' : ($overall >= 60 ? 'Needs Support' : 'At Risk');
+
+            return [
+                'section' => $section,
+                'student_count' => $studentIds->count(),
+                'avg_read' => round($readAcc, 2),
+                'avg_speak' => round($speakAcc, 2),
+                'total_points' => $points,
+                'status' => $status,
+            ];
+        });
+
+        // Chart Counts Aggregation
+        $atRisk = 0;
+        $needsSupport = 0;
+        $onTrack = 0;
+        $allStudents = \DB::table('students')->get();
+        foreach ($allStudents as $s) {
+            $r = StudentWordProgress::where('user_id', $s->user_id)->avg('accuracy') ?? 0;
+            $sp = StudentParagraphProgress::where('user_id', $s->user_id)->avg('accuracy') ?? 0;
+            $avg = ($r + $sp) / 2;
+
+            if ($avg >= 80) {
+                $onTrack++;
+            } elseif ($avg >= 60) {
+                $needsSupport++;
+            } else {
+                $atRisk++;
+            }
+        }
+
+        return Inertia::render('Teacher/Dashboard', [
+            'totalStudents' => $totalStudents,
+            'avgReadAccuracy' => round($avgReadAccuracy, 2),
+            'avgSpeakAccuracy' => round($avgSpeakAccuracy, 2),
+            'totalClassPoints' => $totalClassPoints,
+            'sectionPerformance' => $sectionPerformance,
+            'chartCounts' => [
+                'atRisk' => $atRisk,
+                'needsSupport' => $needsSupport,
+                'onTrack' => $onTrack,
+            ],
+        ]);
     }
 
     public function classes()
@@ -64,7 +123,7 @@ class TeacherController extends Controller
                     return isset($progress[$word->id]) && $progress[$word->id][0]->status === 'mastered';
                 })->pluck('word')->values(),
                 'training' => $module->words->filter(function ($word) use ($progress) {
-                    return !isset($progress[$word->id]) || $progress[$word->id][0]->status === 'training';
+                    return ! isset($progress[$word->id]) || $progress[$word->id][0]->status === 'training';
                 })->pluck('word')->values(),
             ];
         });
@@ -228,7 +287,8 @@ class TeacherController extends Controller
         return Inertia::render('Teacher/Classes');
     }
 
-    public function badges(){
-        return Inertia::render("Teacher/Badges");
+    public function badges()
+    {
+        return Inertia::render('Teacher/Badges');
     }
 }

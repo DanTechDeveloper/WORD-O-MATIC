@@ -32,6 +32,7 @@ export default function Students({ data }) {
     };
 
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [selectedSection, setSelectedSection] = useState(""); // New state for section filter
 
     return (
         <>
@@ -84,12 +85,44 @@ export default function Students({ data }) {
                             type="text"
                         />
                     </div>
-                    <div className="flex gap-3">
+                    <div className="flex gap-3 flex-wrap">
                         <div className="relative">
                             <select className="appearance-none bg-slate-950 border-2 border-slate-800 rounded-xl pl-4 pr-10 py-4 text-white font-bold focus:outline-none focus:border-lime-500 cursor-pointer">
                                 <option>Sort by: Risk Level</option>
                                 <option>Name (A-Z)</option>
                                 <option>Recent Activity</option>
+                            </select>
+                            <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-lime-400">
+                                expand_more
+                            </span>
+                        </div>
+                        {/* New Section Filter */}
+                        <div className="relative">
+                            {/* Assuming 'data' prop contains student objects with a 'section' property */}
+                            {/* Dynamically generate unique sections from the data */}
+                            {/* Filter out any undefined/null sections before mapping */}
+                            <select
+                                className="w-full appearance-none bg-slate-950 border-2 border-slate-800 rounded-xl pl-4 pr-10 py-4 text-white font-bold focus:outline-none focus:border-lime-500 cursor-pointer transition-all"
+                                value={selectedSection}
+                                onChange={(e) =>
+                                    setSelectedSection(e.target.value)
+                                }
+                            >
+                                <option value="">All Sections</option>
+                                {[
+                                    ...new Set(
+                                        data
+                                            .map((student) => student.section)
+                                            .filter(Boolean),
+                                    ),
+                                ].map((sectionName) => (
+                                    <option
+                                        key={sectionName}
+                                        value={sectionName}
+                                    >
+                                        {sectionName}
+                                    </option>
+                                ))}
                             </select>
                             <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-lime-400">
                                 expand_more
@@ -114,7 +147,6 @@ export default function Students({ data }) {
                                 <th className="px-6 py-5 font-headline-md text-sm uppercase tracking-widest text-lime-400">
                                     Name
                                 </th>{" "}
-                              
                                 <th className="px-6 py-5 font-headline-md text-sm uppercase tracking-widest text-lime-400">
                                     Word Risk
                                 </th>
@@ -130,91 +162,102 @@ export default function Students({ data }) {
                             </tr>
                         </thead>
                         <tbody className="divide-y-2 divide-slate-800/50">
-                            {data.map((student, index) => {
-                                const wRisk =
-                                    riskStyles[student.wordRisk] ||
-                                    riskStyles.na;
-                                const pRisk =
-                                    riskStyles[student.paragraphRisk] ||
-                                    riskStyles.na;
-                                const sStyle =
-                                    statusStyles[student.status?.type] ||
-                                    statusStyles.notStarted;
+                            {/* Filter students based on selectedSection */}
+                            {data
+                                .filter(
+                                    (student) =>
+                                        selectedSection === "" ||
+                                        student.section === selectedSection,
+                                )
+                                .map((student, index) => {
+                                    const wRisk =
+                                        riskStyles[student.wordRisk] ||
+                                        riskStyles.na;
+                                    const pRisk =
+                                        riskStyles[student.paragraphRisk] ||
+                                        riskStyles.na;
+                                    const sStyle =
+                                        statusStyles[student.status?.type] ||
+                                        statusStyles.notStarted;
 
-                                return (
-                                    <tr
-                                        key={index}
-                                        className="hover:bg-slate-900/50 transition-colors group"
-                                    >
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-4">
-                                                <div
-                                                    className={`w-12 h-12 rounded-lg bg-slate-950 border-2 border-lime-400 overflow-hidden ${student.rotation} group-hover:rotate-0 transition-transform shadow-[3px_3px_0px_0px_#3f6212]`}
-                                                >
-                                                    <img
-                                                        alt={student.fullName}
-                                                        src={student.avatar}
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <div className="font-headline-md text-base text-white">
-                                                        {student.fullName}
+                                    return (
+                                        <tr
+                                            key={index}
+                                            className="hover:bg-slate-900/50 transition-colors group"
+                                        >
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center gap-4">
+                                                    <div
+                                                        className={`w-12 h-12 rounded-lg bg-slate-950 border-2 border-lime-400 overflow-hidden ${student.rotation} group-hover:rotate-0 transition-transform shadow-[3px_3px_0px_0px_#3f6212]`}
+                                                    >
+                                                        <img
+                                                            alt={
+                                                                student.fullName
+                                                            }
+                                                            src={student.avatar}
+                                                        />
                                                     </div>
-                                                    <div className="text-xs text-slate-500 font-label-bold">
-                                                        ID: {student.studentID}
+                                                    <div>
+                                                        <div className="font-headline-md text-base text-white">
+                                                            {student.fullName}
+                                                        </div>
+                                                        <div className="text-xs text-slate-500 font-label-bold">
+                                                            ID:{" "}
+                                                            {student.studentID}
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        </td>
+                                            </td>
 
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-2">
-                                                <div
-                                                    className={`w-3 h-3 rounded-full ${wRisk.dot}`}
-                                                ></div>
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center gap-2">
+                                                    <div
+                                                        className={`w-3 h-3 rounded-full ${wRisk.dot}`}
+                                                    ></div>
+                                                    <span
+                                                        className={`font-label-bold ${wRisk.text} uppercase`}
+                                                    >
+                                                        {student.wordRisk ===
+                                                        "na"
+                                                            ? "N/A"
+                                                            : student.wordRisk}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center gap-2">
+                                                    <div
+                                                        className={`w-3 h-3 rounded-full ${pRisk.dot}`}
+                                                    ></div>
+                                                    <span
+                                                        className={`font-label-bold ${pRisk.text} uppercase`}
+                                                    >
+                                                        {student.paragraphRisk ===
+                                                        "na"
+                                                            ? "N/A"
+                                                            : student.paragraphRisk}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4">
                                                 <span
-                                                    className={`font-label-bold ${wRisk.text} uppercase`}
+                                                    className={`${sStyle} px-3 py-1 rounded-full border-2 text-xs font-black uppercase`}
                                                 >
-                                                    {student.wordRisk === "na"
-                                                        ? "N/A"
-                                                        : student.wordRisk}
+                                                    {student.status?.label ||
+                                                        "Not Started"}
                                                 </span>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-2">
-                                                <div
-                                                    className={`w-3 h-3 rounded-full ${pRisk.dot}`}
-                                                ></div>
-                                                <span
-                                                    className={`font-label-bold ${pRisk.text} uppercase`}
+                                            </td>
+                                            <td className="px-6 py-4 text-slate-400 font-body-md">
+                                                <Link
+                                                    href={`/teacher/studentDetails/${student.id}`}
+                                                    className="bg-lime-400 text-slate-950 px-6 py-3 rounded-2xl border-4 border-slate-950 shadow-[6px_6px_0_0_#3f6212] font-black uppercase italic text-xs tracking-tighter hover:translate-y-0.5 hover:shadow-[3px_3px_0_0_#3f6212] transition-all flex items-center justify-center gap-2"
                                                 >
-                                                    {student.paragraphRisk ===
-                                                    "na"
-                                                        ? "N/A"
-                                                        : student.paragraphRisk}
-                                                </span>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span
-                                                className={`${sStyle} px-3 py-1 rounded-full border-2 text-xs font-black uppercase`}
-                                            >
-                                                {student.status?.label ||
-                                                    "Not Started"}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 text-slate-400 font-body-md">
-                                            <Link
-                                                href={`/teacher/studentDetails/${student.id}`}
-                                                className="bg-lime-400 text-slate-950 px-6 py-3 rounded-2xl border-4 border-slate-950 shadow-[6px_6px_0_0_#3f6212] font-black uppercase italic text-xs tracking-tighter hover:translate-y-0.5 hover:shadow-[3px_3px_0_0_#3f6212] transition-all flex items-center justify-center gap-2"
-                                            >
-                                                View
-                                            </Link>
-                                        </td>
-                                    </tr>
-                                );
-                            })}
+                                                    View
+                                                </Link>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
                         </tbody>
                     </table>
                     {/* Table Pagination/Footer */}

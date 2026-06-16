@@ -11,8 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('badges', function (Blueprint $table) {
-            $table->string('icon')->nullable()->after('description');
+        Schema::table('student_stats', function (Blueprint $table) {
+            //
         });
     }
 
@@ -21,7 +21,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('badges', function (Blueprint $table) {
+        Schema::table('student_stats', function (Blueprint $table) {
             //
         });
     }
