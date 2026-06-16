@@ -1,6 +1,17 @@
 import DashboardLayout from "../../Layouts/Teacher/DashboardLayout";
 import { useState } from "react";
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import {
+    PieChart,
+    Pie,
+    Cell,
+    ResponsiveContainer,
+    Tooltip,
+    BarChart,
+    Bar,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+} from "recharts";
 
 export default function Dashboard({
     totalStudents,
@@ -42,6 +53,14 @@ export default function Dashboard({
             icon: "military_tech",
             color: "text-yellow-400",
         },
+    ];
+
+    const topStudentsData = [
+        { name: "Nova Starlight", points: 12500 },
+        { name: "Leo Jupiter", points: 11800 },
+        { name: "Orion Mars", points: 10500 },
+        { name: "Luna Eclipse", points: 9800 },
+        { name: "Astro Comet", points: 9200 },
     ];
 
     const chartData = [
@@ -295,6 +314,70 @@ export default function Dashboard({
                             )}
                         </tbody>
                     </table>
+                </div>
+            </div>
+
+            {/* Top Performing Students */}
+            <div className="bg-slate-900 border-4 border-slate-800 p-10 rounded-[2.5rem] shadow-[8px_8px_0_0_#020617] mb-10">
+                <h2 className="text-2xl font-black text-white uppercase italic flex items-center gap-3 mb-8">
+                    <span className="material-symbols-outlined text-yellow-400">
+                        leaderboard
+                    </span>
+                    Top Performing Students
+                </h2>
+                <div className="h-[300px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <BarChart
+                            layout="vertical"
+                            data={topStudentsData}
+                            margin={{
+                                top: 20,
+                                right: 30,
+                                left: 20,
+                                bottom: 5,
+                            }}
+                        >
+                            <CartesianGrid
+                                strokeDasharray="3 3"
+                                stroke="#1e293b"
+                            />
+                            <XAxis
+                                type="number"
+                                stroke="#94a3b8"
+                                tickFormatter={(value) =>
+                                    value.toLocaleString()
+                                }
+                            />
+                            <YAxis
+                                dataKey="name"
+                                type="category"
+                                stroke="#94a3b8"
+                                width={120} // Adjust width to prevent name truncation
+                                tick={{ fill: "#e2e8f0", fontWeight: "bold" }}
+                            />
+                            <Tooltip
+                                cursor={{ fill: "rgba(255,255,255,0.1)" }}
+                                contentStyle={{
+                                    backgroundColor: "#020617",
+                                    border: "2px solid #1e293b",
+                                    borderRadius: "12px",
+                                }}
+                                itemStyle={{
+                                    color: "#fff",
+                                    fontSize: "12px",
+                                    fontWeight: "medium",
+                                }}
+                                formatter={(value) =>
+                                    `${value.toLocaleString()} Points`
+                                }
+                            />
+                            <Bar
+                                dataKey="points"
+                                fill="#a3e635"
+                                radius={[10, 10, 10, 10]}
+                            />
+                        </BarChart>
+                    </ResponsiveContainer>
                 </div>
             </div>
 
