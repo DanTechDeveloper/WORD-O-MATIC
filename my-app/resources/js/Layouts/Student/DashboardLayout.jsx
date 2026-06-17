@@ -4,7 +4,7 @@ export default function DashboardLayout({ children, minimal = false }) {
     return (
         <>
             <div
-                className={`bg-background text-on-background font-body-md min-h-screen ${minimal ? "pb-16" : "pl-64"}`}
+                className={`bg-background text-on-background font-body-md min-h-screen ${minimal ? "pb-16" : "lg:pl-64 pb-20 lg:pb-0"}`}
             >
                 <StudentProfile minimal={minimal} />
                 <main

@@ -14,7 +14,7 @@ export default function Dashboard({ data }) {
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                     {/* <!-- Hero Tile --> */}
                     <section className="lg:col-span-8">
-                        <div className="h-full bg-surface-container rounded-3xl p-8 border border-surface-variant/20 shadow-sm flex flex-col md:flex-row items-center justify-between gap-6 overflow-hidden relative">
+                        <div className="h-full bg-surface-container rounded-3xl p-5 lg:p-8 border border-surface-variant/20 shadow-sm flex flex-col md:flex-row items-center justify-between gap-6 overflow-hidden relative">
                             <div className="absolute -right-10 -top-10 w-40 h-40 bg-secondary-container/10 rounded-full blur-3xl"></div>
                             <div className="relative z-10 flex-1">
                                 <h2 className="text-4xl md:text-5xl font-bold text-primary mb-3 leading-tight">
@@ -87,7 +87,7 @@ export default function Dashboard({ data }) {
                     </section>
 
                     {/* <!-- Mission Progress Tile --> */}
-                    <section className="lg:col-span-12 bg-surface-container rounded-3xl border border-surface-variant/20 p-8 shadow-sm">
+                    <section className="lg:col-span-12 bg-surface-container rounded-3xl border border-surface-variant/20 p-5 lg:p-8 shadow-sm">
                         <div className="flex justify-between items-center mb-6">
                             <h3 className="text-xl font-bold text-on-surface flex items-center gap-2">
                                 <span className="material-symbols-outlined text-primary-fixed-dim">
@@ -160,7 +160,7 @@ export default function Dashboard({ data }) {
                     </section>
 
                     {/* <!-- Badges Tile --> */}
-                    <section className="lg:col-span-12 bg-surface-container rounded-3xl border border-surface-variant/20 p-8 shadow-sm flex flex-col">
+                    <section className="lg:col-span-12 bg-surface-container rounded-3xl border border-surface-variant/20 p-5 lg:p-8 shadow-sm flex flex-col">
                         <h3 className="text-xl font-bold text-on-surface mb-6 flex items-center gap-2">
                             <span className="material-symbols-outlined text-tertiary">
                                 workspace_premium

@@ -22,9 +22,14 @@ export default function StudentFeatures() {
         { label: "Badges", href: "/student/badges", icon: "military_tech" },
     ];
 
+    const bottomActiveClass =
+        "flex flex-col items-center gap-0.5 text-[10px] font-bold text-lime-400";
+    const bottomInactiveClass =
+        "flex flex-col items-center gap-0.5 text-[10px] font-medium text-slate-500";
+
     return (
         <>
-            <aside className="fixed left-0 top-0 h-full w-64 flex flex-col p-4 border-r-4 border-slate-900 bg-slate-950 z-50 shadow-[4px_0_0_0_#1e1b4b]">
+            <aside className="hidden lg:flex lg:flex-col fixed left-0 top-0 h-full w-64 p-4 border-r-4 border-slate-900 bg-slate-950 z-50 shadow-[4px_0_0_0_#1e1b4b]">
                   <div className="mb-8">
                     <h1 className="text-2xl font-black text-purple-500 uppercase italic tracking-tighter">
                         WORD-O-MATIC
@@ -53,6 +58,30 @@ export default function StudentFeatures() {
                     })}
                 </nav>
             </aside>
+
+            {/* Mobile Bottom Nav */}
+            <nav className="fixed bottom-0 left-0 right-0 flex lg:hidden items-center justify-around bg-slate-950 border-t-4 border-slate-900 z-50 px-2 py-2 shadow-[0_-4px_0_0_#1e1b4b]">
+                {navItems.map((item) => {
+                    const isActive = url === item.href;
+                    return (
+                        <Link
+                            key={item.href}
+                            className={
+                                isActive ? bottomActiveClass : bottomInactiveClass
+                            }
+                            href={item.href}
+                        >
+                            <span
+                                className="material-symbols-outlined text-2xl"
+                                data-weight={isActive ? "fill" : ""}
+                            >
+                                {item.icon}
+                            </span>
+                            {item.label}
+                        </Link>
+                    );
+                })}
+            </nav>
         </>
     );
 }
