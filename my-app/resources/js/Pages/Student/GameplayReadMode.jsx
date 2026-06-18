@@ -2,7 +2,6 @@ import ReadModeMainContent from "@/Components/Student/ReadModeMainContent";
 import { router } from "@inertiajs/react";
 import GameplayHeader from "@/Components/Student/GameplayHeader";
 import Microphone from "@/Components/Student/Microphone";
-import GameOverModal from "@/Components/Student/GameOverModal";
 import DeniedModal from "@/Components/Student/DeniedModal";
 import SettingsModal from "@/Components/Student/SettingsModal";
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
@@ -17,6 +16,9 @@ export default function GameplayReadMode({ module }) {
     const [currentWordIndex, setCurrentWordIndex] = useState(0);
     const [currentScore, setCurrentScore] = useState(0);
     const [wordsSmashed, setWordsSmashed] = useState(0);
+    const [currentStreak, setCurrentStreak] = useState(0);
+    const [maxStreak, setMaxStreak] = useState(0);
+
     // ✅ Fix #3: "COMPLETED" is now a documented, valid state.
     //    IDLE → COUNTDOWN → ACTIVE → GAMEOVER | COMPLETED
     //                              ↘ DENIED (permission error)
@@ -84,6 +86,7 @@ export default function GameplayReadMode({ module }) {
                 {
                     module_id: module.id,
                     words_smashed: wordsSmashed,
+                    streak: maxStreak,
                 },
                 {
                     preserveScroll: true,
@@ -137,6 +140,11 @@ export default function GameplayReadMode({ module }) {
         const points = module.words[currentWordIndexRef.current]?.points || 0;
         setCurrentScore((prev) => prev + points);
         setWordsSmashed((prev) => prev + 1);
+        setCurrentStreak((prev) => {
+            const next = prev + 1;
+            setMaxStreak((m) => Math.max(m, next));
+            return next;
+        });
         setPointsFeedbackValue(points);
         setShowPointsFeedback(true);
         setTimeout(() => setShowPointsFeedback(false), 500);
@@ -159,6 +167,7 @@ export default function GameplayReadMode({ module }) {
             );
         }
 
+        setCurrentStreak(0);
         setIsMispronounced(true);
 
         // ✅ Fix #4: Clear any pending timer before scheduling a new one,
@@ -261,6 +270,8 @@ export default function GameplayReadMode({ module }) {
         setCurrentWordIndex(0);
         setCurrentScore(0);
         setWordsSmashed(0);
+        setCurrentStreak(0);
+        setMaxStreak(0);
         setIsMispronounced(false);
         setGameState("COUNTDOWN");
     }, []);
@@ -282,19 +293,6 @@ export default function GameplayReadMode({ module }) {
     return (
         <>
             <div className="bg-background text-on-background font-body-md h-screen flex flex-col overflow-hidden">
-                {/*
-                 * ✅ Fix #3: GameOverModal now receives both "GAMEOVER" and "COMPLETED".
-                 *    The modal component should branch on gameState to show the right copy:
-                 *    "COMPLETED" → "Great job! You finished all words!"
-                 *    "GAMEOVER"  → "Time's up!" or "No words smashed"
-                 */}
-                <GameOverModal
-                    gameState={gameState}
-                    wordsSmashed={wordsSmashed}
-                    totalWords={totalWords}
-                    onPlayAgain={onPlayAgain}
-                    backToMapUrl={"/student/readModeLevels"}
-                />
                 <DeniedModal gameState={gameState} />
                 <SettingsModal
                     isOpen={isSettingsOpen}

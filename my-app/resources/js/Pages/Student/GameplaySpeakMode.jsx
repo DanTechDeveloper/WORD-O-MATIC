@@ -2,7 +2,6 @@ import SpeakModeMainContent from "@/Components/Student/SpeakModeMainContent";
 import { router } from "@inertiajs/react";
 import GameplayHeader from "@/Components/Student/GameplayHeader";
 import Microphone from "@/Components/Student/Microphone";
-import GameOverModal from "@/Components/Student/GameOverModal";
 import DeniedModal from "@/Components/Student/DeniedModal";
 import SettingsModal from "@/Components/Student/SettingsModal";
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
@@ -16,6 +15,9 @@ export default function GameplaySpeakMode({ module }) {
     const [currentWordIndex, setCurrentWordIndex] = useState(0);
     const [currentScore, setCurrentScore] = useState(0);
     const [wordsSmashed, setWordsSmashed] = useState(0);
+    const [currentStreak, setCurrentStreak] = useState(0);
+    const [maxStreak, setMaxStreak] = useState(0);
+
     // ✅ Gap fix: "COMPLETED" is now a documented, valid state.
     //    IDLE → COUNTDOWN → ACTIVE → GAMEOVER | COMPLETED
     //                              ↘ DENIED
@@ -96,6 +98,7 @@ export default function GameplaySpeakMode({ module }) {
                 {
                     module_id: module.id,
                     words_smashed: wordsSmashed,
+                    streak: maxStreak,
                 },
                 {
                     preserveScroll: true,
@@ -138,6 +141,11 @@ export default function GameplaySpeakMode({ module }) {
         const points = 1;
         setCurrentScore((prev) => prev + points);
         setWordsSmashed((prev) => prev + 1);
+        setCurrentStreak((prev) => {
+            const next = prev + 1;
+            setMaxStreak((m) => Math.max(m, next));
+            return next;
+        });
         setPointsFeedbackValue(points);
         setShowPointsFeedback(true);
         setTimeout(() => setShowPointsFeedback(false), 500);
@@ -154,6 +162,7 @@ export default function GameplaySpeakMode({ module }) {
     //    Proper fix: store the timer and cancel it explicitly in handleTimeUp.
     //    The `gameState` dependency is removed as it was both misleading and unused.
     const handleMispronounce = useCallback(() => {
+        setCurrentStreak(0);
         setIsMispronounced(true);
         clearTimeout(mispronounceTimerRef.current);
         mispronounceTimerRef.current = setTimeout(() => {
@@ -253,6 +262,8 @@ export default function GameplaySpeakMode({ module }) {
         setCurrentWordIndex(0);
         setCurrentScore(0);
         setWordsSmashed(0);
+        setCurrentStreak(0);
+        setMaxStreak(0);
         setIsMispronounced(false);
         setGameState("COUNTDOWN");
     }, []);
@@ -273,19 +284,6 @@ export default function GameplaySpeakMode({ module }) {
 
     return (
         <div className="bg-background text-on-background font-body-md h-screen flex flex-col overflow-hidden">
-            {/*
-             * ✅ Gap fix: GameOverModal now receives both "GAMEOVER" and "COMPLETED".
-             *    The modal should branch on gameState:
-             *    "COMPLETED" → "Napakagaling! Natapos mo ang buong paragraph!"
-             *    "GAMEOVER"  → "Time's up!"
-             */}
-            <GameOverModal
-                gameState={gameState}
-                wordsSmashed={wordsSmashed}
-                totalWords={totalWords}
-                onPlayAgain={handlePlayAgain}
-                backToMapUrl="/student/speakModeLevels"
-            />
             <DeniedModal gameState={gameState} />
             <SettingsModal
                 isOpen={isSettingsOpen}
