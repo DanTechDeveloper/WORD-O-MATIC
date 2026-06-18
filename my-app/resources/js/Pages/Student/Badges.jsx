@@ -2,10 +2,10 @@ import DashboardLayout from "@/Layouts/Student/DashboardLayout";
 import { Link } from "@inertiajs/react";
 
 /**
- * UI Configuration Mapping
+ * UI Configuration Mapping — Earned (unlocked) badges
  * Keys match the 'slug' provided by the backend response.
  */
-const BADGE_UI_CONFIG = {
+const EARNED_UI_CONFIG = {
     "profile-pioneer": {
         icon: "👤",
         statusLabel: "UNLOCKED",
@@ -50,7 +50,6 @@ const BADGE_UI_CONFIG = {
             title: "text-secondary",
         },
     },
-    // Add mappings for other hardcoded IDs to maintain consistency
     "tutorial-completion": {
         icon: "🚀",
         statusLabel: "COMPLETED",
@@ -75,6 +74,90 @@ const BADGE_UI_CONFIG = {
     },
     default: {
         icon: "⭐",
+        statusLabel: "EARNED",
+        colors: {
+            bg: "bg-primary-container",
+            text: "text-white",
+            shadow: "shadow-[#7000ff]",
+            border: "border-slate-950",
+            title: "text-primary",
+        },
+    },
+};
+
+/**
+ * UI Configuration Mapping — Locked (not-yet-earned) badges
+ * Uses muted/slate colors with the same icon to show what's available.
+ */
+const LOCKED_UI_CONFIG = {
+    "profile-pioneer": {
+        icon: "👤",
+        statusLabel: "LOCKED",
+        colors: {
+            bg: "bg-slate-700",
+            text: "text-white",
+            shadow: "shadow-slate-900",
+            border: "border-slate-950",
+            title: "text-slate-400",
+        },
+    },
+    "story-finisher": {
+        icon: "📚",
+        statusLabel: "LOCKED",
+        colors: {
+            bg: "bg-slate-700",
+            text: "text-white",
+            shadow: "shadow-slate-900",
+            border: "border-slate-950",
+            title: "text-slate-400",
+        },
+    },
+    "word-master": {
+        icon: "🥇",
+        statusLabel: "LOCKED",
+        colors: {
+            bg: "bg-slate-700",
+            text: "text-white",
+            shadow: "shadow-slate-900",
+            border: "border-slate-950",
+            title: "text-slate-400",
+        },
+    },
+    "clear-speaker": {
+        icon: "🥈",
+        statusLabel: "LOCKED",
+        colors: {
+            bg: "bg-slate-700",
+            text: "text-white",
+            shadow: "shadow-slate-900",
+            border: "border-slate-950",
+            title: "text-slate-400",
+        },
+    },
+    "tutorial-completion": {
+        icon: "🚀",
+        statusLabel: "LOCKED",
+        colors: {
+            bg: "bg-slate-700",
+            text: "text-white",
+            shadow: "shadow-slate-900",
+            border: "border-slate-950",
+            title: "text-slate-400",
+        },
+    },
+    "on-fire": {
+        icon: "🔥",
+        statusLabel: "LOCKED",
+        colors: {
+            bg: "bg-slate-700",
+            text: "text-white",
+            shadow: "shadow-slate-900",
+            border: "border-slate-950",
+            title: "text-slate-400",
+        },
+    },
+    default: {
+        icon: "⭐",
         statusLabel: "LOCKED",
         colors: {
             bg: "bg-slate-700",
@@ -89,7 +172,9 @@ const BADGE_UI_CONFIG = {
 export default function Badges({ badges }) {
     // 1. Map dynamic badges from the backend response
     const dynamicAchievements = (badges || []).map((badge) => {
-        const ui = BADGE_UI_CONFIG[badge.slug] || BADGE_UI_CONFIG.default;
+        const earned = badge.is_earned;
+        const config = earned ? EARNED_UI_CONFIG : LOCKED_UI_CONFIG;
+        const ui = config[badge.slug] || config.default;
         return {
             id: badge.id,
             title: badge.name,
@@ -111,7 +196,7 @@ export default function Badges({ badges }) {
             title: "Tutorial Master",
             description: "Completed both tutorial modes",
             requirement: "Learn the basics of Read and Speak modes.",
-            ...BADGE_UI_CONFIG["tutorial-completion"],
+            ...EARNED_UI_CONFIG["tutorial-completion"],
             progress: 100,
             isLocked: false,
         },
@@ -120,7 +205,7 @@ export default function Badges({ badges }) {
             title: "On Fire",
             description: "5 correct words in a row",
             requirement: "Keep the momentum going for 5 correct words.",
-            ...BADGE_UI_CONFIG["on-fire"],
+            ...LOCKED_UI_CONFIG["on-fire"],
             progress: 80,
             isLocked: true,
         },
