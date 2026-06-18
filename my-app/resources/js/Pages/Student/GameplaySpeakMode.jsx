@@ -13,9 +13,8 @@ import { useSentenceSpeechRecognition } from "@/hooks/Student/useSentenceSpeechR
 export default function GameplaySpeakMode({ module }) {
     // All state at the top.
     const [currentWordIndex, setCurrentWordIndex] = useState(0);
-    const [currentScore, setCurrentScore] = useState(0);
     const [wordsSmashed, setWordsSmashed] = useState(0);
-    const [currentStreak, setCurrentStreak] = useState(0);
+    const currentStreakRef = useRef(0);
     const [maxStreak, setMaxStreak] = useState(0);
 
     // ✅ Gap fix: "COMPLETED" is now a documented, valid state.
@@ -139,13 +138,9 @@ export default function GameplaySpeakMode({ module }) {
 
     const handleWordRecognized = useCallback(() => {
         const points = 1;
-        setCurrentScore((prev) => prev + points);
         setWordsSmashed((prev) => prev + 1);
-        setCurrentStreak((prev) => {
-            const next = prev + 1;
-            setMaxStreak((m) => Math.max(m, next));
-            return next;
-        });
+        currentStreakRef.current += 1;
+        setMaxStreak((m) => Math.max(m, currentStreakRef.current));
         setPointsFeedbackValue(points);
         setShowPointsFeedback(true);
         setTimeout(() => setShowPointsFeedback(false), 500);
@@ -162,7 +157,7 @@ export default function GameplaySpeakMode({ module }) {
     //    Proper fix: store the timer and cancel it explicitly in handleTimeUp.
     //    The `gameState` dependency is removed as it was both misleading and unused.
     const handleMispronounce = useCallback(() => {
-        setCurrentStreak(0);
+        currentStreakRef.current = 0;
         setIsMispronounced(true);
         clearTimeout(mispronounceTimerRef.current);
         mispronounceTimerRef.current = setTimeout(() => {
@@ -260,9 +255,8 @@ export default function GameplaySpeakMode({ module }) {
         }
         currentWordIndexRef.current = 0;
         setCurrentWordIndex(0);
-        setCurrentScore(0);
         setWordsSmashed(0);
-        setCurrentStreak(0);
+        currentStreakRef.current = 0;
         setMaxStreak(0);
         setIsMispronounced(false);
         setGameState("COUNTDOWN");

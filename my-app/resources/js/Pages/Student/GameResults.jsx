@@ -7,163 +7,239 @@ export default function GameResults({ session, moduleTitle, totalItems }) {
 
     return (
         <DashboardLayout minimal={true}>
-            <main class="relative px-margin py-12 flex flex-col items-center justify-center min-h-[calc(100vh-176px)]">
-                {/* <!-- Success Header Section --> */}
-                <div class="relative z-10 text-center mb-12">
-                   
-                    <h1 class="font-headline-xl text-secondary-container tracking-tighter drop-shadow-[4px_4px_0px_#3c0090] mb-2 uppercase">
-                        🚀 MISSION COMPLETE!
-                    </h1>
-                    <p class="font-headline-md text-primary tracking-wide">
-                        YOU'RE A LINGUISTIC LEGEND!
-                    </p>
-                </div>
-                {/* <!-- Stats Grid (Bento Style) --> */}
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-gutter w-full max-w-4xl z-10">
-                    {/* <!-- Score Card --> */}
-                    <div class="bg-surface-container p-card-padding border-4 border-primary-container rounded-xl neo-brutal-shadow-purple flex flex-col items-center text-center">
-                        <span class="font-label-bold text-on-surface-variant mb-4">
-                            🏆 TOTAL SCORE
-                        </span>
-                        <div class="relative w-40 h-40 flex items-center justify-center mb-4">
-                            {/* <!-- Progress Ring Representation --> */}
-                            <svg class="w-full h-full -rotate-90">
-                                <circle
-                                    class="text-surface-container-highest"
-                                    cx="80"
-                                    cy="80"
-                                    fill="transparent"
-                                    r="70"
-                                    stroke="currentColor"
-                                    stroke-width="12"
-                                ></circle>
-                                <circle
-                                    class="text-secondary-container"
-                                    cx="80"
-                                    cy="80"
-                                    fill="transparent"
-                                    r="70"
-                                    stroke="currentColor"
-                                    stroke-dasharray="440"
-                                    stroke-dashoffset="88"
-                                    stroke-width="12"
-                                ></circle>
-                            </svg>
-                            <div class="absolute flex flex-col">
-                                <span class="font-headline-xl text-white">
-                                    80
-                                </span>
-                                <span class="font-label-bold text-on-surface-variant">
-                                    / 100
-                                </span>
-                            </div>
+            <div className="relative min-h-[calc(100vh-6rem)] flex flex-col items-center justify-center py-12">
+                {/* Background Glow */}
+                <div className="absolute top-1/2 left-1/4 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-primary/10 blur-[120px] rounded-full -z-10 animate-pulse" />
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center w-full">
+                    {/* Left Side: Success Header & Primary Stats */}
+                    <div className="flex flex-col space-y-8">
+                        <div className="text-left">
+                            <h1 className="font-headline-xl text-secondary-container tracking-tighter drop-shadow-[4px_4px_0px_#3c0090] mb-2 uppercase leading-tight">
+                                🚀{" "}
+                                {isPerfect
+                                    ? "MISSION PERFECT!"
+                                    : "MISSION COMPLETE!"}
+                            </h1>
+                            <p className="font-headline-sm text-primary tracking-wide uppercase">
+                                {moduleTitle}
+                            </p>
                         </div>
-                        <div class="bg-primary-container px-4 py-2 rounded-full font-label-bold text-white uppercase tracking-widest">
-                            LEVEL UP!
+
+                        <div className="grid grid-cols-1 gap-6">
+                            {/* Score Card - Single Large Line */}
+                            <div className="bg-surface-container p-8 border-4 border-primary-container rounded-[2rem] neo-brutal-shadow-purple">
+                                <span className="font-label-bold text-on-surface-variant mb-4 block uppercase tracking-widest italic">
+                                    🏆 TOTAL SCORE
+                                </span>
+                                <div className="text-[80px] md:text-[110px] font-black text-white leading-none tracking-tighter inline-block">
+                                    {session.score}
+                                    <span className="text-primary-container">
+                                        {" "}
+                                        / {totalItems}
+                                    </span>
+                                </div>
+                                <div className="mt-4 bg-primary-container/20 border-2 border-primary-container inline-block px-4 py-1 rounded-full font-label-bold text-white uppercase text-xs">
+                                    {isPerfect
+                                        ? "Mastery Achieved!"
+                                        : "Linguistic Legend In Training"}
+                                </div>
+                            </div>
+
+                            {/* Accuracy Card - Horizontal Layout */}
+                            <div className="bg-surface-container p-6 border-4 border-on-tertiary-fixed-variant rounded-[2rem] neo-brutal-shadow-lime flex items-center justify-between gap-6">
+                                <div className="shrink-0">
+                                    <span className="font-label-bold text-on-surface-variant block mb-1 uppercase text-xs italic tracking-widest">
+                                        🎯 Accuracy Rate
+                                    </span>
+                                    <div className="text-6xl font-black text-[#bcff00] italic drop-shadow-[3px_3px_0px_#1a3300]">
+                                        {accuracy}%
+                                    </div>
+                                </div>
+                                <div className="flex-1">
+                                    <div className="w-full h-4 bg-surface-container-highest rounded-full overflow-hidden border-2 border-black">
+                                        <div
+                                            className="h-full bg-[#bcff00] transition-all duration-1000"
+                                            style={{ width: `${accuracy}%` }}
+                                        ></div>
+                                    </div>
+                                    <div className="mt-2 flex items-center gap-2 text-tertiary text-xs font-black uppercase tracking-widest">
+                                        <span className="material-symbols-outlined text-sm">
+                                            bolt
+                                        </span>
+                                        FAST REFLEXES!
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    {/* <!-- Accuracy Card --> */}
-                    <div class="bg-surface-container p-card-padding border-4 border-on-tertiary-fixed-variant rounded-xl neo-brutal-shadow-lime flex flex-col items-center text-center">
-                        <span class="font-label-bold text-on-surface-variant mb-4">
-                            🎯 ACCURACY RATE
-                        </span>
-                        <div class="flex-1 flex flex-col items-center justify-center">
-                            <div class="text-[80px] font-black text-[#bcff00] leading-none mb-2 italic drop-shadow-[4px_4px_0px_#1a3300]">
-                                80%
-                            </div>
-                            <div class="w-full h-4 bg-surface-container-highest rounded-full overflow-hidden border-2 border-black">
-                                <div class="h-full bg-[#bcff00] w-[80%]"></div>
-                            </div>
-                        </div>
-                        <div class="mt-6 flex items-center gap-2 text-tertiary">
-                            <span
-                                class="material-symbols-outlined"
-                                data-icon="bolt"
-                            >
-                                bolt
-                            </span>
-                            <span class="font-label-bold">FAST REFLEXES!</span>
-                        </div>
-                    </div>
-                </div>
-                {/* <!-- Action Buttons --> */}
-                <section class="w-full max-w-4xl mt-12 z-10">
-                    <h2 class="font-headline-md text-primary tracking-wide mb-6 uppercase text-center">
-                        ✨ COSMIC QUESTS IN PROGRESS
-                    </h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
-                        {/* <!-- Quest Card 1 --> */}
-                        <div class="bg-surface-container p-4 border-4 border-primary-container rounded-xl neo-brutal-shadow-purple flex items-center gap-4">
-                            <div class="bg-surface-container-highest p-3 rounded-lg opacity-50 grayscale">
-                                <span
-                                    class="material-symbols-outlined text-white text-2xl"
-                                    data-icon="auto_stories"
+
+                    {/* Right Side: Quest Progress */}
+                    <div className="flex flex-col">
+                        <section className="bg-surface-container p-8 border-4 border-slate-900 rounded-[2.5rem] shadow-[8px_8px_0_0_#0f172a]">
+                            <h2 className="font-headline-sm text-primary tracking-wide mb-8 uppercase text-center lg:text-left flex items-center gap-3 justify-center lg:justify-start">
+                                <span className="material-symbols-outlined text-3xl">
+                                    stars
+                                </span>
+                                ✨ COSMIC QUESTS
+                            </h2>
+
+                            <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+                                {/* Quest 1: Streak Badge */}
+                                <div
+                                    className="group relative bg-surface-container-highest p-5 rounded-xl border-4 border-primary-container/40 transition-all duration-200 hover:-translate-y-1"
+                                    style={{
+                                        boxShadow: "8px 8px 0px 0px #1a1a2e",
+                                    }}
                                 >
-                                    auto_stories
-                                </span>
-                            </div>
-                            <div class="flex-1">
-                                <div class="flex justify-between items-end mb-2">
-                                    <span class="font-label-bold text-white uppercase">
-                                        Story Finisher
-                                    </span>
-                                    <span class="text-[10px] font-black text-on-surface-variant tracking-widest">
-                                        2/3 STORIES
-                                    </span>
+                                    <div
+                                        className="absolute -top-4 -right-1 font-black px-3 py-1.5 rounded-lg border-2 rotate-12 z-10 bg-primary-container text-white border-slate-950 text-[11px] uppercase"
+                                        style={{
+                                            boxShadow:
+                                                "4px 4px 0px 0px rgba(0,0,0,0.5)",
+                                        }}
+                                    >
+                                        {session.streak >= 5
+                                            ? "UNLOCKED"
+                                            : "IN PROGRESS"}
+                                    </div>
+                                    <div className="flex flex-col items-center text-center space-y-4">
+                                        <div
+                                            className="w-20 h-20 bg-primary/20 border-4 border-primary-container rounded-full flex items-center justify-center text-4xl"
+                                            style={{
+                                                boxShadow:
+                                                    "0px 6px 0px 0px rgba(0,0,0,0.3)",
+                                            }}
+                                        >
+                                            <span className="material-symbols-outlined text-primary text-4xl">
+                                                local_fire_department
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <h3 className="font-headline-sm text-primary uppercase tracking-tight">
+                                                On Fire Streak
+                                            </h3>
+                                            <p className="font-body-sm text-on-surface-variant text-sm">
+                                                5 correct words in a row
+                                            </p>
+                                        </div>
+                                        <div className="w-full">
+                                            <div className="flex justify-between text-xs font-bold text-on-surface-variant mb-1 uppercase">
+                                                <span>Progress</span>
+                                                <span className="text-primary">
+                                                    {session.streak}/5
+                                                </span>
+                                            </div>
+                                            <div className="w-full bg-slate-950 h-4 rounded-full border-2 border-primary-container/40 overflow-hidden">
+                                                <div
+                                                    className="h-full bg-primary transition-all duration-1000"
+                                                    style={{
+                                                        width: `${Math.min((session.streak / 5) * 100, 100)}%`,
+                                                        boxShadow:
+                                                            "inset 0 2px 4px rgba(0,0,0,0.3)",
+                                                    }}
+                                                ></div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="w-full h-3 bg-surface-container-highest rounded-full overflow-hidden border-2 border-black">
-                                    <div class="h-full bg-secondary-container w-[66%]"></div>
-                                </div>
-                            </div>
-                        </div>
-                        {/* <!-- Quest Card 2 --> */}
-                        <div class="bg-surface-container p-4 border-4 border-on-tertiary-fixed-variant rounded-xl neo-brutal-shadow-lime flex items-center gap-4">
-                            <div class="bg-surface-container-highest p-3 rounded-lg opacity-50 grayscale">
-                                <span
-                                    class="material-symbols-outlined text-white text-2xl"
-                                    data-icon="record_voice_over"
+
+                                {/* Quest 2: Clear Speaker Badge */}
+                                <div
+                                    className="group relative bg-surface-container-highest p-5 rounded-xl border-4 border-on-tertiary-fixed-variant/40 transition-all duration-200 hover:-translate-y-1"
+                                    style={{
+                                        boxShadow: "8px 8px 0px 0px #1a1a2e",
+                                    }}
                                 >
-                                    record_voice_over
-                                </span>
-                            </div>
-                            <div class="flex-1">
-                                <div class="flex justify-between items-end mb-2">
-                                    <span class="font-label-bold text-white uppercase">
-                                        Clear Speaker
-                                    </span>
-                                    <span class="text-[10px] font-black text-on-surface-variant tracking-widest">
-                                        75% / 100%
-                                    </span>
+                                    <div
+                                        className="absolute -top-4 -right-1 font-black px-3 py-1.5 rounded-lg border-2 rotate-12 z-10 bg-[#bcff00] text-[#1a3300] border-slate-950 text-[11px] uppercase"
+                                        style={{
+                                            boxShadow:
+                                                "4px 4px 0px 0px rgba(0,0,0,0.5)",
+                                        }}
+                                    >
+                                        MASTERY
+                                    </div>
+                                    <div className="flex flex-col items-center text-center space-y-4">
+                                        <div
+                                            className="w-20 h-20 bg-[#bcff00]/10 border-4 border-[#bcff00]/40 rounded-full flex items-center justify-center text-4xl"
+                                            style={{
+                                                boxShadow:
+                                                    "0px 6px 0px 0px rgba(0,0,0,0.3)",
+                                            }}
+                                        >
+                                            <span className="material-symbols-outlined text-[#bcff00] text-4xl">
+                                                record_voice_over
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <h3 className="font-headline-sm text-[#bcff00] uppercase tracking-tight">
+                                                Clear Speaker
+                                            </h3>
+                                            <p className="font-body-sm text-on-surface-variant text-sm">
+                                                Speak with clarity & precision
+                                            </p>
+                                        </div>
+                                        <div className="w-full">
+                                            <div className="flex justify-between text-xs font-bold text-on-surface-variant mb-1 uppercase">
+                                                <span>Progress</span>
+                                                <span className="text-[#bcff00]">
+                                                    {accuracy}%
+                                                </span>
+                                            </div>
+                                            <div className="w-full bg-slate-950 h-4 rounded-full border-2 border-on-tertiary-fixed-variant/40 overflow-hidden">
+                                                <div
+                                                    className="h-full bg-[#bcff00] transition-all duration-1000"
+                                                    style={{
+                                                        width: `${accuracy}%`,
+                                                        boxShadow:
+                                                            "inset 0 2px 4px rgba(0,0,0,0.3)",
+                                                    }}
+                                                ></div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="w-full h-3 bg-surface-container-highest rounded-full overflow-hidden border-2 border-black">
-                                    <div class="h-full bg-[#bcff00] w-[75%]"></div>
-                                </div>
                             </div>
-                        </div>
+                        </section>
                     </div>
-                </section>
-                <div class="flex flex-col sm:flex-row gap-6 mt-12 w-full max-w-2xl z-10">
-                    <button class="flex-1 bg-tertiary text-on-tertiary-fixed font-headline-md py-6 rounded-xl border-4 border-black neo-brutal-shadow-orange flex items-center justify-center gap-3 active:translate-x-1 active:translate-y-1 active:shadow-none transition-all hover:bg-tertiary-fixed">
-                        <span
-                            class="material-symbols-outlined"
-                            data-icon="refresh"
-                        >
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex flex-col justify-center items-center sm:flex-row gap-4 mt-12 max-w-3xl mx-auto w-full">
+                    <button
+                        onClick={() =>
+                            (window.location.href =
+                                window.location.origin +
+                                `/student/gameplay${session.module_type === "word" ? "Read" : "Speak"}Mode/${session.module_id}`)
+                        }
+                        className="flex-1 bg-tertiary text-on-tertiary-fixed font-headline-sm py-5 rounded-2xl border-4 border-black neo-brutal-shadow-orange flex items-center justify-center gap-3 active:translate-x-1 active:translate-y-1 active:shadow-none transition-all hover:bg-tertiary-fixed"
+                    >
+                        <span className="material-symbols-outlined">
                             refresh
                         </span>
                         RETRY
                     </button>
-                    <button class="flex-1 bg-primary-container text-white font-headline-md py-6 rounded-xl border-4 border-black neo-brutal-shadow-purple flex items-center justify-center gap-3 active:translate-x-1 active:translate-y-1 active:shadow-none transition-all hover:brightness-110">
-                        <span
-                            class="material-symbols-outlined"
-                            data-icon="home"
-                        >
-                            home
-                        </span>
-                        BACK TO MENU
-                    </button>
+                    <Link
+                        href="/student/dashboard"
+                        className="flex-1 bg-primary text-white font-headline-sm py-5 rounded-2xl border-4 border-black neo-brutal-shadow-purple flex items-center justify-center gap-3 active:translate-x-1 active:translate-y-1 active:shadow-none transition-all hover:brightness-110"
+                    >
+                        <span className="material-symbols-outlined">map</span>
+                        BACK TO MAP
+                    </Link>
+                    <Link
+                        href={
+                            session.module_type === "word"
+                                ? "/student/readModeLevels"
+                                : "/student/speakModeLevels"
+                        }
+                        className="flex-1 bg-primary-container text-white font-headline-sm py-5 rounded-2xl border-4 border-black neo-brutal-shadow-purple flex items-center justify-center gap-3 active:translate-x-1 active:translate-y-1 active:shadow-none transition-all hover:brightness-110"
+                    >
+                        <span className="material-symbols-outlined">home</span>
+                        MENU
+                    </Link>
                 </div>
-             
-            </main>
+            </div>
         </DashboardLayout>
     );
 }
