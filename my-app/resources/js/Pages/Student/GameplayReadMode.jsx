@@ -79,7 +79,7 @@ export default function GameplayReadMode({ module }) {
     // --- Progress persistence helper (called from two places) ---
 
     const persistProgress = useCallback(() => {
-        if (!hasSaved.current && wordsSmashed > 0) {
+        if (!hasSaved.current) {
             hasSaved.current = true;
             router.post(
                 "/student/saveWordProgress",

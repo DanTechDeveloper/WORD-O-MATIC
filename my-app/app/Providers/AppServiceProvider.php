@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use App\Models\ParagraphModule;
+use App\Models\WordModule;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 
@@ -21,5 +24,18 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Vite::prefetch(concurrency: 3);
+
+        $this->registerMorphMaps();
+    }
+
+    /**
+     * I-register ang morph maps para sa polymorphic relationships.
+     */
+    private function registerMorphMaps(): void
+    {
+        Relation::morphMap([
+            'word' => WordModule::class,
+            'paragraph' => ParagraphModule::class,
+        ]);
     }
 }

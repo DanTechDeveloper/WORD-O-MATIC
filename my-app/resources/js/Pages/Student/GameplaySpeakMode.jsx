@@ -91,7 +91,7 @@ export default function GameplaySpeakMode({ module }) {
     // ✅ Gap fix: extracted so both handleTimeUp and the game-over
     //    useEffect call the same logic instead of duplicating it.
     const persistProgress = useCallback(() => {
-        if (!hasSaved.current && wordsSmashed > 0) {
+        if (!hasSaved.current) {
             hasSaved.current = true;
             router.post(
                 "/student/saveParagraphProgress",

@@ -6,106 +6,164 @@ export default function GameResults({ session, moduleTitle, totalItems }) {
     const isPerfect = parseFloat(accuracy) >= 100;
 
     return (
-        <DashboardLayout>
-            <div className="max-w-4xl mx-auto py-12 px-6">
-                {/* Header Section */}
-                <div className="text-center mb-16 relative">
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-primary/20 blur-[100px] rounded-full -z-10 animate-pulse" />
-                    <h1 className="font-headline-xl text-[56px] text-white uppercase tracking-tighter mb-2 drop-shadow-[0_4px_0_rgba(114,18,255,1)]">
-                        {isPerfect ? "MISSION PERFECT!" : "MISSION COMPLETE!"}
+        <DashboardLayout minimal={true}>
+            <main class="relative px-margin py-12 flex flex-col items-center justify-center min-h-[calc(100vh-176px)]">
+                {/* <!-- Success Header Section --> */}
+                <div class="relative z-10 text-center mb-12">
+                   
+                    <h1 class="font-headline-xl text-secondary-container tracking-tighter drop-shadow-[4px_4px_0px_#3c0090] mb-2 uppercase">
+                        🚀 MISSION COMPLETE!
                     </h1>
-                    <p className="text-primary font-black uppercase tracking-[0.2em] text-sm">
-                        Session Report: {moduleTitle}
+                    <p class="font-headline-md text-primary tracking-wide">
+                        YOU'RE A LINGUISTIC LEGEND!
                     </p>
                 </div>
-
-                {/* Stats Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-                    {/* Words Smashed Card */}
-                    <div className="bg-surface-container border-4 border-slate-900 rounded-[2.5rem] p-8 text-center shadow-[8px_8px_0_0_#0f172a]">
-                        <span className="material-symbols-outlined text-lime-400 text-5xl mb-4">
-                            bolt
+                {/* <!-- Stats Grid (Bento Style) --> */}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-gutter w-full max-w-4xl z-10">
+                    {/* <!-- Score Card --> */}
+                    <div class="bg-surface-container p-card-padding border-4 border-primary-container rounded-xl neo-brutal-shadow-purple flex flex-col items-center text-center">
+                        <span class="font-label-bold text-on-surface-variant mb-4">
+                            🏆 TOTAL SCORE
                         </span>
-                        <h3 className="text-slate-400 font-bold uppercase text-xs tracking-widest mb-1">
-                            Items Smashed
-                        </h3>
-                        <div className="text-5xl font-black text-white">
-                            {session.score}
-                            <span className="text-slate-600 text-2xl font-bold ml-1">
-                                /{totalItems}
+                        <div class="relative w-40 h-40 flex items-center justify-center mb-4">
+                            {/* <!-- Progress Ring Representation --> */}
+                            <svg class="w-full h-full -rotate-90">
+                                <circle
+                                    class="text-surface-container-highest"
+                                    cx="80"
+                                    cy="80"
+                                    fill="transparent"
+                                    r="70"
+                                    stroke="currentColor"
+                                    stroke-width="12"
+                                ></circle>
+                                <circle
+                                    class="text-secondary-container"
+                                    cx="80"
+                                    cy="80"
+                                    fill="transparent"
+                                    r="70"
+                                    stroke="currentColor"
+                                    stroke-dasharray="440"
+                                    stroke-dashoffset="88"
+                                    stroke-width="12"
+                                ></circle>
+                            </svg>
+                            <div class="absolute flex flex-col">
+                                <span class="font-headline-xl text-white">
+                                    80
+                                </span>
+                                <span class="font-label-bold text-on-surface-variant">
+                                    / 100
+                                </span>
+                            </div>
+                        </div>
+                        <div class="bg-primary-container px-4 py-2 rounded-full font-label-bold text-white uppercase tracking-widest">
+                            LEVEL UP!
+                        </div>
+                    </div>
+                    {/* <!-- Accuracy Card --> */}
+                    <div class="bg-surface-container p-card-padding border-4 border-on-tertiary-fixed-variant rounded-xl neo-brutal-shadow-lime flex flex-col items-center text-center">
+                        <span class="font-label-bold text-on-surface-variant mb-4">
+                            🎯 ACCURACY RATE
+                        </span>
+                        <div class="flex-1 flex flex-col items-center justify-center">
+                            <div class="text-[80px] font-black text-[#bcff00] leading-none mb-2 italic drop-shadow-[4px_4px_0px_#1a3300]">
+                                80%
+                            </div>
+                            <div class="w-full h-4 bg-surface-container-highest rounded-full overflow-hidden border-2 border-black">
+                                <div class="h-full bg-[#bcff00] w-[80%]"></div>
+                            </div>
+                        </div>
+                        <div class="mt-6 flex items-center gap-2 text-tertiary">
+                            <span
+                                class="material-symbols-outlined"
+                                data-icon="bolt"
+                            >
+                                bolt
                             </span>
-                        </div>
-                    </div>
-
-                    {/* Accuracy Card */}
-                    <div className="bg-surface-container border-4 border-slate-900 rounded-[2.5rem] p-8 text-center shadow-[8px_8px_0_0_#0f172a]">
-                        <span className="material-symbols-outlined text-fuchsia-400 text-5xl mb-4">
-                            target
-                        </span>
-                        <h3 className="text-slate-400 font-bold uppercase text-xs tracking-widest mb-1">
-                            Accuracy Rate
-                        </h3>
-                        <div className="text-5xl font-black text-white">
-                            {accuracy}%
-                        </div>
-                    </div>
-
-                    {/* Streak Card */}
-                    <div className="bg-surface-container border-4 border-slate-900 rounded-[2.5rem] p-8 text-center shadow-[8px_8px_0_0_#0f172a]">
-                        <span className="material-symbols-outlined text-orange-400 text-5xl mb-4">
-                            local_fire_department
-                        </span>
-                        <h3 className="text-slate-400 font-bold uppercase text-xs tracking-widest mb-1">
-                            Highest Streak
-                        </h3>
-                        <div className="text-5xl font-black text-white">
-                            {session.streak}
+                            <span class="font-label-bold">FAST REFLEXES!</span>
                         </div>
                     </div>
                 </div>
-
-                {/* Progress Bar Visualizer */}
-                <div className="bg-slate-950 border-4 border-slate-900 p-8 rounded-[2rem] mb-12">
-                    <div className="flex justify-between items-center mb-4">
-                        <span className="text-white font-black uppercase tracking-tight">
-                            Galactic Mastery
-                        </span>
-                        <span className="text-primary font-black">
-                            {accuracy}%
-                        </span>
+                {/* <!-- Action Buttons --> */}
+                <section class="w-full max-w-4xl mt-12 z-10">
+                    <h2 class="font-headline-md text-primary tracking-wide mb-6 uppercase text-center">
+                        ✨ COSMIC QUESTS IN PROGRESS
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
+                        {/* <!-- Quest Card 1 --> */}
+                        <div class="bg-surface-container p-4 border-4 border-primary-container rounded-xl neo-brutal-shadow-purple flex items-center gap-4">
+                            <div class="bg-surface-container-highest p-3 rounded-lg opacity-50 grayscale">
+                                <span
+                                    class="material-symbols-outlined text-white text-2xl"
+                                    data-icon="auto_stories"
+                                >
+                                    auto_stories
+                                </span>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex justify-between items-end mb-2">
+                                    <span class="font-label-bold text-white uppercase">
+                                        Story Finisher
+                                    </span>
+                                    <span class="text-[10px] font-black text-on-surface-variant tracking-widest">
+                                        2/3 STORIES
+                                    </span>
+                                </div>
+                                <div class="w-full h-3 bg-surface-container-highest rounded-full overflow-hidden border-2 border-black">
+                                    <div class="h-full bg-secondary-container w-[66%]"></div>
+                                </div>
+                            </div>
+                        </div>
+                        {/* <!-- Quest Card 2 --> */}
+                        <div class="bg-surface-container p-4 border-4 border-on-tertiary-fixed-variant rounded-xl neo-brutal-shadow-lime flex items-center gap-4">
+                            <div class="bg-surface-container-highest p-3 rounded-lg opacity-50 grayscale">
+                                <span
+                                    class="material-symbols-outlined text-white text-2xl"
+                                    data-icon="record_voice_over"
+                                >
+                                    record_voice_over
+                                </span>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex justify-between items-end mb-2">
+                                    <span class="font-label-bold text-white uppercase">
+                                        Clear Speaker
+                                    </span>
+                                    <span class="text-[10px] font-black text-on-surface-variant tracking-widest">
+                                        75% / 100%
+                                    </span>
+                                </div>
+                                <div class="w-full h-3 bg-surface-container-highest rounded-full overflow-hidden border-2 border-black">
+                                    <div class="h-full bg-[#bcff00] w-[75%]"></div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div className="w-full bg-slate-900 h-8 rounded-2xl border-2 border-slate-800 p-1 overflow-hidden">
-                        <div
-                            className="h-full bg-gradient-to-r from-primary to-fuchsia-500 rounded-xl transition-all duration-1000 ease-out shadow-[0_0_20px_rgba(114,18,255,0.5)]"
-                            style={{ width: `${accuracy}%` }}
-                        />
-                    </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex flex-col sm:flex-row gap-4">
-                    <Link
-                        href={
-                            session.module_type === "word"
-                                ? "/student/readModeLevels"
-                                : "/student/speakModeLevels"
-                        }
-                        className="flex-1 bg-white text-slate-950 text-xl font-black py-6 rounded-3xl uppercase text-center hover:scale-[1.02] active:scale-[0.98] transition-all shadow-[0_6px_0_0_#cbd5e1]"
-                    >
-                        Continue Journey
-                    </Link>
-                    <button
-                        onClick={() =>
-                            (window.location.href =
-                                window.location.origin +
-                                `/student/gameplay${session.module_type === "word" ? "Read" : "Speak"}Mode/${session.module_id}`)
-                        }
-                        className="flex-1 bg-slate-900 text-white border-4 border-slate-800 text-xl font-black py-6 rounded-3xl uppercase text-center hover:bg-slate-800 transition-all shadow-[0_6px_0_0_#0f172a]"
-                    >
-                        Retry Mission
+                </section>
+                <div class="flex flex-col sm:flex-row gap-6 mt-12 w-full max-w-2xl z-10">
+                    <button class="flex-1 bg-tertiary text-on-tertiary-fixed font-headline-md py-6 rounded-xl border-4 border-black neo-brutal-shadow-orange flex items-center justify-center gap-3 active:translate-x-1 active:translate-y-1 active:shadow-none transition-all hover:bg-tertiary-fixed">
+                        <span
+                            class="material-symbols-outlined"
+                            data-icon="refresh"
+                        >
+                            refresh
+                        </span>
+                        RETRY
+                    </button>
+                    <button class="flex-1 bg-primary-container text-white font-headline-md py-6 rounded-xl border-4 border-black neo-brutal-shadow-purple flex items-center justify-center gap-3 active:translate-x-1 active:translate-y-1 active:shadow-none transition-all hover:brightness-110">
+                        <span
+                            class="material-symbols-outlined"
+                            data-icon="home"
+                        >
+                            home
+                        </span>
+                        BACK TO MENU
                     </button>
                 </div>
-            </div>
+             
+            </main>
         </DashboardLayout>
     );
 }

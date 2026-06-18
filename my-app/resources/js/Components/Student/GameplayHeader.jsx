@@ -11,7 +11,7 @@ const GameplayHeader = memo(function GameplayHeader({
     showPointsFeedback,
     pointsFeedbackValue,
 }) {
-    const [timeLeft, setTimeLeft] = useState(60);
+    const [timeLeft, setTimeLeft] = useState(5);
 
     // Timer Logic
     useEffect(() => {
