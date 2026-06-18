@@ -5,6 +5,9 @@ export default function GameResults({ session, moduleTitle, totalItems }) {
     const accuracy = session.accuracy;
     const isPerfect = parseFloat(accuracy) >= 100;
 
+    const hasStreakBadge = session.streak >= 5;
+    const hasClearSpeakerBadge = parseFloat(accuracy) >= 100;
+
     return (
         <DashboardLayout minimal={true}>
             <div className="relative min-h-[calc(100vh-6rem)] flex flex-col items-center justify-center py-12">
@@ -83,123 +86,147 @@ export default function GameResults({ session, moduleTitle, totalItems }) {
                                 </span>
                                 ✨ COSMIC QUESTS
                             </h2>
-
-                            <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-                                {/* Quest 1: Streak Badge */}
-                                <div
-                                    className="group relative bg-surface-container-highest p-5 rounded-xl border-4 border-primary-container/40 transition-all duration-200 hover:-translate-y-1"
-                                    style={{
-                                        boxShadow: "8px 8px 0px 0px #1a1a2e",
-                                    }}
-                                >
-                                    <div
-                                        className="absolute -top-4 -right-1 font-black px-3 py-1.5 rounded-lg border-2 rotate-12 z-10 bg-primary-container text-white border-slate-950 text-[11px] uppercase"
-                                        style={{
-                                            boxShadow:
-                                                "4px 4px 0px 0px rgba(0,0,0,0.5)",
-                                        }}
-                                    >
-                                        {session.streak >= 5
-                                            ? "UNLOCKED"
-                                            : "IN PROGRESS"}
-                                    </div>
-                                    <div className="flex flex-col items-center text-center space-y-4">
-                                        <div
-                                            className="w-20 h-20 bg-primary/20 border-4 border-primary-container rounded-full flex items-center justify-center text-4xl"
-                                            style={{
-                                                boxShadow:
-                                                    "0px 6px 0px 0px rgba(0,0,0,0.3)",
-                                            }}
-                                        >
-                                            <span className="material-symbols-outlined text-primary text-4xl">
-                                                local_fire_department
-                                            </span>
-                                        </div>
-                                        <div>
-                                            <h3 className="font-headline-sm text-primary uppercase tracking-tight">
-                                                On Fire Streak
-                                            </h3>
-                                            <p className="font-body-sm text-on-surface-variant text-sm">
-                                                5 correct words in a row
-                                            </p>
-                                        </div>
-                                        <div className="w-full">
-                                            <div className="flex justify-between text-xs font-bold text-on-surface-variant mb-1 uppercase">
-                                                <span>Progress</span>
-                                                <span className="text-primary">
-                                                    {session.streak}/5
-                                                </span>
-                                            </div>
-                                            <div className="w-full bg-slate-950 h-4 rounded-full border-2 border-primary-container/40 overflow-hidden">
+                            <div className="flex flex-col gap-5">
+                                {hasStreakBadge || hasClearSpeakerBadge ? (
+                                    <>
+                                        {/* Quest 1: Streak Badge */}
+                                        {hasStreakBadge && (
+                                            <div
+                                                className="group relative bg-surface-container-highest p-5 rounded-xl border-4 border-primary-container/40 transition-all duration-200 hover:-translate-y-1"
+                                                style={{
+                                                    boxShadow:
+                                                        "8px 8px 0px 0px #1a1a2e",
+                                                }}
+                                            >
                                                 <div
-                                                    className="h-full bg-primary transition-all duration-1000"
+                                                    className="absolute -top-4 -right-1 font-black px-3 py-1.5 rounded-lg border-2 rotate-12 z-10 bg-primary-container text-white border-slate-950 text-[11px] uppercase"
                                                     style={{
-                                                        width: `${Math.min((session.streak / 5) * 100, 100)}%`,
                                                         boxShadow:
-                                                            "inset 0 2px 4px rgba(0,0,0,0.3)",
+                                                            "4px 4px 0px 0px rgba(0,0,0,0.5)",
                                                     }}
-                                                ></div>
+                                                >
+                                                    UNLOCKED
+                                                </div>
+                                                <div className="flex flex-col items-center text-center space-y-4">
+                                                    <div
+                                                        className="w-20 h-20 bg-primary/20 border-4 border-primary-container rounded-full flex items-center justify-center text-4xl"
+                                                        style={{
+                                                            boxShadow:
+                                                                "0px 6px 0px 0px rgba(0,0,0,0.3)",
+                                                        }}
+                                                    >
+                                                        <span className="material-symbols-outlined text-primary text-4xl">
+                                                            local_fire_department
+                                                        </span>
+                                                    </div>
+                                                    <div>
+                                                        <h3 className="font-headline-sm text-primary uppercase tracking-tight">
+                                                            On Fire Streak
+                                                        </h3>
+                                                        <p className="font-body-sm text-on-surface-variant text-sm">
+                                                            5 correct words in a
+                                                            row
+                                                        </p>
+                                                    </div>
+                                                    <div className="w-full">
+                                                        <div className="flex justify-between text-xs font-bold text-on-surface-variant mb-1 uppercase">
+                                                            <span>
+                                                                Progress
+                                                            </span>
+                                                            <span className="text-primary">
+                                                                {session.streak}
+                                                                /5
+                                                            </span>
+                                                        </div>
+                                                        <div className="w-full bg-slate-950 h-4 rounded-full border-2 border-primary-container/40 overflow-hidden">
+                                                            <div
+                                                                className="h-full bg-primary transition-all duration-1000"
+                                                                style={{
+                                                                    width: `${Math.min((session.streak / 5) * 100, 100)}%`,
+                                                                    boxShadow:
+                                                                        "inset 0 2px 4px rgba(0,0,0,0.3)",
+                                                                }}
+                                                            ></div>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
-                                        </div>
-                                    </div>
-                                </div>
+                                        )}
 
-                                {/* Quest 2: Clear Speaker Badge */}
-                                <div
-                                    className="group relative bg-surface-container-highest p-5 rounded-xl border-4 border-on-tertiary-fixed-variant/40 transition-all duration-200 hover:-translate-y-1"
-                                    style={{
-                                        boxShadow: "8px 8px 0px 0px #1a1a2e",
-                                    }}
-                                >
-                                    <div
-                                        className="absolute -top-4 -right-1 font-black px-3 py-1.5 rounded-lg border-2 rotate-12 z-10 bg-[#bcff00] text-[#1a3300] border-slate-950 text-[11px] uppercase"
-                                        style={{
-                                            boxShadow:
-                                                "4px 4px 0px 0px rgba(0,0,0,0.5)",
-                                        }}
-                                    >
-                                        MASTERY
-                                    </div>
-                                    <div className="flex flex-col items-center text-center space-y-4">
-                                        <div
-                                            className="w-20 h-20 bg-[#bcff00]/10 border-4 border-[#bcff00]/40 rounded-full flex items-center justify-center text-4xl"
-                                            style={{
-                                                boxShadow:
-                                                    "0px 6px 0px 0px rgba(0,0,0,0.3)",
-                                            }}
-                                        >
-                                            <span className="material-symbols-outlined text-[#bcff00] text-4xl">
-                                                record_voice_over
-                                            </span>
-                                        </div>
-                                        <div>
-                                            <h3 className="font-headline-sm text-[#bcff00] uppercase tracking-tight">
-                                                Clear Speaker
-                                            </h3>
-                                            <p className="font-body-sm text-on-surface-variant text-sm">
-                                                Speak with clarity & precision
-                                            </p>
-                                        </div>
-                                        <div className="w-full">
-                                            <div className="flex justify-between text-xs font-bold text-on-surface-variant mb-1 uppercase">
-                                                <span>Progress</span>
-                                                <span className="text-[#bcff00]">
-                                                    {accuracy}%
-                                                </span>
-                                            </div>
-                                            <div className="w-full bg-slate-950 h-4 rounded-full border-2 border-on-tertiary-fixed-variant/40 overflow-hidden">
+                                        {/* Quest 2: Clear Speaker Badge */}
+                                        {hasClearSpeakerBadge && (
+                                            <div
+                                                className="group relative bg-surface-container-highest p-5 rounded-xl border-4 border-on-tertiary-fixed-variant/40 transition-all duration-200 hover:-translate-y-1"
+                                                style={{
+                                                    boxShadow:
+                                                        "8px 8px 0px 0px #1a1a2e",
+                                                }}
+                                            >
                                                 <div
-                                                    className="h-full bg-[#bcff00] transition-all duration-1000"
+                                                    className="absolute -top-4 -right-1 font-black px-3 py-1.5 rounded-lg border-2 rotate-12 z-10 bg-[#bcff00] text-[#1a3300] border-slate-950 text-[11px] uppercase"
                                                     style={{
-                                                        width: `${accuracy}%`,
                                                         boxShadow:
-                                                            "inset 0 2px 4px rgba(0,0,0,0.3)",
+                                                            "4px 4px 0px 0px rgba(0,0,0,0.5)",
                                                     }}
-                                                ></div>
+                                                >
+                                                    MASTERY
+                                                </div>
+                                                <div className="flex flex-col items-center text-center space-y-4">
+                                                    <div
+                                                        className="w-20 h-20 bg-[#bcff00]/10 border-4 border-[#bcff00]/40 rounded-full flex items-center justify-center text-4xl"
+                                                        style={{
+                                                            boxShadow:
+                                                                "0px 6px 0px 0px rgba(0,0,0,0.3)",
+                                                        }}
+                                                    >
+                                                        <span className="material-symbols-outlined text-[#bcff00] text-4xl">
+                                                            record_voice_over
+                                                        </span>
+                                                    </div>
+                                                    <div>
+                                                        <h3 className="font-headline-sm text-[#bcff00] uppercase tracking-tight">
+                                                            Clear Speaker
+                                                        </h3>
+                                                        <p className="font-body-sm text-on-surface-variant text-sm">
+                                                            Speak with clarity &
+                                                            precision
+                                                        </p>
+                                                    </div>
+                                                    <div className="w-full">
+                                                        <div className="flex justify-between text-xs font-bold text-on-surface-variant mb-1 uppercase">
+                                                            <span>
+                                                                Progress
+                                                            </span>
+                                                            <span className="text-[#bcff00]">
+                                                                {accuracy}%
+                                                            </span>
+                                                        </div>
+                                                        <div className="w-full bg-slate-950 h-4 rounded-full border-2 border-on-tertiary-fixed-variant/40 overflow-hidden">
+                                                            <div
+                                                                className="h-full bg-[#bcff00] transition-all duration-1000"
+                                                                style={{
+                                                                    width: `${accuracy}%`,
+                                                                    boxShadow:
+                                                                        "inset 0 2px 4px rgba(0,0,0,0.3)",
+                                                                }}
+                                                            ></div>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
-                                        </div>
+                                        )}
+                                    </>
+                                ) : (
+                                    <div className="bg-surface-container-highest p-5 rounded-xl border-4 border-slate-700 text-center flex flex-col items-center justify-center min-h-[150px]">
+                                        <p className="font-headline-sm text-on-surface-variant">
+                                            Nice try! No new badges unlocked
+                                            this match. Keep practicing!
+                                        </p>
+                                        <span className="material-symbols-outlined text-4xl text-on-surface-variant mt-4">
+                                            sports_gymnastics
+                                        </span>
                                     </div>
-                                </div>
+                                )}
                             </div>
                         </section>
                     </div>

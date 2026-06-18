@@ -43,31 +43,31 @@ const GameplayHeader = memo(function GameplayHeader({
     const percentage = (timeLeft / totalTime) * 100;
 
     return (
-        <div className="mt-6 w-full max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-6 mb-12">
-            <div className="flex items-center gap-6">
+        <div className="mt-3 sm:mt-4 md:mt-6 w-full max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3 sm:gap-4 md:gap-6 mb-6 sm:mb-8 md:mb-12 px-2 sm:px-0">
+            <div className="flex items-center gap-3 sm:gap-4 md:gap-6">
                 {/* <!-- Back Button --> */}
                 <button
                     type="button"
                     onClick={onOpenSettings}
-                    className="group flex items-center justify-center w-16 h-16 bg-on-background/5 backdrop-blur-md rounded-2xl border-2 border-on-background/10 shadow-2xl hover:bg-on-background/10 transition-all active:scale-95"
+                    className="group flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 bg-on-background/5 backdrop-blur-md rounded-2xl border-2 border-on-background/10 shadow-2xl hover:bg-on-background/10 transition-all active:scale-95"
                 >
-                    <span className="material-symbols-outlined text-on-background/80 group-hover:text-on-background text-3xl">
+                    <span className="material-symbols-outlined text-on-background/80 group-hover:text-on-background text-2xl sm:text-3xl">
                         settings
                     </span>
                 </button>
 
                 {/* <!-- Score Tracker --> */}
-                <div className="flex items-center gap-4 bg-on-background/5 backdrop-blur-md p-4 rounded-2xl border-2 border-on-background/10 shadow-2xl">
-                    <div className="bg-primary p-2 rounded-xl flex items-center justify-center shadow-[0_0_15px_rgba(var(--primary-rgb),0.5)]">
-                        <span className="material-symbols-outlined text-on-primary text-3xl">
+                <div className="flex items-center gap-2 sm:gap-3 md:gap-4 bg-on-background/5 backdrop-blur-md p-2 sm:p-3 md:p-4 rounded-2xl border-2 border-on-background/10 shadow-2xl">
+                    <div className="bg-primary p-1 sm:p-2 rounded-xl flex items-center justify-center shadow-[0_0_15px_rgba(var(--primary-rgb),0.5)]">
+                        <span className="material-symbols-outlined text-on-primary text-2xl sm:text-3xl">
                             sword_rose
                         </span>
                     </div>
                     <div className="relative">
-                        <p className="text-on-background/60 text-xs font-black uppercase tracking-widest leading-none mb-1">
+                        <p className="text-on-background/60 text-[10px] sm:text-xs font-black uppercase tracking-widest leading-none mb-1">
                             Words Smashed
                         </p>
-                        <p className="text-on-background text-3xl font-black leading-none italic">
+                        <p className="text-on-background text-2xl sm:text-3xl font-black leading-none italic">
                             <span
                                 className={
                                     scoreEmphasize ? "animate-score-pulse" : ""
@@ -78,7 +78,7 @@ const GameplayHeader = memo(function GameplayHeader({
                         </p>
                         {showPointsFeedback && pointsFeedbackValue > 0 && (
                             <div
-                                className="absolute -top-10 left-0 text-lime-400 text-5xl font-black uppercase animate-points-feedback whitespace-nowrap drop-shadow-[0_0_10px_rgba(163,230,53,0.5)]"
+                                className="absolute -top-8 sm:-top-9 md:-top-10 left-0 text-lime-400 text-3xl sm:text-4xl md:text-5xl font-black uppercase animate-points-feedback whitespace-nowrap drop-shadow-[0_0_10px_rgba(163,230,53,0.5)]"
                                 style={{
                                     animationDuration: "0.5s",
                                 }}
@@ -91,7 +91,7 @@ const GameplayHeader = memo(function GameplayHeader({
             </div>
 
             {/* <!-- Level Info --> */}
-            <div className="hidden lg:flex flex-col items-center">
+            <div className="flex flex-col items-center">
                 <div className="bg-on-background/10 backdrop-blur-sm px-8 py-2 rounded-full border-2 border-on-background/20 mb-2 shadow-lg">
                     <span className="text-on-background font-black tracking-tight text-sm italic uppercase">
                         {`LEVEL ${level}`}
@@ -99,14 +99,14 @@ const GameplayHeader = memo(function GameplayHeader({
                 </div>
             </div>
             {/* <!-- Energy / Timer Bar --> */}
-            <div className="w-full md:w-80 flex flex-col gap-2 bg-on-background/5 backdrop-blur-md p-4 rounded-2xl border-2 border-on-background/10 shadow-2xl">
+            <div className="w-full md:w-72 lg:w-80 flex flex-col gap-2 bg-on-background/5 backdrop-blur-md p-2 sm:p-3 md:p-4 rounded-2xl border-2 border-on-background/10 shadow-2xl">
                 <div className="flex justify-between items-end">
-                    <p className="text-on-background/60 text-xs font-black uppercase tracking-widest leading-none">
+                    <p className="text-on-background/60 text-[10px] sm:text-xs font-black uppercase tracking-widest leading-none">
                         Energy / Timer
                     </p>
                     <div className="flex flex-col items-end">
                         <p
-                            className={`text-4xl font-black leading-none italic ${isLowTime ? "text-red-500 animate-pulse" : "text-lime-400"}`}
+                            className={`text-3xl sm:text-4xl font-black leading-none italic ${isLowTime ? "text-red-500 animate-pulse" : "text-lime-400"}`}
                         >
                             {timeLeft}s
                         </p>

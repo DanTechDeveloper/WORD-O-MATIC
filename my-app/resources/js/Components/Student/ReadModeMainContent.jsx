@@ -31,7 +31,7 @@ const ReadModeMainContent = memo(function ReadModeMainContent({
     if (gameState === "COUNTDOWN") {
         return (
             <div className="flex-1 flex items-center justify-center">
-                <span className="text-[12rem] mt-10 font-black text-lime-400 italic animate-bounce drop-shadow-[0_0_50px_rgba(163,230,53,0.8)]">
+                <span className="text-6xl sm:text-8xl md:text-[12rem] mt-10 font-black text-lime-400 italic animate-bounce drop-shadow-[0_0_50px_rgba(163,230,53,0.8)]">
                     {countdownValue}
                 </span>
             </div>
@@ -85,7 +85,7 @@ const ReadModeMainContent = memo(function ReadModeMainContent({
 
             <div
                 key={`${currentIndex}-${word.word}`}
-                className="absolute flex flex-col items-center justify-center animate-fruit-ninja"
+                className="absolute flex flex-col items-center justify-center animate-fruit-ninja max-w-[90vw] px-2"
                 style={{
                     left: randomLeft,
                     transform: "translateX(-50%)",
@@ -93,7 +93,7 @@ const ReadModeMainContent = memo(function ReadModeMainContent({
             >
                 {showPointsFeedback && (
                     <div
-                        className="absolute -top-16 animate-float-score text-6xl font-black italic"
+                        className="absolute -top-12 sm:-top-14 md:-top-16 animate-float-score text-3xl sm:text-4xl md:text-6xl font-black italic"
                         style={{
                             color: "#FFCC00",
                             textShadow: "4px 4px 0px rgba(0,0,0,0.5)",
@@ -105,7 +105,7 @@ const ReadModeMainContent = memo(function ReadModeMainContent({
                 )}
 
                 <p
-                    className={`text-8xl font-black tracking-tight uppercase transition-all duration-300 ${
+                    className={`text-5xl sm:text-7xl md:text-8xl font-black tracking-tight uppercase break-words text-center transition-all duration-300 ${
                         isExploding ? "animate-blast" : ""
                     } ${isMispronounced ? "animate-shake" : ""}`}
                     style={{

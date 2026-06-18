@@ -286,7 +286,7 @@ export default function GameplayReadMode({ module }) {
 
     return (
         <>
-            <div className="bg-background text-on-background font-body-md h-screen flex flex-col overflow-hidden">
+            <div className="bg-background text-on-background font-body-md h-screen flex flex-col overflow-x-hidden">
                 <DeniedModal gameState={gameState} />
                 <SettingsModal
                     isOpen={isSettingsOpen}
@@ -310,7 +310,7 @@ export default function GameplayReadMode({ module }) {
                     pointsFeedbackValue={pointsFeedbackValue}
                 />
 
-                <div>
+                <div className="flex-shrink-0">
                     <Microphone
                         isListening={gameState === "ACTIVE"}
                         disabled={gameState === "COUNTDOWN"}

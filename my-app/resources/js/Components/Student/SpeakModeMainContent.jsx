@@ -25,10 +25,10 @@ const SpeakModeMainContent = memo(function SpeakModeMainContent({
                     }
                 `}
             </style>
-            <main className="flex-grow overflow-y-auto flex flex-col items-start justify-center max-w-7xl mx-auto w-full py-10 px-8">
+            <main className="flex-grow overflow-y-auto flex flex-col items-start justify-center max-w-7xl mx-auto w-full py-6 sm:py-8 md:py-10 px-4 sm:px-8">
                 {gameState === "COUNTDOWN" ? (
                     <div className="w-full flex items-center justify-center">
-                        <span className="text-[12rem] font-black text-lime-400 italic animate-bounce drop-shadow-[0_0_50px_rgba(163,230,53,0.8)]">
+                        <span className="text-6xl sm:text-8xl md:text-[12rem] font-black text-lime-400 italic animate-bounce drop-shadow-[0_0_50px_rgba(163,230,53,0.8)]">
                             {countdownValue}
                         </span>
                     </div>
