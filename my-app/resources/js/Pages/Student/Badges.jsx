@@ -5,6 +5,13 @@ import { Link } from "@inertiajs/react";
  * UI Configuration Mapping
  * Keys match the 'slug' provided by the backend response.
  */
+const METRIC_LABELS = {
+    total_points: "Points",
+    streak: "Streak",
+    accuracy: "Accuracy",
+    action: "Action",
+};
+
 const BADGE_UI_CONFIG = {
     "profile-pioneer": {
         icon: "👤",
@@ -92,6 +99,7 @@ export default function Badges({ badges }) {
         const ui = BADGE_UI_CONFIG[badge.slug] || BADGE_UI_CONFIG.default;
         return {
             id: badge.id,
+            slug: badge.slug,
             title: badge.name,
             description: badge.description,
             requirement: badge.requirement,
