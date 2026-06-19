@@ -6,13 +6,12 @@ export function useWordSpeechRecognition({
     targetWord,
     onWordRecognized,
     onPermissionDenied,
-    // Removed interim matching
     onMispronounced,
     onRecognitionError,
 }) {
     const recognitionRef = useRef(null);
 
-    // Point 1: Sync refs synchronously in the hook body to avoid Effect delay
+    // Sync refs synchronously in the hook body
     const gameStateRef = useRef(isActive);
     gameStateRef.current = isActive;
 
@@ -28,7 +27,6 @@ export function useWordSpeechRecognition({
     const onPermissionDeniedRef = useRef(onPermissionDenied);
     onPermissionDeniedRef.current = onPermissionDenied;
 
-    // Removed interim matching
     const onMispronouncedRef = useRef(onMispronounced);
     onMispronouncedRef.current = onMispronounced;
 
@@ -36,24 +34,28 @@ export function useWordSpeechRecognition({
     onRecognitionErrorRef.current = onRecognitionError;
 
     const hasMatchedCurrentRef = useRef(false);
-
-    // Removed processing lock
-    const lastProcessedIndexRef = useRef(-1);
     const isMountedRef = useRef(false);
     const mispronounceTimeoutRef = useRef(null);
+
+    // Utility function para malinis nang sagad ang timeout
+    const clearMispronounceTimer = () => {
+        if (mispronounceTimeoutRef.current) {
+            clearTimeout(mispronounceTimeoutRef.current);
+            mispronounceTimeoutRef.current = null;
+        }
+    };
 
     // Track hook mount/unmount lifecycle
     useEffect(() => {
         isMountedRef.current = true;
         return () => {
             isMountedRef.current = false;
-            if (mispronounceTimeoutRef.current)
-                clearTimeout(mispronounceTimeoutRef.current);
+            clearMispronounceTimer();
             if (recognitionRef.current) recognitionRef.current.abort();
         };
     }, []);
 
-    // Approach 2: Persistent Engine Instance initialized once on mount
+    // Persistent Engine Instance
     useEffect(() => {
         const SpeechRecognition =
             window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -64,65 +66,50 @@ export function useWordSpeechRecognition({
 
         if (!recognitionRef.current) {
             const recognition = new SpeechRecognition();
-            recognition.continuous = true;
+            // Ginawa nating false ang continuous para kusa siyang mag-reset bawat salita
+            // Mas swabe ito sa mga "single-word" games gaya ng Word-o-matic
+            recognition.continuous = false; 
             recognition.interimResults = true;
             recognition.lang = "en-US";
 
-            // In the persistent instance useEffect:
             recognition.onresult = (event) => {
-                // Bug #1 fix: guard against buffered results after stop/pause
-                if (!gameStateRef.current || isPausedRef.current) return;
+                if (!gameStateRef.current || isPausedRef.current || hasMatchedCurrentRef.current) return;
 
-                // Agad na i-clear ang timer kapag may bagong boses na narinig
-                if (mispronounceTimeoutRef.current)
-                    clearTimeout(mispronounceTimeoutRef.current);
+                // Agad na burahin ang lumang timer sa bawat kibot ng boses
+                clearMispronounceTimer();
 
                 const target = targetWordRef.current.toLowerCase().trim();
                 if (!target) return;
 
-                // Fix for onMispronounced firing on partial transcripts:
-                // Track whether we matched across all results in this event
-                let matchedThisEvent = false;
                 let latestTranscript = "";
-
+                
+                // Dahil continuous = false, madalas index 0 lang ang tinitingnan natin, mas tipid sa loop!
                 for (let i = event.resultIndex; i < event.results.length; ++i) {
-                    if (i <= lastProcessedIndexRef.current) continue;
-
                     const result = event.results[i];
                     if (!result) continue;
 
-                    // Bug #2 fix: null-coalesce before chaining
                     const transcript = (result[0]?.transcript ?? "")
                         .toLowerCase()
                         .replace(/[^\w\s]/g, "")
                         .trim();
 
                     if (!transcript) continue;
-
-                    // Kunin ang pinakabagong transcript (kahit interim)
                     latestTranscript = transcript;
 
                     const wordsInTranscript = transcript.split(/\s+/);
-                    const isMatch = wordsInTranscript.includes(target);
+                    // Kunin lang ang pinakahuling salita na binanggit para sa mispronounce data
+                    const lastWordSpoken = wordsInTranscript[wordsInTranscript.length - 1];
 
-                    if (isMatch && !hasMatchedCurrentRef.current) {
+                    if (wordsInTranscript.includes(target)) {
                         hasMatchedCurrentRef.current = true;
-                        matchedThisEvent = true;
+                        clearMispronounceTimer(); // Patayin ang timer dahil panalo na
                         onWordRecognizedRef.current?.();
-                        break;
-                    }
-
-                    if (result.isFinal) {
-                        lastProcessedIndexRef.current = i;
+                        return; // Labas agad, tapos na ang laban
                     }
                 }
 
-                // Sa halip na hintayin ang isFinal, mag-trigger tayo pagkatapos ng maikling katahimikan
-                if (
-                    !matchedThisEvent &&
-                    !hasMatchedCurrentRef.current &&
-                    latestTranscript
-                ) {
+                // Kung nagsalita ang bata pero hindi tumugma sa target word
+                if (!hasMatchedCurrentRef.current && latestTranscript) {
                     mispronounceTimeoutRef.current = setTimeout(() => {
                         if (
                             isMountedRef.current &&
@@ -130,85 +117,72 @@ export function useWordSpeechRecognition({
                             !isPausedRef.current &&
                             !hasMatchedCurrentRef.current
                         ) {
-                            onMispronouncedRef.current?.(latestTranscript);
+                            // Ipasá ang pinakahuling salita na mali, hindi ang buong parirala
+                            const words = latestTranscript.split(/\s+/);
+                            onMispronouncedRef.current?.(words[words.length - 1]);
                         }
-                    }, 900); // 900ms silence = fail.
+                    }, 900);
                 }
             };
 
             recognition.onerror = (event) => {
-                if (event.error === "aborted") {
-                    console.warn(
-                        "Speech Recognition Warning: aborted (expected behavior on stop/navigation)",
-                    );
-                } else if (event.error === "not-allowed") {
-                    console.error(
-                        "Speech Recognition Error: not-allowed",
-                        event.error,
-                    );
-                    onPermissionDeniedRef.current(); // Callback to parent
+                if (event.error === "aborted") return;
+                
+                if (event.error === "not-allowed") {
+                    onPermissionDeniedRef.current?.();
                 } else {
-                    console.error("Speech Recognition Error:", event.error);
-                    if (onRecognitionErrorRef.current)
-                        onRecognitionErrorRef.current(event.error);
+                    onRecognitionErrorRef.current?.(event.error);
                 }
             };
 
             recognition.onend = () => {
-                lastProcessedIndexRef.current = -1;
-                hasMatchedCurrentRef.current = false;
-
-                // Double-check current state before restart
+                // Pagkatapos ng pagsasalita, auto-restart kung active pa ang laro
                 if (
                     isMountedRef.current &&
                     gameStateRef.current &&
-                    !isPausedRef.current
+                    !isPausedRef.current &&
+                    !hasMatchedCurrentRef.current
                 ) {
-                    // Use setTimeout to avoid potential call stack issues
-                    setTimeout(() => {
-                        if (
-                            isMountedRef.current &&
-                            gameStateRef.current &&
-                            !isPausedRef.current
-                        ) {
-                            try {
-                                recognitionRef.current?.start();
-                            } catch (e) {
-                                console.warn("Recognition restart failed:", e);
-                            }
-                        }
-                    }, 0);
+                    try {
+                        recognitionRef.current?.start();
+                    } catch (e) {
+                        // nauna nang tumakbo
+                    }
                 }
             };
 
             recognitionRef.current = recognition;
         }
-    }, []); // Empty dependency array ensures persistent instance
+    }, []);
 
+    // Reset kapag nagbago ang salita sa screen
     useEffect(() => {
         hasMatchedCurrentRef.current = false;
-        if (mispronounceTimeoutRef.current)
-            clearTimeout(mispronounceTimeoutRef.current);
+        clearMispronounceTimer();
+        
+        // I-force restart ang engine para malinis ang buffer para sa bagong salita
+        if (isActive && !isPaused && recognitionRef.current) {
+            try {
+                recognitionRef.current.stop(); // Ang onend ang bahalang mag-restart nito nang malinis
+            } catch (e) {}
+        }
     }, [targetWord]);
 
-    // Approach 2: Strictly manage start/stop without re-binding listeners
+    // Manage start/stop flow
     useEffect(() => {
         const recognition = recognitionRef.current;
-
         if (!recognition) return;
 
         if (isActive && !isPaused) {
+            hasMatchedCurrentRef.current = false;
             try {
                 recognition.start();
-            } catch {
-                // already running
-            }
+            } catch (e) {}
         } else {
+            clearMispronounceTimer();
             try {
                 recognition.stop();
-            } catch {
-                // already stopped
-            }
+            } catch (e) {}
         }
     }, [isActive, isPaused]);
 }

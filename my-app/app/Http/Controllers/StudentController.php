@@ -104,17 +104,17 @@ class StudentController extends Controller
         return Inertia::render('Student/Leaderboards');
     }
 
-   public function badges()
-{
-    $user = auth()->user();
-    $badges = Badges::withExists(['users as is_earned' => function ($query) use ($user) {
-        $query->where('student_badges.user_id', $user->id);
-    }])->get();
+    public function badges()
+    {
+        $user = auth()->user();
+        $badges = Badges::withExists(['users as is_earned' => function ($query) use ($user) {
+            $query->where('student_badges.user_id', $user->id);
+        }])->get();
 
-    return Inertia::render('Student/Badges', [
-        'badges' => $badges,
-    ]);
-}
+        return Inertia::render('Student/Badges', [
+            'badges' => $badges,
+        ]);
+    }
 
     public function readModeLevels()
     {
@@ -182,46 +182,14 @@ class StudentController extends Controller
 
         $userId = auth()->id();
         $module = WordModule::findOrFail($request->module_id);
+        $rawAccuracy = ($module->total_points > 0) ? ($request->words_smashed / $module->total_points) * 100 : 0;
+        $accuracy = round(min($rawAccuracy, 100), 2);
+        $session = GameSession::logSession($userId, $module->id, 'word', $request->words_smashed, $accuracy, $request->streak ?? 0);
 
-        // Calculate accuracy based on total points (items) in the module
-        $accuracy = ($module->total_points > 0)
-            ? ($request->words_smashed / $module->total_points) * 100
-            : 0;
-
-        // 1. Log the session
-        $session = GameSession::create([
-            'user_id' => $userId,
-            'module_id' => $request->module_id,
-            'module_type' => 'word',
-            'score' => $request->words_smashed,
-            'accuracy' => round($accuracy, 2),
-            'streak' => $request->streak ?? 0,
-        ]);
-
-        // 2. Conditional Update for Best Progress
-        $existingProgress = StudentWordProgress::where('user_id', $userId)
-            ->where('word_module_id', $request->module_id)
-            ->first();
-
-        if (! $existingProgress || $request->words_smashed > $existingProgress->words_smashed) {
-            StudentWordProgress::updateOrCreate(
-                ['user_id' => $userId, 'word_module_id' => $request->module_id],
-                [
-                    'words_smashed' => max($request->words_smashed, 0),
-                    'accuracy' => round($accuracy, 2),
-                    'status' => 'completed',
-                ]
-            );
-        }
-
-        // Update Student Profile level tracking
         $student = auth()->user()->student;
-        if ($student && $module->level >= $student->read_level) {
-            $student->update([
-                'read_level' => $module->level + 1,
-                'read_progress' => StudentWordProgress::where('user_id', $userId)->where('status', 'completed')->count(),
-                'total_points' => StudentWordProgress::where('user_id', $userId)->sum('words_smashed'),
-            ]);
+
+        if ($student) {
+            $student->updateWordProgress($module, $request->words_smashed, $accuracy);
         }
 
         return redirect()->route('student.results', ['id' => $session->id]);
@@ -314,41 +282,12 @@ class StudentController extends Controller
         $accuracy = ($module->total_score > 0)
             ? ($request->words_smashed / $module->total_score) * 100
             : 0;
-
-        // 1. Log the session
-        $session = GameSession::create([
-            'user_id' => $userId,
-            'module_id' => $request->module_id,
-            'module_type' => 'paragraph',
-            'score' => $request->words_smashed,
-            'accuracy' => round($accuracy, 2),
-            'streak' => $request->streak ?? 0,
-        ]);
-
-        // 2. Conditional Update for Best Progress
-        $existingProgress = StudentParagraphProgress::where('user_id', $userId)
-            ->where('paragraph_module_id', $request->module_id)
-            ->first();
-
-        if (! $existingProgress || $request->words_smashed > $existingProgress->words_smashed) {
-            StudentParagraphProgress::updateOrCreate(
-                ['user_id' => $userId, 'paragraph_module_id' => $request->module_id],
-                [
-                    'words_smashed' => max($request->words_smashed, 0),
-                    'accuracy' => round($accuracy, 2),
-                    'status' => 'completed',
-                ]
-            );
-        }
+        $session = GameSession::logSession($userId, $module->id, 'paragraph', $request->words_smashed, $accuracy, $request->streak ?? 0);
 
         $student = auth()->user()->student;
-        if ($student && $module->level >= $student->speak_level) {
-            $student->update([
-                'speak_level' => $module->level + 1,
-                'speak_progress' => StudentParagraphProgress::where('user_id', $userId)->where('status', 'completed')->count(),
-                'total_points' => StudentWordProgress::where('user_id', $userId)->sum('words_smashed') +
-                                 StudentParagraphProgress::where('user_id', $userId)->sum('words_smashed'),
-            ]);
+
+        if ($student) {
+            $student->updateParagraphProgress($module, $request->words_smashed, $accuracy);
         }
 
         return redirect()->route('student.results', ['id' => $session->id]);

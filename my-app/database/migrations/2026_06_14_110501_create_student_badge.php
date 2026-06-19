@@ -22,10 +22,10 @@ return new class extends Migration
             // core gamification logic
             $table->string('metric')->nullable();          // e.g. accuracy
             $table->string('operator')->nullable();        // >= <= =
-            $table->decimal('threshold_value', 8, 2)->nullable();
+            $table->decimal('threshold_score', 8, 2)->nullable();
 
             // optional advanced rules (future-proofing)
-            $table->json('requirement')->nullable();
+            $table->string('requirement')->nullable();
 
             $table->timestamps();
         });

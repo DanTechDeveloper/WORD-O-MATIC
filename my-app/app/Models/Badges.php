@@ -17,7 +17,7 @@ class Badges extends Model
         'requirement',
         'metric',
         'operator',
-        'threshold_value',
+        'threshold_score',
     ];
 
     public function studentBadges()

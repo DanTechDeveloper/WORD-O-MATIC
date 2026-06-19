@@ -20,6 +20,21 @@ class GameSession extends Model
     ];
 
     /**
+     * BUSINESS LOGIC: Sentralisadong taga-log ng bawat laro
+     */
+    public static function logSession($userId, $moduleId, $moduleType, $score, $accuracy, $streak)
+    {
+        return self::create([
+            'user_id'     => $userId,
+            'module_id'   => $moduleId,
+            'module_type' => $moduleType, // Masasave nito ay 'word' o 'paragraph'
+            'score'       => $score,
+            'accuracy'    => $accuracy,
+            'streak'      => $streak ?? 0,
+        ]);
+    }
+
+    /**
      * Get the user that owns the game session.
      */
     public function user(): BelongsTo
@@ -29,9 +44,6 @@ class GameSession extends Model
 
     /**
      * Get the parent module (WordModule or ParagraphModule).
-     *
-     * To make this work with 'word' and 'paragraph' strings, ensure you
-     * have defined a Relation::morphMap in your AppServiceProvider.
      */
     public function module(): MorphTo
     {
