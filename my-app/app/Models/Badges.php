@@ -13,9 +13,11 @@ class Badges extends Model
         'name',
         'description',
         'icon',
-        'criteria',
         'slug',
         'requirement',
+        'metric',
+        'operator',
+        'threshold_value',
     ];
 
     public function studentBadges()
@@ -25,8 +27,8 @@ class Badges extends Model
 
     public function users(): BelongsToMany
     {
-        return $this->belongsToMany(User::class, 'user_badges', 'badge_id', 'user_id')
-            ->withPivot('earned_at')
+        return $this->belongsToMany(User::class, 'student_badges', 'badge_id', 'user_id')
+            ->withPivot('earned_at', 'progress', 'status', 'unlocked_session_id')
             ->withTimestamps();
     }
 }

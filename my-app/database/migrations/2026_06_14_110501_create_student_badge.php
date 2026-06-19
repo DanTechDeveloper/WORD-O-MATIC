@@ -13,11 +13,20 @@ return new class extends Migration
     {
         Schema::create('badges', function (Blueprint $table) {
             $table->id();
+
             $table->string('name');
-            $table->string('slug');
+            $table->string('slug')->unique();
             $table->string('icon')->nullable();
             $table->text('description')->nullable();
-            $table->text('requirement')->nullable();
+
+            // core gamification logic
+            $table->string('metric')->nullable();          // e.g. accuracy
+            $table->string('operator')->nullable();        // >= <= =
+            $table->decimal('threshold_value', 8, 2)->nullable();
+
+            // optional advanced rules (future-proofing)
+            $table->json('requirement')->nullable();
+
             $table->timestamps();
         });
     }

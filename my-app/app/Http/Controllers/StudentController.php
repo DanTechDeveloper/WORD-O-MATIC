@@ -38,7 +38,7 @@ class StudentController extends Controller
             ->with('user:id,name,student_id')
             ->select([
                 'user_id',
-                'last_active_level', 'read_progress', 'speak_progress',
+                'read_progress', 'speak_progress',
                 'badges', 'read_level', 'speak_level',
             ])
             ->first();
@@ -104,31 +104,17 @@ class StudentController extends Controller
         return Inertia::render('Student/Leaderboards');
     }
 
-    public function badges()
-    {
-        $user = auth()->user();
+   public function badges()
+{
+    $user = auth()->user();
+    $badges = Badges::withExists(['users as is_earned' => function ($query) use ($user) {
+        $query->where('student_badges.user_id', $user->id);
+    }])->get();
 
-        $allBadges = Badges::all();
-
-        $userBadgeIds = $user->badges()
-            ->pluck('badge_id')
-            ->flip();
-
-        $badges = $allBadges->map(function ($badge) use ($userBadgeIds) {
-            return [
-                'id' => $badge->id,
-                'name' => $badge->name,
-                'slug' => $badge->slug,
-                'description' => $badge->description,
-                'requirement' => $badge->requirement,
-                'is_earned' => isset($userBadgeIds[$badge->id]),
-            ];
-        });
-
-        return Inertia::render('Student/Badges', [
-            'badges' => $badges,
-        ]);
-    }
+    return Inertia::render('Student/Badges', [
+        'badges' => $badges,
+    ]);
+}
 
     public function readModeLevels()
     {

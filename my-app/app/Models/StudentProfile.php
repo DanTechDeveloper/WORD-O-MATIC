@@ -17,7 +17,6 @@ class StudentProfile extends Model
         'user_id',
         'points',
         'avatar',
-        'last_active_level',
         'read_progress',
         'speak_progress',
         'badges',

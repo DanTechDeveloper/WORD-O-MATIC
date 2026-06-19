@@ -10,11 +10,11 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('student_id')->unique();
+            $table->string('student_id')->nullable()->unique();
             $table->string('name');
-            $table->string('username');
-            $table->string('password');
-            $table->string('pin');
+            $table->string('username')->nullable();
+            $table->string('password')->nullable();
+            $table->string('pin')->nullable();
             $table->enum('role', ['student', 'teacher']);
             $table->timestamps();
         });
