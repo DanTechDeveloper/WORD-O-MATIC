@@ -1,3 +1,42 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+body {
+    font-family: 'Plus Jakarta Sans Variable', 'Plus Jakarta Sans', sans-serif;
+}
+
+h1, h2, h3, button, label {
+    font-family: 'Lexend Variable', 'Lexend', sans-serif;
+}
+
+.tactile-card {
+    box-shadow: 8px 8px 0 0 #4c1d95;
+}
+
+.tactile-button {
+    box-shadow: 0 6px 0 0 #4c1d95;
+}
+
+.tactile-button:active {
+    box-shadow: 0 2px 0 0 #4c1d95;
+    transform: translateY(4px);
+}
+
+.tactile-input {
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.material-symbols-outlined {
+    font-family: 'Material Symbols Outlined Variable';
+    font-weight: normal;
+    font-style: normal;
+    font-size: 24px;
+    display: inline-block;
+    line-height: 1;
+    text-transform: none;
+    letter-spacing: normal;
+    word-wrap: normal;
+    white-space: nowrap;
+    direction: ltr;
+}

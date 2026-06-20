@@ -31,16 +31,19 @@ class HandleInertiaRequests extends Middleware
     {
         return [
             ...parent::share($request),
+            
+            // 🔥 BINAGO: Ginawang closure (fn) para maging lazy-loaded ang database query sa cloud
             'auth' => [
-                'user' => $request->user() ? $request->user()->load(['student' => function ($query) {
+                'user' => fn () => $request->user() ? $request->user()->load(['student' => function ($query) {
                     $query->select('id', 'user_id', 'points', 'avatar');
-                }]) : null,
+            }]) : null,
             ],
-            // I-share ang flash messages sa lahat ng Inertia pages
+            
+            // 🔥 BINAGO: Ginawang closure din ang mga flash sessions para hindi laging binabasa ang session store sa bawat click
             'flash' => [
-                'success' => $request->session()->get('success'),
-                'error' => $request->session()->get('error'),
-                'new_badge' => $request->session()->get('new_badge'),
+                'success' => fn () => $request->session()->get('success'),
+                'error' => fn () => $request->session()->get('error'),
+                'new_badge' => fn () => $request->session()->get('new_badge'),
             ],
         ];
     }

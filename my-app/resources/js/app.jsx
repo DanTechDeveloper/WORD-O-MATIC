@@ -1,3 +1,6 @@
+import '@fontsource-variable/lexend/wght.css';
+import '@fontsource-variable/plus-jakarta-sans/wght.css';
+import '@fontsource-variable/material-symbols-outlined/full.css';
 import '../css/app.css';
 // import './bootstrap';
 

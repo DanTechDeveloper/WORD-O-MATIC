@@ -22,6 +22,9 @@
         "vite": "^8.0.0"
     },
     "dependencies": {
+        "@fontsource-variable/lexend": "^5.2.11",
+        "@fontsource-variable/material-symbols-outlined": "^5.2.45",
+        "@fontsource-variable/plus-jakarta-sans": "^5.2.8",
         "react-is": "^19.2.7",
         "recharts": "^3.8.1"
     }
