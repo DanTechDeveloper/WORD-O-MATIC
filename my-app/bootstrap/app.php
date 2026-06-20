@@ -14,13 +14,18 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // 🔥 HETO ANG DAGDAG: Sinasabi nito sa Laravel na dumaan sa HTTPS proxy ng Railway ang request
+        $middleware->trustProxies(at: '*');
+
         $middleware->web(append: [
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
         ]);
+        
         $middleware->alias([
             'role' => EnsureUserRole::class,
         ]);
+        
         $middleware->redirectUsersTo(function () {
             $user = auth()->user();
             if ($user?->role === 'teacher') {
