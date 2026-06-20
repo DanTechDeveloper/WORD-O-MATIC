@@ -101,4 +101,57 @@ class StudentProfile extends Model
             $this->increment('points', $wordsSmashed);
         }
     }
+
+    public function checkAndAwardBadges($sessionId = null, $currentAccuracy = null): array
+    {
+        $userId = $this->user_id;
+        $earnedBadgeIds = $this->user->badges()->pluck('badges.id')->toArray();
+
+        $badgesToCheck = Badges::whereNotIn('id', $earnedBadgeIds)
+            ->whereIn('metric', ['total_points', 'streak', 'accuracy'])
+            ->get();
+
+        if ($badgesToCheck->isEmpty()) {
+            return [];
+        }
+
+        $awarded = [];
+
+        foreach ($badgesToCheck as $badge) {
+            $qualified = false;
+            $currentValue = 0;
+
+            if ($badge->metric === 'total_points') {
+                $currentValue = $this->points;
+            } elseif ($badge->metric === 'streak') {
+                $currentValue = GameSession::where('user_id', $userId)->max('streak') ?? 0;
+            } elseif ($badge->metric === 'accuracy') {
+                $currentValue = $currentAccuracy ?? 0;
+            }
+
+            if ($this->meetsThreshold($currentValue, $badge->operator, $badge->threshold_score)) {
+                $this->user->badges()->attach($badge->id, [
+                    'earned_at' => now(),
+                    'progress' => $currentValue,
+                    'status' => 'earned',
+                    'unlocked_session_id' => $sessionId,
+                ]);
+                $awarded[] = $badge;
+            }
+        }
+
+        return $awarded;
+    }
+
+    private function meetsThreshold($value, string $operator, $threshold): bool
+    {
+        return match ($operator) {
+            '>=' => $value >= $threshold,
+            '>'  => $value > $threshold,
+            '='  => $value == $threshold,
+            '<=' => $value <= $threshold,
+            '<'  => $value < $threshold,
+            default => false,
+        };
+    }
 }

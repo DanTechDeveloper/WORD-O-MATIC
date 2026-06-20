@@ -188,11 +188,26 @@ class StudentController extends Controller
 
         $student = auth()->user()->student;
 
+        $newBadges = [];
+
         if ($student) {
             $student->updateWordProgress($module, $request->words_smashed, $accuracy);
+            $newBadges = $student->checkAndAwardBadges($session->id, $accuracy);
         }
 
-        return redirect()->route('student.results', ['id' => $session->id]);
+        $redirect = redirect()->route('student.results', ['id' => $session->id]);
+
+        if (!empty($newBadges)) {
+            $badge = $newBadges[0];
+            $redirect->with('new_badge', [
+                'name' => $badge->name,
+                'description' => $badge->description,
+                'slug' => $badge->slug,
+                'icon' => $badge->icon,
+            ]);
+        }
+
+        return $redirect;
     }
 
     public function updateWordMastery(Request $request)
@@ -286,11 +301,26 @@ class StudentController extends Controller
 
         $student = auth()->user()->student;
 
+        $newBadges = [];
+
         if ($student) {
             $student->updateParagraphProgress($module, $request->words_smashed, $accuracy);
+            $newBadges = $student->checkAndAwardBadges($session->id, $accuracy);
         }
 
-        return redirect()->route('student.results', ['id' => $session->id]);
+        $redirect = redirect()->route('student.results', ['id' => $session->id]);
+
+        if (!empty($newBadges)) {
+            $badge = $newBadges[0];
+            $redirect->with('new_badge', [
+                'name' => $badge->name,
+                'description' => $badge->description,
+                'slug' => $badge->slug,
+                'icon' => $badge->icon,
+            ]);
+        }
+
+        return $redirect;
     }
 
     public function results($id)
@@ -305,10 +335,42 @@ class StudentController extends Controller
             $totalItems = $module->total_score;
         }
 
+        // Compute badge progress for the current session
+        $badgeProgress = [];
+        $user = auth()->user();
+
+        if ($user) {
+            $student = $user->student;
+            $earnedBadgeIds = $user->badges()->pluck('badges.id')->toArray();
+
+            $badges = Badges::whereIn('metric', ['total_points', 'streak', 'accuracy'])->get();
+
+            foreach ($badges as $badge) {
+                $currentValue = match ($badge->metric) {
+                    'total_points' => $student ? $student->points : 0,
+                    'streak' => (int) $session->streak,
+                    'accuracy' => round((float) $session->accuracy, 2),
+                    default => 0,
+                };
+
+                $badgeProgress[] = [
+                    'name' => $badge->name,
+                    'description' => $badge->description,
+                    'slug' => $badge->slug,
+                    'icon' => $badge->icon,
+                    'metric' => $badge->metric,
+                    'threshold' => $badge->threshold_score,
+                    'current_value' => $currentValue,
+                    'is_earned' => in_array($badge->id, $earnedBadgeIds),
+                ];
+            }
+        }
+
         return Inertia::render('Student/GameResults', [
             'session' => $session,
             'moduleTitle' => $module->title,
             'totalItems' => $totalItems,
+            'badgeProgress' => $badgeProgress,
         ]);
     }
 }
