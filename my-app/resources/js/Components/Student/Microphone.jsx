@@ -1,6 +1,6 @@
 import { memo } from "react";
 
-const Microphone = memo(function Microphone({ isListening, disabled }) {
+const Microphone = memo(function Microphone({ isListening, disabled, onClick }) {
     return (
         <>
             {/* <!-- CENTER BOTTOM: Sonic Microphone UI --> */}
@@ -8,6 +8,7 @@ const Microphone = memo(function Microphone({ isListening, disabled }) {
                 {/* <!-- Sonic Microphone Outer Ring --> */}
                 <button
                     disabled={disabled}
+                    onClick={onClick}
                     className={`relative group outline-none transition-all duration-300 ${disabled ? "opacity-50 grayscale cursor-not-allowed" : "active:scale-95"}`}
                 >
                     {/* <!-- Glowing Aura --> */}

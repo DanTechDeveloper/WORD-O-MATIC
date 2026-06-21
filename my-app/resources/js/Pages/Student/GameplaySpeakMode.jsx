@@ -7,7 +7,6 @@ import SettingsModal from "@/Components/Student/SettingsModal";
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 
 import { useCountdown } from "@/hooks/Student/useCountdown";
-import { useMicrophonePermission } from "@/hooks/Student/useMicrophonePermission";
 import { useSentenceSpeechRecognition } from "@/hooks/Student/useSentenceSpeechRecognition";
 
 export default function GameplaySpeakMode({ module }) {
@@ -184,28 +183,11 @@ export default function GameplaySpeakMode({ module }) {
         setGameState("DENIED");
     }, []);
 
-    // --- Microphone permission ---
-
-    const { permissionState, requestPermission } = useMicrophonePermission();
-
-    const initiateGameStart = useCallback(async () => {
-        if (permissionState === "granted") {
-            setGameState("COUNTDOWN");
-        } else {
-            const granted = await requestPermission();
-            if (granted) {
-                setGameState("COUNTDOWN");
-            } else {
-                setGameState("DENIED");
-            }
-        }
-    }, [permissionState, requestPermission]);
-
-    useEffect(() => {
+    const handleMicrophoneClick = useCallback(() => {
         if (gameState === "IDLE") {
-            initiateGameStart();
+            setGameState("COUNTDOWN");
         }
-    }, [initiateGameStart, gameState]);
+    }, [gameState]);
 
     // --- Time-up ---
 
@@ -234,8 +216,8 @@ export default function GameplaySpeakMode({ module }) {
     }, [words, currentWordIndex]);
 
     useSentenceSpeechRecognition({
-        isActive: gameState === "ACTIVE",
-        isPaused: isSettingsOpen,
+        isActive: gameState === "ACTIVE" || gameState === "COUNTDOWN",
+        isPaused: isSettingsOpen || gameState === "COUNTDOWN",
         targetWord: targetWord,
         onWordRecognized: handleWordRecognized,
         onPermissionDenied: handlePermissionDenied,
@@ -304,6 +286,7 @@ export default function GameplaySpeakMode({ module }) {
                 <Microphone
                     isListening={gameState === "ACTIVE"}
                     disabled={gameState === "COUNTDOWN"}
+                    onClick={handleMicrophoneClick}
                 />
             </div>
         </div>
