@@ -221,13 +221,15 @@ export function useWordSpeechRecognition({
         gracePeriodEndRef.current = Date.now() + 1000;
     }, [targetWord]);
 
-    // Approach 2: Strictly manage start/stop without re-binding listeners
+    // Start recognition as soon as the game becomes active (including COUNTDOWN)
+    // so that on mobile Chrome the user gesture context is still live.
+    // The onresult handler ignores results while paused.
     useEffect(() => {
         const recognition = recognitionRef.current;
 
         if (!recognition) return;
 
-        if (isActive && !isPaused) {
+        if (isActive) {
             try {
                 recognition.start();
             } catch {
@@ -240,5 +242,5 @@ export function useWordSpeechRecognition({
                 // already stopped
             }
         }
-    }, [isActive, isPaused]);
+    }, [isActive]);
 }
