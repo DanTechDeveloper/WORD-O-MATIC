@@ -62,7 +62,7 @@ export default function Paragraph({ modules }) {
         <>
             <DashboardLayout>
                 <div className="mb-10">
-                    <h1 className="text-4xl font-black text-white uppercase italic tracking-tighter mb-2">
+                    <h1 className="text-3xl md:text-4xl font-black text-white uppercase italic tracking-tighter mb-2">
                         Sentence Modules
                     </h1>
                     <p className="text-slate-500 font-black uppercase text-xs tracking-widest">
@@ -75,7 +75,7 @@ export default function Paragraph({ modules }) {
                     {levels.map((level) => (
                         <div
                             key={level}
-                            className="bg-slate-900 rounded-[2.5rem] border-4 border-slate-800 p-8 flex flex-col items-center justify-center text-center shadow-[10px_10px_0_0_#020617] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all cursor-pointer group"
+                            className="bg-slate-900 rounded-[2.5rem] border-4 border-slate-800 p-6 md:p-8 flex flex-col items-center justify-center text-center shadow-[10px_10px_0_0_#020617] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all cursor-pointer group"
                             onClick={() => openModal(level)}
                         >
                             <div className="w-16 h-16 rounded-2xl bg-slate-950 border-2 border-sky-400 flex items-center justify-center mb-4 rotate-3 group-hover:rotate-0 transition-transform shadow-[4px_4px_0_0_#075985]">
