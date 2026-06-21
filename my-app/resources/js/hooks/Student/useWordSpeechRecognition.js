@@ -42,6 +42,8 @@ export function useWordSpeechRecognition({
     const isMountedRef = useRef(false);
     const mispronounceTimeoutRef = useRef(null);
     const gracePeriodEndRef = useRef(0);
+    const restartRetryCountRef = useRef(0);
+    const restartTimerRef = useRef(null);
 
     // Track hook mount/unmount lifecycle
     useEffect(() => {
@@ -50,6 +52,8 @@ export function useWordSpeechRecognition({
             isMountedRef.current = false;
             if (mispronounceTimeoutRef.current)
                 clearTimeout(mispronounceTimeoutRef.current);
+            if (restartTimerRef.current)
+                clearTimeout(restartTimerRef.current);
             if (recognitionRef.current) recognitionRef.current.abort();
         };
     }, []);
@@ -159,28 +163,49 @@ export function useWordSpeechRecognition({
             recognition.onend = () => {
                 lastProcessedIndexRef.current = -1;
                 hasMatchedCurrentRef.current = false;
+                restartRetryCountRef.current = 0;
 
-                // Double-check current state before restart
                 if (
-                    isMountedRef.current &&
-                    gameStateRef.current &&
-                    !isPausedRef.current
-                ) {
-                    // Use setTimeout to avoid potential call stack issues
-                    setTimeout(() => {
-                        if (
-                            isMountedRef.current &&
-                            gameStateRef.current &&
-                            !isPausedRef.current
-                        ) {
-                            try {
-                                recognitionRef.current?.start();
-                            } catch (e) {
-                                console.warn("Recognition restart failed:", e);
-                            }
+                    !isMountedRef.current ||
+                    !gameStateRef.current ||
+                    isPausedRef.current
+                )
+                    return;
+
+                const tryRestart = () => {
+                    if (
+                        !isMountedRef.current ||
+                        !gameStateRef.current ||
+                        isPausedRef.current
+                    ) {
+                        restartRetryCountRef.current = 0;
+                        return;
+                    }
+
+                    try {
+                        recognitionRef.current?.start();
+                        restartRetryCountRef.current = 0;
+                    } catch (e) {
+                        restartRetryCountRef.current += 1;
+                        if (restartRetryCountRef.current <= 2) {
+                            const delays = [0, 500, 1000];
+                            restartTimerRef.current = setTimeout(
+                                tryRestart,
+                                delays[restartRetryCountRef.current],
+                            );
+                        } else {
+                            console.warn(
+                                "Speech recognition restart failed after 3 attempts",
+                            );
+                            restartRetryCountRef.current = 0;
                         }
-                    }, 0);
-                }
+                    }
+                };
+
+                // Desktop: continuous mode keeps recognition alive.
+                // Mobile: continuous is ignored, so onend fires per utterance.
+                // The 300ms delay + retries gives mobile Chrome time to clean up.
+                restartTimerRef.current = setTimeout(tryRestart, 300);
             };
 
             recognitionRef.current = recognition;
