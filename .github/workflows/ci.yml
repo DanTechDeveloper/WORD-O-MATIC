@@ -1,4 +1,4 @@
-name: Build Verification
+name: Build Verification & Live Production Migration
 
 on:
   push:
@@ -11,7 +11,7 @@ defaults:
     working-directory: my-app
 
 jobs:
-  build-and-verify:
+  build-verify-and-migrate:
     runs-on: ubuntu-latest
 
     steps:
@@ -26,14 +26,15 @@ jobs:
       - name: Install Composer Dependencies
         run: composer install --no-interaction --prefer-dist
 
-      - name: Prepare Environment
+      # STEP 1: I-test muna ang code gamit ang SQLite para ligtas ang live database
+      - name: Prepare Test Environment
         run: |
           cp .env.example .env
           php artisan key:generate
           echo "DB_CONNECTION=sqlite" >> .env
           echo "DB_DATABASE=:memory:" >> .env
 
-      - name: Run Migrations
+      - name: Run Test Migrations
         run: php artisan migrate --force
 
       - name: Setup Node.js
@@ -48,3 +49,15 @@ jobs:
 
       - name: Run Tests
         run: php artisan test
+
+      # STEP 2: Kapag nakapasa sa test, i-inject ang live Railway credentials at mag-migrate
+      - name: Run Live Production Migration on Railway
+        env:
+          DB_CONNECTION: mysql
+          DB_HOST: ${{ secrets.RAILWAY_DB_HOST }}
+          DB_PORT: ${{ secrets.RAILWAY_DB_PORT }}
+          DB_DATABASE: ${{ secrets.RAILWAY_DB_DATABASE }}
+          DB_USERNAME: ${{ secrets.RAILWAY_DB_USERNAME }}
+          DB_PASSWORD: ${{ secrets.RAILWAY_DB_PASSWORD }}
+        run: |
+          php artisan migrate --force

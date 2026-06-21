@@ -1,5 +1,5 @@
 import { Link, usePage } from "@inertiajs/react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 export default function GameResults({
     session,
@@ -19,12 +19,7 @@ export default function GameResults({
 
     const [step, setStep] = useState(0);
 
-    useEffect(() => {
-        if (step === 0 && hasNewBadge) {
-            const timer = setTimeout(() => setStep(1), 4000);
-            return () => clearTimeout(timer);
-        }
-    }, [step, hasNewBadge]);
+
 
     const activeBadges = badgeProgress?.filter((b) => !b.is_earned) ?? [];
 
@@ -281,6 +276,17 @@ export default function GameResults({
                                 ></div>
                             </div>
                         </div>
+
+                        {/* Tap to Continue */}
+                        <button
+                            onClick={() => setStep(1)}
+                            className="mt-10 bg-[#bcff00] text-[#1a3300] font-black px-10 py-4 rounded-xl border-4 border-slate-950 text-xl uppercase tracking-widest active:translate-x-1 active:translate-y-1 active:shadow-none transition-all animate-pulse"
+                            style={{
+                                boxShadow: "6px 6px 0px 0px rgba(0,0,0,0.5)",
+                            }}
+                        >
+                            TAP TO CONTINUE
+                        </button>
                     </div>
                 </div>
             </div>
