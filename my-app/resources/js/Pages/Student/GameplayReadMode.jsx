@@ -292,7 +292,20 @@ export default function GameplayReadMode({ module }) {
                 pointsFeedbackValue={pointsFeedbackValue}
             />
 
-            <div className="flex-shrink-0">
+            {gameState === "IDLE" && (
+                <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-40 pointer-events-none flex flex-col items-center justify-end pb-36 sm:pb-48">
+                    <div className="flex flex-col items-center justify-center animate-bounce">
+                        <div className="bg-lime-400 text-slate-950 font-black px-8 py-4 rounded-[2rem] shadow-[0_0_40px_rgba(163,230,53,0.4)] border-4 border-white flex flex-col items-center gap-1 text-center italic uppercase tracking-tighter">
+                            <span className="material-symbols-outlined text-4xl mb-1">touch_app</span>
+                            <span className="text-xl">Tap Microphone</span>
+                            <span className="text-[10px] sm:text-xs tracking-[0.2em] opacity-70">To grant access & play</span>
+                        </div>
+                        <div className="w-0 h-0 border-l-[20px] border-r-[20px] border-t-[25px] border-l-transparent border-r-transparent border-t-white -mt-1 drop-shadow-2xl"></div>
+                    </div>
+                </div>
+            )}
+
+            <div className="flex-shrink-0 relative z-50">
                 <Microphone
                     isListening={gameState === "ACTIVE"}
                     disabled={gameState === "COUNTDOWN"}
