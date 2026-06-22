@@ -1,5 +1,10 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Head, useForm, Link } from "@inertiajs/react";
+
+const FALLING_WORDS = [
+    "vocabulary", "explore", "discover", "master", "practice",
+    "speak", "listen", "learn", "achieve", "progress"
+];
 
 const features = [
     {
@@ -26,6 +31,20 @@ const features = [
 
 export default function Homepage() {
     const [mobileOpen, setMobileOpen] = useState(false);
+
+    const COLORS = ["#a78bfa", "#bef264", "#ffffff"];
+
+    const fallingWords = useMemo(() =>
+        FALLING_WORDS.map((word, i) => ({
+            word,
+            left: `${Math.random() < 0.5 ? Math.random() * 20 : 70 + Math.random() * 30}%`,
+            delay: `${Math.random() * 15}s`,
+            duration: `${8 + Math.random() * 12}s`,
+            size: `${1 + Math.random() * 1.5}rem`,
+            opacity: 0.08 + Math.random() * 0.07,
+            color: COLORS[i % COLORS.length],
+        })),
+    []);
 
     const { data, setData, post, processing, errors, reset } = useForm({
         name: "",
@@ -146,7 +165,50 @@ export default function Homepage() {
 
             {/* HERO */}
             <section className="relative min-h-screen flex items-center justify-center pt-16 overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
+                <div className="absolute inset-0 pointer-events-none">
+                    <style>{`
+                        @keyframes wordFall {
+                            0% { transform: translateY(-120vh); opacity: 0; }
+                            10% { opacity: 1; }
+                            90% { opacity: 1; }
+                            100% { transform: translateY(120vh); opacity: 0; }
+                        }
+                        @keyframes float {
+                            0%, 100% { transform: translateY(0) rotate(0deg); }
+                            50% { transform: translateY(-30px) rotate(180deg); }
+                        }
+                        @keyframes floatReverse {
+                            0%, 100% { transform: translateY(0) rotate(0deg); }
+                            50% { transform: translateY(30px) rotate(-180deg); }
+                        }
+                    `}</style>
+                    {fallingWords.map((w, i) => (
+                        <span
+                            key={i}
+                            className="absolute font-black uppercase italic tracking-tighter text-white select-none"
+                            style={{
+                                left: w.left,
+                                top: 0,
+                                fontSize: w.size,
+                                opacity: w.opacity,
+                                color: w.color,
+                                textShadow: `0 0 10px ${w.color}40`,
+                                filter: `blur(0.5px)`,
+                                animation: `wordFall ${w.duration} linear ${w.delay} infinite`,
+                            }}
+                        >
+                            {w.word}
+                        </span>
+                    ))}
+                    <div className="absolute inset-0 bg-gradient-to-b from-zinc-950/70 via-zinc-950/30 to-zinc-950/70 pointer-events-none" />
+
+                    <div className="absolute top-[15%] left-[8%] w-4 h-4 border-2 border-purple-500/30 rounded-full animate-[float_6s_ease-in-out_infinite]" />
+                    <div className="absolute top-[30%] right-[12%] w-3 h-3 bg-lime-400/20 rotate-45 animate-[floatReverse_8s_ease-in-out_infinite]" />
+                    <div className="absolute bottom-[25%] left-[15%] w-5 h-5 border-2 border-purple-400/20 rounded-full animate-[float_7s_ease-in-out_infinite_1s]" />
+                    <div className="absolute top-[60%] right-[8%] w-3 h-3 bg-white/10 rotate-45 animate-[floatReverse_5s_ease-in-out_infinite_0.5s]" />
+                    <div className="absolute bottom-[15%] right-[20%] text-lg opacity-10 animate-[float_9s_ease-in-out_infinite_2s]">✦</div>
+                    <div className="absolute top-[10%] right-[35%] text-xs opacity-10 animate-[floatReverse_7s_ease-in-out_infinite_1.5s]">✦</div>
+
                     <div className="absolute top-1/4 -left-1/4 w-1/2 h-1/2 bg-purple-600 opacity-10 blur-[160px] rounded-full"></div>
                     <div className="absolute bottom-1/4 -right-1/4 w-1/2 h-1/2 bg-lime-500 opacity-5 blur-[160px] rounded-full"></div>
                 </div>
