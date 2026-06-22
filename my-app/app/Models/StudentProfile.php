@@ -27,7 +27,12 @@ class StudentProfile extends Model
         'accuracy',
         'read_level',
         'speak_level',
-        'section'
+        'section',
+        'tutorial_completed_at'
+    ];
+
+    protected $casts = [
+        'tutorial_completed_at' => 'datetime',
     ];
 
     public function user()

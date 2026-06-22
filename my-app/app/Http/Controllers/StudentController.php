@@ -63,6 +63,40 @@ class StudentController extends Controller
         return Inertia::render('Student/Tutorial');
     }
 
+    public function completeTutorial(Request $request)
+    {
+        $user = auth()->user();
+        $student = $user->student;
+
+        if (!$student) {
+            return redirect()->back()->with('error', 'Student profile not found.');
+        }
+
+        if (!$student->tutorial_completed_at) {
+            $student->update([
+                'tutorial_completed_at' => now(),
+            ]);
+
+            $badge = Badges::where('slug', 'tutorial-complete')->first();
+            if ($badge) {
+                $changes = $user->badges()->syncWithoutDetaching([
+                    $badge->id => ['earned_at' => now()],
+                ]);
+
+                if (!empty($changes['attached'])) {
+                    return redirect()->route('student.dashboard')->with('new_badge', [
+                        'name' => $badge->name,
+                        'description' => $badge->description,
+                        'slug' => $badge->slug,
+                        'icon' => $badge->icon,
+                    ]);
+                }
+            }
+        }
+
+        return redirect()->route('student.dashboard')->with('success', 'Tutorial completed!');
+    }
+
     public function updateAvatar(Request $request)
     {
         $request->validate([

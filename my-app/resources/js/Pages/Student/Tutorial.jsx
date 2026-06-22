@@ -1,9 +1,11 @@
-import { Link, usePage } from "@inertiajs/react";
-import { useState } from "react";
-import { Joyride, STATUS } from "react-joyride"; // Fixed import: Joyride is a default export, not named
+import { Link, router, usePage } from "@inertiajs/react";
+import { useEffect, useState } from "react";
+import { Joyride, STATUS } from "react-joyride";
 
 export default function Tutorial() {
     const { auth } = usePage().props;
+
+ 
     const avatarUrl = auth?.user?.student?.avatar;
     const bodyUrl = avatarUrl?.replace("/head.png", "/body.png");
 
@@ -11,12 +13,30 @@ export default function Tutorial() {
 
     const handleJoyrideCallback = (data) => {
         const { status } = data;
-        if (status === STATUS.FINISHED || status === STATUS.SKIPPED) {
-            setJoyrideRun(false);
+        if (status === STATUS.FINISHED) {
+            router.post("/student/tutorial/complete");
+        } else if (status === STATUS.SKIPPED) {
+            router.visit("/student/dashboard");
         }
     };
 
     const joyrideSteps = [
+        {
+            target: '[data-purpose="avatar-speech"]',
+            content: (
+                <div>
+                    <p className="text-xl font-black uppercase tracking-tight mb-2">
+                        MEET YOUR GUIDE!
+                    </p>
+                    <p className="text-sm opacity-80">
+                        This is your robot buddy! They'll cheer you on through
+                        every level.
+                    </p>
+                </div>
+            ),
+            placement: "auto",
+            spotlightPadding: 10,
+        },
         {
             target: '[data-purpose="read-mode-selection"]',
             content: (
@@ -25,11 +45,29 @@ export default function Tutorial() {
                         START WITH READ MODE!
                     </p>
                     <p className="text-sm opacity-80">
-                        Click here to begin your adventure!
+                        Click here to begin your adventure! Power up your visual
+                        word recognition.
                     </p>
                 </div>
             ),
-            placement: "auto", // Better fallback for mobile and desktop split-screens
+            placement: "auto",
+            spotlightPadding: 20,
+        },
+
+        {
+            target: '[data-purpose="story-mode-locked"]',
+            content: (
+                <div>
+                    <p className="text-xl font-black uppercase tracking-tight mb-2">
+                        STORY MODE - LOCKED!
+                    </p>
+                    <p className="text-sm opacity-80">
+                        Complete this tutorial first to unlock the Word-O-Matic
+                        adventure mode.
+                    </p>
+                </div>
+            ),
+            placement: "auto",
             spotlightPadding: 20,
         },
     ];
@@ -37,73 +75,76 @@ export default function Tutorial() {
     return (
         <div className="m-0 p-0 overflow-hidden select-none">
             <Joyride
-                run={joyrideRun}
-                callback={handleJoyrideCallback}
-                steps={joyrideSteps}
-                continuous
-                disableOverlayClose
-                disableCloseOnOutsideClick
-                showSkipButton
-                showProgress
-                styles={{
-                    // 👇 IDAGDAG ITONG BEACON PROPERTY NA ITO:
-                    beacon: {
-                        background: "transparent",
-                    },
-                    beaconInner: {
-                        backgroundColor: "#ffffff", // Puti ang gitna ng hint
-                    },
-                    beaconOuter: {
-                        backgroundColor: "rgba(255, 255, 255, 0.4)", // Puti ang outer ripple halo
-                        borderColor: "#ffffff",
-                        borderWidth: "2px",
-                    },
-                    options: {
-                        arrowColor: "#1e1b4b",
-                        overlayColor: "rgba(0,0,0,0.6)", // Marginally darker for better focus
-                        zIndex: 10000,
-                    },
-                    tooltip: {
-                        backgroundColor: "#1e1b4b",
-                        borderRadius: "1.5rem",
-                        padding: "2rem",
-                        fontSize: "1.125rem",
-                        color: "#ffffff",
-                    },
-                    tooltipContainer: {
-                        textAlign: "left",
-                    },
-                    tooltipContent: {
-                        padding: 0,
-                        fontSize: "1.125rem",
-                        lineHeight: "1.6",
-                        color: "#ffffff",
-                    },
-                    buttonNext: {
-                        backgroundColor: "#7c3aed",
-                        borderRadius: "0.75rem",
-                        fontSize: "1rem",
-                        fontWeight: 700,
-                        padding: "0.75rem 1.5rem",
-                        color: "#fff",
-                    },
-                    buttonBack: {
-                        fontSize: "1rem",
-                        fontWeight: 600,
-                        color: "#a78bfa",
-                    },
-                    buttonSkip: {
-                        fontSize: "0.875rem",
-                        fontWeight: 600,
-                        color: "#9ca3af",
-                    },
-                }}
-            />
+                    run={joyrideRun}
+                    callback={handleJoyrideCallback}
+                    steps={joyrideSteps}
+                    continuous
+                    disableOverlayClose
+                    disableCloseOnOutsideClick
+                    showSkipButton
+                    showProgress
+                    styles={{
+                        beacon: {
+                            position: "fixed",
+                            top: "50%",
+                            left: "50%",
+                            transform: "translate(-50%, -50%)",
+                            zIndex: 10001,
+                        },
+                        beaconInner: {
+                            backgroundColor: "#ffffff",
+                        },
+                        beaconOuter: {
+                            backgroundColor: "rgba(255, 255, 255, 0.4)",
+                            borderColor: "#ffffff",
+                            borderWidth: "2px",
+                        },
+                        options: {
+                            arrowColor: "#1e1b4b",
+                            overlayColor: "rgba(0,0,0,0.6)",
+                            zIndex: 10000,
+                        },
+                        tooltip: {
+                            backgroundColor: "#1e1b4b",
+                            borderRadius: "1.5rem",
+                            padding: "2rem",
+                            fontSize: "1.125rem",
+                            color: "#ffffff",
+                        },
+                        tooltipContainer: {
+                            textAlign: "left",
+                        },
+                        tooltipContent: {
+                            padding: 0,
+                            fontSize: "1.125rem",
+                            lineHeight: "1.6",
+                            color: "#ffffff",
+                        },
+                        buttonNext: {
+                            backgroundColor: "#7c3aed",
+                            borderRadius: "0.75rem",
+                            fontSize: "1rem",
+                            fontWeight: 700,
+                            padding: "0.75rem 1.5rem",
+                            color: "#fff",
+                        },
+                        buttonBack: {
+                            fontSize: "1rem",
+                            fontWeight: 600,
+                            color: "#a78bfa",
+                        },
+                        buttonSkip: {
+                            fontSize: "0.875rem",
+                            fontWeight: 600,
+                            color: "#9ca3af",
+                        },
+                    }}
+                />
 
-            <main className="min-h-screen w-full flex flex-col md:flex-row relative overflow-hidden bg-zinc-950">
+                <main className="min-h-screen w-full flex flex-col md:flex-row relative overflow-hidden bg-zinc-950">
                 {/* READ MODE */}
                 <Link
-                    href="/student/read"
+                    href="/student/gameplayReadMode/1"
                     className="group flex-1 flex flex-col items-center justify-center p-8 transition-all duration-500 border-b-4 md:border-b-0 md:border-r-4 border-zinc-900 relative overflow-hidden bg-gradient-to-br from-purple-900/40 to-zinc-950"
                     data-purpose="read-mode-selection"
                 >
@@ -131,7 +172,10 @@ export default function Tutorial() {
                     </div>
 
                     <div className="absolute bottom-0 left-0 right-0 h-2 bg-zinc-900/80">
-                        <div className="h-full bg-purple-600 w-[65%] group-hover:w-full transition-all duration-1000 ease-out" />
+                        <div
+                            className="h-full bg-purple-600 w-[65%] group-hover:w-full transition-all duration-1000 ease-out"
+                            data-purpose="read-mode-progress"
+                        />
                     </div>
                 </Link>
 
@@ -173,7 +217,10 @@ export default function Tutorial() {
 
                     {/* Tutorial Lock Overlay - Moved outside link structure */}
                     {joyrideRun && (
-                        <div className="absolute inset-0 z-30 bg-black/70 backdrop-blur-[6px] flex flex-col items-center justify-center pointer-events-auto">
+                        <div
+                            className="absolute inset-0 z-30 bg-black/70 backdrop-blur-[6px] flex flex-col items-center justify-center pointer-events-auto"
+                            data-purpose="story-mode-locked"
+                        >
                             <span className="text-white text-xs font-black tracking-widest uppercase bg-zinc-900 px-4 py-2 rounded-full border border-zinc-800">
                                 Locked During Tutorial 🔒
                             </span>
@@ -183,7 +230,10 @@ export default function Tutorial() {
 
                 {/* Avatar Character - Tamed dimensions and optimized scaling */}
                 {bodyUrl && (
-                    <div className="hidden lg:block absolute right-4 bottom-0 z-50 pointer-events-none select-none max-w-[25vw] max-h-[50vh]">
+                    <div
+                        className="hidden lg:block absolute right-4 bottom-0 z-50 pointer-events-none select-none max-w-[25vw] max-h-[55vh]"
+                        data-purpose="avatar-speech"
+                    >
                         <div className="relative w-full h-full">
                             {/* Speech Bubble */}
                             <div className="absolute bottom-full right-4 mb-4 z-[60]">
@@ -210,7 +260,10 @@ export default function Tutorial() {
                 )}
 
                 {/* CONTINUE TO DASHBOARD */}
-                <div className="absolute bottom-12 left-0 right-0 z-40 flex justify-center pointer-events-none">
+                <div
+                    className="absolute bottom-12 left-0 right-0 z-40 flex justify-center pointer-events-none"
+                    data-purpose="continue-dashboard"
+                >
                     <Link
                         href="/student/dashboard"
                         className="pointer-events-auto bg-white/5 hover:bg-white/10 backdrop-blur-xl border border-white/10 text-white px-6 py-3 rounded-xl font-bold text-sm tracking-widest uppercase transition-all hover:scale-105 active:scale-95 flex items-center gap-3"
