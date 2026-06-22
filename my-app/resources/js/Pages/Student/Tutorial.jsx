@@ -22,7 +22,7 @@ export default function Tutorial() {
             content: (
                 <div>
                     <p className="text-xl font-black uppercase tracking-tight mb-2">START WITH READ MODE!</p>
-                    <p className="text-sm opacity-80">Click here to begin your learning adventure!</p>
+                    <p className="text-sm opacity-80">Click here to begin your adventure!</p>
                 </div>
             ),
             placement: "right",
@@ -115,14 +115,16 @@ export default function Tutorial() {
                     </div>
                 </Link>
 
-                {/* Avatar Character - Desktop Only */}
+                {/* Avatar Character (Full Body) - Desktop Only */}
                 {bodyUrl && (
                     <div className="hidden md:block absolute right-0 bottom-0 z-50 pointer-events-none select-none">
-                        <img
-                            src={bodyUrl}
-                            alt="Your Avatar"
-                            className="h-[80vh] w-auto object-contain"
-                        />
+                        <div className="relative">
+                            <img
+                                src={bodyUrl}
+                                alt="Your Avatar"
+                                className="h-screen w-auto object-contain drop-shadow-[0_0_80px_rgba(163,230,53,0.3)]"
+                            />
+                        </div>
                     </div>
                 )}
 
