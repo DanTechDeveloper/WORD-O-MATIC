@@ -1,10 +1,5 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { Head, useForm, Link } from "@inertiajs/react";
-
-const FALLING_WORDS = [
-    "vocabulary", "explore", "discover", "master", "practice",
-    "speak", "listen", "learn", "achieve", "progress"
-];
 
 const features = [
     {
@@ -31,20 +26,6 @@ const features = [
 
 export default function Homepage() {
     const [mobileOpen, setMobileOpen] = useState(false);
-
-    const COLORS = ["#a78bfa", "#bef264", "#ffffff"];
-
-    const fallingWords = useMemo(() =>
-        FALLING_WORDS.map((word, i) => ({
-            word,
-            left: `${Math.random() < 0.5 ? Math.random() * 20 : 70 + Math.random() * 25}%`,
-            delay: `${Math.random() * 10}s`,
-            duration: `${8 + Math.random() * 10}s`,
-            size: `${1 + Math.random() * 1.5}rem`,
-            opacity: 0.08 + Math.random() * 0.05,
-            color: COLORS[i % COLORS.length],
-        })),
-    []);
 
     const { data, setData, post, processing, errors, reset } = useForm({
         name: "",
@@ -167,12 +148,6 @@ export default function Homepage() {
             <section className="relative min-h-screen flex items-center justify-center pt-16 overflow-hidden">
                 <div className="absolute inset-0 pointer-events-none">
                     <style>{`
-                        @keyframes wordFall {
-                            0% { transform: translateY(-120vh); opacity: 0; }
-                            10% { opacity: 1; }
-                            90% { opacity: 1; }
-                            100% { transform: translateY(120vh); opacity: 0; }
-                        }
                         @keyframes float {
                             0%, 100% { transform: translateY(0) rotate(0deg); }
                             50% { transform: translateY(-30px) rotate(180deg); }
@@ -182,24 +157,6 @@ export default function Homepage() {
                             50% { transform: translateY(30px) rotate(-180deg); }
                         }
                     `}</style>
-                    {fallingWords.map((w, i) => (
-                        <span
-                            key={i}
-                            className="absolute font-black uppercase italic tracking-tighter text-white select-none"
-                            style={{
-                                left: w.left,
-                                top: 0,
-                                fontSize: w.size,
-                                opacity: w.opacity,
-                                color: w.color,
-                                textShadow: `0 0 10px ${w.color}40`,
-                                filter: `blur(0.5px)`,
-                                animation: `wordFall ${w.duration} linear ${w.delay} infinite`,
-                            }}
-                        >
-                            {w.word}
-                        </span>
-                    ))}
                     <div className="absolute inset-0 bg-gradient-to-b from-zinc-950/70 via-zinc-950/30 to-zinc-950/70 pointer-events-none" />
 
                     <div className="absolute top-[15%] left-[8%] w-4 h-4 border-2 border-purple-500/30 rounded-full animate-[float_6s_ease-in-out_infinite]" />
