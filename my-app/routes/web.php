@@ -7,10 +7,12 @@ use App\Http\Middleware\CheckStudentOnboarding;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
- Route::middleware('guest')->group(function () {
+Route::middleware('guest')->group(function () {
     Route::get('/', [UserController::class, 'index'])->name('login');
-     Route::post('/', [UserController::class, 'login']);
- });
+    Route::post('/', [UserController::class, 'login']);
+    Route::get('/teacher/login', [UserController::class, 'teacherLogin'])->name('teacher.login');
+    Route::post('/teacher/login', [UserController::class, 'teacherLoginPost']);
+});
 
 // Route::inertia("/", "Testing/Microphone");
 

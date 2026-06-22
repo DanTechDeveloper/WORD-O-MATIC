@@ -15,6 +15,13 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        User::create([
+            'name' => 'Admin Teacher',
+            'username' => 'admin',
+            'password' => bcrypt('password'),
+            'role' => 'teacher',
+        ]);
+
         $this->call([
             BadgesSeeder::class,
         ]);

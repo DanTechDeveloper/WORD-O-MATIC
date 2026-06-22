@@ -25,60 +25,18 @@ class UserController extends Controller
         return Inertia::render('Auth/Homepage');
     }
 
-    public function login(Request $request)
+    public function teacherLogin(): Response
     {
-        $request->validate([
-            'role' => 'required|in:student,teacher',
-            'mode' => 'required|in:login,register',
-        ]);
+        return Inertia::render('Auth/TeacherLogin');
+    }
 
-        if ($request->role === 'student') {
-            $request->validate([
-                'name' => 'required|string',
-                'pin' => 'required|string',
-            ]);
-
-            $user = User::where('name', $request->name)
-                ->where('role', 'student')
-                ->first();
-
-            if (! $user || ! Hash::check($request->pin, $user->pin)) {
-                return back()->withErrors([
-                    'name' => 'Invalid student credentials.',
-                ]);
-            }
-
-            Auth::login($user);
-            $request->session()->regenerate();
-
-            $hasAvatar = $user->student && ! empty($user->student->avatar);
-            return $hasAvatar 
-                ? redirect()->route('student.dashboard') 
-                : redirect()->route('student.splashScreen');
-        }
-
+    public function teacherLoginPost(Request $request)
+    {
         $request->validate([
             'username' => 'required|string',
             'password' => 'required|string',
         ]);
 
-        if ($request->mode === 'register') {
-            $request->validate([
-                'username' => 'required|string|unique:users,username',
-                'password' => 'required|string|min:6',
-            ]);
-
-            User::create([
-                'name' => $request->username,
-                'username' => $request->username,
-                'password' => Hash::make($request->password),
-                'role' => 'teacher',
-            ]);
-
-            return redirect()->route('teacher.dashboard')->with('success', 'Registration successful! Please login with your credentials.');
-        }
-
-        // Login Logic
         $user = User::where('username', $request->username)
             ->where('role', 'teacher')
             ->first();
@@ -93,5 +51,31 @@ class UserController extends Controller
         $request->session()->regenerate();
 
         return redirect()->route('teacher.dashboard');
+    }
+
+    public function login(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string',
+            'pin' => 'required|string',
+        ]);
+
+        $user = User::where('name', $request->name)
+            ->where('role', 'student')
+            ->first();
+
+        if (! $user || ! Hash::check($request->pin, $user->pin)) {
+            return back()->withErrors([
+                'name' => 'Invalid student credentials.',
+            ]);
+        }
+
+        Auth::login($user);
+        $request->session()->regenerate();
+
+        $hasAvatar = $user->student && ! empty($user->student->avatar);
+        return $hasAvatar 
+            ? redirect()->route('student.dashboard') 
+            : redirect()->route('student.splashScreen');
     }
 }
