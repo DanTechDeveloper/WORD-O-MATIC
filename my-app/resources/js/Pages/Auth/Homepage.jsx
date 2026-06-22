@@ -37,11 +37,11 @@ export default function Homepage() {
     const fallingWords = useMemo(() =>
         FALLING_WORDS.map((word, i) => ({
             word,
-            left: `${Math.random() < 0.5 ? Math.random() * 20 : 70 + Math.random() * 30}%`,
-            delay: `${Math.random() * 15}s`,
-            duration: `${8 + Math.random() * 12}s`,
+            left: `${Math.random() < 0.5 ? Math.random() * 20 : 70 + Math.random() * 25}%`,
+            delay: `${Math.random() * 10}s`,
+            duration: `${8 + Math.random() * 10}s`,
             size: `${1 + Math.random() * 1.5}rem`,
-            opacity: 0.08 + Math.random() * 0.07,
+            opacity: 0.08 + Math.random() * 0.05,
             color: COLORS[i % COLORS.length],
         })),
     []);
@@ -278,7 +278,7 @@ export default function Homepage() {
                         designed for students to build vocabulary through
                         reading and speaking exercises. Teachers can create
                         custom word and paragraph modules, track student
-                        progress, and assign targeted exercises — all within a
+                        progress, and assign targeted exercises all within a
                         gamified environment that keeps learners engaged and
                         motivated.
                     </p>
@@ -288,13 +288,13 @@ export default function Homepage() {
             {/* STUDENT LOGIN */}
             <section
                 id="login"
-                className="py-20 md:py-32 px-4 flex items-center justify-center"
+                className="py-20 md:py-32 px-4 flex items-center justify-center relative overflow-hidden"
             >
                 <div className="relative w-full max-w-lg">
                     <div className="absolute -top-1/4 -left-1/4 w-1/2 h-1/2 bg-purple-600 opacity-10 blur-[120px] rounded-full pointer-events-none"></div>
                     <div className="absolute -bottom-1/4 -right-1/4 w-1/2 h-1/2 bg-purple-900 opacity-10 blur-[120px] rounded-full pointer-events-none"></div>
 
-                    <div className="relative bg-zinc-900 border-4 border-purple-900 tactile-card rounded-[40px] p-8 md:p-10 shadow-[20px_20px_0_0_#1e1b4b]">
+                    <div className="relative bg-zinc-900 border-4 border-purple-900 tactile-card rounded-[30px] md:rounded-[40px] p-6 md:p-10 shadow-[10px_10px_0_0_#1e1b4b] md:shadow-[20px_20px_0_0_#1e1b4b]">
                         <header className="text-center mb-8">
                             <h2 className="text-3xl font-black uppercase italic tracking-tighter text-white">
                                 Student{" "}
@@ -313,7 +313,7 @@ export default function Homepage() {
                                     </label>
                                     <input
                                         type="text"
-                                        className="w-full p-5 bg-zinc-950 border-4 border-zinc-800 rounded-2xl text-white font-bold focus:border-lime-400 outline-none transition-all placeholder:text-zinc-800"
+                                        className="w-full p-4 md:p-5 bg-zinc-950 border-4 border-zinc-800 rounded-2xl text-white font-bold focus:border-lime-400 outline-none transition-all placeholder:text-zinc-800"
                                         placeholder="Identification Name..."
                                         value={data.name}
                                         onChange={(e) =>
@@ -336,7 +336,7 @@ export default function Homepage() {
                                         onChange={(e) =>
                                             setData("pin", e.target.value)
                                         }
-                                        className="w-full p-5 bg-zinc-950 border-4 border-zinc-800 rounded-2xl text-white font-bold focus:border-lime-400 outline-none transition-all placeholder:text-zinc-800"
+                                        className="w-full p-4 md:p-5 bg-zinc-950 border-4 border-zinc-800 rounded-2xl text-white font-bold focus:border-lime-400 outline-none transition-all placeholder:text-zinc-800"
                                         placeholder="XXXX"
                                     />
                                     {errors.pin && (
@@ -350,7 +350,7 @@ export default function Homepage() {
                             <button
                                 type="submit"
                                 disabled={processing}
-                                className="w-full py-6 mt-4 rounded-2xl border-b-[8px] font-black uppercase italic text-2xl tracking-tighter transition-all active:translate-y-1 active:border-b-[2px] flex items-center justify-center gap-3 bg-lime-400 text-zinc-950 border-green-800 hover:bg-lime-300 shadow-[0_10px_20px_-10px_rgba(163,230,53,0.5)]"
+                                className="w-full py-5 md:py-6 mt-4 rounded-2xl border-b-[6px] md:border-b-[8px] font-black uppercase italic text-xl md:text-2xl tracking-tighter transition-all active:translate-y-1 active:border-b-[2px] flex items-center justify-center gap-3 bg-lime-400 text-zinc-950 border-green-800 hover:bg-lime-300 shadow-[0_10px_20px_-10px_rgba(163,230,53,0.5)]"
                             >
                                 <span>LOGIN</span>
                                 <span className="text-3xl">🚀</span>
@@ -362,13 +362,13 @@ export default function Homepage() {
 
             {/* FOOTER */}
             <footer className="border-t border-zinc-800 py-10 px-4">
-                <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+                <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8 md:gap-6 text-center md:text-left">
                     <div className="flex items-center gap-2">
                          <h1 className="text-2xl font-black text-purple-500 uppercase italic tracking-tighter">
                         WORD-O-MATIC
                     </h1>
                     </div>
-                    <div className="flex items-center gap-6 text-xs font-black uppercase tracking-widest text-zinc-500">
+                    <div className="flex flex-wrap justify-center items-center gap-4 md:gap-6 text-xs font-black uppercase tracking-widest text-zinc-500">
                         <Link
                             href="/teacher/login"
                             className="hover:text-purple-400 transition-colors"
