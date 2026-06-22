@@ -2,36 +2,12 @@ import { usePage, router } from "@inertiajs/react";
 import { useState } from "react";
 
 const AVATARS = [
-    {
-        id: "juan",
-        url: "https://lh3.googleusercontent.com/aida-public/AB6AXuDh3THY0ENh1yT1jUzhuZDc14omwHj8ER7vWjLs4Bl5Nj644mmO4vi-2ODFSRI46jpcIw9dy9Knt7TmQtiwQpJmpiLPm9g5osM_-F3hmiWuKL3NxlLO-wElY4dZwZStxx4wU0q2twHAM-EkSf1NF2kCSydiD5s_eRv9dN1982mhKmHkh4x0EoJ-O2fzcpLLq4eBcWSFNCCuuyDYCTWx71V1u1LpFvLJVaAyY3FwcSDCm1UIPlVIZ2xKYQc6EgP5XqPUFFQM8S0DEaMS",
-        alt: "Champion Juan robot avatar",
-    },
-    {
-        id: "kyle",
-        url: "https://lh3.googleusercontent.com/aida-public/AB6AXuAZNRCXCWU-BKlVH7Tgjxe7xWN1p6pdj6eq3gz5rq-xI-2zQtACXCDeLj1MX3dC8GVlJGsSsf2H6m0_htaEoAIVF3oC0OlFHZxoFCqlFioOp6aQajnIA0KkmsyLk3JpCSgFh53VTnpCjyn11S6nnbNSBxxilr6_7968RO1lFuzDB7DsetTOJ3-VH1ol8dN4n2eB0-mxhQpnzlRaJel8fWfnSd0suz7bV3Vbkfwpm5zGGiPJmdLjZACSQBTO2ucnqjE4W19s9itJFk2T",
-        alt: "Stellar Kyle robot avatar",
-    },
-    {
-        id: "ana",
-        url: "https://lh3.googleusercontent.com/aida-public/AB6AXuAlWe1RjnS_bYDv5BXC3hiaQsT2yvCP5w5e6Xqda_NyeCU41QiHJAL1xyI3348I16uTRJSw2Q04uR9tT0qNv39_Ohlqm3eKmnPv9RU_5bm9YqUDziHRlLt7-PEKzQ3nhYVRP2h0DqFC_5tLbPald-wRBwprxfR5FO1IiNieZqJ_wp21PgGXds-XIiduHNziBjxbyxwgkn9AuG8M-XDzLYUxhs_Z4nNcfiv27PswYtG0eJCeKxrFMxfx1adVVCws01UJB1Ljsbtt095C",
-        alt: "Genius Ana robot avatar",
-    },
-    {
-        id: "leo",
-        url: "https://lh3.googleusercontent.com/aida-public/AB6AXuBvWNTnJKPz_x6Y6lwlut0m6OV34k6Ad6idy6xF9MuNrA4nsq5xgG9KDhgndUTCgeZcaXCYH1kNYwBwQe9AJNeC9epjFdxItV7GhJeekPEUdP9EWpncXyQGXnXYEcOOmVNgvZ6xkr4lMeUGj7pAMwtMkLg9At6mQUgF-5wZJUs9_ruvCz_DdgkjnXz7kZN3QH_Oc5cVyRIVjJSBmJH0hqW0nakeG5opIFmryh8BrLChKC81cU4H8ko20W-6Z4HZ4G0tLZFW_8rEIzYX",
-        alt: "Stellar Scout Leo robot avatar.",
-    },
-    {
-        id: "zoe",
-        url: "https://lh3.googleusercontent.com/aida-public/AB6AXuBqGrYBtsNBrPy3RRPxbHxWzNfnlJyX1PSSkunhyMWHSQpB_6I1uDRy72V9O_yv37Abj43WPK_vG7E7SI2HuqVn4iSb-qgvEbfiVbEVCUSNVbc3B18OC58-Eb_-pD6X3yTfspzM0rzVMlf7CrNgb7jLXANV8Jz14LNVnnWkXbkbBcCRXX7KQe_-FCwoILoUZjzAGiWm69Ak6wnxaVpKJUpslUIwE8Uj_DWs8fGv4tYeafdPsah0tCtRa54J6UMw5_FL7C4xoOXoEYpF",
-        alt: "Nova Navigator Zoe robot avatar.",
-    },
-    {
-        id: "sam",
-        url: "https://lh3.googleusercontent.com/aida-public/AB6AXuCGBS5xKJoo6ae6nUsMvlYD0l0SmoGlhvLnkDZRwlCoTNJLgLQbKWxfgD1If2SyFBi_hKvKXjuPjfNTl7ewuRLvP2pTtDthCFlX6F143g11NE_d1iUZX3f7iKviU5NVobfa0LA0HQ8sgfJyVyeFC3vJc1Ddphgsh2WUc8mjfMH0xX2kf6_sWEgPGQo-tRuAbD3NY_nXzEGNuRbmGalQhFR25Rbhhqx-ok6Yp_EAZow8nwxa4NiwfmFc6X0cFVT4PEVQe0WbS2tMiVtb",
-        alt: "Comet Cadet Sam robot avatar.",
-    },
+    { id: "juan", url: "/images/avatars/juan/head.png", alt: "Champion Juan robot avatar" },
+    { id: "kyle", url: "/images/avatars/kyle/head.png", alt: "Stellar Kyle robot avatar" },
+    { id: "ana", url: "/images/avatars/ana/head.png", alt: "Genius Ana robot avatar" },
+    { id: "leo", url: "/images/avatars/leo/head.png", alt: "Stellar Scout Leo robot avatar" },
+    { id: "zoe", url: "/images/avatars/zoe/head.png", alt: "Nova Navigator Zoe robot avatar" },
+    { id: "sam", url: "/images/avatars/sam/head.png", alt: "Comet Cadet Sam robot avatar" },
 ];
 
 export default function AvatarSelection() {

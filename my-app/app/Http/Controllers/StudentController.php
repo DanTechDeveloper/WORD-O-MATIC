@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Badges;
 use App\Models\GameSession;
 use App\Models\ParagraphModule;
-use App\Models\Student;
+use App\Models\StudentProfile;
 use App\Models\StudentParagraphProgress;
 use App\Models\StudentWordMastery;
 use App\Models\StudentWordProgress;
@@ -101,7 +101,27 @@ class StudentController extends Controller
 
     public function leaderboards()
     {
-        return Inertia::render('Student/Leaderboards');
+        $user = auth()->user();
+
+        $leaderboard = StudentProfile::with('user:id,name,student_id')
+            ->whereHas('user', fn($q) => $q->where('role', 'student'))
+            ->orderBy('points', 'desc')
+            ->get(['user_id', 'points', 'avatar']);
+
+        $currentUserRank = $leaderboard->search(fn($s) => $s->user_id === $user->id);
+
+        $totalStudents = $leaderboard->count();
+
+        $weeklyPoints = GameSession::where('user_id', $user->id)
+            ->where('created_at', '>=', now()->startOfWeek())
+            ->sum('score');
+
+        return Inertia::render('Student/Leaderboards', [
+            'leaderboard' => $leaderboard,
+            'currentUserRank' => $currentUserRank !== false ? $currentUserRank + 1 : null,
+            'totalStudents' => $totalStudents,
+            'weeklyPoints' => $weeklyPoints,
+        ]);
     }
 
     public function badges()

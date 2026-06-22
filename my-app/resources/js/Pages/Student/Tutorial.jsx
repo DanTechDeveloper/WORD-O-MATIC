@@ -1,6 +1,35 @@
-import { Link } from "@inertiajs/react";
+import { Link, usePage } from "@inertiajs/react";
+import { useState } from "react";
+import { Joyride, STATUS } from "react-joyride";
 
 export default function Tutorial() {
+    const { auth } = usePage().props;
+    const avatarUrl = auth?.user?.student?.avatar;
+    const bodyUrl = avatarUrl?.replace("/head.png", "/body.png");
+
+    const [joyrideRun, setJoyrideRun] = useState(true);
+
+    const handleJoyrideCallback = (data) => {
+        const { status } = data;
+        if (status === STATUS.FINISHED || status === STATUS.SKIPPED) {
+            setJoyrideRun(false);
+        }
+    };
+
+    const joyrideSteps = [
+        {
+            target: '[data-purpose="read-mode-selection"]',
+            content: (
+                <div>
+                    <p className="text-xl font-black uppercase tracking-tight mb-2">START WITH READ MODE!</p>
+                    <p className="text-sm opacity-80">Click here to begin your learning adventure!</p>
+                </div>
+            ),
+            placement: "right",
+            disableBeacon: true,
+        },
+    ];
+
     return (
         <div className="m-0 p-0 overflow-hidden">
             {/* <!-- BEGIN: Main Background Container --> */}
@@ -86,6 +115,17 @@ export default function Tutorial() {
                     </div>
                 </Link>
 
+                {/* Avatar Character - Desktop Only */}
+                {bodyUrl && (
+                    <div className="hidden md:block absolute right-0 bottom-0 z-50 pointer-events-none select-none">
+                        <img
+                            src={bodyUrl}
+                            alt="Your Avatar"
+                            className="h-[80vh] w-auto object-contain"
+                        />
+                    </div>
+                )}
+
                 {/* CONTINUE TO DASHBOARD - Bottom Center Button */}
                 <div className="absolute bottom-12 left-0 right-0 z-40 flex justify-center pointer-events-none">
                     <Link
@@ -97,6 +137,52 @@ export default function Tutorial() {
                     </Link>
                 </div>
             </main>
+
+            <Joyride
+                steps={joyrideSteps}
+                run={joyrideRun}
+                callback={handleJoyrideCallback}
+                continuous={true}
+                showSkipButton={true}
+                showProgress={false}
+                styles={{
+                    options: {
+                        primaryColor: "#a3e635",
+                        backgroundColor: "#18181b",
+                        textColor: "#ffffff",
+                        arrowColor: "#18181b",
+                        overlayColor: "rgba(0, 0, 0, 0.5)",
+                        zIndex: 1000,
+                    },
+                    tooltipContainer: {
+                        textAlign: "left",
+                    },
+                    tooltipContent: {
+                        padding: "12px 16px",
+                    },
+                    buttonNext: {
+                        backgroundColor: "#a3e635",
+                        color: "#09090b",
+                        fontWeight: 900,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.05em",
+                        borderRadius: "12px",
+                        padding: "8px 20px",
+                        fontSize: "14px",
+                        borderBottom: "3px solid #4d7c0f",
+                    },
+                    buttonSkip: {
+                        color: "#a1a1aa",
+                        fontWeight: 700,
+                        textTransform: "uppercase",
+                        fontSize: "12px",
+                    },
+                    buttonBack: {
+                        color: "#a1a1aa",
+                        fontWeight: 700,
+                    },
+                }}
+            />
         </div>
     );
 }
