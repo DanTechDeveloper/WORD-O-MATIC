@@ -1,6 +1,6 @@
 import { Link, usePage } from "@inertiajs/react";
 import { useState } from "react";
-import { Joyride, STATUS } from "react-joyride";
+import { Joyride, STATUS } from "react-joyride"; // Fixed import: Joyride is a default export, not named
 
 export default function Tutorial() {
     const { auth } = usePage().props;
@@ -21,46 +21,107 @@ export default function Tutorial() {
             target: '[data-purpose="read-mode-selection"]',
             content: (
                 <div>
-                    <p className="text-xl font-black uppercase tracking-tight mb-2">START WITH READ MODE!</p>
-                    <p className="text-sm opacity-80">Click here to begin your adventure!</p>
+                    <p className="text-xl font-black uppercase tracking-tight mb-2">
+                        START WITH READ MODE!
+                    </p>
+                    <p className="text-sm opacity-80">
+                        Click here to begin your adventure!
+                    </p>
                 </div>
             ),
-            placement: "right",
-            disableBeacon: true,
+            placement: "auto", // Better fallback for mobile and desktop split-screens
+            spotlightPadding: 20,
         },
     ];
 
     return (
-        <div className="m-0 p-0 overflow-hidden">
-            {/* <!-- BEGIN: Main Background Container --> */}
-            <main className="min-h-screen w-full flex flex-col md:flex-row relative overflow-hidden bg-zinc-950">
-                {/* Header Overlay - Floating Title */}
-                <div className="absolute top-10 left-0 right-0 z-30 flex justify-center pointer-events-none px-4">
-                    <div className="bg-zinc-900/80 backdrop-blur-md border-2 border-zinc-800 px-8 py-3 rounded-2xl shadow-2xl">
-                        <h1 className="text-white font-black uppercase tracking-tighter text-xl md:text-3xl text-center">
-                            CHOOSE YOUR <span className="text-lime-400">MODE</span>
-                        </h1>
-                    </div>
-                </div>
+        <div className="m-0 p-0 overflow-hidden select-none">
+            <Joyride
+                run={joyrideRun}
+                callback={handleJoyrideCallback}
+                steps={joyrideSteps}
+                continuous
+                disableOverlayClose
+                disableCloseOnOutsideClick
+                showSkipButton
+                showProgress
+                styles={{
+                    // 👇 IDAGDAG ITONG BEACON PROPERTY NA ITO:
+                    beacon: {
+                        background: "transparent",
+                    },
+                    beaconInner: {
+                        backgroundColor: "#ffffff", // Puti ang gitna ng hint
+                    },
+                    beaconOuter: {
+                        backgroundColor: "rgba(255, 255, 255, 0.4)", // Puti ang outer ripple halo
+                        borderColor: "#ffffff",
+                        borderWidth: "2px",
+                    },
+                    options: {
+                        arrowColor: "#1e1b4b",
+                        overlayColor: "rgba(0,0,0,0.6)", // Marginally darker for better focus
+                        zIndex: 10000,
+                    },
+                    tooltip: {
+                        backgroundColor: "#1e1b4b",
+                        borderRadius: "1.5rem",
+                        padding: "2rem",
+                        fontSize: "1.125rem",
+                        color: "#ffffff",
+                    },
+                    tooltipContainer: {
+                        textAlign: "left",
+                    },
+                    tooltipContent: {
+                        padding: 0,
+                        fontSize: "1.125rem",
+                        lineHeight: "1.6",
+                        color: "#ffffff",
+                    },
+                    buttonNext: {
+                        backgroundColor: "#7c3aed",
+                        borderRadius: "0.75rem",
+                        fontSize: "1rem",
+                        fontWeight: 700,
+                        padding: "0.75rem 1.5rem",
+                        color: "#fff",
+                    },
+                    buttonBack: {
+                        fontSize: "1rem",
+                        fontWeight: 600,
+                        color: "#a78bfa",
+                    },
+                    buttonSkip: {
+                        fontSize: "0.875rem",
+                        fontWeight: 600,
+                        color: "#9ca3af",
+                    },
+                }}
+            />
 
-                {/* READ MODE - Left Half (Purple Theme) */}
+            <main className="min-h-screen w-full flex flex-col md:flex-row relative overflow-hidden bg-zinc-950">
+                {/* READ MODE */}
                 <Link
                     href="/student/read"
                     className="group flex-1 flex flex-col items-center justify-center p-8 transition-all duration-500 border-b-4 md:border-b-0 md:border-r-4 border-zinc-900 relative overflow-hidden bg-gradient-to-br from-purple-900/40 to-zinc-950"
                     data-purpose="read-mode-selection"
                 >
-                    {/* Video Grain/Texture Overlay */}
                     <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]" />
-                    
+
                     <div className="z-20 text-center flex flex-col items-center">
-                        {/* Large Play Button with Icon for Grade 1 Students */}
                         <div className="mb-8 w-28 h-28 md:w-40 md:h-40 rounded-full bg-white/10 backdrop-blur-md border-2 border-white/20 flex items-center justify-center group-hover:scale-110 group-hover:bg-purple-500/20 group-hover:border-purple-400/50 transition-all duration-500 relative">
-                            <span className="absolute -top-4 -right-4 text-4xl">📖</span>
-                            <svg className="w-12 h-12 md:w-16 md:h-16 text-white fill-current ml-2" viewBox="0 0 24 24">
+                            <span className="absolute -top-4 -right-4 text-4xl">
+                                📖
+                            </span>
+                            <svg
+                                className="w-12 h-12 md:w-16 md:h-16 text-white fill-current ml-2"
+                                viewBox="0 0 24 24"
+                            >
                                 <path d="M8 5v14l11-7z" />
                             </svg>
                         </div>
-                        
+
                         <h2 className="text-white text-5xl md:text-7xl lg:text-8xl font-black italic uppercase tracking-tighter mb-4">
                             READ <span className="text-purple-500">MODE</span>
                         </h2>
@@ -69,66 +130,86 @@ export default function Tutorial() {
                         </p>
                     </div>
 
-                    {/* Video Progress Bar */}
                     <div className="absolute bottom-0 left-0 right-0 h-2 bg-zinc-900/80">
                         <div className="h-full bg-purple-600 w-[65%] group-hover:w-full transition-all duration-1000 ease-out" />
                     </div>
-
-                    <div className="absolute bottom-8 right-8 opacity-40 group-hover:opacity-100 transition-opacity text-purple-400 font-black tracking-widest text-xs">
-                        PREVIEWING...
-                    </div>
                 </Link>
 
-                {/* STORY MODE - Right Half (Lime Theme) */}
-                <Link
-                    href="/student/story"
-                    className="group flex-1 flex flex-col items-center justify-center p-8 transition-all duration-500 relative overflow-hidden bg-gradient-to-br from-lime-900/20 to-zinc-950"
-                    data-purpose="story-mode-selection"
-                >
-                    {/* Video Grain/Texture Overlay */}
-                    <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]" />
+                {/* STORY MODE (Conditional Link Wrapper to prevent unintended navigation) */}
+                <div className="flex-1 flex relative overflow-hidden">
+                    <Link
+                        href={joyrideRun ? undefined : "/student/story"}
+                        as={joyrideRun ? "div" : "a"}
+                        className={`group flex-1 flex flex-col items-center justify-center p-8 transition-all duration-500 bg-gradient-to-br from-lime-900/20 to-zinc-950 ${joyrideRun ? "cursor-not-allowed" : ""}`}
+                    >
+                        <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]" />
 
-                    <div className="z-20 text-center flex flex-col items-center">
-                        {/* Large Play Button with Icon for Grade 1 Students */}
-                        <div className="mb-8 w-28 h-28 md:w-40 md:h-40 rounded-full bg-white/10 backdrop-blur-md border-2 border-white/20 flex items-center justify-center group-hover:scale-110 group-hover:bg-lime-400/20 group-hover:border-lime-400/50 transition-all duration-500 relative">
-                            <span className="absolute -top-4 -right-4 text-4xl">🎭</span>
-                            <svg className="w-12 h-12 md:w-16 md:h-16 text-white fill-current ml-2" viewBox="0 0 24 24">
-                                <path d="M8 5v14l11-7z" />
-                            </svg>
+                        <div className="z-20 text-center flex flex-col items-center">
+                            <div className="mb-8 w-28 h-28 md:w-40 md:h-40 rounded-full bg-white/10 backdrop-blur-md border-2 border-white/20 flex items-center justify-center group-hover:not-disabled:scale-110 transition-all duration-500 relative">
+                                <span className="absolute -top-4 -right-4 text-4xl">
+                                    🎭
+                                </span>
+                                <svg
+                                    className="w-12 h-12 md:w-16 md:h-16 text-white fill-current ml-2"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path d="M8 5v14l11-7z" />
+                                </svg>
+                            </div>
+
+                            <h2 className="text-white text-5xl md:text-7xl lg:text-8xl font-black italic uppercase tracking-tighter mb-4">
+                                STORY{" "}
+                                <span className="text-lime-400">MODE</span>
+                            </h2>
+                            <p className="text-zinc-400 text-lg md:text-2xl font-bold uppercase tracking-[0.2em] max-w-sm">
+                                Enter the Word-O-Matic adventure!
+                            </p>
                         </div>
 
-                        <h2 className="text-white text-5xl md:text-7xl lg:text-8xl font-black italic uppercase tracking-tighter mb-4">
-                            STORY <span className="text-lime-400">MODE</span>
-                        </h2>
-                        <p className="text-zinc-400 text-lg md:text-2xl font-bold uppercase tracking-[0.2em] max-w-sm">
-                            Enter the Word-O-Matic adventure!
-                        </p>
-                    </div>
+                        <div className="absolute bottom-0 left-0 right-0 h-2 bg-zinc-900/80">
+                            <div className="h-full bg-lime-400 w-[40%] group-hover:w-full transition-all duration-1000 ease-out" />
+                        </div>
+                    </Link>
 
-                    {/* Video Progress Bar */}
-                    <div className="absolute bottom-0 left-0 right-0 h-2 bg-zinc-900/80">
-                        <div className="h-full bg-lime-400 w-[40%] group-hover:w-full transition-all duration-1000 ease-out" />
-                    </div>
+                    {/* Tutorial Lock Overlay - Moved outside link structure */}
+                    {joyrideRun && (
+                        <div className="absolute inset-0 z-30 bg-black/70 backdrop-blur-[6px] flex flex-col items-center justify-center pointer-events-auto">
+                            <span className="text-white text-xs font-black tracking-widest uppercase bg-zinc-900 px-4 py-2 rounded-full border border-zinc-800">
+                                Locked During Tutorial 🔒
+                            </span>
+                        </div>
+                    )}
+                </div>
 
-                    <div className="absolute bottom-8 right-8 opacity-40 group-hover:opacity-100 transition-opacity text-lime-400 font-black tracking-widest text-xs">
-                        PREVIEWING...
-                    </div>
-                </Link>
-
-                {/* Avatar Character (Full Body) - Desktop Only */}
+                {/* Avatar Character - Tamed dimensions and optimized scaling */}
                 {bodyUrl && (
-                    <div className="hidden md:block absolute right-0 bottom-0 z-50 pointer-events-none select-none">
-                        <div className="relative">
+                    <div className="hidden lg:block absolute right-4 bottom-0 z-50 pointer-events-none select-none max-w-[25vw] max-h-[50vh]">
+                        <div className="relative w-full h-full">
+                            {/* Speech Bubble */}
+                            <div className="absolute bottom-full right-4 mb-4 z-[60]">
+                                <div className="relative bg-white/95 backdrop-blur-sm rounded-2xl px-5 py-3 shadow-2xl border-2 border-lime-400 min-w-[200px]">
+                                    <p className="text-zinc-900 font-black text-lg uppercase tracking-tight leading-tight">
+                                        Ready To Learn?
+                                        <br />
+                                        Start with{" "}
+                                        <span className="text-purple-600">
+                                            Read Mode!
+                                        </span>
+                                    </p>
+                                    <div className="absolute -bottom-[14px] right-6 w-0 h-0 border-l-[10px] border-r-[10px] border-t-[14px] border-l-transparent border-r-transparent border-t-white/95" />
+                                </div>
+                            </div>
+                            {/* Half Body Image */}
                             <img
                                 src={bodyUrl}
                                 alt="Your Avatar"
-                                className="h-screen w-auto object-contain drop-shadow-[0_0_80px_rgba(163,230,53,0.3)]"
+                                className="w-full h-auto object-contain drop-shadow-[0_0_40px_rgba(163,230,53,0.2)]"
                             />
                         </div>
                     </div>
                 )}
 
-                {/* CONTINUE TO DASHBOARD - Bottom Center Button */}
+                {/* CONTINUE TO DASHBOARD */}
                 <div className="absolute bottom-12 left-0 right-0 z-40 flex justify-center pointer-events-none">
                     <Link
                         href="/student/dashboard"
@@ -139,52 +220,6 @@ export default function Tutorial() {
                     </Link>
                 </div>
             </main>
-
-            <Joyride
-                steps={joyrideSteps}
-                run={joyrideRun}
-                callback={handleJoyrideCallback}
-                continuous={true}
-                showSkipButton={true}
-                showProgress={false}
-                styles={{
-                    options: {
-                        primaryColor: "#a3e635",
-                        backgroundColor: "#18181b",
-                        textColor: "#ffffff",
-                        arrowColor: "#18181b",
-                        overlayColor: "rgba(0, 0, 0, 0.5)",
-                        zIndex: 1000,
-                    },
-                    tooltipContainer: {
-                        textAlign: "left",
-                    },
-                    tooltipContent: {
-                        padding: "12px 16px",
-                    },
-                    buttonNext: {
-                        backgroundColor: "#a3e635",
-                        color: "#09090b",
-                        fontWeight: 900,
-                        textTransform: "uppercase",
-                        letterSpacing: "0.05em",
-                        borderRadius: "12px",
-                        padding: "8px 20px",
-                        fontSize: "14px",
-                        borderBottom: "3px solid #4d7c0f",
-                    },
-                    buttonSkip: {
-                        color: "#a1a1aa",
-                        fontWeight: 700,
-                        textTransform: "uppercase",
-                        fontSize: "12px",
-                    },
-                    buttonBack: {
-                        color: "#a1a1aa",
-                        fontWeight: 700,
-                    },
-                }}
-            />
         </div>
     );
 }
