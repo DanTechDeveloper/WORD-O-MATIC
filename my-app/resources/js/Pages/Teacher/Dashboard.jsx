@@ -187,26 +187,7 @@ export default function Dashboard({
                         </span>
                         Section Performance Overview
                     </h2>
-                    <div className="relative min-w-[200px]">
-                        <select
-                            className="w-full appearance-none bg-slate-950 border-2 border-slate-800 rounded-xl pl-4 pr-10 py-3 text-white font-bold focus:outline-none focus:border-lime-500 cursor-pointer transition-all"
-                            value={selectedSection}
-                            onChange={(e) => setSelectedSection(e.target.value)}
-                        >
-                            <option value="">Filter By Section</option>
-                            {sectionList.map((section) => (
-                                <option
-                                    key={section}
-                                    value={section}
-                                >
-                                    {section}
-                                </option>
-                            ))}
-                        </select>
-                        <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-lime-400">
-                            filter_list
-                        </span>
-                    </div>
+                  
                 </div>
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
