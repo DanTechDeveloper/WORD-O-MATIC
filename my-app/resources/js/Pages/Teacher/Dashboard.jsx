@@ -20,9 +20,11 @@ export default function Dashboard({
     totalClassPoints,
     sectionPerformance = [],
     chartCounts,
-    teacherName,
+    topStudents = [],
+    auth,
 }) {
     const [selectedSection, setSelectedSection] = useState("");
+    const [nameFilter, setNameFilter] = useState("");
     const sectionList = sectionPerformance.map((item) => item.section);
     const stats = [
         {
@@ -51,13 +53,12 @@ export default function Dashboard({
         },
     ];
 
-    const topStudentsData = [
-        { name: "Nova Starlight", points: 12500 },
-        { name: "Leo Jupiter", points: 11800 },
-        { name: "Orion Mars", points: 10500 },
-        { name: "Luna Eclipse", points: 9800 },
-        { name: "Astro Comet", points: 9200 },
-    ];
+    const filteredTopStudents = topStudents
+        .filter((s) => !nameFilter || s.name.toLowerCase().includes(nameFilter.toLowerCase()))
+        .filter((s) => !selectedSection || s.section === selectedSection)
+        .slice(0, 10);
+
+    const sectionListForFilter = [...new Set(topStudents.map((s) => s.section).filter(Boolean))];
 
     const chartData = [
         { name: "Not Started", value: chartCounts?.notStarted ?? 0, color: "#64748b" },
@@ -80,7 +81,7 @@ export default function Dashboard({
         <DashboardLayout>
             <div className="mb-10">
                 <h1 className="text-4xl font-black text-white uppercase italic tracking-tighter mb-2">
-                    Welcome back, {teacherName || "Teacher"}!
+                    Welcome back, {auth?.user?.name || "Teacher"}!
                 </h1>
                 <p className="text-slate-500 font-black uppercase text-xs tracking-widest">
                     System status: Operational • Sector 7 monitoring active
@@ -140,14 +141,14 @@ export default function Dashboard({
                                 </Pie>
                                 <Tooltip
                                     contentStyle={{
-                                        backgroundColor: "#020617",
-                                        border: "2px solid #1e293b",
+                                        backgroundColor: "#0f172a",
+                                        border: "2px solid #334155",
                                         borderRadius: "12px",
                                     }}
                                     itemStyle={{
                                         color: "#fff",
                                         fontSize: "12px",
-                                        fontWeight: "medium",
+                                        fontWeight: "bold",
                                     }}
                                 />
                             </PieChart>
@@ -288,17 +289,48 @@ export default function Dashboard({
 
             {/* Top Performing Students */}
             <div className="bg-slate-900 border-4 border-slate-800 p-10 rounded-[2.5rem] shadow-[8px_8px_0_0_#020617] mb-10">
-                <h2 className="text-2xl font-black text-white uppercase italic flex items-center gap-3 mb-8">
-                    <span className="material-symbols-outlined text-yellow-400">
-                        leaderboard
-                    </span>
-                    Top Performing Students
-                </h2>
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+                    <h2 className="text-2xl font-black text-white uppercase italic flex items-center gap-3">
+                        <span className="material-symbols-outlined text-yellow-400">
+                            leaderboard
+                        </span>
+                        Top Performing Students
+                    </h2>
+                    <div className="flex gap-3">
+                        <div className="relative">
+                            <input
+                                type="text"
+                                placeholder="Search name..."
+                                value={nameFilter}
+                                onChange={(e) => setNameFilter(e.target.value)}
+                                className="w-full bg-slate-950 border-2 border-slate-800 rounded-xl pl-10 pr-4 py-3 text-white font-bold focus:outline-none focus:border-lime-500 transition-all text-sm"
+                            />
+                            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-lg">
+                                search
+                            </span>
+                        </div>
+                        <div className="relative min-w-[160px]">
+                            <select
+                                className="w-full appearance-none bg-slate-950 border-2 border-slate-800 rounded-xl pl-4 pr-10 py-3 text-white font-bold focus:outline-none focus:border-lime-500 cursor-pointer transition-all text-sm"
+                                value={selectedSection}
+                                onChange={(e) => setSelectedSection(e.target.value)}
+                            >
+                                <option value="">All Sections</option>
+                                {sectionListForFilter.map((section) => (
+                                    <option key={section} value={section}>{section}</option>
+                                ))}
+                            </select>
+                            <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-lime-400">
+                                filter_list
+                            </span>
+                        </div>
+                    </div>
+                </div>
                 <div className="h-[300px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
                         <BarChart
                             layout="vertical"
-                            data={topStudentsData}
+                            data={filteredTopStudents}
                             margin={{
                                 top: 20,
                                 right: 30,
@@ -321,24 +353,33 @@ export default function Dashboard({
                                 dataKey="name"
                                 type="category"
                                 stroke="#94a3b8"
-                                width={120} // Adjust width to prevent name truncation
+                                width={130}
                                 tick={{ fill: "#e2e8f0", fontWeight: "bold" }}
                             />
                             <Tooltip
                                 cursor={{ fill: "rgba(255,255,255,0.1)" }}
                                 contentStyle={{
-                                    backgroundColor: "#020617",
-                                    border: "2px solid #1e293b",
+                                    backgroundColor: "#0f172a",
+                                    border: "2px solid #334155",
                                     borderRadius: "12px",
                                 }}
                                 itemStyle={{
-                                    color: "#fff",
-                                    fontSize: "12px",
-                                    fontWeight: "medium",
+                                    color: "#a3e635",
+                                    fontSize: "14px",
+                                    fontWeight: "black",
                                 }}
-                                formatter={(value) =>
-                                    `${value.toLocaleString()} Points`
-                                }
+                                labelStyle={{
+                                    color: "#cbd5e1",
+                                    fontSize: "11px",
+                                    fontWeight: "bold",
+                                }}
+                                formatter={(value, name, props) => {
+                                    const student = props.payload;
+                                    return [
+                                        `${value.toLocaleString()} Points`,
+                                        `${student.section || 'N/A'} • ${student.wordBlastAcc || 0}% Word / ${student.storyQuestAcc || 0}% Story`,
+                                    ];
+                                }}
                             />
                             <Bar
                                 dataKey="points"
@@ -348,59 +389,12 @@ export default function Dashboard({
                         </BarChart>
                     </ResponsiveContainer>
                 </div>
+                {filteredTopStudents.length === 0 && (
+                    <div className="text-center py-10 text-slate-600 font-black uppercase tracking-widest text-sm">
+                        No students match the current filters
+                    </div>
+                )}
             </div>
-
-            {/* <div className="bg-slate-900 border-4 border-slate-800 p-10 rounded-[2.5rem] shadow-[8px_8px_0_0_#020617]">
-                <h2 className="text-2xl font-black text-white uppercase italic mb-8 flex items-center gap-3">
-                    <span className="material-symbols-outlined text-lime-400">
-                        history_edu
-                    </span>
-                    Recent Mission Feed
-                </h2>
-
-                <div className="space-y-4">
-                    {recentMissions.map((mission) => (
-                        <div
-                            key={mission.id}
-                            className="flex flex-wrap items-center justify-between p-6 bg-slate-950 border-2 border-slate-800 rounded-2xl hover:border-purple-500 transition-all group"
-                        >
-                            <div className="flex items-center gap-6">
-                                <div
-                                    className={`w-14 h-14 rounded-2xl flex items-center justify-center border-4 border-slate-950 shadow-[4px_4px_0_0_#020617] ${mission.status === "Critical" ? "bg-rose-500" : "bg-lime-400"}`}
-                                >
-                                    <span className="material-symbols-outlined text-slate-950 font-bold">
-                                        {mission.status === "Critical"
-                                            ? "priority_high"
-                                            : "rocket_launch"}
-                                    </span>
-                                </div>
-                                <div>
-                                    <p className="text-white font-black uppercase italic text-lg tracking-tight">
-                                        {mission.student}
-                                    </p>
-                                    <p className="text-slate-500 text-xs font-black uppercase tracking-widest">
-                                        {mission.task}
-                                    </p>
-                                </div>
-                            </div>
-                            <div className="text-right">
-                                <p
-                                    className={`text-2xl font-black italic tracking-tighter ${mission.status === "Critical" ? "text-rose-400" : "text-lime-400"}`}
-                                >
-                                    {mission.score}
-                                </p>
-                                <p className="text-slate-600 text-[10px] font-black uppercase tracking-widest">
-                                    {mission.time}
-                                </p>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-
-                <button className="mt-10 w-full bg-slate-950 border-4 border-slate-800 p-4 rounded-2xl text-slate-500 font-black uppercase italic text-sm tracking-widest hover:text-white hover:border-purple-500 transition-all">
-                    View Intelligence Archive
-                </button>
-            </div> */}
         </DashboardLayout>
     );
 }

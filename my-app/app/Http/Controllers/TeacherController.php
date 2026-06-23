@@ -79,10 +79,16 @@ class TeacherController extends Controller
             }
         }
 
-        $teacher = auth()->user();
+        $topStudents = \DB::table('students')
+            ->join('users', 'users.id', '=', 'students.user_id')
+            ->where('users.role', 'student')
+            ->orderBy('students.points', 'desc')
+            ->limit(50)
+            ->select('users.name', 'students.section', 'students.points', 'students.wordBlastAcc', 'students.storyQuestAcc')
+            ->get();
 
         return Inertia::render('Teacher/Dashboard', [
-            'teacherName' => $teacher->name,
+            'topStudents' => $topStudents,
             'totalStudents' => $totalStudents,
             'avgReadAccuracy' => round($avgReadAccuracy, 2),
             'avgSpeakAccuracy' => round($avgSpeakAccuracy, 2),
