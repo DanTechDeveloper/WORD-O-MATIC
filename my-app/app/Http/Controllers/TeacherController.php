@@ -72,7 +72,7 @@ class TeacherController extends Controller
 
             if ($avg >= 80) {
                 $onTrack++;
-            } elseif ($avg >= 60) {
+            } else if ($avg >= 60) {
                 $needsSupport++;
             } else {
                 $atRisk++;
@@ -144,29 +144,48 @@ class TeacherController extends Controller
     {
         $user = User::with(['student'])->findOrFail($studentId);
 
-        // Fetch all modules and their words
+        // Read Curriculum: from student_word_mastery
         $modules = WordModule::with('words')->orderBy('level', 'asc')->get();
 
-        // Fetch word-level progress for this student
-        $progress = \DB::table('student_word_mastery')
+        $masteryProgress = \DB::table('student_word_mastery')
             ->where('user_id', $studentId)
             ->get()
             ->groupBy('word_id');
 
-        $curriculum = $modules->map(function ($module) use ($progress) {
+        $readCurriculum = $modules->map(function ($module) use ($masteryProgress) {
             return [
                 'level' => "Level {$module->level}: {$module->title}",
-                'mastered' => $module->words->filter(function ($word) use ($progress) {
-                    return isset($progress[$word->id]) && $progress[$word->id][0]->status === 'mastered';
+                'mastered' => $module->words->filter(function ($word) use ($masteryProgress) {
+                    return isset($masteryProgress[$word->id]) && $masteryProgress[$word->id][0]->status === 'mastered';
                 })->pluck('word')->values(),
-                'training' => $module->words->filter(function ($word) use ($progress) {
-                    return ! isset($progress[$word->id]) || $progress[$word->id][0]->status === 'training';
+                'training' => $module->words->filter(function ($word) use ($masteryProgress) {
+                    return isset($masteryProgress[$word->id]) && $masteryProgress[$word->id][0]->status === 'training';
                 })->pluck('word')->values(),
             ];
         });
 
+        // Speak Curriculum: from student_paragraph_progress
+        $paragraphModules = ParagraphModule::orderBy('level', 'asc')->get();
+        $paragraphProgress = StudentParagraphProgress::where('user_id', $studentId)
+            ->get()
+            ->keyBy('paragraph_module_id');
+
+        $speakCurriculum = $paragraphModules->map(function ($module) use ($paragraphProgress) {
+            $progress = $paragraphProgress->get($module->id);
+            return [
+                'level' => "Level {$module->level}: {$module->title}",
+                'status' => $progress ? $progress->status : 'locked',
+                'words_smashed' => $progress ? $progress->words_smashed : 0,
+                'accuracy' => $progress ? $progress->accuracy : 0,
+                'total_score' => $module->total_score,
+            ];
+        });
+
         return Inertia::render('Teacher/StudentDetails', [
-            'data' => array_merge($user->toArray(), ['curriculum' => $curriculum]),
+            'data' => array_merge($user->toArray(), [
+                'readCurriculum' => $readCurriculum,
+                'speakCurriculum' => $speakCurriculum,
+            ]),
         ]);
     }
 

@@ -3,10 +3,12 @@
 namespace Database\Seeders;
 
 use App\Models\User;
+use App\Models\Word;
 use App\Models\WordModule;
 use App\Models\ParagraphModule;
 use App\Models\StudentWordProgress;
 use App\Models\StudentParagraphProgress;
+use App\Models\StudentWordMastery;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -24,6 +26,19 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $wordModules = [];
+        $wordsByModule = [
+            1 => ['cat', 'dog', 'sun', 'hat', 'run', 'big', 'red', 'cup', 'box', 'pen'],
+            2 => ['cake', 'tree', 'kite', 'road', 'cube', 'rain', 'boat', 'seed', 'lime', 'bone'],
+            3 => ['star', 'drum', 'frog', 'milk', 'nest', 'sand', 'belt', 'fist', 'golf', 'hand'],
+            4 => ['grass', 'train', 'plate', 'broom', 'snake', 'grape', 'trail', 'flame', 'clamp', 'brick'],
+            5 => ['rabbit', 'window', 'pencil', 'basket', 'kitten', 'napkin', 'picnic', 'helmet', 'muffin', 'lantern'],
+            6 => ['replay', 'prefix', 'unseen', 'redo', 'undo', 'preview', 'unhappy', 'reload', 'rewrite', 'subway', 'midair', 'midday', 'outrun', 'outside', 'overact'],
+            7 => ['slowly', 'joyful', 'fearless', 'quickly', 'useful', 'careful', 'loudly', 'kindly', 'sadly', 'painful', 'weakly', 'lovely', 'helpless', 'powerful', 'gladly'],
+            8 => ['rainbow', 'sunset', 'popcorn', 'bedroom', 'toothbrush', 'football', 'pancake', 'firefly', 'starfish', 'cupcake', 'airplane', 'snowman', 'bookshelf', 'earring', 'moonlight'],
+            9 => ['explore', 'beautiful', 'adventure', 'dinosaur', 'enormous', 'fantastic', 'astronaut', 'discover', 'important', 'vegetable', 'volcano', 'tropical', 'magnificent', 'mysterious', 'extraordinary', 'courageous', 'legendary', 'remarkable', 'spectacular', 'unbelievable'],
+            10 => ['perseverance', 'accomplishment', 'extraordinary', 'responsibility', 'determination', 'communication', 'collaboration', 'environment', 'celebration', 'imagination', 'investigation', 'organization', 'transformation', 'appreciation', 'multiplication', 'transportation', 'pronunciation', 'experimentation', 'interpretation', 'representation'],
+        ];
+
         foreach (range(1, 10) as $level) {
             $wordModules[$level] = WordModule::create([
                 'level' => $level,
@@ -41,6 +56,15 @@ class DatabaseSeeder extends Seeder
                 },
                 'total_points' => $level <= 5 ? 10 : ($level <= 8 ? 15 : 20),
             ]);
+
+            foreach ($wordsByModule[$level] as $position => $word) {
+                Word::create([
+                    'word_module_id' => $wordModules[$level]->id,
+                    'word' => $word,
+                    'points' => 1,
+                    'position' => $position + 1,
+                ]);
+            }
         }
 
         $paragraphModules = [];
@@ -124,6 +148,16 @@ class DatabaseSeeder extends Seeder
                     'words_smashed' => $smashed,
                     'accuracy' => $wAcc,
                 ]);
+
+                $words = Word::where('word_module_id', $wordModules[$i]->id)->get();
+                foreach ($words as $word) {
+                    $isMastered = (rand(0, 99) < $wAcc);
+                    StudentWordMastery::create([
+                        'user_id' => $user->id,
+                        'word_id' => $word->id,
+                        'status' => $isMastered ? 'mastered' : 'training',
+                    ]);
+                }
 
                 $totalWordsSmashed += $smashed;
             }
