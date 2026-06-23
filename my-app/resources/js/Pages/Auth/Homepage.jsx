@@ -4,12 +4,12 @@ import { Head, useForm, Link } from "@inertiajs/react";
 const features = [
     {
         icon: "📖",
-        title: "Read Mode",
+        title: "WORD BLAST Mode",
         desc: "Build vocabulary through engaging reading exercises with real-time pronunciation guidance.",
     },
     {
         icon: "🎤",
-        title: "Speak Mode",
+        title: "STORY QUEST Mode",
         desc: "Practice speaking with AI-powered feedback to improve fluency and confidence.",
     },
     {

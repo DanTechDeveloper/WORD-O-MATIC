@@ -5,12 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\Badges;
 use App\Models\GameSession;
 use App\Models\ParagraphModule;
-use App\Models\StudentProfile;
+use App\Models\PracticeWordSet;
 use App\Models\StudentParagraphProgress;
+use App\Models\StudentProfile;
 use App\Models\StudentWordMastery;
 use App\Models\StudentWordProgress;
 use App\Models\WordModule;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -381,6 +381,15 @@ class StudentController extends Controller
         }
 
         return $redirect;
+    }
+
+    public function practiceRead()
+{
+        $practiceSet = PracticeWordSet::with('words')->where('slug', 'tutorial-practice')->firstOrFail();
+
+        return Inertia::render('Student/PracticeRead', [
+            'module' => $practiceSet,
+        ]);
     }
 
     public function results($id)

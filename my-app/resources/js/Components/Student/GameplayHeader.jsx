@@ -44,7 +44,7 @@ const GameplayHeader = memo(function GameplayHeader({
         <>
             {/* ───── Mobile layout ───── */}
             <div className="mt-3 w-full max-w-7xl mx-auto flex items-center justify-between gap-2 mb-4 px-2 lg:hidden">
-                {/* Settings + Words Smashed */}
+                {/* Settings + Words Smashed
                 <div className="flex items-center gap-2">
                     <button
                         type="button"
@@ -80,7 +80,7 @@ const GameplayHeader = memo(function GameplayHeader({
                             </div>
                         </div>
                     </div>
-                </div>
+                </div> */}
 
                 {/* Level Title */}
                 <div className="bg-on-background/10 backdrop-blur-sm px-3 py-1 rounded-full border-2 border-on-background/20 shadow-md">
@@ -107,9 +107,8 @@ const GameplayHeader = memo(function GameplayHeader({
 
             {/* ───── Desktop layout ───── */}
             <div className="hidden lg:flex mt-3 sm:mt-4 md:mt-6 w-full max-w-7xl mx-auto flex-wrap items-center justify-between gap-3 sm:gap-4 md:gap-6 mb-6 sm:mb-8 md:mb-12 px-2 sm:px-0">
-                {/* Settings + Words Smashed */}
                 <div className="flex items-center gap-3 sm:gap-4 md:gap-6">
-                    <button
+                    {/* <button
                         type="button"
                         onClick={onOpenSettings}
                         className="group flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 bg-on-background/5 backdrop-blur-md rounded-2xl border-2 border-on-background/10 shadow-2xl hover:bg-on-background/10 transition-all active:scale-95"
@@ -117,7 +116,7 @@ const GameplayHeader = memo(function GameplayHeader({
                         <span className="material-symbols-outlined text-on-background/80 group-hover:text-on-background text-2xl sm:text-3xl">
                             settings
                         </span>
-                    </button>
+                    </button> */}
 
                     <div className="flex items-center gap-2 sm:gap-3 md:gap-4 bg-on-background/5 backdrop-blur-md p-2 sm:p-3 md:p-4 rounded-2xl border-2 border-on-background/10 shadow-2xl">
                         <div className="bg-primary p-1 sm:p-2 rounded-xl flex items-center justify-center shadow-[0_0_15px_rgba(var(--primary-rgb),0.5)]">

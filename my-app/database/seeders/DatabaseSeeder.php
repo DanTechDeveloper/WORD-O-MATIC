@@ -6,6 +6,8 @@ use App\Models\User;
 use App\Models\Word;
 use App\Models\WordModule;
 use App\Models\ParagraphModule;
+use App\Models\PracticeWordSet;
+use App\Models\PracticeWord;
 use App\Models\StudentWordProgress;
 use App\Models\StudentParagraphProgress;
 use App\Models\StudentWordMastery;
@@ -89,7 +91,7 @@ class DatabaseSeeder extends Seeder
         }
 
         $students = [
-            ['name' => 'Dan', 'student_id' => 'STU-001', 'pin' => '1234', 'section' => 'Sector 7-G', 'wordBlastAcc' => 92, 'storyQuestAcc' => 88, 'status' => 'onTrack', 'avatar' => '/images/avatars/ana/head.png'],
+            ['name' => 'Dan', 'student_id' => 'STU-001', 'pin' => '1234', 'section' => 'Sector 7-G', 'wordBlastAcc' => 92, 'storyQuestAcc' => 88, 'status' => 'onTrack', 'avatar' => null],
             ['name' => 'Bianca Cruz', 'student_id' => 'STU-002', 'pin' => '1234', 'section' => 'Sector 7-G', 'wordBlastAcc' => 45, 'storyQuestAcc' => 52, 'status' => 'atRisk', 'avatar' => '/images/avatars/juan/head.png'],
             ['name' => 'Carlos Diaz', 'student_id' => 'STU-003', 'pin' => '1234', 'section' => 'Sector 7-G', 'wordBlastAcc' => 68, 'storyQuestAcc' => 72, 'status' => 'support', 'avatar' => '/images/avatars/kyle/head.png'],
             ['name' => 'Diana Lim', 'student_id' => 'STU-004', 'pin' => '1234', 'section' => 'Sector 7-G', 'wordBlastAcc' => 0.0, 'storyQuestAcc' => 0.0, 'status' => 'notStarted', 'avatar' => '/images/avatars/leo/head.png'],
@@ -189,6 +191,21 @@ class DatabaseSeeder extends Seeder
                 'wordBlastAcc' => $wAcc,
                 'storyQuestAcc' => $sAcc,
                 'section' => $data['section'],
+            ]);
+        }
+
+        $practiceSet = PracticeWordSet::create([
+            'name' => 'Tutorial Practice',
+            'slug' => 'tutorial-practice',
+            'total_words' => 5,
+        ]);
+
+        $practiceWords = ['cat', 'dog', 'sun', 'hat', 'run'];
+        foreach ($practiceWords as $position => $word) {
+            PracticeWord::create([
+                'practice_word_set_id' => $practiceSet->id,
+                'word' => $word,
+                'position' => $position + 1,
             ]);
         }
 
