@@ -36,7 +36,7 @@ class TeacherController extends Controller
             $avgRead = $sectionStudents->avg('wordBlastAcc');
             $avgSpeak = $sectionStudents->avg('storyQuestAcc');
 
-            if ($avgRead === null && $avgSpeak === null) {
+            if ($avgRead === null && $avgSpeak === null || ($avgRead == 0.0 && $avgSpeak == 0.0)) {
                 $status = 'Not Started';
             } else {
                 $overall = (($avgRead ?? 0) + ($avgSpeak ?? 0)) / 2;

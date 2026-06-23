@@ -264,7 +264,7 @@ export default function StudentDetail({ data }) {
                         <span className="material-symbols-outlined font-black">
                             menu_book
                         </span>
-                        Read Mode
+                        WORD BLAST
                     </button>
                     <button
                         onClick={() => setActiveMode("speak")}
@@ -277,7 +277,7 @@ export default function StudentDetail({ data }) {
                         <span className="material-symbols-outlined font-black">
                             mic
                         </span>
-                        Speak Mode
+                        STORY QUEST
                     </button>
                 </div>
             </div>
