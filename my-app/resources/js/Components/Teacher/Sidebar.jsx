@@ -1,7 +1,8 @@
 import { Link, usePage } from "@inertiajs/react";
 
 export default function Sidebar({ isOpen, onClose }) {
-    const { url } = usePage();
+    const { url, props } = usePage();
+    const teacherName = props.auth?.user?.name;
 
     const activeClass =
         "bg-lime-400 text-slate-950 border-2 border-slate-950 shadow-[6px_6px_0_0_#3f6212] flex items-center gap-3 p-4 rounded-lg font-black font-lexend text-xs uppercase tracking-wider translate-x-[-2px] translate-y-[-2px]";
@@ -75,14 +76,14 @@ export default function Sidebar({ isOpen, onClose }) {
                 </nav>
                 <div className="mt-auto pt-6 border-t border-slate-900 space-y-4">
                     <div className="flex items-center gap-3 p-2 bg-surface-container-low rounded-xl border-2 border-slate-900">
-                        <img
-                            alt="Robot Assistant"
-                            className="w-10 h-10 rounded-full border-2 border-primary"
-                            src="https://lh3.googleusercontent.com/aida-public/AB6AXuDkJBlY-tbUv6KRQhxs9bCk6UOZ6lhk8KWzuzglRduGBOcF-rM6MrGKR9SQibk9T4cxhHQ2j5acOtReU829kBe2n5qIOcEYn8HlUBCYj33A2kZyqw-I1JsPf_36atkx5dAu-sCb2yP1381MBsN7anYHhaVa6ZHh5p5s1SDrL6aS-z-GOyfs4x3ulxijHsbuiH37ObN6QWN1x_yEZN6zaBdZd6MMpO-SccJOWJLjDWLZs4TFr6hoK7-DDCw4XzI6p3wJhy90kz2JDdB3"
-                        />
-                        <div>
-                            <p className="font-headline-md text-xs text-on-surface">
-                                Faculty Member
+                        <div className="w-10 h-10 rounded-full bg-purple-500/20 border-2 border-purple-500/40 flex items-center justify-center shrink-0">
+                            <span className="material-symbols-outlined text-purple-400 text-xl">
+                                school
+                            </span>
+                        </div>
+                        <div className="min-w-0">
+                            <p className="font-headline-md text-xs text-on-surface truncate">
+                                {teacherName || "Faculty Member"}
                             </p>
                             <p className="text-[10px] text-slate-500 uppercase font-black">
                                 Academic Session
