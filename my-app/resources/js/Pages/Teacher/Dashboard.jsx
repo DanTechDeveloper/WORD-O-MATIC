@@ -36,13 +36,13 @@ export default function Dashboard({
             color: "text-blue-400",
         },
         {
-            label: "Total AVG Read Score",
+            label: "Total AVG Word Blast Score",
             value: `${avgReadAccuracy}%`,
             icon: "auto_stories",
             color: "text-purple-400",
         },
         {
-            label: "Total AVG Speak Score",
+            label: "Total AVG Story Quest Score",
             value: `${avgSpeakAccuracy}%`,
             icon: "record_voice_over",
             color: "text-lime-400",
@@ -77,32 +77,7 @@ export default function Dashboard({
         },
     ];
 
-    const recentMissions = [
-        {
-            id: 1,
-            student: "Leo Jupiter",
-            task: "Vowel Voyagers",
-            score: "92%",
-            time: "2 mins ago",
-            status: "Success",
-        },
-        {
-            id: 2,
-            student: "Nova Starlight",
-            task: "Consonant Cluster",
-            score: "45%",
-            time: "15 mins ago",
-            status: "Critical",
-        },
-        {
-            id: 3,
-            student: "Orion Mars",
-            task: "Sentence Sector 4",
-            score: "78%",
-            time: "1 hour ago",
-            status: "Success",
-        },
-    ];
+    
 
     return (
         <DashboardLayout>
@@ -243,20 +218,18 @@ export default function Dashboard({
                                     Section
                                 </th>
                                 <th className="px-6 py-4 text-slate-500 font-black uppercase text-xs tracking-widest text-center">
-                                    Students
+                                    Total Students
                                 </th>
                                 <th className="px-6 py-4 text-slate-500 font-black uppercase text-xs tracking-widest">
-                                    Avg. Read Mode
+                                    AVG. WORD BLAST
                                 </th>
                                 <th className="px-6 py-4 text-slate-500 font-black uppercase text-xs tracking-widest">
-                                    Avg. Speak Mode
+                                    AVG. STORY QUEST
                                 </th>
                                 <th className="px-6 py-4 text-slate-500 font-black uppercase text-xs tracking-widest">
-                                    Status
+                                    FINAL STATUS
                                 </th>
-                                <th className="px-6 py-4 text-slate-500 font-black uppercase text-xs tracking-widest">
-                                    Total Points
-                                </th>
+                            
                             </tr>
                         </thead>
                         <tbody className="divide-y-2 divide-slate-800/50">
@@ -296,9 +269,6 @@ export default function Dashboard({
                                             >
                                                 {item.status}
                                             </span>
-                                        </td>
-                                        <td className="px-6 py-4 text-yellow-400 font-black italic">
-                                            {item.total_points.toLocaleString()}
                                         </td>
                                     </tr>
                                 ))}

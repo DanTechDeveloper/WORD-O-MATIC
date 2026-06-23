@@ -93,8 +93,8 @@ class TeacherController extends Controller
                 'id' => $user->id,
                 'fullName' => $user->name,
                 'studentID' => $user->student_id,
-                'wordRisk' => $user->student?->wordRisk ?? 'na',
-                'paragraphRisk' => $user->student?->paragraphRisk ?? 'na',
+                'wordBlastAcc' => $user->student?->wordBlastAcc ?? 'na',
+                'storyQuestAcc' => $user->student?->storyQuestAcc ?? 'na',
                 'status' => $user->student?->status ?? 'notStarted',
             ]);
 
@@ -152,12 +152,11 @@ class TeacherController extends Controller
         $student->student()->create([
             'points' => 0,
             'avatar' => null,
-            'last_active_level' => null,
             'read_progress' => 0,
             'speak_progress' => 0,
             'status' => 'notStarted',
-            'wordRisk' => 'N/A',
-            'paragraphRisk' => 'N/A',
+            'wordBlastAcc' => 0.0,
+            'storyQuestAcc' => 0.0,
             'section' => $request->section,
         ]);
 

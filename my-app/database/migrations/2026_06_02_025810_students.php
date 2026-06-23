@@ -19,13 +19,13 @@ return new class extends Migration
             $table->unsignedInteger('speak_progress')->default(0);
             $table->string('badges')->nullable();
             $table->unsignedInteger('words_smashed')->default(0);
-            $table->decimal('accuracy', 5, 2)->default(0);
             $table->unsignedInteger('read_level')->default(1);
             $table->unsignedInteger('speak_level')->default(1);
             $table->string('section')->nullable();
-            $table->enum('status', ['atRisk', 'excellent', 'support', 'notStarted'])->default('notStarted');
-            $table->enum('wordRisk', ['high', 'moderate', 'low', 'N/A'])->default('N/A');
-            $table->enum('paragraphRisk', ['high', 'moderate', 'low', 'N/A'])->default('N/A');
+            $table->enum('status', ['atRisk', 'support', 'onTrack', 'notStarted'])->default('notStarted');
+            $table->decimal('wordBlastAcc', 5, 2)->default(0);
+            $table->decimal('storyQuestAcc', 5, 2)->default(0);
+            $table->timestamp('tutorial_completed_at')->nullable();
 
             $table->timestamps();
         });

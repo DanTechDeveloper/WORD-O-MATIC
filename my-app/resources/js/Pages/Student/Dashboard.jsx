@@ -54,7 +54,7 @@ export default function Dashboard({ data }) {
                             </div>
                             <div>
                                 <h3 className="text-xl font-bold text-secondary">
-                                    Read Mode
+                                    WORD BLAST
                                 </h3>
                                 <p className="text-xs text-on-surface-variant font-medium">
                                     Explore Galaxies
@@ -72,15 +72,15 @@ export default function Dashboard({ data }) {
                                         fontVariationSettings: "'FILL' 1",
                                     }}
                                 >
-                                    record_voice_over
+                                    mic
                                 </span>
                             </div>
                             <div>
                                 <h3 className="text-xl font-bold text-lime-400">
-                                    Speak Mode
+                                    STORY QUEST
                                 </h3>
                                 <p className="text-xs text-on-surface-variant font-medium">
-                                    Cosmic Comms
+                                    Embark on a narrative journey!
                                 </p>
                             </div>
                         </Link>

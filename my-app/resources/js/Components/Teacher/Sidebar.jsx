@@ -12,9 +12,9 @@ export default function Sidebar({ isOpen, onClose }) {
         { label: "Dashboard", href: "/teacher/dashboard", icon: "dashboard" },
         // { label: "Classes", href: "/teacher/classes", icon: "groups" },
         { label: "Students", href: "/teacher/students", icon: "person" },
-        { label: "Word Modules", href: "/teacher/wordModules", icon: "abc" },
+        { label: "WORD BLAST", href: "/teacher/wordModules", icon: "abc" },
         {
-            label: "Paragraph Modules",
+            label: "STORY QUEST",
             href: "/teacher/paragraphModules",
             icon: "description",
         },

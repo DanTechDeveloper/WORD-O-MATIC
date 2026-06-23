@@ -4,6 +4,7 @@ import { useState } from "react";
 import AddStudentModal from "@/Components/Teacher/AddStudentModal";
 
 export default function Students({ data }) {
+    console.log(data);
     const riskStyles = {
         high: {
             dot: "bg-error shadow-[0_0_8px_#ffb4ab]",
@@ -200,7 +201,7 @@ export default function Students({ data }) {
                                                     className={`w-2.5 h-2.5 rounded-full ${wRisk.dot}`}
                                                 ></div>
                                                 <span className="text-[10px] text-slate-500 font-label-bold uppercase">
-                                                    Word:
+                                                    Word Blast Accuracy:
                                                 </span>
                                                 <span
                                                     className={`font-label-bold text-xs ${wRisk.text} uppercase`}
@@ -215,7 +216,7 @@ export default function Students({ data }) {
                                                     className={`w-2.5 h-2.5 rounded-full ${pRisk.dot}`}
                                                 ></div>
                                                 <span className="text-[10px] text-slate-500 font-label-bold uppercase">
-                                                    Para:
+                                                    Story Quest Accuracy:
                                                 </span>
                                                 <span
                                                     className={`font-label-bold text-xs ${pRisk.text} uppercase`}
@@ -246,13 +247,13 @@ export default function Students({ data }) {
                                     Name
                                 </th>{" "}
                                 <th className="px-6 py-5 font-headline-md text-sm uppercase tracking-widest text-lime-400">
-                                    Word Risk
+                                    Word Blast Accuracy
                                 </th>
                                 <th className="px-6 py-5 font-headline-md text-sm uppercase tracking-widest text-lime-400">
-                                    Paragraph Risk
+                                    Story Quest Accuracy
                                 </th>
                                 <th className="px-6 py-5 font-headline-md text-sm uppercase tracking-widest text-lime-400">
-                                    Status
+                                    Final Status
                                 </th>
                                 <th className="px-6 py-5 font-headline-md text-sm uppercase tracking-widest text-lime-400">
                                     Action

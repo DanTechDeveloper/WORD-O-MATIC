@@ -45,10 +45,10 @@ export default function Word({ modules }) {
         <DashboardLayout>
             <div className="mb-10">
                 <h1 className="text-3xl md:text-4xl font-black text-white uppercase italic tracking-tighter mb-2">
-                    Vocabulary Modules
+                    WORD BLAST Modules
                 </h1>
                 <p className="text-slate-500 font-black uppercase text-xs tracking-widest">
-                    Manage word lists for each academic level.
+                    Manage word blast lists for each academic level.
                 </p>
             </div>
 

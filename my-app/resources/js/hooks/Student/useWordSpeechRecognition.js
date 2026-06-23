@@ -88,7 +88,7 @@ export function useWordSpeechRecognition({
                 // Track whether we matched across all results in this event
                 let matchedThisEvent = false;
                 let latestTranscript = "";
-
+                console.log(event);
                 for (let i = event.resultIndex; i < event.results.length; ++i) {
                     if (i <= lastProcessedIndexRef.current) continue;
 

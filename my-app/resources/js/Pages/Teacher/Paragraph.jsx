@@ -63,10 +63,10 @@ export default function Paragraph({ modules }) {
             <DashboardLayout>
                 <div className="mb-10">
                     <h1 className="text-3xl md:text-4xl font-black text-white uppercase italic tracking-tighter mb-2">
-                        Sentence Modules
+                        STORY QUEST's Modules
                     </h1>
                     <p className="text-slate-500 font-black uppercase text-xs tracking-widest">
-                        Manage paragraph content and point values for each
+                        Manage story quest's content and point values for each
                         level.
                     </p>
                 </div>

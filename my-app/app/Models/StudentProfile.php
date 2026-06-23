@@ -21,8 +21,8 @@ class StudentProfile extends Model
         'speak_progress',
         'badges',
         'status',
-        'wordRisk',
-        'paragraphRisk',
+        'wordBlastAcc',
+        'storyQuestAcc',
         'words_smashed',
         'accuracy',
         'read_level',
@@ -66,6 +66,8 @@ class StudentProfile extends Model
         $progress->status = 'completed';
         $progress->save();
 
+        $this->update(['wordBlastAcc' => $accuracy]);
+
         if ($module->level >= $this->read_level) {
             $this->update([
                 'read_level' => $module->level + 1,
@@ -93,6 +95,8 @@ class StudentProfile extends Model
 
         $progress->status = 'completed';
         $progress->save();
+
+        $this->update(['storyQuestAcc' => $accuracy]);
 
         // 2. I-update ang speak_level at total points
         if ($module->level >= $this->speak_level) {
