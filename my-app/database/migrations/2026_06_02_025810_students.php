@@ -28,6 +28,7 @@ return new class extends Migration
             $table->timestamp('tutorial_completed_at')->nullable();
 
             $table->timestamps();
+            
         });
     }
 

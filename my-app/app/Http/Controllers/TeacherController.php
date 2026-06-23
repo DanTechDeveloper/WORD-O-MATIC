@@ -16,31 +16,39 @@ class TeacherController extends Controller
     public function dashboard()
     {
         $totalStudents = User::where('role', 'student')->count();
-        $avgReadAccuracy = StudentWordProgress::avg('accuracy') ?? 0;
-        $avgSpeakAccuracy = StudentParagraphProgress::avg('accuracy') ?? 0;
-        $totalClassPoints = (StudentWordProgress::sum('words_smashed') ?? 0) +
-        (StudentParagraphProgress::sum('words_smashed') ?? 0);
+
+        $allStudents = \DB::table('students')
+            ->join('users', 'users.id', '=', 'students.user_id')
+            ->where('users.role', 'student')
+            ->select('students.*')
+            ->get();
+
+        $avgReadAccuracy = $allStudents->avg('wordBlastAcc') ?? 0;
+        $avgSpeakAccuracy = $allStudents->avg('storyQuestAcc') ?? 0;
+        $totalClassPoints = $allStudents->sum('points') ?? 0;
 
         // Section Performance Aggregation
-        $sections = \DB::table('students')->select('section')->distinct()->pluck('section');
+        $sections = $allStudents->pluck('section')->unique()->filter();
 
-        $sectionPerformance = $sections->map(function ($section) {
-            $studentIds = \DB::table('students')->where('section', $section)->pluck('user_id');
+        $sectionPerformance = $sections->map(function ($section) use ($allStudents) {
+            $sectionStudents = $allStudents->where('section', $section);
 
-            $readAcc = StudentWordProgress::whereIn('user_id', $studentIds)->avg('accuracy') ?? 0;
-            $speakAcc = StudentParagraphProgress::whereIn('user_id', $studentIds)->avg('accuracy') ?? 0;
-            $points = (StudentWordProgress::whereIn('user_id', $studentIds)->sum('words_smashed') ?? 0) +
-                      (StudentParagraphProgress::whereIn('user_id', $studentIds)->sum('words_smashed') ?? 0);
+            $avgRead = $sectionStudents->avg('wordBlastAcc');
+            $avgSpeak = $sectionStudents->avg('storyQuestAcc');
 
-            $overall = ($readAcc + $speakAcc) / 2;
-            $status = $overall >= 80 ? 'On Track' : ($overall >= 60 ? 'Needs Support' : 'At Risk');
+            if ($avgRead === null && $avgSpeak === null) {
+                $status = 'Not Started';
+            } else {
+                $overall = (($avgRead ?? 0) + ($avgSpeak ?? 0)) / 2;
+                $status = $overall >= 80 ? 'On Track' : ($overall >= 60 ? 'Needs Support' : 'At Risk');
+            }
 
             return [
                 'section' => $section,
-                'student_count' => $studentIds->count(),
-                'avg_read' => round($readAcc, 2),
-                'avg_speak' => round($speakAcc, 2),
-                'total_points' => $points,
+                'student_count' => $sectionStudents->count(),
+                'avg_read' => round($avgRead ?? 0, 2),
+                'avg_speak' => round($avgSpeak ?? 0, 2),
+                'total_points' => $sectionStudents->sum('points'),
                 'status' => $status,
             ];
         });
@@ -49,11 +57,18 @@ class TeacherController extends Controller
         $atRisk = 0;
         $needsSupport = 0;
         $onTrack = 0;
-        $allStudents = \DB::table('students')->get();
+        $notStarted = 0;
+
         foreach ($allStudents as $s) {
-            $r = StudentWordProgress::where('user_id', $s->user_id)->avg('accuracy') ?? 0;
-            $sp = StudentParagraphProgress::where('user_id', $s->user_id)->avg('accuracy') ?? 0;
-            $avg = ($r + $sp) / 2;
+            $r = $s->wordBlastAcc;
+            $sp = $s->storyQuestAcc;
+
+            if ($r == 0 && $sp == 0) {
+                $notStarted++;
+                continue;
+            }
+
+            $avg = (($r ?? 0) + ($sp ?? 0)) / 2;
 
             if ($avg >= 80) {
                 $onTrack++;
@@ -64,13 +79,17 @@ class TeacherController extends Controller
             }
         }
 
+        $teacher = auth()->user();
+
         return Inertia::render('Teacher/Dashboard', [
+            'teacherName' => $teacher->name,
             'totalStudents' => $totalStudents,
             'avgReadAccuracy' => round($avgReadAccuracy, 2),
             'avgSpeakAccuracy' => round($avgSpeakAccuracy, 2),
             'totalClassPoints' => $totalClassPoints,
-            'sectionPerformance' => $sectionPerformance,
+            'sectionPerformance' => $sectionPerformance->values(),
             'chartCounts' => [
+                'notStarted' => $notStarted,
                 'atRisk' => $atRisk,
                 'needsSupport' => $needsSupport,
                 'onTrack' => $onTrack,
@@ -93,14 +112,32 @@ class TeacherController extends Controller
                 'id' => $user->id,
                 'fullName' => $user->name,
                 'studentID' => $user->student_id,
-                'wordBlastAcc' => $user->student?->wordBlastAcc ?? 'na',
-                'storyQuestAcc' => $user->student?->storyQuestAcc ?? 'na',
-                'status' => $user->student?->status ?? 'notStarted',
+                'avatar' => $user->student?->avatar,
+                'section' => $user->student?->section ?? '',
+                'rotation' => 'rotate-[' . rand(-3, 3) . 'deg]',
+                'wordBlastAcc' => $user->student?->wordBlastAcc,
+                'storyQuestAcc' => $user->student?->storyQuestAcc,
+                'status' => $this->computeStatus($user->student?->status ?? 'notStarted'),
             ]);
 
         return Inertia::render('Teacher/Students', [
             'data' => $students,
         ]);
+    }
+
+    private function computeStatus(string $status): array
+    {
+        $labels = [
+            'onTrack' => 'On Track',
+            'atRisk' => 'At Risk',
+            'support' => 'Needs Support',
+            'notStarted' => 'Not Started',
+        ];
+
+        return [
+            'type' => $status,
+            'label' => $labels[$status] ?? 'Not Started',
+        ];
     }
 
     public function show($studentId)

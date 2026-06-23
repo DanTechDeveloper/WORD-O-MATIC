@@ -20,14 +20,10 @@ export default function Dashboard({
     totalClassPoints,
     sectionPerformance = [],
     chartCounts,
+    teacherName,
 }) {
     const [selectedSection, setSelectedSection] = useState("");
-    const sectionList = [
-        { section: "Section-A" },
-        { section: "Section-B" },
-        { section: "Section-C" },
-        { section: "Section-D" },
-    ];
+    const sectionList = sectionPerformance.map((item) => item.section);
     const stats = [
         {
             label: "Total Students",
@@ -64,6 +60,7 @@ export default function Dashboard({
     ];
 
     const chartData = [
+        { name: "Not Started", value: chartCounts?.notStarted ?? 0, color: "#64748b" },
         { name: "At Risk", value: chartCounts?.atRisk ?? 0, color: "#fb7185" },
         {
             name: "Needs Support",
@@ -83,7 +80,7 @@ export default function Dashboard({
         <DashboardLayout>
             <div className="mb-10">
                 <h1 className="text-4xl font-black text-white uppercase italic tracking-tighter mb-2">
-                    Welcome back, Juan Dela Cruz!
+                    Welcome back, {teacherName || "Teacher"}!
                 </h1>
                 <p className="text-slate-500 font-black uppercase text-xs tracking-widest">
                     System status: Operational • Sector 7 monitoring active
@@ -196,12 +193,12 @@ export default function Dashboard({
                             onChange={(e) => setSelectedSection(e.target.value)}
                         >
                             <option value="">Filter By Section</option>
-                            {sectionList.map((sectionName) => (
+                            {sectionList.map((section) => (
                                 <option
-                                    key={sectionName.section}
-                                    value={sectionName.section}
+                                    key={section}
+                                    value={section}
                                 >
-                                    {sectionName.section}
+                                    {section}
                                 </option>
                             ))}
                         </select>
@@ -264,7 +261,9 @@ export default function Dashboard({
                                                         : item.status ===
                                                             "Needs Support"
                                                           ? "bg-amber-900/50 text-amber-400 border-amber-500"
-                                                          : "bg-rose-900/50 text-rose-400 border-rose-500"
+                                                          : item.status === "Not Started"
+                                                            ? "bg-slate-800/50 text-slate-500 border-slate-700"
+                                                            : "bg-rose-900/50 text-rose-400 border-rose-500"
                                                 }`}
                                             >
                                                 {item.status}

@@ -5,6 +5,14 @@ import AddStudentModal from "@/Components/Teacher/AddStudentModal";
 
 export default function Students({ data }) {
     console.log(data);
+
+    const computeRisk = (acc) => {
+        if (acc === null || acc === 0) return "na";
+        if (acc < 50) return "high";
+        if (acc < 75) return "moderate";
+        return "low";
+    };
+
     const riskStyles = {
         high: {
             dot: "bg-error shadow-[0_0_8px_#ffb4ab]",
@@ -26,7 +34,7 @@ export default function Students({ data }) {
 
     const statusStyles = {
         atRisk: "bg-error-container text-on-error-container border-error",
-        excellent: "bg-green-900/50 text-green-400 border-green-500",
+        onTrack: "bg-green-900/50 text-green-400 border-green-500",
         support:
             "bg-tertiary-container text-on-tertiary-container border-tertiary",
         notStarted: "bg-slate-800/50 text-slate-500 border-slate-700",
@@ -153,12 +161,12 @@ export default function Students({ data }) {
                                     student.section === selectedSection,
                             )
                             .map((student, index) => {
+                                const wAcc = student.wordBlastAcc;
+                                const pAcc = student.storyQuestAcc;
                                 const wRisk =
-                                    riskStyles[student.wordRisk] ||
-                                    riskStyles.na;
+                                    riskStyles[computeRisk(wAcc)];
                                 const pRisk =
-                                    riskStyles[student.paragraphRisk] ||
-                                    riskStyles.na;
+                                    riskStyles[computeRisk(pAcc)];
                                 const sStyle =
                                     statusStyles[student.status?.type] ||
                                     statusStyles.notStarted;
@@ -206,9 +214,9 @@ export default function Students({ data }) {
                                                 <span
                                                     className={`font-label-bold text-xs ${wRisk.text} uppercase`}
                                                 >
-                                                    {student.wordRisk === "na"
+                                                    {wAcc == null || wAcc === 0
                                                         ? "N/A"
-                                                        : student.wordRisk}
+                                                        : wAcc + "%"}
                                                 </span>
                                             </div>
                                             <div className="flex items-center gap-1.5">
@@ -221,10 +229,9 @@ export default function Students({ data }) {
                                                 <span
                                                     className={`font-label-bold text-xs ${pRisk.text} uppercase`}
                                                 >
-                                                    {student.paragraphRisk ===
-                                                    "na"
+                                                    {pAcc == null || pAcc === 0
                                                         ? "N/A"
-                                                        : student.paragraphRisk}
+                                                        : pAcc + "%"}
                                                 </span>
                                             </div>
                                             <Link
@@ -269,12 +276,12 @@ export default function Students({ data }) {
                                         student.section === selectedSection,
                                 )
                                 .map((student, index) => {
+                                    const wAcc = student.wordBlastAcc;
+                                    const pAcc = student.storyQuestAcc;
                                     const wRisk =
-                                        riskStyles[student.wordRisk] ||
-                                        riskStyles.na;
+                                        riskStyles[computeRisk(wAcc)];
                                     const pRisk =
-                                        riskStyles[student.paragraphRisk] ||
-                                        riskStyles.na;
+                                        riskStyles[computeRisk(pAcc)];
                                     const sStyle =
                                         statusStyles[student.status?.type] ||
                                         statusStyles.notStarted;
@@ -316,10 +323,9 @@ export default function Students({ data }) {
                                                     <span
                                                         className={`font-label-bold ${wRisk.text} uppercase`}
                                                     >
-                                                        {student.wordRisk ===
-                                                        "na"
+                                                        {wAcc == null || wAcc === 0
                                                             ? "N/A"
-                                                            : student.wordRisk}
+                                                            : wAcc + "%"}
                                                     </span>
                                                 </div>
                                             </td>
@@ -331,10 +337,9 @@ export default function Students({ data }) {
                                                     <span
                                                         className={`font-label-bold ${pRisk.text} uppercase`}
                                                     >
-                                                        {student.paragraphRisk ===
-                                                        "na"
+                                                        {pAcc == null || pAcc === 0
                                                             ? "N/A"
-                                                            : student.paragraphRisk}
+                                                            : pAcc + "%"}
                                                     </span>
                                                 </div>
                                             </td>
