@@ -34,7 +34,11 @@ export default function SpeakModeLevels({ modules }) {
             if (status === "completed") {
                 subTitle = "Mastered!";
                 icon = "check_circle";
-                textColor = "slate-950";
+                textColor = "slate-900";
+            } else if (status === "in_progress") {
+                subTitle = "Keep Going!";
+                icon = "pending";
+                textColor = "slate-900";
             } else if (status === "current") {
                 subTitle = "Ready to Launch 🚀";
                 icon = "rocket_launch";
@@ -224,6 +228,7 @@ export default function SpeakModeLevels({ modules }) {
                                         }}
                                         className={`group absolute w-32 h-32 flex flex-col items-center justify-center rounded-full transition-all duration-500 text-center p-2
                                                 ${mission.status === "completed" ? `bg-lime-400 border-4 border-lime-700 shadow-[4px_4px_0px_0px_#1a2e05]` : ""}
+                                                ${mission.status === "in_progress" ? `bg-amber-400 border-4 border-amber-700 shadow-[4px_4px_0px_0px_#713f12]` : ""}
                                                 ${mission.status === "current" ? `bg-secondary-container border-4 border-slate-950 shadow-[4px_4px_0px_0px_#55003d]` : ""}
                                                 ${mission.status === "locked" ? `bg-slate-950 border-4 border-dashed border-surface-variant cursor-not-allowed` : ""}
                                                 ${isFocused ? "scale-125 z-10 opacity-100" : "scale-90 opacity-40 blur-[1px] hover:opacity-70 hover:blur-0"}
@@ -236,6 +241,11 @@ export default function SpeakModeLevels({ modules }) {
                                         {mission.status === "current" && (
                                             <div className="absolute -top-4 -right-2 z-10 bg-lime-400 text-slate-950 font-black px-3 py-1 rounded-lg border-2 border-slate-950 rotate-12 shadow-[3px_3px_0px_0px_#1a2e05] text-xs">
                                                 CURRENT!
+                                            </div>
+                                        )}
+                                        {mission.status === "in_progress" && (
+                                            <div className="absolute -top-4 -right-2 z-10 bg-amber-400 text-slate-950 font-black px-3 py-1 rounded-lg border-2 border-amber-700 -rotate-6 shadow-[3px_3px_0px_0px_#713f12] text-xs">
+                                                IN PROGRESS
                                             </div>
                                         )}
                                         <span

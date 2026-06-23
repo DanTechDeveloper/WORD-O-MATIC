@@ -189,6 +189,9 @@ class StudentController extends Controller
 
             if ($progress && $progress->status === 'completed') {
                 $status = 'completed';
+            } elseif ($progress && $progress->status === 'in_progress') {
+                $status = 'in_progress';
+                $foundCurrent = true;
             } elseif (! $foundCurrent) {
                 $status = 'current';
                 $foundCurrent = true;
@@ -299,6 +302,9 @@ class StudentController extends Controller
             // Lahat ng bago mag-'current' ay 'completed', lahat ng kasunod ay 'locked'.
             if ($progress && $progress->status === 'completed') {
                 $status = 'completed';
+            } elseif ($progress && $progress->status === 'in_progress') {
+                $status = 'in_progress';
+                $foundCurrent = true;
             } elseif (! $foundCurrent) {
                 $status = 'current';
                 $foundCurrent = true;

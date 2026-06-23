@@ -63,7 +63,7 @@ class StudentProfile extends Model
             $progress->accuracy = $accuracy;
         }
 
-        $progress->status = 'completed';
+        $progress->status = $wordsSmashed >= $module->total_points ? 'completed' : 'in_progress';
         $progress->save();
 
         $this->update(['wordBlastAcc' => $accuracy]);
@@ -93,7 +93,7 @@ class StudentProfile extends Model
             $progress->accuracy = $accuracy;
         }
 
-        $progress->status = 'completed';
+        $progress->status = $wordsSmashed >= $module->total_score ? 'completed' : 'in_progress';
         $progress->save();
 
         $this->update(['storyQuestAcc' => $accuracy]);

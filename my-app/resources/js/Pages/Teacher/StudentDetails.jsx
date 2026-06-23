@@ -21,18 +21,20 @@ export default function StudentDetail({ data }) {
                 color: "text-lime-400",
             },
             {
-                label: "Accuracy",
-                value: data.student?.accuracy
-                    ? `${data.student.accuracy}%`
-                    : "0%",
-                icon: "target",
-                color: "text-cyan-400",
+                label: "Word Blast Acc",
+                value: data.student?.wordBlastAcc
+                    ? `${data.student.wordBlastAcc}%`
+                    : "N/A",
+                icon: "auto_stories",
+                color: "text-purple-400",
             },
             {
-                label: "Current Badge",
-                value: data.student?.badges || "New Recruit",
-                icon: "verified",
-                color: "text-yellow-400",
+                label: "Story Quest Acc",
+                value: data.student?.storyQuestAcc
+                    ? `${data.student.storyQuestAcc}%`
+                    : "N/A",
+                icon: "record_voice_over",
+                color: "text-cyan-400",
             },
         ],
         modes: [
