@@ -27,6 +27,7 @@ const ReadModeMainContent = memo(function ReadModeMainContent({
     const randomLeft = positions[currentIndex % positions.length];
 
     const color = FRUIT_COLORS[currentIndex % FRUIT_COLORS.length];
+    const chars = word ? word.word.split("") : [];
 
     return (
         <div className="flex-1 w-full relative overflow-hidden pointer-events-none">
@@ -49,15 +50,6 @@ const ReadModeMainContent = memo(function ReadModeMainContent({
                                 animation: fruitNinjaFall 2s ease-out forwards;
                             }
 
-                            @keyframes blast {
-                                0% { transform: scale(1); opacity: 1; filter: brightness(1); }
-                                100% { transform: scale(4.5); opacity: 0; filter: brightness(3); }
-                            }
-
-                            .animate-blast {
-                                animation: blast 0.5s ease-out forwards;
-                            }
-
                             @keyframes shake {
                                 0%, 100% { transform: translateX(0); }
                                 25% { transform: translateX(-15px); }
@@ -73,6 +65,39 @@ const ReadModeMainContent = memo(function ReadModeMainContent({
                             }
                             .animate-float-score {
                                 animation: float-score 0.5s ease-out forwards;
+                            }
+
+                            @keyframes shard {
+                                0% {
+                                    transform: translate(0,0) rotate(0deg) scale(1);
+                                    opacity: 1;
+                                    color: #ffffff;
+                                    filter: brightness(1) blur(0px);
+                                }
+                                15% {
+                                    color: #a5f3fc;
+                                    filter: brightness(2.5) blur(0px);
+                                }
+                                40% {
+                                    color: #67e8f9;
+                                    filter: brightness(3.5) blur(1px);
+                                }
+                                100% {
+                                    transform: translate(var(--sx),var(--sy)) rotate(var(--sr)) scale(2);
+                                    opacity: 0;
+                                    color: #22d3ee;
+                                    filter: brightness(5) blur(6px);
+                                }
+                            }
+                            .animate-shard {
+                                animation: shard 0.5s ease-out forwards;
+                            }
+
+                            @keyframes frost-burst {
+                                0% { opacity: 0; transform: scale(0.2); }
+                                15% { opacity: 0.7; transform: scale(1.1); }
+                                50% { opacity: 0.4; transform: scale(1.4); }
+                                100% { opacity: 0; transform: scale(2); }
                             }
                         `}
                     </style>
@@ -98,23 +123,62 @@ const ReadModeMainContent = memo(function ReadModeMainContent({
                             </div>
                         )}
 
-                        <p
-                            className={`text-5xl sm:text-7xl md:text-8xl font-black tracking-tight uppercase break-words text-center transition-all duration-300 ${
-                                isExploding ? "animate-blast" : ""
-                            } ${isMispronounced ? "animate-shake" : ""}`}
-                            style={{
-                                color: "#FFFFFF",
-                                fontFamily:
-                                    'Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif',
-                                textShadow: `
-                                    2px 2px 0px ${color.shadow},
-                                    4px 4px 0px ${color.shadow},
-                                    6px 6px 0px rgba(0,0,0,0.3)
-                                `,
-                            }}
-                        >
-                            {word.word}
-                        </p>
+                        <div className={`relative ${isMispronounced ? "animate-shake" : ""}`}>
+                            {isExploding && (
+                                <div
+                                    className="absolute inset-0 rounded-full pointer-events-none"
+                                    style={{
+                                        background:
+                                            "radial-gradient(circle, rgba(103,232,249,0.5) 0%, rgba(34,211,238,0.2) 30%, transparent 70%)",
+                                        animation: "frost-burst 0.5s ease-out forwards",
+                                    }}
+                                />
+                            )}
+                            <p
+                                className="text-5xl sm:text-7xl md:text-8xl font-black tracking-tight uppercase break-words text-center"
+                                style={{
+                                    fontFamily:
+                                        'Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif',
+                                }}
+                            >
+                                {chars.map((char, i) => {
+                                    const angle =
+                                        (i / Math.max(chars.length, 1)) * 360;
+                                    const dist = 50 + (i % 3) * 25;
+                                    const sx =
+                                        Math.cos(
+                                            (angle * Math.PI) / 180,
+                                        ) * dist;
+                                    const sy =
+                                        Math.sin(
+                                            (angle * Math.PI) / 180,
+                                        ) * dist -
+                                        40;
+                                    const sr =
+                                        (i % 2 === 0 ? 1 : -1) *
+                                        (20 + (i % 5) * 15);
+                                    return (
+                                        <span
+                                            key={i}
+                                            className={`inline-block ${isExploding ? "animate-shard" : ""}`}
+                                            style={{
+                                                animationDelay: `${i * 30}ms`,
+                                                "--sx": `${sx}px`,
+                                                "--sy": `${sy}px`,
+                                                "--sr": `${sr}deg`,
+                                                textShadow: `
+                                                    2px 2px 0px ${color.shadow},
+                                                    4px 4px 0px ${color.shadow},
+                                                    6px 6px 0px rgba(0,0,0,0.3)
+                                                `,
+                                            }}
+                                        >
+                                            {char === " " ? "\u00A0" : char}
+                                        </span>
+                                    );
+                                })}
+                            </p>
+                        </div>
                     </div>
                 </>
             ) : null}
