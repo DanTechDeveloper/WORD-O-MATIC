@@ -20,6 +20,7 @@ export default function GameplayReadMode({ module }) {
     //                           ↘ DENIED
     const [gameState, setGameState] = useState("IDLE");
     const [isMispronounced, setIsMispronounced] = useState(false);
+    const [isExploding, setIsExploding] = useState(false);
     const [showPointsFeedback, setShowPointsFeedback] = useState(false);
     const [pointsFeedbackValue, setPointsFeedbackValue] = useState(0);
     const [scoreEmphasize, setScoreEmphasize] = useState(false);
@@ -34,14 +35,21 @@ export default function GameplayReadMode({ module }) {
         currentWordIndexRef.current = currentWordIndex;
     }, [currentWordIndex]);
 
+    const wordsSmashedRef = useRef(wordsSmashed);
+    useEffect(() => {
+        wordsSmashedRef.current = wordsSmashed;
+    }, [wordsSmashed]);
+
     // Cancel mispronounce delay on time-up / unmount.
     const mispronounceTimerRef = useRef(null);
+    const wordRecognizedTimerRef = useRef(null);
 
     // Cleanup on unmount — prevent post-unmount state updates.
     useEffect(() => {
         return () => {
             isMountedRef.current = false;
             clearTimeout(mispronounceTimerRef.current);
+            clearTimeout(wordRecognizedTimerRef.current);
             if (completionTimerRef.current)
                 clearTimeout(completionTimerRef.current);
         };
@@ -128,7 +136,11 @@ export default function GameplayReadMode({ module }) {
         }
 
         const points = module.words[currentWordIndexRef.current]?.points || 0;
-        setWordsSmashed((prev) => prev + 1);
+        setWordsSmashed((prev) => {
+            const next = prev + 1;
+            wordsSmashedRef.current = next;
+            return next;
+        });
         currentStreakRef.current += 1;
         setMaxStreak((m) => Math.max(m, currentStreakRef.current));
         setPointsFeedbackValue(points);
@@ -137,11 +149,15 @@ export default function GameplayReadMode({ module }) {
         setScoreEmphasize(true);
         setTimeout(() => setScoreEmphasize(false), 500);
 
-        // Cancel any pending mispronounce transition to avoid double moveToNextWord
         clearTimeout(mispronounceTimerRef.current);
         setIsMispronounced(false);
 
-        moveToNextWord();
+        clearTimeout(wordRecognizedTimerRef.current);
+        setIsExploding(true);
+        wordRecognizedTimerRef.current = setTimeout(() => {
+            setIsExploding(false);
+            moveToNextWord();
+        }, 500);
     }, [module.words, moveToNextWord]);
 
     const handleMispronounce = useCallback(() => {
@@ -177,9 +193,15 @@ export default function GameplayReadMode({ module }) {
 
     const handleTimeUp = useCallback(() => {
         clearTimeout(mispronounceTimerRef.current);
+        clearTimeout(wordRecognizedTimerRef.current);
+        setIsExploding(false);
         persistProgress();
-        setGameState("GAMEOVER");
-    }, [persistProgress]);
+        if (wordsSmashedRef.current >= totalWords) {
+            setGameState("COMPLETED");
+        } else {
+            setGameState("GAMEOVER");
+        }
+    }, [persistProgress, totalWords]);
 
     // --- Countdown ---
 
@@ -205,7 +227,7 @@ export default function GameplayReadMode({ module }) {
         onWordRecognized: handleWordRecognized,
         onPermissionDenied: handlePermissionDenied,
         onMispronounced: handleMispronounce,
-        onRecognitionError: undefined,
+        onRecognitionError: (err) => console.error("Recognition error:", err),
     });
 
     // --- Play again ---
@@ -247,7 +269,7 @@ export default function GameplayReadMode({ module }) {
                 currentIndex={Math.min(currentWordIndex, totalWords - 1)}
                 gameState={gameState}
                 countdownValue={countdownValue}
-                isExploding={false}
+                isExploding={isExploding}
                 isMispronounced={isMispronounced}
                 showPointsFeedback={showPointsFeedback}
                 pointsFeedbackValue={pointsFeedbackValue}

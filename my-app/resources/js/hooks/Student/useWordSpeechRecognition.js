@@ -137,7 +137,7 @@ export function useWordSpeechRecognition({
                         ) {
                             onMispronouncedRef.current?.(latestTranscript);
                         }
-                    }, 900); // 900ms silence = fail.
+                    }, 900); // 900ms silence = fail (grace period aligns).
                 }
             };
 
@@ -160,6 +160,8 @@ export function useWordSpeechRecognition({
             };
 
             recognition.onend = () => {
+                lastProcessedIndexRef.current = -1;
+                hasMatchedCurrentRef.current = false;
                 restartRetryCountRef.current = 0;
 
                 if (
@@ -215,7 +217,7 @@ export function useWordSpeechRecognition({
         hasMatchedCurrentRef.current = false;
         if (mispronounceTimeoutRef.current)
             clearTimeout(mispronounceTimeoutRef.current);
-        gracePeriodEndRef.current = Date.now() + 1000;
+        gracePeriodEndRef.current = Date.now() + 900;
     }, [targetWord]);
 
     // Start recognition as soon as the game becomes active (including COUNTDOWN)
