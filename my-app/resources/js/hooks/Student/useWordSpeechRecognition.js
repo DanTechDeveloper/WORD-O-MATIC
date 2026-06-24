@@ -9,6 +9,7 @@ export function useWordSpeechRecognition({
     // Removed interim matching
     onMispronounced,
     onRecognitionError,
+    isWordReady = true,
 }) {
     const recognitionRef = useRef(null);
 
@@ -34,6 +35,9 @@ export function useWordSpeechRecognition({
 
     const onRecognitionErrorRef = useRef(onRecognitionError);
     onRecognitionErrorRef.current = onRecognitionError;
+
+    const isWordReadyRef = useRef(true);
+    isWordReadyRef.current = isWordReady;
 
     const hasMatchedCurrentRef = useRef(false);
 
@@ -77,6 +81,9 @@ export function useWordSpeechRecognition({
             recognition.onresult = (event) => {
                 // Bug #1 fix: guard against buffered results after stop/pause
                 if (!gameStateRef.current || isPausedRef.current) return;
+
+                // Word entry delay: don't process until word is halfway
+                if (!isWordReadyRef.current) return;
 
                 // Clear timer on new voice input
                 if (mispronounceTimeoutRef.current)

@@ -8,6 +8,7 @@ const GameplayHeader = memo(function GameplayHeader({
     onTimeUp,
     showPointsFeedback,
     pointsFeedbackValue,
+    streakShake,
 }) {
     const [timeLeft, setTimeLeft] = useState(60);
 
@@ -82,9 +83,9 @@ const GameplayHeader = memo(function GameplayHeader({
                             </p>
                             <p className="text-on-background text-2xl sm:text-3xl font-black leading-none italic">
                                 <span
-                                    className={
+                                    className={`${
                                         scoreEmphasize ? "animate-score-pulse" : ""
-                                    }
+                                    } ${streakShake ? "animate-streak-number-shake" : ""}`}
                                 >
                                     {wordsSmashed.toLocaleString()}
                                 </span>

@@ -19,6 +19,10 @@ const ReadModeMainContent = memo(function ReadModeMainContent({
     isMispronounced,
     showPointsFeedback,
     pointsFeedbackValue,
+    streak,
+    feedbackType,
+    feedbackMessage,
+    isWordReady,
 }) {
     const isActive = gameState === "ACTIVE";
     const word = words?.[currentIndex];
@@ -99,6 +103,42 @@ const ReadModeMainContent = memo(function ReadModeMainContent({
                                 50% { opacity: 0.4; transform: scale(1.4); }
                                 100% { opacity: 0; transform: scale(2); }
                             }
+
+                            @keyframes streak-glow {
+                                0%, 100% { box-shadow: 0 0 10px rgba(255, 200, 0, 0.3); }
+                                50% { box-shadow: 0 0 25px rgba(255, 200, 0, 0.6); }
+                            }
+                            .animate-streak-glow {
+                                animation: streak-glow 1s ease-in-out infinite;
+                            }
+
+                            @keyframes streak-bounce-in {
+                                0% { transform: translateX(-50%) scale(0); opacity: 0; }
+                                60% { transform: translateX(-50%) scale(1.15); opacity: 1; }
+                                100% { transform: translateX(-50%) scale(1); opacity: 1; }
+                            }
+                            .animate-streak-bounce-in {
+                                animation: streak-bounce-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+                            }
+
+                            @keyframes word-lock-in {
+                                0% { filter: grayscale(0.6) brightness(0.7); opacity: 0.4; }
+                                50% { filter: grayscale(0.3) brightness(0.9); opacity: 0.7; }
+                                100% { filter: grayscale(0) brightness(1); opacity: 1; }
+                            }
+                            .animate-word-lock-in {
+                                animation: word-lock-in 0.4s ease-out forwards;
+                            }
+
+                            @keyframes feedback-from-word {
+                                0% { transform: translateY(0) scale(0.5); opacity: 0; }
+                                20% { transform: translateY(-8px) scale(1.15); opacity: 1; }
+                                40% { transform: translateY(-16px) scale(1); opacity: 1; }
+                                100% { transform: translateY(-70px) scale(0.9); opacity: 0; }
+                            }
+                            .animate-feedback-from-word {
+                                animation: feedback-from-word 0.7s ease-out forwards;
+                            }
                         `}
                     </style>
 
@@ -110,6 +150,30 @@ const ReadModeMainContent = memo(function ReadModeMainContent({
                             transform: "translateX(-50%)",
                         }}
                     >
+                        {feedbackType && (
+                            <div className="absolute -top-14 sm:-top-16 md:-top-20 animate-feedback-from-word text-center w-full px-2">
+                                <span
+                                    className={`font-black italic ${
+                                        feedbackType === "correct"
+                                            ? "text-3xl sm:text-4xl md:text-5xl text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-amber-400 to-orange-500"
+                                            : "text-2xl sm:text-3xl md:text-4xl text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-sky-400 to-blue-500"
+                                    }`}
+                                    style={{
+                                        filter:
+                                            feedbackType === "correct"
+                                                ? "drop-shadow(0 0 20px rgba(255,200,0,0.5)) drop-shadow(0 2px 2px rgba(0,0,0,0.3))"
+                                                : "drop-shadow(0 0 16px rgba(34,211,238,0.4)) drop-shadow(0 2px 2px rgba(0,0,0,0.3))",
+                                        WebkitTextStroke:
+                                            feedbackType === "correct"
+                                                ? "1.5px #92400e"
+                                                : "1.5px #075985",
+                                    }}
+                                >
+                                    {feedbackMessage}
+                                </span>
+                            </div>
+                        )}
+
                         {showPointsFeedback && (
                             <div
                                 className="absolute -top-12 sm:-top-14 md:-top-16 animate-float-score text-3xl sm:text-4xl md:text-6xl font-black italic"
@@ -135,7 +199,11 @@ const ReadModeMainContent = memo(function ReadModeMainContent({
                                 />
                             )}
                             <p
-                                className="text-5xl sm:text-7xl md:text-8xl font-black tracking-tight uppercase break-words text-center"
+                                className={`text-5xl sm:text-7xl md:text-8xl font-black tracking-tight uppercase break-words text-center ${
+                                    !isWordReady
+                                        ? "opacity-30 blur-[2px]"
+                                        : "opacity-100 blur-0 transition-all duration-500"
+                                }`}
                                 style={{
                                     fontFamily:
                                         'Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif',
@@ -180,6 +248,35 @@ const ReadModeMainContent = memo(function ReadModeMainContent({
                             </p>
                         </div>
                     </div>
+
+                    {streak > 0 && (
+                        <div
+                            key={`streak-${streak}`}
+                            className="absolute top-6 left-1/2 z-30 animate-streak-bounce-in"
+                            style={{ transform: "translateX(-50%)" }}
+                        >
+                            <div className="flex items-center gap-1.5 sm:gap-2 bg-gradient-to-r from-amber-500/20 to-orange-600/20 backdrop-blur-sm rounded-full px-3 sm:px-4 py-1.5 sm:py-2 border border-amber-400/40 shadow-lg shadow-amber-500/20 animate-streak-glow">
+                                <span
+                                    className="material-symbols-outlined text-xl sm:text-2xl"
+                                    style={{
+                                        color:
+                                            streak >= 5
+                                                ? "#ff4444"
+                                                : streak >= 3
+                                                  ? "#ff8800"
+                                                  : "#ffcc00",
+                                        filter: `drop-shadow(0 0 6px ${streak >= 5 ? "#ff444488" : streak >= 3 ? "#ff880088" : "#ffcc0088"})`,
+                                    }}
+                                >
+                                    local_fire_department
+                                </span>
+                                <span className="text-lg sm:text-xl md:text-2xl font-black text-white">
+                                    {streak}
+                                </span>
+                            </div>
+                        </div>
+                    )}
+
                 </>
             ) : null}
         </div>

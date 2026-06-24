@@ -24,16 +24,38 @@ export default function GameplayReadMode({ module }) {
     const [showPointsFeedback, setShowPointsFeedback] = useState(false);
     const [pointsFeedbackValue, setPointsFeedbackValue] = useState(0);
     const [scoreEmphasize, setScoreEmphasize] = useState(false);
+    const [currentStreak, setCurrentStreak] = useState(0);
+    const [feedbackType, setFeedbackType] = useState(null);
+    const [feedbackMessage, setFeedbackMessage] = useState("");
+    const [isWordReady, setIsWordReady] = useState(true);
+    const [streakShake, setStreakShake] = useState(null);
 
     // Refs
     const hasSaved = useRef(false);
+    const feedbackTimerRef = useRef(null);
     const isMountedRef = useRef(true);
     const currentWordIndexRef = useRef(0);
     const completionTimerRef = useRef(null);
+    const wordEntryTimerRef = useRef(null);
+    const streakShakeTimerRef = useRef(null);
 
     useEffect(() => {
         currentWordIndexRef.current = currentWordIndex;
     }, [currentWordIndex]);
+
+    // Word entry delay: word must be halfway through fall animation before recognition
+    useEffect(() => {
+        if (gameState === "ACTIVE") {
+            setIsWordReady(false);
+            clearTimeout(wordEntryTimerRef.current);
+            wordEntryTimerRef.current = setTimeout(() => {
+                setIsWordReady(true);
+            }, 1000);
+        }
+        return () => {
+            clearTimeout(wordEntryTimerRef.current);
+        };
+    }, [currentWordIndex, gameState]);
 
     const wordsSmashedRef = useRef(wordsSmashed);
     useEffect(() => {
@@ -50,6 +72,8 @@ export default function GameplayReadMode({ module }) {
             isMountedRef.current = false;
             clearTimeout(mispronounceTimerRef.current);
             clearTimeout(wordRecognizedTimerRef.current);
+            clearTimeout(feedbackTimerRef.current);
+            clearTimeout(streakShakeTimerRef.current);
             if (completionTimerRef.current)
                 clearTimeout(completionTimerRef.current);
         };
@@ -142,12 +166,35 @@ export default function GameplayReadMode({ module }) {
             return next;
         });
         currentStreakRef.current += 1;
+        setCurrentStreak(currentStreakRef.current);
         setMaxStreak((m) => Math.max(m, currentStreakRef.current));
         setPointsFeedbackValue(points);
         setShowPointsFeedback(true);
         setTimeout(() => setShowPointsFeedback(false), 500);
         setScoreEmphasize(true);
         setTimeout(() => setScoreEmphasize(false), 500);
+
+        const streak = currentStreakRef.current;
+        let fbMsg;
+        if (streak >= 5) fbMsg = "Excellent!";
+        else if (streak >= 3) fbMsg = "Great Job!";
+        else if (streak >= 2) fbMsg = "Great!";
+        else fbMsg = "Good!";
+        clearTimeout(feedbackTimerRef.current);
+        setFeedbackMessage(fbMsg);
+        setFeedbackType("correct");
+        feedbackTimerRef.current = setTimeout(() => {
+            setFeedbackType(null);
+        }, 600);
+
+        if (streak >= 3) {
+            clearTimeout(streakShakeTimerRef.current);
+            const intensity = streak >= 10 ? "intense" : streak >= 5 ? "medium" : "subtle";
+            setStreakShake(intensity);
+            streakShakeTimerRef.current = setTimeout(() => {
+                setStreakShake(null);
+            }, intensity === "intense" ? 500 : 400);
+        }
 
         clearTimeout(mispronounceTimerRef.current);
         setIsMispronounced(false);
@@ -171,6 +218,15 @@ export default function GameplayReadMode({ module }) {
         }
 
         currentStreakRef.current = 0;
+        setCurrentStreak(0);
+        const mispMsgs = ["Almost!", "Try Again!", "So Close!", "Keep Going!", "Nice Try!"];
+        clearTimeout(feedbackTimerRef.current);
+        setFeedbackMessage(mispMsgs[Math.floor(Math.random() * mispMsgs.length)]);
+        setFeedbackType("mispronounce");
+        feedbackTimerRef.current = setTimeout(() => {
+            setFeedbackType(null);
+        }, 700);
+
         setIsMispronounced(true);
         clearTimeout(mispronounceTimerRef.current);
         mispronounceTimerRef.current = setTimeout(() => {
@@ -228,6 +284,7 @@ export default function GameplayReadMode({ module }) {
         onPermissionDenied: handlePermissionDenied,
         onMispronounced: handleMispronounce,
         onRecognitionError: (err) => console.error("Recognition error:", err),
+        isWordReady: isWordReady,
     });
 
     // --- Play again ---
@@ -242,8 +299,13 @@ export default function GameplayReadMode({ module }) {
         setCurrentWordIndex(0);
         setWordsSmashed(0);
         currentStreakRef.current = 0;
+        setCurrentStreak(0);
         setMaxStreak(0);
         setIsMispronounced(false);
+        clearTimeout(feedbackTimerRef.current);
+        clearTimeout(streakShakeTimerRef.current);
+        setFeedbackType(null);
+        setStreakShake(null);
         setGameState("COUNTDOWN");
     }, []);
 
@@ -257,10 +319,66 @@ export default function GameplayReadMode({ module }) {
         scoreEmphasize,
         showPointsFeedback,
         pointsFeedbackValue,
+        streakShake,
     };
 
+    const shakeClass = streakShake ? `animate-streak-shake-${streakShake}` : "";
+
     return (
-        <div className="bg-background text-on-background font-body-md h-screen flex flex-col overflow-x-hidden">
+        <div className={`bg-background text-on-background font-body-md h-screen flex flex-col overflow-x-hidden ${shakeClass}`}>
+            <style>
+                {`
+                    @keyframes streak-shake-subtle {
+                        0%, 100% { transform: translateX(0); }
+                        20% { transform: translateX(-3px); }
+                        40% { transform: translateX(3px); }
+                        60% { transform: translateX(-2px); }
+                        80% { transform: translateX(2px); }
+                    }
+                    .animate-streak-shake-subtle {
+                        animation: streak-shake-subtle 0.3s ease-in-out;
+                    }
+
+                    @keyframes streak-shake-medium {
+                        0%, 100% { transform: translateX(0); }
+                        15% { transform: translateX(-6px) rotate(-0.5deg); }
+                        30% { transform: translateX(6px) rotate(0.5deg); }
+                        45% { transform: translateX(-5px) rotate(-0.3deg); }
+                        60% { transform: translateX(5px) rotate(0.3deg); }
+                        75% { transform: translateX(-3px); }
+                        90% { transform: translateX(3px); }
+                    }
+                    .animate-streak-shake-medium {
+                        animation: streak-shake-medium 0.4s ease-in-out;
+                    }
+
+                    @keyframes streak-shake-intense {
+                        0%, 100% { transform: translateX(0) rotate(0deg); }
+                        10% { transform: translateX(-8px) rotate(-1deg); }
+                        25% { transform: translateX(8px) rotate(1deg); }
+                        40% { transform: translateX(-6px) rotate(-0.5deg); }
+                        55% { transform: translateX(6px) rotate(0.5deg); }
+                        70% { transform: translateX(-4px); }
+                        85% { transform: translateX(4px); }
+                    }
+                    .animate-streak-shake-intense {
+                        animation: streak-shake-intense 0.5s ease-in-out;
+                    }
+
+                    @keyframes streak-number-shake {
+                        0%, 100% { transform: translateX(0) rotate(0deg); }
+                        15% { transform: translateX(-2px) rotate(-2deg); }
+                        30% { transform: translateX(2px) rotate(2deg); }
+                        45% { transform: translateX(-1px) rotate(-1deg); }
+                        60% { transform: translateX(1px) rotate(1deg); }
+                        75% { transform: translateX(-1px); }
+                        90% { transform: translateX(1px); }
+                    }
+                    .animate-streak-number-shake {
+                        animation: streak-number-shake 0.4s ease-in-out;
+                    }
+                `}
+            </style>
             <DeniedModal gameState={gameState} />
             <GameplayHeader {...headerProps} />
 
@@ -273,6 +391,10 @@ export default function GameplayReadMode({ module }) {
                 isMispronounced={isMispronounced}
                 showPointsFeedback={showPointsFeedback}
                 pointsFeedbackValue={pointsFeedbackValue}
+                streak={currentStreak}
+                feedbackType={feedbackType}
+                feedbackMessage={feedbackMessage}
+                isWordReady={isWordReady}
             />
 
             {gameState === "IDLE" && (
