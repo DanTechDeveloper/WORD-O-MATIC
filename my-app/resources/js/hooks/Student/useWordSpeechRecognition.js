@@ -78,7 +78,7 @@ export function useWordSpeechRecognition({
                 // Bug #1 fix: guard against buffered results after stop/pause
                 if (!gameStateRef.current || isPausedRef.current) return;
 
-                // Agad na i-clear ang timer kapag may bagong boses na narinig
+                // Clear timer on new voice input
                 if (mispronounceTimeoutRef.current)
                     clearTimeout(mispronounceTimeoutRef.current);
 
@@ -88,7 +88,6 @@ export function useWordSpeechRecognition({
                 // Track whether we matched across all results in this event
                 let matchedThisEvent = false;
                 let latestTranscript = "";
-                console.log(event);
                 for (let i = event.resultIndex; i < event.results.length; ++i) {
                     if (i <= lastProcessedIndexRef.current) continue;
 
@@ -103,7 +102,7 @@ export function useWordSpeechRecognition({
 
                     if (!transcript) continue;
 
-                    // Kunin ang pinakabagong transcript (kahit interim)
+                    // Get latest transcript (even interim)
                     latestTranscript = transcript;
 
                     const wordsInTranscript = transcript.split(/\s+/);
@@ -122,7 +121,7 @@ export function useWordSpeechRecognition({
                     }
                 }
 
-                // Sa halip na hintayin ang isFinal, mag-trigger tayo pagkatapos ng maikling katahimikan
+                // Trigger after short silence instead of waiting for isFinal
                 if (
                     !matchedThisEvent &&
                     !hasMatchedCurrentRef.current &&
@@ -152,7 +151,7 @@ export function useWordSpeechRecognition({
                         "Speech Recognition Error: not-allowed",
                         event.error,
                     );
-                    onPermissionDeniedRef.current(); // Callback to parent
+                    onPermissionDeniedRef.current?.(); // Callback to parent
                 } else {
                     console.error("Speech Recognition Error:", event.error);
                     if (onRecognitionErrorRef.current)
@@ -161,8 +160,6 @@ export function useWordSpeechRecognition({
             };
 
             recognition.onend = () => {
-                lastProcessedIndexRef.current = -1;
-                hasMatchedCurrentRef.current = false;
                 restartRetryCountRef.current = 0;
 
                 if (

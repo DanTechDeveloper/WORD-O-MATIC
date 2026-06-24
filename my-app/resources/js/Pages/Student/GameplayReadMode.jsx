@@ -87,6 +87,9 @@ export default function GameplayReadMode({ module }) {
         }
     }, [module.id, wordsSmashed]);
 
+    const persistProgressRef = useRef(persistProgress);
+    persistProgressRef.current = persistProgress;
+
     // --- Game-over evaluation ---
 
     useEffect(() => {
@@ -95,7 +98,7 @@ export default function GameplayReadMode({ module }) {
             currentWordIndex >= totalWords &&
             totalWords > 0
         ) {
-            persistProgress();
+            persistProgressRef.current();
 
             if (completionTimerRef.current)
                 clearTimeout(completionTimerRef.current);
@@ -110,7 +113,6 @@ export default function GameplayReadMode({ module }) {
         totalWords,
         wordsSmashed,
         gameState,
-        persistProgress,
     ]);
 
     // --- Speech recognition callbacks ---
