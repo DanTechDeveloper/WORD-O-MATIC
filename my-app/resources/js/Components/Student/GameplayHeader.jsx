@@ -1,4 +1,4 @@
-import { useState, useEffect, memo } from "react";
+import { useState, useEffect, useRef, memo } from "react";
 
 const GameplayHeader = memo(function GameplayHeader({
     level,
@@ -20,7 +20,7 @@ const GameplayHeader = memo(function GameplayHeader({
             setTimeLeft((prev) => {
                 if (prev <= 1) {
                     clearInterval(timer);
-                    if (onTimeUp) onTimeUp();
+                    if (onTimeUpRef.current) onTimeUpRef.current();
                     return 0;
                 }
                 return prev - 1;
@@ -28,7 +28,7 @@ const GameplayHeader = memo(function GameplayHeader({
         }, 1000);
 
         return () => clearInterval(timer);
-    }, [isActive, isPaused, onTimeUp]);
+    }, [isActive, isPaused]);
 
     useEffect(() => {
         if (!isActive) {
@@ -37,6 +37,8 @@ const GameplayHeader = memo(function GameplayHeader({
     }, [isActive]);
 
     const isLowTime = timeLeft <= 10;
+    const onTimeUpRef = useRef(onTimeUp);
+    onTimeUpRef.current = onTimeUp;
     const totalTime = 60;
     const percentage = (timeLeft / totalTime) * 100;
 

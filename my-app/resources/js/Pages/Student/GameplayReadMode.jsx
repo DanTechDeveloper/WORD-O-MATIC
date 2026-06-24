@@ -3,7 +3,6 @@ import { router } from "@inertiajs/react";
 import GameplayHeader from "@/Components/Student/GameplayHeader";
 import Microphone from "@/Components/Student/Microphone";
 import DeniedModal from "@/Components/Student/DeniedModal";
-import SettingsModal from "@/Components/Student/SettingsModal";
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 
 import { useCountdown } from "@/hooks/Student/useCountdown";
@@ -24,13 +23,6 @@ export default function GameplayReadMode({ module }) {
     const [showPointsFeedback, setShowPointsFeedback] = useState(false);
     const [pointsFeedbackValue, setPointsFeedbackValue] = useState(0);
     const [scoreEmphasize, setScoreEmphasize] = useState(false);
-
-    // Settings
-    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-    const [audioSettings, setAudioSettings] = useState({
-        music: 50,
-        sfx: 70,
-    });
 
     // Refs
     const hasSaved = useRef(false);
@@ -64,14 +56,6 @@ export default function GameplayReadMode({ module }) {
     const totalWords = speechRecognitionWords.length;
 
     // --- Helpers ---
-
-    const handleRestart = () => {
-        window.location.reload();
-    };
-
-    const handleExit = () => {
-        router.visit("/student/readModeLevels");
-    };
 
     // Clamp so rapid recognition can't push past array bounds.
     const moveToNextWord = useCallback(() => {
@@ -177,20 +161,6 @@ export default function GameplayReadMode({ module }) {
         }, 800);
     }, [module.words, moveToNextWord]);
 
-    // --- Settings ---
-
-    const updateAudioSetting = useCallback((key, value) => {
-        setAudioSettings((prev) => ({ ...prev, [key]: value }));
-    }, []);
-
-    const handleOpenSettings = useCallback(() => {
-        setIsSettingsOpen(true);
-    }, []);
-
-    const handleCloseSettings = useCallback(() => {
-        setIsSettingsOpen(false);
-    }, []);
-
     const handlePermissionDenied = useCallback(() => {
         setGameState("DENIED");
     }, []);
@@ -228,7 +198,7 @@ export default function GameplayReadMode({ module }) {
 
     useWordSpeechRecognition({
         isActive: gameState === "ACTIVE" || gameState === "COUNTDOWN",
-        isPaused: isSettingsOpen || gameState === "COUNTDOWN",
+        isPaused: gameState === "COUNTDOWN",
         targetWord: targetWord,
         onWordRecognized: handleWordRecognized,
         onPermissionDenied: handlePermissionDenied,
@@ -258,9 +228,7 @@ export default function GameplayReadMode({ module }) {
     const headerProps = {
         level: module ? `${module.level} - ${module.title}` : "",
         isActive: gameState === "ACTIVE",
-        isPaused: isSettingsOpen,
         wordsSmashed: wordsSmashed,
-        onOpenSettings: handleOpenSettings,
         onTimeUp: handleTimeUp,
         scoreEmphasize,
         showPointsFeedback,
@@ -270,15 +238,6 @@ export default function GameplayReadMode({ module }) {
     return (
         <div className="bg-background text-on-background font-body-md h-screen flex flex-col overflow-x-hidden">
             <DeniedModal gameState={gameState} />
-            <SettingsModal
-                isOpen={isSettingsOpen}
-                onClose={handleCloseSettings}
-                audio={audioSettings}
-                onUpdateAudio={updateAudioSetting}
-                onRestart={handleRestart}
-                onExit={handleExit}
-            />
-
             <GameplayHeader {...headerProps} />
 
             <ReadModeMainContent
