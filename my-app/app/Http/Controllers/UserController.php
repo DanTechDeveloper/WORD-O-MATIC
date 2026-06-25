@@ -11,12 +11,12 @@ use Inertia\Response;
 
 class UserController extends Controller
 {
-
     public function logout(Request $request)
     {
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+
         return redirect()->route('login');
     }
 
@@ -74,8 +74,9 @@ class UserController extends Controller
         $request->session()->regenerate();
 
         $hasAvatar = $user->student && ! empty($user->student->avatar);
-        return $hasAvatar 
-            ? redirect()->route('student.dashboard') 
+
+        return $hasAvatar
+            ? redirect()->route('student.dashboard')
             : redirect()->route('student.splashScreen');
     }
 }

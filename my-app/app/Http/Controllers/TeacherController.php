@@ -4,9 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Mail\StudentReportMail;
 use App\Models\ParagraphModule;
-use App\Models\StudentProfile;
 use App\Models\User;
 use App\Models\WordModule;
+use App\Services\DashboardService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
@@ -14,10 +14,14 @@ use Inertia\Inertia;
 
 class TeacherController extends Controller
 {
+    public function __construct(
+        protected DashboardService $dashboardService,
+    ) {}
+
     public function dashboard()
     {
         return Inertia::render('Teacher/Dashboard',
-            StudentProfile::dashboardStats()
+            $this->dashboardService->stats()
         );
     }
 
@@ -38,7 +42,7 @@ class TeacherController extends Controller
                 'studentID' => $user->student_id,
                 'avatar' => $user->student?->avatar,
                 'section' => $user->student?->section ?? '',
-                'rotation' => 'rotate-[' . rand(-3, 3) . 'deg]',
+                'rotation' => 'rotate-['.rand(-3, 3).'deg]',
                 'wordBlastAcc' => $user->student?->wordBlastAcc,
                 'storyQuestAcc' => $user->student?->storyQuestAcc,
                 'status' => $this->computeStatus($user->student?->status ?? 'notStarted'),
@@ -221,6 +225,7 @@ class TeacherController extends Controller
 
             if (empty($parentEmail)) {
                 $failed++;
+
                 continue;
             }
 

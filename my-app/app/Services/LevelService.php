@@ -6,7 +6,6 @@ use App\Models\ParagraphModule;
 use App\Models\StudentParagraphProgress;
 use App\Models\StudentWordProgress;
 use App\Models\WordModule;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 
 class LevelService
@@ -50,7 +49,7 @@ class LevelService
             } elseif ($progress && $progress->status === 'in_progress') {
                 $status = 'in_progress';
                 $foundCurrent = true;
-            } elseif (!$foundCurrent) {
+            } elseif (! $foundCurrent) {
                 $status = 'current';
                 $foundCurrent = true;
             } else {

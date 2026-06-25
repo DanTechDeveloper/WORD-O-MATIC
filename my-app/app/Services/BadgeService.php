@@ -12,7 +12,7 @@ class BadgeService
     {
         $badge = Badges::where('slug', $slug)->first();
 
-        if (!$badge) {
+        if (! $badge) {
             return null;
         }
 
@@ -36,7 +36,7 @@ class BadgeService
     {
         $student = $user->student;
 
-        if (!$student) {
+        if (! $student) {
             return [];
         }
 
@@ -110,10 +110,10 @@ class BadgeService
     {
         return match ($operator) {
             '>=' => $value >= $threshold,
-            '>'  => $value > $threshold,
-            '='  => $value == $threshold,
+            '>' => $value > $threshold,
+            '=' => $value == $threshold,
             '<=' => $value <= $threshold,
-            '<'  => $value < $threshold,
+            '<' => $value < $threshold,
             default => false,
         };
     }
