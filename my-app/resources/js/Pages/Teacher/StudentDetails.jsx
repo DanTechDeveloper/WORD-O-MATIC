@@ -237,44 +237,68 @@ export default function StudentDetail({ data }) {
                 </div>
             )}
 
-            {/* Speak Mode: Story Quest Progress */}
+            {/* Speak Mode: Mastery & Training Zones */}
             {activeMode === "speak" && (
-                <div className="space-y-6">
-                    <div className="flex items-center gap-4">
-                        <span className="material-symbols-outlined text-cyan-400 p-3 bg-cyan-400/10 rounded-2xl border-2 border-cyan-400/20">
-                            record_voice_over
-                        </span>
-                        <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter">
-                            Story Quest Progress
-                        </h3>
-                    </div>
-                    <div className="bg-slate-950 rounded-[2.5rem] border-4 border-slate-800 p-8 shadow-[8px_8px_0_0_#020617] min-h-[400px] max-h-[600px] overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-slate-800 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-cyan-400">
-                        <div className="space-y-4">
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-10">
+                    <div className="space-y-6">
+                        <div className="flex items-center gap-4">
+                            <span className="material-symbols-outlined text-cyan-400 p-3 bg-cyan-400/10 rounded-2xl border-2 border-cyan-400/20">
+                                verified
+                            </span>
+                            <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter">
+                                Mastery Zone
+                            </h3>
+                        </div>
+                        <div className="bg-slate-950 rounded-[2.5rem] border-4 border-slate-800 p-8 shadow-[8px_8px_0_0_#020617] min-h-[400px] max-h-[600px] overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-slate-800 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-cyan-400">
                             {student.speakCurriculum.map((level, i) => (
-                                <div key={i} className="bg-slate-900 rounded-2xl border-2 border-slate-800 p-5 flex items-center gap-6 hover:border-cyan-400/50 transition-colors">
-                                    <div className={`w-3 h-3 rounded-full shrink-0 ${
-                                        level.status === 'completed' ? 'bg-lime-400 shadow-[0_0_8px_#4ade80]' :
-                                        level.status === 'in_progress' ? 'bg-amber-400 shadow-[0_0_8px_#fbbf24]' :
-                                        'bg-slate-700'
-                                    }`}></div>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="text-white font-black uppercase text-sm tracking-tight truncate">
-                                            {level.level}
-                                        </div>
-                                        <div className="text-slate-500 font-black uppercase text-[10px] tracking-widest mt-0.5">
-                                            {level.status === 'completed' ? 'Completed' :
-                                             level.status === 'in_progress' ? 'In Progress' :
-                                             'Locked'}
-                                        </div>
-                                    </div>
-                                    <div className="text-right shrink-0">
-                                        <div className="text-white font-black text-sm">
-                                            {level.words_smashed} / {level.total_score}
-                                        </div>
-                                        <div className="text-slate-500 font-black uppercase text-[10px] tracking-widest">
-                                            {level.accuracy > 0 ? `${level.accuracy}%` : '--'}
-                                        </div>
-                                    </div>
+                                <div key={i} className="mb-8 last:mb-0">
+                                    {level.mastered.length > 0 && (
+                                        <>
+                                            <div className="text-cyan-400 font-black uppercase text-xs tracking-widest mb-4 flex items-center gap-2">
+                                                <div className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_#22d3ee]"></div>
+                                                {level.level}
+                                            </div>
+                                            <div className="flex flex-wrap gap-2">
+                                                {level.mastered.map((word, j) => (
+                                                    <span key={j} className="px-4 py-2 bg-slate-900 border-2 border-slate-800 text-white font-black rounded-xl text-sm hover:border-cyan-400 transition-colors cursor-default">
+                                                        {word}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="space-y-6">
+                        <div className="flex items-center gap-4">
+                            <span className="material-symbols-outlined text-orange-400 p-3 bg-orange-400/10 rounded-2xl border-2 border-orange-400/20">
+                                exercise
+                            </span>
+                            <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter">
+                                Training Zone
+                            </h3>
+                        </div>
+                        <div className="bg-slate-950 rounded-[2.5rem] border-4 border-slate-800 p-8 shadow-[8px_8px_0_0_#020617] min-h-[400px] max-h-[600px] overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-slate-800 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-orange-400">
+                            {student.speakCurriculum.map((level, i) => (
+                                <div key={i} className="mb-8 last:mb-0">
+                                    {level.training.length > 0 && (
+                                        <>
+                                            <div className="text-orange-400 font-black uppercase text-xs tracking-widest mb-4 flex items-center gap-2">
+                                                <div className="w-2 h-2 rounded-full bg-orange-400 shadow-[0_0_8px_#fb923c]"></div>
+                                                {level.level}
+                                            </div>
+                                            <div className="flex flex-wrap gap-2">
+                                                {level.training.map((word, j) => (
+                                                    <span key={j} className="px-4 py-2 bg-slate-900 border-2 border-slate-800 text-slate-400 font-black rounded-xl text-sm hover:border-orange-400 transition-colors cursor-default">
+                                                        {word}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                             ))}
                         </div>

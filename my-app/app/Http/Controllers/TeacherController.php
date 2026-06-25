@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Mail\StudentReportMail;
 use App\Models\ParagraphModule;
 use App\Models\ParagraphWord;
+use App\Models\StudentParagraphMastery;
 use App\Models\StudentParagraphProgress;
 use App\Models\StudentWordProgress;
 use App\Models\User;
@@ -173,20 +174,23 @@ class TeacherController extends Controller
             ];
         });
 
-        // Speak Curriculum: from student_paragraph_progress
-        $paragraphModules = ParagraphModule::orderBy('level', 'asc')->get();
-        $paragraphProgress = StudentParagraphProgress::where('user_id', $studentId)
-            ->get()
-            ->keyBy('paragraph_module_id');
+        // Speak Curriculum: from student_paragraph_mastery
+        $paragraphModules = ParagraphModule::with('words')->orderBy('level', 'asc')->get();
 
-        $speakCurriculum = $paragraphModules->map(function ($module) use ($paragraphProgress) {
-            $progress = $paragraphProgress->get($module->id);
+        $paragraphMastery = \DB::table('student_paragraph_mastery')
+            ->where('user_id', $studentId)
+            ->get()
+            ->groupBy('paragraph_word_id');
+
+        $speakCurriculum = $paragraphModules->map(function ($module) use ($paragraphMastery) {
             return [
                 'level' => "Level {$module->level}: {$module->title}",
-                'status' => $progress ? $progress->status : 'locked',
-                'words_smashed' => $progress ? $progress->words_smashed : 0,
-                'accuracy' => $progress ? $progress->accuracy : 0,
-                'total_score' => $module->total_score,
+                'mastered' => $module->words->filter(function ($word) use ($paragraphMastery) {
+                    return isset($paragraphMastery[$word->id]) && $paragraphMastery[$word->id][0]->status === 'mastered';
+                })->pluck('word')->values(),
+                'training' => $module->words->filter(function ($word) use ($paragraphMastery) {
+                    return isset($paragraphMastery[$word->id]) && $paragraphMastery[$word->id][0]->status === 'training';
+                })->pluck('word')->values(),
             ];
         });
 
