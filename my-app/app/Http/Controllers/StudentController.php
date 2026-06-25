@@ -6,11 +6,10 @@ use App\Models\Badges;
 use App\Models\GameSession;
 use App\Models\ParagraphModule;
 use App\Models\PracticeWordSet;
+use App\Models\StudentParagraphMastery;
 use App\Models\StudentParagraphProgress;
 use App\Models\StudentProfile;
-use App\Models\StudentParagraphMastery;
 use App\Models\StudentWordMastery;
-use App\Models\StudentWordProgress;
 use App\Models\WordModule;
 use App\Services\BadgeService;
 use App\Services\GameSessionService;
@@ -25,6 +24,7 @@ class StudentController extends Controller
         protected GameSessionService $gameSessionService,
         protected LevelService $levelService,
     ) {}
+
     public function splashScreen()
     {
         return Inertia::render('Student/SplashScreen');
@@ -71,11 +71,11 @@ class StudentController extends Controller
         $user = auth()->user();
         $student = $user->student;
 
-        if (!$student) {
+        if (! $student) {
             return redirect()->back()->with('error', 'Student profile not found.');
         }
 
-        if (!$student->tutorial_completed_at) {
+        if (! $student->tutorial_completed_at) {
             $student->update([
                 'tutorial_completed_at' => now(),
             ]);
@@ -120,11 +120,11 @@ class StudentController extends Controller
         $user = auth()->user();
 
         $leaderboard = StudentProfile::with('user:id,name,student_id')
-            ->whereHas('user', fn($q) => $q->where('role', 'student'))
+            ->whereHas('user', fn ($q) => $q->where('role', 'student'))
             ->orderBy('points', 'desc')
             ->get(['user_id', 'points', 'avatar']);
 
-        $currentUserRank = $leaderboard->search(fn($s) => $s->user_id === $user->id);
+        $currentUserRank = $leaderboard->search(fn ($s) => $s->user_id === $user->id);
 
         $totalStudents = $leaderboard->count();
 
@@ -191,7 +191,7 @@ class StudentController extends Controller
         $redirect = redirect()->route('student.results', ['id' => $session->id]);
         $newBadges = $this->badgeService->checkGameplayBadges($user, $session->id, $accuracy);
 
-        if (!empty($newBadges)) {
+        if (! empty($newBadges)) {
             $badge = $newBadges[0];
             $redirect->with('new_badge', [
                 'name' => $badge->name,
@@ -276,7 +276,7 @@ class StudentController extends Controller
         $redirect = redirect()->route('student.results', ['id' => $session->id]);
         $newBadges = $this->badgeService->checkGameplayBadges($user, $session->id, $accuracy);
 
-        if (!empty($newBadges)) {
+        if (! empty($newBadges)) {
             $badge = $newBadges[0];
             $redirect->with('new_badge', [
                 'name' => $badge->name,
@@ -290,7 +290,7 @@ class StudentController extends Controller
     }
 
     public function practiceRead()
-{
+    {
         $practiceSet = PracticeWordSet::with('words')->where('slug', 'tutorial-practice')->firstOrFail();
 
         return Inertia::render('Student/PracticeRead', [
