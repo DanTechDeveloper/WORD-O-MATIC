@@ -122,26 +122,43 @@ export function useWordSpeechRecognition({
 
                     if (result.isFinal) {
                         lastProcessedIndexRef.current = i;
+                        // Final result with no match → mispronounce immediately
+                        if (!matchedThisEvent && !hasMatchedCurrentRef.current) {
+                            if (mispronounceTimeoutRef.current)
+                                clearTimeout(mispronounceTimeoutRef.current);
+                            mispronounceTimeoutRef.current = setTimeout(() => {
+                                if (
+                                    isMountedRef.current &&
+                                    gameStateRef.current &&
+                                    !isPausedRef.current &&
+                                    !hasMatchedCurrentRef.current
+                                ) {
+                                    onMispronouncedRef.current?.(latestTranscript);
+                                }
+                            }, 200);
+                        }
                     }
                 }
 
-                // Trigger after short silence instead of waiting for isFinal
+                // Trigger after short silence for interim-only results
                 if (
                     !matchedThisEvent &&
                     !hasMatchedCurrentRef.current &&
                     latestTranscript &&
                     Date.now() >= gracePeriodEndRef.current
                 ) {
-                    mispronounceTimeoutRef.current = setTimeout(() => {
-                        if (
-                            isMountedRef.current &&
-                            gameStateRef.current &&
-                            !isPausedRef.current &&
-                            !hasMatchedCurrentRef.current
-                        ) {
-                            onMispronouncedRef.current?.(latestTranscript);
-                        }
-                    }, 900); // 900ms silence = fail (grace period aligns).
+                    if (!mispronounceTimeoutRef.current) {
+                        mispronounceTimeoutRef.current = setTimeout(() => {
+                            if (
+                                isMountedRef.current &&
+                                gameStateRef.current &&
+                                !isPausedRef.current &&
+                                !hasMatchedCurrentRef.current
+                            ) {
+                                onMispronouncedRef.current?.(latestTranscript);
+                            }
+                        }, 500);
+                    }
                 }
             };
 
