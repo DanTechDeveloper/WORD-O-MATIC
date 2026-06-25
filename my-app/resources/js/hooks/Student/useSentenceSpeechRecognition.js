@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { isFuzzyMatch } from "@/lib/speechUtils";
 export function useSentenceSpeechRecognition({
     isActive,
     isPaused,
@@ -103,7 +104,9 @@ useEffect(() => {
                 latestTranscript = transcript;
 
                 const wordsInTranscript = transcript.split(/\s+/);
-                const isMatch = wordsInTranscript.includes(target);
+                const isMatch = wordsInTranscript.some(
+                    (w) => isFuzzyMatch(w, target),
+                );
 
                 if (isMatch && !hasMatchedCurrentRef.current) {
                     hasMatchedCurrentRef.current = true;

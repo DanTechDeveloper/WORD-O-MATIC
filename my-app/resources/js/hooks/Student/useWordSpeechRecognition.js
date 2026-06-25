@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { isFuzzyMatch } from "@/lib/speechUtils";
 
 export function useWordSpeechRecognition({
     isActive,
@@ -35,9 +36,6 @@ export function useWordSpeechRecognition({
 
     const onRecognitionErrorRef = useRef(onRecognitionError);
     onRecognitionErrorRef.current = onRecognitionError;
-
-    const isWordReadyRef = useRef(true);
-    isWordReadyRef.current = isWordReady;
 
     const hasMatchedCurrentRef = useRef(false);
 
@@ -82,9 +80,6 @@ export function useWordSpeechRecognition({
                 // Bug #1 fix: guard against buffered results after stop/pause
                 if (!gameStateRef.current || isPausedRef.current) return;
 
-                // Word entry delay: don't process until word is halfway
-                if (!isWordReadyRef.current) return;
-
                 // Clear timer on new voice input
                 if (mispronounceTimeoutRef.current)
                     clearTimeout(mispronounceTimeoutRef.current);
@@ -113,7 +108,9 @@ export function useWordSpeechRecognition({
                     latestTranscript = transcript;
 
                     const wordsInTranscript = transcript.split(/\s+/);
-                    const isMatch = wordsInTranscript.includes(target);
+                    const isMatch = wordsInTranscript.some(
+                        (w) => isFuzzyMatch(w, target),
+                    );
 
                     if (isMatch && !hasMatchedCurrentRef.current) {
                         hasMatchedCurrentRef.current = true;
