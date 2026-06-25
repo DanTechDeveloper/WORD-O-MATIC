@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Mail\StudentReportMail;
 use App\Models\ParagraphModule;
+use App\Models\StudentProfile;
 use App\Models\User;
 use App\Models\WordModule;
 use App\Services\DashboardService;
@@ -30,13 +31,52 @@ class TeacherController extends Controller
         return Inertia::render('Teacher/Classes');
     }
 
-    public function students()
+    public function students(Request $request)
     {
-        $students = User::with('student')
-            ->where('role', 'student')
-            ->orderBy('name', 'asc')
-            ->get()
-            ->map(fn ($user) => [
+        $sort = $request->input('sort', 'name');
+        $direction = $request->input('direction', 'asc');
+        $section = $request->input('section', '');
+        $search = $request->input('search', '');
+        $status = $request->input('status', '');
+
+        $query = User::with('student')
+            ->where('role', 'student');
+
+        if ($section) {
+            $query->whereHas('student', fn ($q) => $q->where('section', $section));
+        }
+
+        if ($status) {
+            $query->whereHas('student', fn ($q) => $q->where('status', $status));
+        }
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('student_id', 'like', "%{$search}%");
+            });
+        }
+
+        $sortMap = [
+            'name' => ['users.name', $direction],
+            'risk' => ['students.wordBlastAcc', 'desc'],
+            'recent' => ['students.updated_at', 'desc'],
+        ];
+
+        [$sortCol, $sortDir] = $sortMap[$sort] ?? ['users.name', 'asc'];
+
+        if ($sort === 'risk') {
+            $query->join('students', 'users.id', '=', 'students.user_id')
+                ->orderByRaw('(COALESCE(students.wordBlastAcc,0) + COALESCE(students.storyQuestAcc,0)) / 2 '.$sortDir)
+                ->select('users.*');
+        } else {
+            $query->join('students', 'users.id', '=', 'students.user_id')
+                ->orderBy($sortCol, $sortDir)
+                ->select('users.*');
+        }
+
+        $students = $query->paginate(8)
+            ->through(fn ($user) => [
                 'id' => $user->id,
                 'fullName' => $user->name,
                 'studentID' => $user->student_id,
@@ -48,8 +88,24 @@ class TeacherController extends Controller
                 'status' => $this->computeStatus($user->student?->status ?? 'notStarted'),
             ]);
 
+        $sections = StudentProfile::whereHas('user', fn ($q) => $q->where('role', 'student'))
+            ->whereNotNull('section')
+            ->where('section', '!=', '')
+            ->distinct()
+            ->pluck('section')
+            ->sort()
+            ->values();
+
         return Inertia::render('Teacher/Students', [
             'data' => $students,
+            'sections' => $sections,
+            'filters' => [
+                'sort' => $sort,
+                'direction' => $direction,
+                'section' => $section,
+                'search' => $search,
+                'status' => $status,
+            ],
         ]);
     }
 
