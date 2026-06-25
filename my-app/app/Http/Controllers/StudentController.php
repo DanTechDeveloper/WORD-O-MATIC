@@ -14,6 +14,7 @@ use App\Models\StudentWordProgress;
 use App\Models\WordModule;
 use App\Services\BadgeService;
 use App\Services\GameSessionService;
+use App\Services\LevelService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -22,6 +23,7 @@ class StudentController extends Controller
     public function __construct(
         protected BadgeService $badgeService,
         protected GameSessionService $gameSessionService,
+        protected LevelService $levelService,
     ) {}
     public function splashScreen()
     {
@@ -152,46 +154,8 @@ class StudentController extends Controller
 
     public function readModeLevels()
     {
-        $userId = auth()->id();
-
-        $modules = WordModule::withCount('words')
-            ->select(['id', 'level', 'title', 'total_points'])
-            ->orderBy('level', 'asc')
-            ->get();
-
-        $progressRecords = StudentWordProgress::where('user_id', $userId)
-            ->get()
-            ->keyBy('word_module_id');
-
-        $foundCurrent = false;
-        $transformedModules = $modules->map(function ($module) use ($progressRecords, &$foundCurrent) {
-            $progress = $progressRecords->get($module->id);
-
-            if ($progress && $progress->status === 'completed') {
-                $status = 'completed';
-            } elseif ($progress && $progress->status === 'in_progress') {
-                $status = 'in_progress';
-                $foundCurrent = true;
-            } elseif (! $foundCurrent) {
-                $status = 'current';
-                $foundCurrent = true;
-            } else {
-                $status = 'locked';
-            }
-
-            return [
-                'id' => $module->id,
-                'level' => $module->level,
-                'title' => $module->title,
-                'total_points' => $module->total_points,
-                'status' => $status,
-                'words_smashed' => $progress ? $progress->words_smashed : 0,
-                'score' => $progress ? $progress->words_smashed : 0,
-            ];
-        });
-
         return Inertia::render('Student/ReadModeLevels', [
-            'modules' => $transformedModules,
+            'modules' => $this->levelService->getWordModuleStatuses(auth()->id()),
         ]);
     }
 
@@ -272,47 +236,8 @@ class StudentController extends Controller
 
     public function speakModeLevels()
     {
-        $userId = auth()->id();
-
-        $modules = ParagraphModule::select(['id', 'level', 'title', 'total_score'])
-            ->orderBy('level', 'asc')
-            ->get();
-
-        $progressRecords = StudentParagraphProgress::where('user_id', $userId)
-            ->get()
-            ->keyBy('paragraph_module_id');
-
-        $foundCurrent = false;
-        $transformedModules = $modules->map(function ($module) use ($progressRecords, &$foundCurrent) {
-            $progress = $progressRecords->get($module->id);
-
-            // Logic: Unang module na walang 'completed' status ang magiging 'current'.
-            // Lahat ng bago mag-'current' ay 'completed', lahat ng kasunod ay 'locked'.
-            if ($progress && $progress->status === 'completed') {
-                $status = 'completed';
-            } elseif ($progress && $progress->status === 'in_progress') {
-                $status = 'in_progress';
-                $foundCurrent = true;
-            } elseif (! $foundCurrent) {
-                $status = 'current';
-                $foundCurrent = true;
-            } else {
-                $status = 'locked';
-            }
-
-            return [
-                'id' => $module->id,
-                'level' => $module->level,
-                'title' => $module->title,
-                'total_points' => $module->total_score,
-                'status' => $status,
-                'words_smashed' => $progress ? $progress->words_smashed : 0,
-                'score' => $progress ? $progress->words_smashed : 0,
-            ];
-        });
-
         return Inertia::render('Student/SpeakModeLevels', [
-            'modules' => $transformedModules,
+            'modules' => $this->levelService->getSpeakModuleStatuses(auth()->id()),
         ]);
     }
 
