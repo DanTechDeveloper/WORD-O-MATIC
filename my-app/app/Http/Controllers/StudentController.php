@@ -12,17 +12,15 @@ use App\Models\StudentParagraphMastery;
 use App\Models\StudentWordMastery;
 use App\Models\StudentWordProgress;
 use App\Models\WordModule;
+use App\Services\BadgeService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
-/**
- * Update the authenticated student's avatar.
- *
- * @param  Request  $request
- * @return JsonResponse
- */
 class StudentController extends Controller
 {
+    public function __construct(
+        protected BadgeService $badgeService
+    ) {}
     public function splashScreen()
     {
         return Inertia::render('Student/SplashScreen');
@@ -78,20 +76,10 @@ class StudentController extends Controller
                 'tutorial_completed_at' => now(),
             ]);
 
-            $badge = Badges::where('slug', 'tutorial-complete')->first();
-            if ($badge) {
-                $changes = $user->badges()->syncWithoutDetaching([
-                    $badge->id => ['earned_at' => now()],
-                ]);
+            $badgeData = $this->badgeService->awardOnboardingBadge($user, 'tutorial-complete');
 
-                if (!empty($changes['attached'])) {
-                    return redirect()->route('student.dashboard')->with('new_badge', [
-                        'name' => $badge->name,
-                        'description' => $badge->description,
-                        'slug' => $badge->slug,
-                        'icon' => $badge->icon,
-                    ]);
-                }
+            if ($badgeData) {
+                return redirect()->route('student.dashboard')->with('new_badge', $badgeData);
             }
         }
 
@@ -111,21 +99,10 @@ class StudentController extends Controller
                 'avatar' => $request->avatar_url,
             ]);
 
-            // Award "Profile Pioneer" badge
-            $badge = Badges::where('slug', 'profile-pioneer')->first();
-            if ($badge) {
-                $changes = $user->badges()->syncWithoutDetaching([
-                    $badge->id => ['earned_at' => now()],
-                ]);
+            $badgeData = $this->badgeService->awardOnboardingBadge($user, 'profile-pioneer');
 
-                if (! empty($changes['attached'])) {
-                    return redirect()->route('student.greetings')->with('new_badge', [
-                        'name' => $badge->name,
-                        'description' => $badge->description,
-                        'slug' => $badge->slug,
-                        'icon' => $badge->icon,
-                    ]);
-                }
+            if ($badgeData) {
+                return redirect()->route('student.greetings')->with('new_badge', $badgeData);
             }
 
             return redirect()->route('student.greetings')->with('success', 'Avatar updated successfully!');
@@ -244,16 +221,18 @@ class StudentController extends Controller
         $accuracy = round(min($rawAccuracy, 100), 2);
         $session = GameSession::logSession($userId, $module->id, 'word', $request->words_smashed, $accuracy, $request->streak ?? 0);
 
-        $student = auth()->user()->student;
-
-        $newBadges = [];
+        $user = auth()->user();
+        $student = $user->student;
 
         if ($student) {
             $student->updateWordProgress($module, $request->words_smashed, $accuracy);
-            $newBadges = $student->checkAndAwardBadges($session->id, $accuracy);
         }
 
         $redirect = redirect()->route('student.results', ['id' => $session->id]);
+
+        $newBadges = $student
+            ? $this->badgeService->checkGameplayBadges($user, $session->id, $accuracy)
+            : [];
 
         if (!empty($newBadges)) {
             $badge = $newBadges[0];
@@ -377,16 +356,18 @@ class StudentController extends Controller
             : 0;
         $session = GameSession::logSession($userId, $module->id, 'paragraph', $request->words_smashed, $accuracy, $request->streak ?? 0);
 
-        $student = auth()->user()->student;
-
-        $newBadges = [];
+        $user = auth()->user();
+        $student = $user->student;
 
         if ($student) {
             $student->updateParagraphProgress($module, $request->words_smashed, $accuracy);
-            $newBadges = $student->checkAndAwardBadges($session->id, $accuracy);
         }
 
         $redirect = redirect()->route('student.results', ['id' => $session->id]);
+
+        $newBadges = $student
+            ? $this->badgeService->checkGameplayBadges($user, $session->id, $accuracy)
+            : [];
 
         if (!empty($newBadges)) {
             $badge = $newBadges[0];
@@ -422,36 +403,8 @@ class StudentController extends Controller
             $totalItems = $module->total_score;
         }
 
-        // Compute badge progress for the current session
-        $badgeProgress = [];
         $user = auth()->user();
-
-        if ($user) {
-            $student = $user->student;
-            $earnedBadgeIds = $user->badges()->pluck('badges.id')->toArray();
-
-            $badges = Badges::whereIn('metric', ['total_points', 'streak', 'accuracy'])->get();
-
-            foreach ($badges as $badge) {
-                $currentValue = match ($badge->metric) {
-                    'total_points' => $student ? $student->points : 0,
-                    'streak' => (int) $session->streak,
-                    'accuracy' => round((float) $session->accuracy, 2),
-                    default => 0,
-                };
-
-                $badgeProgress[] = [
-                    'name' => $badge->name,
-                    'description' => $badge->description,
-                    'slug' => $badge->slug,
-                    'icon' => $badge->icon,
-                    'metric' => $badge->metric,
-                    'threshold' => $badge->threshold_score,
-                    'current_value' => $currentValue,
-                    'is_earned' => in_array($badge->id, $earnedBadgeIds),
-                ];
-            }
-        }
+        $badgeProgress = $user ? $this->badgeService->getBadgeProgress($user, $session) : [];
 
         return Inertia::render('Student/GameResults', [
             'session' => $session,

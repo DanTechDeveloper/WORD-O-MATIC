@@ -52,13 +52,17 @@ class StudentProfile extends Model
 
     public function updateWordProgress($module, $wordsSmashed, $accuracy)
     {
-        // 1. I-save o i-update ang high score sa StudentWordProgress table
         $progress = StudentWordProgress::firstOrNew([
             'user_id' => $this->user_id,
             'word_module_id' => $module->id
         ]);
 
-        if (!$progress->exists || $wordsSmashed > $progress->words_smashed) {
+        $previousBest = $progress->exists ? $progress->words_smashed : 0;
+
+        $isNewBest = !$progress->exists || $wordsSmashed > $progress->words_smashed;
+        $isBetterAccuracy = $progress->exists && $wordsSmashed == $progress->words_smashed && $accuracy > $progress->accuracy;
+
+        if ($isNewBest || $isBetterAccuracy) {
             $progress->words_smashed = $wordsSmashed;
             $progress->accuracy = $accuracy;
         }
@@ -66,7 +70,9 @@ class StudentProfile extends Model
         $progress->status = $wordsSmashed >= $module->total_points ? 'completed' : 'in_progress';
         $progress->save();
 
-        $this->update(['wordBlastAcc' => $accuracy]);
+        if ($isNewBest || $isBetterAccuracy) {
+            $this->update(['wordBlastAcc' => $accuracy]);
+        }
 
         if ($module->level >= $this->read_level) {
             $this->update([
@@ -76,19 +82,26 @@ class StudentProfile extends Model
                             StudentParagraphProgress::where('user_id', $this->user_id)->sum('words_smashed'),
             ]);
         } else {
-            $this->increment('points', $wordsSmashed);
+            $delta = max(0, $wordsSmashed - $previousBest);
+            if ($delta > 0) {
+                $this->increment('points', $delta);
+            }
         }
     }
 
     public function updateParagraphProgress($module, $wordsSmashed, $accuracy)
     {
-        // 1. I-save o i-update ang high score sa StudentParagraphProgress table
         $progress = StudentParagraphProgress::firstOrNew([
             'user_id' => $this->user_id,
             'paragraph_module_id' => $module->id
         ]);
 
-        if (!$progress->exists || $wordsSmashed > $progress->words_smashed) {
+        $previousBest = $progress->exists ? $progress->words_smashed : 0;
+
+        $isNewBest = !$progress->exists || $wordsSmashed > $progress->words_smashed;
+        $isBetterAccuracy = $progress->exists && $wordsSmashed == $progress->words_smashed && $accuracy > $progress->accuracy;
+
+        if ($isNewBest || $isBetterAccuracy) {
             $progress->words_smashed = $wordsSmashed;
             $progress->accuracy = $accuracy;
         }
@@ -96,9 +109,10 @@ class StudentProfile extends Model
         $progress->status = $wordsSmashed >= $module->total_score ? 'completed' : 'in_progress';
         $progress->save();
 
-        $this->update(['storyQuestAcc' => $accuracy]);
+        if ($isNewBest || $isBetterAccuracy) {
+            $this->update(['storyQuestAcc' => $accuracy]);
+        }
 
-        // 2. I-update ang speak_level at total points
         if ($module->level >= $this->speak_level) {
             $this->update([
                 'speak_level' => $module->level + 1,
@@ -107,7 +121,10 @@ class StudentProfile extends Model
                             StudentParagraphProgress::where('user_id', $this->user_id)->sum('words_smashed'),
             ]);
         } else {
-            $this->increment('points', $wordsSmashed);
+            $delta = max(0, $wordsSmashed - $previousBest);
+            if ($delta > 0) {
+                $this->increment('points', $delta);
+            }
         }
     }
 
