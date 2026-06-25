@@ -360,6 +360,7 @@ class TeacherController extends Controller
                 'status' => $user->student?->status ?? 'notStarted',
                 'parent_email' => $user->student?->parent_email,
                 'trainingWords' => $this->getTrainingWords($user->id),
+                'paragraphTrainingWords' => $this->getParagraphTrainingWords($user->id),
             ]);
 
         $grouped = [
@@ -382,6 +383,30 @@ class TeacherController extends Controller
             ->where('user_id', $userId)
             ->get()
             ->groupBy('word_id');
+
+        $training = [];
+
+        foreach ($modules as $module) {
+            $trainingWords = $module->words->filter(function ($word) use ($masteryProgress) {
+                return isset($masteryProgress[$word->id]) && $masteryProgress[$word->id][0]->status === 'training';
+            })->pluck('word')->values();
+
+            if ($trainingWords->isNotEmpty()) {
+                $training["Level {$module->level}: {$module->title}"] = $trainingWords->toArray();
+            }
+        }
+
+        return $training;
+    }
+
+    private function getParagraphTrainingWords($userId): array
+    {
+        $modules = ParagraphModule::with('words')->orderBy('level', 'asc')->get();
+
+        $masteryProgress = \DB::table('student_paragraph_mastery')
+            ->where('user_id', $userId)
+            ->get()
+            ->groupBy('paragraph_word_id');
 
         $training = [];
 
@@ -431,6 +456,7 @@ class TeacherController extends Controller
                 'speak_level' => $user->student?->speak_level ?? 1,
                 'status' => $user->student?->status ?? 'notStarted',
                 'trainingWords' => $trainingWords,
+                'paragraphTrainingWords' => $this->getParagraphTrainingWords($user->id),
             ]));
 
             $sent++;

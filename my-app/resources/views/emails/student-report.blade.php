@@ -66,9 +66,29 @@
                         @if (!empty($data['trainingWords']) && count($data['trainingWords']) > 0)
                             <div style="background:#0f172a;border:2px solid #334155;border-radius:16px;padding:24px;margin-bottom:32px">
                                 <h2 style="color:#fbbf24;font-size:14px;font-weight:900;text-transform:uppercase;letter-spacing:1px;margin:0 0 16px">
-                                    Words Still in Training
+                                    Word Blast — Words Still in Training
                                 </h2>
                                 @foreach ($data['trainingWords'] as $moduleTitle => $words)
+                                    <p style="color:#94a3b8;font-size:12px;font-weight:700;margin:0 0 8px;text-transform:uppercase">
+                                        {{ $moduleTitle }}
+                                    </p>
+                                    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px">
+                                        @foreach ($words as $word)
+                                            <span style="display:inline-block;background:#334155;color:#fff;font-size:13px;font-weight:700;padding:4px 14px;border-radius:100px;border:2px solid #475569">
+                                                {{ $word }}
+                                            </span>
+                                        @endforeach
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endif
+
+                        @if (!empty($data['paragraphTrainingWords']) && count($data['paragraphTrainingWords']) > 0)
+                            <div style="background:#0f172a;border:2px solid #334155;border-radius:16px;padding:24px;margin-bottom:32px">
+                                <h2 style="color:#a78bfa;font-size:14px;font-weight:900;text-transform:uppercase;letter-spacing:1px;margin:0 0 16px">
+                                    Story Quest — Words Still in Training
+                                </h2>
+                                @foreach ($data['paragraphTrainingWords'] as $moduleTitle => $words)
                                     <p style="color:#94a3b8;font-size:12px;font-weight:700;margin:0 0 8px;text-transform:uppercase">
                                         {{ $moduleTitle }}
                                     </p>
