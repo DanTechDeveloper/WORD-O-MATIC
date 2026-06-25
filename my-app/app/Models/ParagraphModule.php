@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Models\StudentParagraphProgress;
 
 class ParagraphModule extends Model
@@ -16,8 +17,13 @@ class ParagraphModule extends Model
 
     protected $table = 'paragraph_modules';
 
-    public function studentProgress()
+    public function studentProgress(): HasMany
     {
         return $this->hasMany(StudentParagraphProgress::class, 'paragraph_module_id');
+    }
+
+    public function words(): HasMany
+    {
+        return $this->hasMany(ParagraphWord::class)->orderBy('position');
     }
 }

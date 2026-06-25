@@ -69,6 +69,7 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/saveParagraphProgress', [StudentController::class, 'saveParagraphProgress'])->name('saveParagraphProgress');
             Route::post('/saveWordProgress', [StudentController::class, 'saveWordProgress'])->name('saveWordProgress');
             Route::post('/updateWordMastery', [StudentController::class, 'updateWordMastery'])->name('updateWordMastery');
+            Route::post('/updateParagraphMastery', [StudentController::class, 'updateParagraphMastery'])->name('updateParagraphMastery');
             Route::get('/results/{id}', [StudentController::class, 'results'])->name('results');
         });
 });

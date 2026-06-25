@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Mail\StudentReportMail;
 use App\Models\ParagraphModule;
+use App\Models\ParagraphWord;
 use App\Models\StudentParagraphProgress;
 use App\Models\StudentWordProgress;
 use App\Models\User;
@@ -313,7 +314,7 @@ class TeacherController extends Controller
             ? count(preg_split('/\s+/', trim($request->content), -1, PREG_SPLIT_NO_EMPTY))
             : 0;
 
-        ParagraphModule::updateOrCreate(
+        $module = ParagraphModule::updateOrCreate(
             ['level' => $request->level],
             [
                 'title' => $request->title,
@@ -321,6 +322,19 @@ class TeacherController extends Controller
                 'total_score' => $wordCount,
             ]
         );
+
+        $contentWords = ! empty(trim($request->content))
+            ? preg_split('/\s+/', trim($request->content), -1, PREG_SPLIT_NO_EMPTY)
+            : [];
+
+        $module->words()->delete();
+        foreach ($contentWords as $pos => $word) {
+            ParagraphWord::create([
+                'paragraph_module_id' => $module->id,
+                'word' => $word,
+                'position' => $pos + 1,
+            ]);
+        }
 
         return redirect()->back();
     }

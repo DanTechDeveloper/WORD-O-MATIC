@@ -10,6 +10,8 @@ use App\Models\PracticeWordSet;
 use App\Models\PracticeWord;
 use App\Models\StudentWordProgress;
 use App\Models\StudentParagraphProgress;
+use App\Models\ParagraphWord;
+use App\Models\StudentParagraphMastery;
 use App\Models\StudentWordMastery;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -89,6 +91,15 @@ class DatabaseSeeder extends Seeder
                 'content' => "Sample content for level {$level}.",
                 'total_score' => $level <= 5 ? 10 : ($level <= 8 ? 15 : 20),
             ]);
+
+            $contentWords = preg_split('/\s+/', trim("Sample content for level {$level}."), -1, PREG_SPLIT_NO_EMPTY);
+            foreach ($contentWords as $pos => $word) {
+                ParagraphWord::create([
+                    'paragraph_module_id' => $paragraphModules[$level]->id,
+                    'word' => $word,
+                    'position' => $pos + 1,
+                ]);
+            }
         }
 
         $students = [
@@ -176,6 +187,16 @@ class DatabaseSeeder extends Seeder
                     'words_smashed' => $smashed,
                     'accuracy' => $sAcc,
                 ]);
+
+                $paraWords = ParagraphWord::where('paragraph_module_id', $paragraphModules[$i]->id)->get();
+                foreach ($paraWords as $paraWord) {
+                    $isMastered = (rand(0, 99) < $sAcc);
+                    StudentParagraphMastery::create([
+                        'user_id' => $user->id,
+                        'paragraph_word_id' => $paraWord->id,
+                        'status' => $isMastered ? 'mastered' : 'training',
+                    ]);
+                }
 
                 $totalWordsSmashed += $smashed;
             }

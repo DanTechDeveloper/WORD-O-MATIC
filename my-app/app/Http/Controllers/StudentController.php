@@ -8,6 +8,7 @@ use App\Models\ParagraphModule;
 use App\Models\PracticeWordSet;
 use App\Models\StudentParagraphProgress;
 use App\Models\StudentProfile;
+use App\Models\StudentParagraphMastery;
 use App\Models\StudentWordMastery;
 use App\Models\StudentWordProgress;
 use App\Models\WordModule;
@@ -282,6 +283,21 @@ class StudentController extends Controller
         return redirect()->back();
     }
 
+    public function updateParagraphMastery(Request $request)
+    {
+        $request->validate([
+            'paragraph_word_id' => 'required|exists:paragraph_words,id',
+            'status' => 'required|in:mastered,training',
+        ]);
+
+        StudentParagraphMastery::updateOrCreate(
+            ['user_id' => auth()->id(), 'paragraph_word_id' => $request->paragraph_word_id],
+            ['status' => $request->status]
+        );
+
+        return redirect()->back();
+    }
+
     public function speakModeLevels()
     {
         $userId = auth()->id();
@@ -330,7 +346,9 @@ class StudentController extends Controller
 
     public function gameplaySpeakMode($id)
     {
-        $module = ParagraphModule::select(['id', 'level', 'title', 'content', 'total_score'])->findOrFail($id);
+        $module = ParagraphModule::with('words')
+            ->select(['id', 'level', 'title', 'content', 'total_score'])
+            ->findOrFail($id);
 
         $userId = auth()->id();
         $progress = StudentParagraphProgress::where('user_id', $userId)
