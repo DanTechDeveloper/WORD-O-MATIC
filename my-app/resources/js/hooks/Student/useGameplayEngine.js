@@ -28,6 +28,7 @@ export function useGameplayEngine({
 
     const currentStreakRef = useRef(0);
     const hasSaved = useRef(false);
+    const wordTimeoutRef = useRef(null);
     const feedbackTimerRef = useRef(null);
     const isMountedRef = useRef(true);
     const currentWordIndexRef = useRef(0);
@@ -39,6 +40,7 @@ export function useGameplayEngine({
     const wordRecognizedTimerRef = useRef(null);
     const onWordRecognizedRef = useRef(onWordRecognized);
     const onMispronounceRef = useRef(onMispronounce);
+    const onMispronounceFnRef = useRef(null);
 
     onWordRecognizedRef.current = onWordRecognized;
     onMispronounceRef.current = onMispronounce;
@@ -71,6 +73,7 @@ export function useGameplayEngine({
             clearTimeout(wordRecognizedTimerRef.current);
             clearTimeout(feedbackTimerRef.current);
             clearTimeout(streakShakeTimerRef.current);
+            clearTimeout(wordTimeoutRef.current);
             if (completionTimerRef.current)
                 clearTimeout(completionTimerRef.current);
         };
@@ -190,6 +193,7 @@ export function useGameplayEngine({
     }, [words, moveToNextWord]);
 
     const handleMispronounce = useCallback(() => {
+        clearTimeout(wordTimeoutRef.current);
         const wordObj = words[currentWordIndexRef.current];
         onMispronounceRef.current?.(wordObj);
 
@@ -211,9 +215,23 @@ export function useGameplayEngine({
         }, 800);
     }, [words, moveToNextWord]);
 
+    onMispronounceFnRef.current = handleMispronounce;
+
+    useEffect(() => {
+        if (gameState === "ACTIVE" && isWordReady) {
+            clearTimeout(wordTimeoutRef.current);
+            wordTimeoutRef.current = setTimeout(
+                () => onMispronounceFnRef.current(),
+                5000,
+            );
+        }
+        return () => clearTimeout(wordTimeoutRef.current);
+    }, [currentWordIndex, gameState, isWordReady]);
+
     const handleTimeUp = useCallback(() => {
         clearTimeout(mispronounceTimerRef.current);
         clearTimeout(wordRecognizedTimerRef.current);
+        clearTimeout(wordTimeoutRef.current);
         setIsExploding(false);
         persistProgress();
         if (wordsSmashedRef.current >= totalWords) {
@@ -231,6 +249,7 @@ export function useGameplayEngine({
         hasSaved.current = false;
         clearTimeout(mispronounceTimerRef.current);
         clearTimeout(wordRecognizedTimerRef.current);
+        clearTimeout(wordTimeoutRef.current);
         if (completionTimerRef.current) {
             clearTimeout(completionTimerRef.current);
         }

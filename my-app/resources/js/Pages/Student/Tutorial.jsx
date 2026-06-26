@@ -1,6 +1,46 @@
-import { Link, router, usePage } from "@inertiajs/react";
-import { useEffect, useRef, useState } from "react";
-import { Joyride, STATUS } from "react-joyride";
+import { Link, usePage } from "@inertiajs/react";
+import { useState } from "react";
+
+const BEFORE_STEPS = [
+    {
+        target: '[data-purpose="avatar-speech"]',
+        title: "Hi there!",
+        message: "I'm your robot buddy! I'll help you learn new words!",
+        emoji: "🤖",
+        color: "lime",
+    },
+    {
+        target: '[data-purpose="read-mode-selection"]',
+        title: "WORD BLAST MODE!",
+        message: "Tap the purple card to start your first game!",
+        emoji: "⚡",
+        color: "purple",
+    },
+    {
+        target: '[data-purpose="story-mode-locked"]',
+        title: "STORY QUEST",
+        message: "This is locked for now. Finish Word Blast first!",
+        emoji: "🔒",
+        color: "lime",
+    },
+];
+
+const AFTER_STEPS = [
+    {
+        target: '[data-purpose="avatar-speech"]',
+        title: "AMAZING!",
+        message: "You did it! Story Quest is waiting for you!",
+        emoji: "🎉",
+        color: "lime",
+    },
+    {
+        target: '[data-purpose="story-mode-unlocked"]',
+        title: "STORY QUEST",
+        message: "Tap here to start your reading adventure!",
+        emoji: "📖",
+        color: "lime",
+    },
+];
 
 export default function Tutorial() {
     const { auth } = usePage().props;
@@ -10,219 +50,64 @@ export default function Tutorial() {
     const avatarUrl = auth?.user?.student?.avatar;
     const bodyUrl = avatarUrl?.replace("/head.png", "/body.png");
 
-    const [joyrideRun, setJoyrideRun] = useState(!practiceDone);
-    const [joyrideStepIndex, setJoyrideStepIndex] = useState(0);
-    const [storyJoyrideRun, setStoryJoyrideRun] = useState(false);
-    const advanceTimerRef = useRef(null);
+    const steps = practiceDone ? AFTER_STEPS : BEFORE_STEPS;
+    const [stepIndex, setStepIndex] = useState(0);
+    const [guideDone, setGuideDone] = useState(false);
 
-    const joyrideSteps = [
-        {
-            target: '[data-purpose="avatar-speech"]',
-            content: (
-                <div>
-                    <p className="text-xl font-black uppercase tracking-tight mb-2">
-                        MEET YOUR GUIDE!
-                    </p>
-                    <p className="text-sm opacity-80">
-                        This is your robot buddy! They'll cheer you on through
-                        every level.
-                    </p>
-                </div>
-            ),
-            placement: "auto",
-            spotlightPadding: 10,
-        },
-        {
-            target: '[data-purpose="read-mode-selection"]',
-            content: (
-                <div>
-                    <p className="text-xl font-black uppercase tracking-tight mb-2">
-                        START WITH WORD BLAST MODE!
-                    </p>
-                    <p className="text-sm opacity-80">
-                        Click here to begin your adventure! Power up your visual
-                        word recognition.
-                    </p>
-                </div>
-            ),
-            placement: "auto",
-            spotlightPadding: 20,
-        },
-        {
-            target: '[data-purpose="story-mode-locked"]',
-            content: (
-                <div>
-                    <p className="text-xl font-black uppercase tracking-tight mb-2">
-                        STORY QUEST - LOCKED!
-                    </p>
-                    <p className="text-sm opacity-80">
-                        Complete this tutorial first to unlock the Word-O-Matic
-                        adventure mode.
-                    </p>
-                </div>
-            ),
-            placement: "auto",
-            spotlightPadding: 20,
-        },
-    ];
+    const step = guideDone ? null : steps[stepIndex];
 
-    const storyJoyrideSteps = [
-        {
-            target: '[data-purpose="story-mode-unlocked"]',
-            content: (
-                <div>
-                    <p className="text-xl font-black uppercase tracking-tight mb-2">
-                        STORY QUEST UNLOCKED!
-                    </p>
-                    <p className="text-sm opacity-80">
-                        Click here to start your Story Quest adventure! Read
-                        sentences aloud and complete the story!
-                    </p>
-                </div>
-            ),
-            placement: "auto",
-            spotlightPadding: 20,
-        },
-    ];
+    const isTarget = (purpose) => {
+        if (!step) return false;
+        return step.target === `[data-purpose="${purpose}"]`;
+    };
 
-    useEffect(() => {
-        if (!joyrideRun) return;
-        advanceTimerRef.current = setTimeout(() => {
-            if (joyrideStepIndex < joyrideSteps.length - 1) {
-                setJoyrideStepIndex(joyrideStepIndex + 1);
-            } else {
-                setJoyrideRun(false);
-            }
-        }, 4000);
-        return () => clearTimeout(advanceTimerRef.current);
-    }, [joyrideStepIndex, joyrideRun, joyrideSteps.length]);
+    const guideLocked = !practiceDone && !guideDone && !isTarget("read-mode-selection");
+    const wordBlastUnlocked = practiceDone || guideDone || isTarget("read-mode-selection");
+    const storyQuestUnlocked = practiceDone && (guideDone || isTarget("story-mode-unlocked"));
 
-    const handleJoyrideCallback = (data) => {
-        const { status, index } = data;
-        if (status === STATUS.FINISHED || status === STATUS.SKIPPED) {
-            setJoyrideRun(false);
-            return;
-        }
-        if (typeof index === "number") {
-            setJoyrideStepIndex(index);
+    const advanceGuide = () => {
+        if (stepIndex < steps.length - 1) {
+            setStepIndex(stepIndex + 1);
+        } else {
+            setGuideDone(true);
         }
     };
 
-    useEffect(() => {
-        if (!storyJoyrideRun) return;
-        const timer = setTimeout(() => setStoryJoyrideRun(false), 4000);
-        return () => clearTimeout(timer);
-    }, [storyJoyrideRun]);
-
-    const handleStoryJoyrideCallback = (data) => {
-        const { status } = data;
-        if (status === STATUS.FINISHED || status === STATUS.SKIPPED) {
-            setStoryJoyrideRun(false);
-        }
-    };
-
-    useEffect(() => {
-        if (practiceDone) {
-            const timer = setTimeout(() => setStoryJoyrideRun(true), 1500);
-            return () => clearTimeout(timer);
-        }
-    }, [practiceDone]);
-
-    const sharedJoyrideStyles = {
-        beacon: {
-            position: "fixed",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            zIndex: 10001,
-        },
-        beaconInner: {
-            backgroundColor: "#ffffff",
-        },
-        beaconOuter: {
-            backgroundColor: "rgba(255, 255, 255, 0.4)",
-            borderColor: "#ffffff",
-            borderWidth: "2px",
-        },
-        options: {
-            arrowColor: "#1e1b4b",
-            overlayColor: "rgba(0,0,0,0.85)",
-            zIndex: 10000,
-        },
-        tooltip: {
-            backgroundColor: "#1e1b4b",
-            borderRadius: "1.5rem",
-            padding: "2rem",
-            fontSize: "1.125rem",
-            color: "#ffffff",
-        },
-        tooltipContainer: {
-            textAlign: "left",
-        },
-        tooltipContent: {
-            padding: 0,
-            fontSize: "1.125rem",
-            lineHeight: "1.6",
-            color: "#ffffff",
-        },
-        buttonNext: {
-            backgroundColor: "#7c3aed",
-            borderRadius: "0.75rem",
-            fontSize: "1rem",
-            fontWeight: 700,
-            padding: "0.75rem 1.5rem",
-            color: "#fff",
-        },
-        buttonBack: {
-            fontSize: "1rem",
-            fontWeight: 600,
-            color: "#a78bfa",
-        },
-        buttonSkip: {
-            fontSize: "0.875rem",
-            fontWeight: 600,
-            color: "#9ca3af",
-        },
+    const ringClass = (purpose) => {
+        if (!isTarget(purpose)) return "";
+        const c = step.color === "purple"
+            ? "ring-4 ring-purple-400 ring-offset-4 ring-offset-zinc-950 scale-[1.03]"
+            : "ring-4 ring-lime-400 ring-offset-4 ring-offset-zinc-950 scale-[1.03]";
+        return `${c} z-10 rounded-2xl transition-all duration-500 animate-pulse`;
     };
 
     return (
-        <div className="m-0 p-0 overflow-hidden select-none">
-            {joyrideRun && !practiceDone && (
-                <Joyride
-                    run={joyrideRun}
-                    stepIndex={joyrideStepIndex}
-                    callback={handleJoyrideCallback}
-                    steps={joyrideSteps}
-                    disableBeacon
-                    continuous
-                    hideBackButton
-                    disableOverlayClose
-                    disableCloseOnOutsideClick
-                    showProgress
-                    styles={sharedJoyrideStyles}
-                />
-            )}
-
-            {storyJoyrideRun && practiceDone && (
-                <Joyride
-                    run={storyJoyrideRun}
-                    callback={handleStoryJoyrideCallback}
-                    steps={storyJoyrideSteps}
-                    disableBeacon
-                    hideBackButton
-                    disableOverlayClose
-                    disableCloseOnOutsideClick
-                    styles={sharedJoyrideStyles}
-                />
+        <div className="m-0 p-0 overflow-hidden select-none min-h-screen w-full relative bg-zinc-950">
+            {/* PROGRESS DOTS */}
+            {!guideDone && (
+                <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[60] flex gap-3">
+                    {steps.map((_, i) => (
+                        <div
+                            key={i}
+                            className={`w-3 h-3 rounded-full transition-all duration-500 ${
+                                i === stepIndex
+                                    ? "bg-lime-400 scale-125"
+                                    : i < stepIndex
+                                      ? "bg-lime-400/50"
+                                      : "bg-white/20"
+                            }`}
+                        />
+                    ))}
+                </div>
             )}
 
             <main className="min-h-screen w-full flex flex-col md:flex-row relative overflow-hidden bg-zinc-950">
                 {/* WORD BLAST MODE */}
                 <div className="flex-1 flex relative overflow-hidden">
                     <Link
-                        href={practiceDone ? undefined : "/student/practice-read"}
-                        as={practiceDone ? "div" : "a"}
-                        className={`group flex-1 flex flex-col items-center justify-center p-8 transition-all duration-500 border-b-4 md:border-b-0 md:border-r-4 border-zinc-900 relative overflow-hidden bg-gradient-to-br from-purple-900/40 to-zinc-950 ${practiceDone ? "cursor-not-allowed" : ""}`}
+                        href={wordBlastUnlocked ? "/student/practice-read" : undefined}
+                        as={wordBlastUnlocked ? "a" : "div"}
+                        className={`group flex-1 flex flex-col items-center justify-center p-8 transition-all duration-500 border-b-4 md:border-b-0 md:border-r-4 border-zinc-900 relative overflow-hidden bg-gradient-to-br from-purple-900/40 to-zinc-950 ${wordBlastUnlocked && !practiceDone ? "" : "cursor-not-allowed"} ${ringClass(practiceDone ? "read-mode-locked" : "read-mode-selection")}`}
                         data-purpose={practiceDone ? "read-mode-locked" : "read-mode-selection"}
                     >
                         <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]" />
@@ -269,23 +154,23 @@ export default function Tutorial() {
                             </span>
                         </div>
                     )}
+
+                    {guideLocked && (
+                        <div className="absolute inset-0 z-30 bg-black/60 backdrop-blur-[4px] flex flex-col items-center justify-center pointer-events-auto transition-all duration-500">
+                            <span className="text-white/50 text-xs font-black tracking-widest uppercase bg-zinc-900/80 px-4 py-2 rounded-full border border-white/10">
+                                Wait for the guide 👀
+                            </span>
+                        </div>
+                    )}
                 </div>
 
                 {/* STORY QUEST MODE */}
                 <div className="flex-1 flex relative overflow-hidden">
                     <Link
-                        href={
-                            practiceDone
-                                ? "/student/gameplaySpeakMode/1"
-                                : undefined
-                        }
-                        as={practiceDone ? "a" : "div"}
-                        className={`group flex-1 flex flex-col items-center justify-center p-8 transition-all duration-500 bg-gradient-to-br from-lime-900/20 to-zinc-950 ${practiceDone ? "" : "cursor-not-allowed"}`}
-                        data-purpose={
-                            practiceDone
-                                ? "story-mode-unlocked"
-                                : "story-mode-locked"
-                        }
+                        href={storyQuestUnlocked ? "/student/gameplaySpeakMode/1" : undefined}
+                        as={storyQuestUnlocked ? "a" : "div"}
+                        className={`group flex-1 flex flex-col items-center justify-center p-8 transition-all duration-500 bg-gradient-to-br from-lime-900/20 to-zinc-950 ${storyQuestUnlocked ? "" : "cursor-not-allowed"} ${ringClass(storyQuestUnlocked ? "story-mode-unlocked" : "story-mode-locked")}`}
+                        data-purpose={storyQuestUnlocked ? "story-mode-unlocked" : "story-mode-locked"}
                     >
                         <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]" />
 
@@ -332,66 +217,46 @@ export default function Tutorial() {
                             </span>
                         </div>
                     )}
+
+                    {practiceDone && !storyQuestUnlocked && (
+                        <div className="absolute inset-0 z-30 bg-black/60 backdrop-blur-[4px] flex flex-col items-center justify-center pointer-events-auto transition-all duration-500">
+                            <span className="text-white/50 text-xs font-black tracking-widest uppercase bg-zinc-900/80 px-4 py-2 rounded-full border border-white/10">
+                                Wait for the guide 👀
+                            </span>
+                        </div>
+                    )}
                 </div>
 
-                {/* Avatar */}
-                {bodyUrl && (
+                {/* AVATAR SPEECH BUBBLE GUIDE */}
+                {bodyUrl && !guideDone && step && (
                     <div
-                        className={`hidden lg:block absolute bottom-0 z-50 pointer-events-none select-none max-w-[25vw] max-h-[55vh] ${practiceDone ? "left-4" : "right-4"}`}
+                        className="fixed z-50 bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-4"
                         data-purpose="avatar-speech"
                     >
-                        <div className="relative w-full h-full">
-                            <div
-                                className={`absolute bottom-full mb-4 z-[60] ${practiceDone ? "left-4" : "right-4"}`}
-                            >
-                                <div className="relative bg-white/95 backdrop-blur-sm rounded-2xl px-5 py-3 shadow-2xl border-2 border-lime-400 min-w-[200px]">
-                                    {practiceDone ? (
-                                        <p className="text-zinc-900 font-black text-lg uppercase tracking-tight leading-tight">
-                                            Great Job!{" "}
-                                            <br />
-                                            Try{" "}
-                                            <span className="text-lime-600">
-                                                Story Quest
-                                            </span>{" "}
-                                            Next!
-                                        </p>
-                                    ) : (
-                                        <p className="text-zinc-900 font-black text-lg uppercase tracking-tight leading-tight">
-                                            Ready To Learn?
-                                            <br />
-                                            Start with{" "}
-                                            <span className="text-purple-600">
-                                                Word Blast Mode!
-                                            </span>
-                                        </p>
-                                    )}
-                                    <div
-                                        className={`absolute -bottom-[14px] w-0 h-0 border-l-[10px] border-r-[10px] border-t-[14px] border-l-transparent border-r-transparent border-t-white/95 ${practiceDone ? "left-6" : "right-6"}`}
-                                    />
-                                </div>
-                            </div>
-                            <img
-                                src={bodyUrl}
-                                alt="Your Avatar"
-                                className="w-full h-auto object-contain drop-shadow-[0_0_40px_rgba(163,230,53,0.2)]"
-                            />
-                        </div>
+                        <button
+                            onClick={advanceGuide}
+                            className="bg-white/95 backdrop-blur-sm rounded-3xl px-8 py-5 shadow-2xl border-2 border-lime-400 min-w-[260px] max-w-[360px] cursor-pointer hover:scale-105 active:scale-95 transition-all duration-200 text-center animate-fade-in"
+                        >
+                            <p className="text-2xl font-black uppercase tracking-tight text-zinc-900 flex items-center justify-center gap-2">
+                                <span className="text-3xl">{step.emoji}</span>
+                                {step.title}
+                            </p>
+                            <p className="text-base font-bold text-zinc-600 mt-2 leading-snug">
+                                {step.message}
+                            </p>
+                            <p className="text-xs font-black uppercase tracking-wider text-lime-600 mt-4">
+                                {stepIndex < steps.length - 1
+                                    ? "Tap here to continue →"
+                                    : "Tap to finish! ✨"}
+                            </p>
+                        </button>
+                        <img
+                            src={bodyUrl}
+                            alt="Your Avatar"
+                            className="w-48 h-auto md:w-64 lg:w-80 object-contain drop-shadow-[0_0_80px_rgba(163,230,53,0.35)] animate-bounce-slow"
+                        />
                     </div>
                 )}
-
-                {/* CONTINUE TO DASHBOARD */}
-                <div
-                    className="absolute bottom-12 left-0 right-0 z-40 flex justify-center pointer-events-none"
-                    data-purpose="continue-dashboard"
-                >
-                    <Link
-                        href="/student/dashboard"
-                        className="pointer-events-auto bg-white/5 hover:bg-white/10 backdrop-blur-xl border border-white/10 text-white px-6 py-3 rounded-xl font-bold text-sm tracking-widest uppercase transition-all hover:scale-105 active:scale-95 flex items-center gap-3"
-                    >
-                        Continue to Dashboard
-                        <span className="text-xl">🏠</span>
-                    </Link>
-                </div>
             </main>
         </div>
     );
