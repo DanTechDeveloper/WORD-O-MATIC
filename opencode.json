@@ -1,7 +1,25 @@
 {
-    "$schema": "https://opencode.ai/config.json",
-    "instructions": [
-        "my-app/AGENTS.md",
-        "my-app/RULES.md"
-    ]
+  "$schema": "https://opencode.ai/config.json",
+  "instructions": [
+    "my-app/AGENTS.md",
+    "my-app/RULES.md"
+  ],
+  "plugin": [
+    "opencode-wakatime",
+    "opencode-history-search",
+    "opencode-notifier",
+    "opencode-web-fetch"
+  ],
+  "permission": {
+    "bash": {
+      "*": "ask",
+      "git *": "allow",
+      "php artisan *": "allow",
+      "composer *": "allow",
+      "npm *": "allow",
+      "bun *": "allow"
+    },
+    "edit": "ask",
+    "webfetch": "allow"
+  }
 }

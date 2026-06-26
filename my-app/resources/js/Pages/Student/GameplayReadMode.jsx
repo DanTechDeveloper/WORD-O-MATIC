@@ -11,6 +11,7 @@ import { useMicrophonePermission } from "@/hooks/Student/useMicrophonePermission
 
 export default function GameplayReadMode({ module }) {
     // All state at the top.
+
     const [currentWordIndex, setCurrentWordIndex] = useState(0);
     const [wordsSmashed, setWordsSmashed] = useState(0);
     const currentStreakRef = useRef(0);
@@ -299,28 +300,6 @@ export default function GameplayReadMode({ module }) {
         onRecognitionError: (err) => console.error("Recognition error:", err),
         isWordReady: isWordReady,
     });
-
-    // --- Play again ---
-
-    const handlePlayAgain = useCallback(() => {
-        hasSaved.current = false;
-        clearTimeout(mispronounceTimerRef.current);
-        if (completionTimerRef.current) {
-            clearTimeout(completionTimerRef.current);
-        }
-        currentWordIndexRef.current = 0;
-        setCurrentWordIndex(0);
-        setWordsSmashed(0);
-        currentStreakRef.current = 0;
-        setCurrentStreak(0);
-        setMaxStreak(0);
-        setIsMispronounced(false);
-        clearTimeout(feedbackTimerRef.current);
-        clearTimeout(streakShakeTimerRef.current);
-        setFeedbackType(null);
-        setStreakShake(null);
-        setGameState("COUNTDOWN");
-    }, []);
 
     // --- Render ---
 

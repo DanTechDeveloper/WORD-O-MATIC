@@ -7,14 +7,12 @@ export function useWordSpeechRecognition({
     targetWord,
     onWordRecognized,
     onPermissionDenied,
-    // Removed interim matching
     onMispronounced,
     onRecognitionError,
     isWordReady = true,
 }) {
     const recognitionRef = useRef(null);
 
-    // Point 1: Sync refs synchronously in the hook body to avoid Effect delay
     const gameStateRef = useRef(isActive);
     gameStateRef.current = isActive;
 
@@ -30,7 +28,6 @@ export function useWordSpeechRecognition({
     const onPermissionDeniedRef = useRef(onPermissionDenied);
     onPermissionDeniedRef.current = onPermissionDenied;
 
-    // Removed interim matching
     const onMispronouncedRef = useRef(onMispronounced);
     onMispronouncedRef.current = onMispronounced;
 
@@ -38,8 +35,6 @@ export function useWordSpeechRecognition({
     onRecognitionErrorRef.current = onRecognitionError;
 
     const hasMatchedCurrentRef = useRef(false);
-
-    // Removed processing lock
     const lastProcessedIndexRef = useRef(-1);
     const isMountedRef = useRef(false);
     const mispronounceTimeoutRef = useRef(null);
@@ -47,7 +42,6 @@ export function useWordSpeechRecognition({
     const restartRetryCountRef = useRef(0);
     const restartTimerRef = useRef(null);
 
-    // Track hook mount/unmount lifecycle
     useEffect(() => {
         isMountedRef.current = true;
         return () => {
@@ -60,7 +54,6 @@ export function useWordSpeechRecognition({
         };
     }, []);
 
-    // Approach 2: Persistent Engine Instance initialized once on mount
     useEffect(() => {
         const SpeechRecognition =
             window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -75,19 +68,15 @@ export function useWordSpeechRecognition({
             recognition.interimResults = true;
             recognition.lang = "en-US";
 
-            // In the persistent instance useEffect:
             recognition.onresult = (event) => {
-                // Bug #1 fix: guard against buffered results after stop/pause
                 if (!gameStateRef.current || isPausedRef.current) return;
 
-                // Clear timer on new voice input
                 if (mispronounceTimeoutRef.current)
                     clearTimeout(mispronounceTimeoutRef.current);
 
                 const target = targetWordRef.current.toLowerCase().trim();
                 if (!target) return;
-                // Fix for onMispronounced firing on partial transcripts:
-                // Track whether we matched across all results in this event
+
                 let matchedThisEvent = false;
                 let latestTranscript = "";
                 for (let i = event.resultIndex; i < event.results.length; ++i) {
@@ -96,7 +85,6 @@ export function useWordSpeechRecognition({
                     const result = event.results[i];
                     if (!result) continue;
 
-                    // Bug #2 fix: null-coalesce before chaining
                     const transcript = (result[0]?.transcript ?? "")
                         .toLowerCase()
                         .replace(/[^\w\s]/g, "")
@@ -104,7 +92,6 @@ export function useWordSpeechRecognition({
 
                     if (!transcript) continue;
 
-                    // Get latest transcript (even interim)
                     latestTranscript = transcript;
 
                     const wordsInTranscript = transcript.split(/\s+/);
@@ -122,7 +109,6 @@ export function useWordSpeechRecognition({
 
                     if (result.isFinal) {
                         lastProcessedIndexRef.current = i;
-                        // Final result with no match → mispronounce immediately
                         if (!matchedThisEvent && !hasMatchedCurrentRef.current) {
                             if (mispronounceTimeoutRef.current)
                                 clearTimeout(mispronounceTimeoutRef.current);
@@ -140,7 +126,6 @@ export function useWordSpeechRecognition({
                     }
                 }
 
-                // Trigger after short silence for interim-only results
                 if (
                     !matchedThisEvent &&
                     !hasMatchedCurrentRef.current &&
@@ -172,7 +157,7 @@ export function useWordSpeechRecognition({
                         "Speech Recognition Error: not-allowed",
                         event.error,
                     );
-                    onPermissionDeniedRef.current?.(); // Callback to parent
+                    onPermissionDeniedRef.current?.();
                 } else {
                     console.error("Speech Recognition Error:", event.error);
                     if (onRecognitionErrorRef.current)
@@ -222,18 +207,13 @@ export function useWordSpeechRecognition({
                     }
                 };
 
-                // Desktop: continuous mode keeps recognition alive.
-                // Mobile: continuous is ignored, so onend fires per utterance.
-                // The 300ms delay + retries gives mobile Chrome time to clean up.
                 restartTimerRef.current = setTimeout(tryRestart, 300);
             };
 
             recognitionRef.current = recognition;
         }
-    }, []); // Empty dependency array ensures persistent instance
+    }, []);
 
-    // Reset match flag when target word changes, with a grace period
-    // to prevent stale onresult data from triggering false mispronounces.
     useEffect(() => {
         hasMatchedCurrentRef.current = false;
         if (mispronounceTimeoutRef.current)
@@ -241,9 +221,6 @@ export function useWordSpeechRecognition({
         gracePeriodEndRef.current = Date.now() + 900;
     }, [targetWord]);
 
-    // Start recognition as soon as the game becomes active (including COUNTDOWN)
-    // so that on mobile Chrome the user gesture context is still live.
-    // The onresult handler ignores results while paused.
     useEffect(() => {
         const recognition = recognitionRef.current;
 
