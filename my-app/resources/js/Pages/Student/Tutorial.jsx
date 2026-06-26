@@ -61,9 +61,12 @@ export default function Tutorial() {
         return step.target === `[data-purpose="${purpose}"]`;
     };
 
-    const guideLocked = !practiceDone && !guideDone && !isTarget("read-mode-selection");
-    const wordBlastUnlocked = practiceDone || guideDone || isTarget("read-mode-selection");
-    const storyQuestUnlocked = practiceDone && (guideDone || isTarget("story-mode-unlocked"));
+    const guideLocked =
+        !practiceDone && !guideDone && !isTarget("read-mode-selection");
+    const wordBlastUnlocked =
+        practiceDone || guideDone || isTarget("read-mode-selection");
+    const storyQuestUnlocked =
+        practiceDone && (guideDone || isTarget("story-mode-unlocked"));
 
     const advanceGuide = () => {
         if (stepIndex < steps.length - 1) {
@@ -75,9 +78,10 @@ export default function Tutorial() {
 
     const ringClass = (purpose) => {
         if (!isTarget(purpose)) return "";
-        const c = step.color === "purple"
-            ? "ring-4 ring-purple-400 ring-offset-4 ring-offset-zinc-950 scale-[1.03]"
-            : "ring-4 ring-lime-400 ring-offset-4 ring-offset-zinc-950 scale-[1.03]";
+        const c =
+            step.color === "purple"
+                ? "ring-4 ring-purple-400 ring-offset-4 ring-offset-zinc-950 scale-[1.03]"
+                : "ring-4 ring-lime-400 ring-offset-4 ring-offset-zinc-950 scale-[1.03]";
         return `${c} z-10 rounded-2xl transition-all duration-500 animate-pulse`;
     };
 
@@ -105,10 +109,18 @@ export default function Tutorial() {
                 {/* WORD BLAST MODE */}
                 <div className="flex-1 flex relative overflow-hidden">
                     <Link
-                        href={wordBlastUnlocked ? "/student/practice-read" : undefined}
+                        href={
+                            wordBlastUnlocked
+                                ? "/student/practice-read"
+                                : undefined
+                        }
                         as={wordBlastUnlocked ? "a" : "div"}
                         className={`group flex-1 flex flex-col items-center justify-center p-8 transition-all duration-500 border-b-4 md:border-b-0 md:border-r-4 border-zinc-900 relative overflow-hidden bg-gradient-to-br from-purple-900/40 to-zinc-950 ${wordBlastUnlocked && !practiceDone ? "" : "cursor-not-allowed"} ${ringClass(practiceDone ? "read-mode-locked" : "read-mode-selection")}`}
-                        data-purpose={practiceDone ? "read-mode-locked" : "read-mode-selection"}
+                        data-purpose={
+                            practiceDone
+                                ? "read-mode-locked"
+                                : "read-mode-selection"
+                        }
                     >
                         <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]" />
 
@@ -167,10 +179,18 @@ export default function Tutorial() {
                 {/* STORY QUEST MODE */}
                 <div className="flex-1 flex relative overflow-hidden">
                     <Link
-                        href={storyQuestUnlocked ? "/student/gameplaySpeakMode/1" : undefined}
+                        href={
+                            storyQuestUnlocked
+                                ? "/student/gameplaySpeakMode/1"
+                                : undefined
+                        }
                         as={storyQuestUnlocked ? "a" : "div"}
                         className={`group flex-1 flex flex-col items-center justify-center p-8 transition-all duration-500 bg-gradient-to-br from-lime-900/20 to-zinc-950 ${storyQuestUnlocked ? "" : "cursor-not-allowed"} ${ringClass(storyQuestUnlocked ? "story-mode-unlocked" : "story-mode-locked")}`}
-                        data-purpose={storyQuestUnlocked ? "story-mode-unlocked" : "story-mode-locked"}
+                        data-purpose={
+                            storyQuestUnlocked
+                                ? "story-mode-unlocked"
+                                : "story-mode-locked"
+                        }
                     >
                         <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]" />
 
@@ -255,6 +275,19 @@ export default function Tutorial() {
                             alt="Your Avatar"
                             className="w-48 h-auto md:w-64 lg:w-80 object-contain drop-shadow-[0_0_80px_rgba(163,230,53,0.35)] animate-bounce-slow"
                         />
+                    </div>
+                )}
+
+                {/* CONTINUE TO DASHBOARD */}
+                {guideDone && (
+                    <div className="fixed bottom-8 left-0 right-0 z-40 flex justify-center">
+                        <Link
+                            href="/student/dashboard"
+                            className="bg-lime-400 hover:bg-lime-300 text-zinc-950 px-10 py-4 rounded-2xl font-black text-lg tracking-widest uppercase transition-all hover:scale-105 active:scale-95 flex items-center gap-3 shadow-2xl shadow-lime-400/25"
+                        >
+                            Continue to Dashboard
+                            <span className="text-2xl">🏠</span>
+                        </Link>
                     </div>
                 )}
             </main>

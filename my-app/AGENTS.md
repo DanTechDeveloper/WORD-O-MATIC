@@ -1,6 +1,7 @@
 # Word-O-Matic — Agent Guide
 
-All source code lives under `my-app/`. Set that as working directory before running any command.
+Run all commands from `my-app/`.
+
 ## Stack
 
 - **Backend:** PHP 8.3, Laravel 13 (Breeze scaffold), Sanctum auth
@@ -10,63 +11,69 @@ All source code lives under `my-app/`. Set that as working directory before runn
 - **Charts:** recharts (PieChart, BarChart)
 - **Icons:** Material Symbols (`material-symbols-outlined`)
 
-## Key Commands
+## Commands
 
-Run from `my-app/`:
+| Command | What it does |
+|---|---|
+| `composer run setup` | Full setup: composer install, .env, key gen, migrate, npm install, npm build |
+| `composer run dev` | Starts artisan serve + queue:listen + pail logs + Vite dev via concurrently |
+| `composer run test` | `config:clear` then `php artisan test` |
+| `php artisan test` | PHPUnit with SQLite `:memory:` (see phpunit.xml) |
+| `php artisan migrate:fresh --seed` | Reset DB — creates 1 teacher (`admin`/`password`), 24 students across 3 sectors |
+| `npm run build` | Vite production build |
+| `npm run dev` | Vite dev server only |
 
-| Command                            | What it does                                                                          |
-| ---------------------------------- | ------------------------------------------------------------------------------------- |
-| `composer run setup`               | Full project setup (composer install, .env, key gen, migrate, npm install, npm build) |
-| `composer run dev`                 | Starts all dev servers: artisan serve, queue:listen, pail logs, Vite dev              |
-| `composer run test`                | `config:clear` then `php artisan test`                                                |
-| `php artisan test`                 | PHPUnit (Unit + Feature) with SQLite `:memory:`                                       |
-| `php artisan migrate:fresh --seed` | Reset DB with all seeders (24 students + badges)                                      |
-| `npm run build`                    | Vite production build                                                                 |
-| `npm run dev`                      | Vite dev server only                                                                  |
+CI: `migrate --force` → `npm install && npm run build` → `php artisan test` → `migrate --force` (Railway MySQL).
 
-CI: `migrate --force` → `npm install && npm run build` → `php artisan test` → `migrate --force` against Railway MySQL production.
+## Frontend Conventions
 
-Seeder creates: 1 teacher (`admin`/`password`), 24 students with `wordBlastAcc`/`storyQuestAcc`/`status`/`section` across 3 sectors.
+- Plain JSX, no TypeScript. Path alias `@/` → `resources/js/` (see `jsconfig.json`).
+- 4-space indent, no semicolons aren't enforced but existing code uses them.
+- Inertia pages resolve as `./Pages/{name}.jsx` under `resources/js/`.
+- Blade: only `resources/views/app.blade.php` (Inertia root).
+- **No code comments** unless the original code already has them.
+- `react-joyride` is in package.json but no longer imported — Tutorial.jsx uses avatar-guided onboarding instead.
 
-## Architecture
+### Student Pages
+- Wrapped in `resources/js/Layouts/Student/DashboardLayout.jsx` — no sidebar, minimal layout with `StudentProfile` + `StudentFeatures`.
+- Student hooks live in `resources/js/hooks/Student/`: `useGameplayEngine`, `useWordSpeechRecognition`, `useSentenceSpeechRecognition`, `useCountdown`, `useMicrophonePermission`.
 
-### Routes (`routes/web.php`)
+### Teacher Pages
+- Wrapped in `resources/js/Layouts/Teacher/DashboardLayout.jsx` — includes sidebar (`Components/Teacher/Sidebar.jsx`).
 
-- **Guest:** `GET /` (student login), `GET /teacher/login` (teacher login)
-- **Teacher** (`/teacher/*`, middleware `role:teacher`): dashboard, students, word/paragraph modules, reports, leaderboards, assignments, badges
-- **Student** (`/student/*`, middleware `role:student` + `CheckStudentOnboarding`): onboarding (splash → avatar → greetings), gameplay (read/speak modes), leaderboards, badges, results
-- Auth: session-based via `UserController`
+## Backend Architecture
 
-### Controllers
+### Models (15 total)
 
-- `TeacherController` — dashboard, student listing, module CRUD, reports
-- `StudentController` — onboarding, gameplay, progress saving, leaderboards, badges
-- `UserController` — login/logout
+| Table | Model | Key Fields |
+|---|---|---|
+| `users` | `User` | `role` (teacher/student), `hasOne(StudentProfile)` |
+| `students` | `StudentProfile` | Denormalized: `points`, `wordBlastAcc`, `storyQuestAcc`, `status` ENUM, `section`, `read_level`, `speak_level`, `avatar` |
+| `game_sessions` | `GameSession` | Polymorphic `morphTo` → `WordModule`/`ParagraphModule`, static `logSession()` |
+| `word_modules` | `WordModule` | `hasMany(Word)`, static `trainingWordsForUser()`, `curriculumForUser()` |
+| `paragraph_modules` | `ParagraphModule` | `hasMany(ParagraphWord)`, same static helpers |
+| `student_word_progress` | `StudentWordProgress` | Per-module word progress |
+| `student_paragraph_progress` | `StudentParagraphProgress` | Per-module paragraph progress |
+| `student_word_mastery` | `StudentWordMastery` | Per-word training/mastered status |
+| `student_paragraph_mastery` | `StudentParagraphMastery` | Per-word paragraph mastery |
+| `badges` + `student_badges` | `Badges`, `StudentBadges` | Many-to-many with pivot |
 
-### Data Flow
+### Key Services (injected into StudentController)
+- `ProgressService` — writes to detailed progress tables + denormalized `students` fields
+- `GameSessionService` — wraps `ProgressService`, logs sessions
+- `BadgeService` — badge earning logic
+- `LevelService` — progression gating
 
-- `TeacherController@students()` returns data for `Students.jsx`: reads `user.name`, `user.student_id`, and `student.*` (avatar, section, status, wordBlastAcc, storyQuestAcc) — all denormalized on the `students` table
-- `TeacherController@dashboard()` reads directly from `students` table (not progress tables) for consistency
-- Chart counts classification: both accuracy `null`/`0` → `notStarted`; avg < 60 → `atRisk`; 60-80 → `needsSupport`; ≥ 80 → `onTrack`
+### Data-Flow Pattern
+- `TeacherController` reads directly from `students` table (denormalized), not progress tables
+- Chart classification: `null`/`0` accuracy → `notStarted`; avg `< 60` → `atRisk`; `60-80` → `needsSupport`; `≥ 80` → `onTrack`
 - Student `status` ENUM: `atRisk`, `support`, `onTrack`, `notStarted` (defined in migration)
 
-### Key Models
-
-- `StudentProfile` (table: `students`) — denormalized snapshot: `points`, `wordBlastAcc`, `storyQuestAcc`, `status`, `section`, `read_level`, `speak_level`, `avatar`
-- `GameSession` — logs every play (`logSession()` static method, polymorphic to `WordModule`/`ParagraphModule`)
-- `StudentWordProgress` / `StudentParagraphProgress` — per-module progress (separate from denormalized accuracy on `students`)
+### Routes (`routes/web.php`)
+- **Guest:** `GET /` (student login), `GET /teacher/login`
+- **Teacher** (`/teacher/*`, middleware `role:teacher`): dashboard, students, modules, reports, leaderboards, assignments, badges
+- **Student** (`/student/*`, `role:student` + `CheckStudentOnboarding`): splash → avatar → greetings → dashboard, gameplay (read/speak), leaderboards, badges, results
 
 ### Student Onboarding
-
-Enforced by `CheckStudentOnboarding` middleware: `avatar` column on `students` must be non-empty. Flow: splashScreen → avatarSelection (POST `/avatar`) → greetings → dashboard.
-
-## Conventions
-
-- PHP: Laravel Pint (PSR-12)
-- No TypeScript, plain JSX with `jsconfig.json`
-- Spaces, 4-space indent (`.editorconfig`)
-- No code comments unless the original code already has them
-- Inertia pages resolve as `./Pages/{name}.jsx` under `resources/js/`
-- Blade: only `resources/views/app.blade.php` (Inertia root)
-- `DashboardLayout` in `resources/js/Layouts/Teacher/` wraps all teacher pages
-- Teacher sidebar: `resources/js/Components/Teacher/Sidebar.jsx`
+- `CheckStudentOnboarding` middleware enforces: `students.avatar` must be non-empty.
+- Flow: splashScreen → avatarSelection (POST `/avatar`) → greetings → dashboard.
