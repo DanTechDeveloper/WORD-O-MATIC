@@ -3,7 +3,6 @@ import { isFuzzyMatch } from "@/lib/speechUtils";
 
 export function useSentenceSpeechRecognition({
     isActive,
-    isPaused,
     targetWord,
     onWordRecognized,
     onPermissionDenied,
@@ -14,9 +13,6 @@ export function useSentenceSpeechRecognition({
 
     const gameStateRef = useRef(isActive);
     gameStateRef.current = isActive;
-
-    const isPausedRef = useRef(isPaused);
-    isPausedRef.current = isPaused;
 
     const targetWordRef = useRef(targetWord);
     targetWordRef.current = targetWord;
@@ -67,7 +63,7 @@ export function useSentenceSpeechRecognition({
             recognition.lang = "en-US";
 
             recognition.onresult = (event) => {
-                if (!gameStateRef.current || isPausedRef.current) return;
+                if (!gameStateRef.current) return;
 
                 if (mispronounceTimeoutRef.current)
                     clearTimeout(mispronounceTimeoutRef.current);
@@ -116,7 +112,6 @@ export function useSentenceSpeechRecognition({
                         if (
                             isMountedRef.current &&
                             gameStateRef.current &&
-                            !isPausedRef.current &&
                             !hasMatchedCurrentRef.current
                         ) {
                             onMispronouncedRef.current?.(latestTranscript);
@@ -155,16 +150,14 @@ export function useSentenceSpeechRecognition({
 
                 if (
                     !isMountedRef.current ||
-                    !gameStateRef.current ||
-                    isPausedRef.current
+                    !gameStateRef.current
                 )
                     return;
 
                 const tryRestart = () => {
                     if (
                         !isMountedRef.current ||
-                        !gameStateRef.current ||
-                        isPausedRef.current
+                        !gameStateRef.current
                     ) {
                         restartRetryCountRef.current = 0;
                         return;
