@@ -32,11 +32,11 @@ CI: `migrate --force` → `npm install && npm run build` → `php artisan test` 
 - Inertia pages resolve as `./Pages/{name}.jsx` under `resources/js/`.
 - Blade: only `resources/views/app.blade.php` (Inertia root).
 - **No code comments** unless the original code already has them.
-- `react-joyride` is in package.json but no longer imported — Tutorial.jsx uses avatar-guided onboarding instead.
+- Onboarding uses avatar-guided speech bubbles (Tutorial.jsx, PracticeRead.jsx).
 
 ### Student Pages
 - Wrapped in `resources/js/Layouts/Student/DashboardLayout.jsx` — no sidebar, minimal layout with `StudentProfile` + `StudentFeatures`.
-- Student hooks live in `resources/js/hooks/Student/`: `useGameplayEngine`, `useWordSpeechRecognition`, `useSentenceSpeechRecognition`, `useCountdown`, `useMicrophonePermission`.
+- Student hooks live in `resources/js/hooks/Student/`: `useGameplayEngine`, `useSpeechRecognition`, `useCountdown`, `useMicrophonePermission`.
 
 ### Teacher Pages
 - Wrapped in `resources/js/Layouts/Teacher/DashboardLayout.jsx` — includes sidebar (`Components/Teacher/Sidebar.jsx`).

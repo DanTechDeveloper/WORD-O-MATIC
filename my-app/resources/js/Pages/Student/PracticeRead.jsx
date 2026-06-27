@@ -1,236 +1,93 @@
 import ReadModeMainContent from "@/Components/Student/ReadModeMainContent";
-import { router } from "@inertiajs/react";
+import { router, usePage } from "@inertiajs/react";
 import GameplayHeader from "@/Components/Student/GameplayHeader";
 import Microphone from "@/Components/Student/Microphone";
 import DeniedModal from "@/Components/Student/DeniedModal";
-import SettingsModal from "@/Components/Student/SettingsModal";
-import { useState, useCallback, useEffect, useMemo, useRef } from "react";
-import { Joyride, STATUS } from "react-joyride";
+import { useState, useCallback } from "react";
 
-import { useCountdown } from "@/hooks/Student/useCountdown";
-import { useWordSpeechRecognition } from "@/hooks/Student/useWordSpeechRecognition";
+import { useGameplayEngine } from "@/hooks/Student/useGameplayEngine";
+import { useSpeechRecognition } from "@/hooks/Student/useSpeechRecognition";
+
+const GUIDE_STEPS = [
+    {
+        title: "YOUR GAME HUD",
+        message: "This bar shows your level, score, and lets you open settings or end the game.",
+        emoji: "🎮",
+        color: "lime",
+    },
+    {
+        title: "READ THE WORD",
+        message: "Say each word clearly into your microphone. Read it right to smash it!",
+        emoji: "📢",
+        color: "lime",
+    },
+    {
+        title: "TAP TO PLAY!",
+        message: "Tap the mic when you're ready. A 3-2-1 countdown will appear, then start reading!",
+        emoji: "🎤",
+        color: "lime",
+    },
+];
 
 export default function PracticeRead({ module }) {
-    const [currentWordIndex, setCurrentWordIndex] = useState(0);
-    const [wordsSmashed, setWordsSmashed] = useState(0);
-    const currentStreakRef = useRef(0);
-    const [maxStreak, setMaxStreak] = useState(0);
+    const [stepIndex, setStepIndex] = useState(0);
+    const [guideDone, setGuideDone] = useState(false);
+ 
+    const { auth } = usePage().props;
+    const avatarUrl = auth?.user?.student?.avatar;
+    const bodyUrl = avatarUrl?.replace("/head.png", "/body.png");
 
-    const [gameState, setGameState] = useState("IDLE");
-    const [isMispronounced, setIsMispronounced] = useState(false);
-    const [showPointsFeedback, setShowPointsFeedback] = useState(false);
-    const [pointsFeedbackValue, setPointsFeedbackValue] = useState(0);
-    const [scoreEmphasize, setScoreEmphasize] = useState(false);
+    const step = guideDone ? null : GUIDE_STEPS[stepIndex];
 
-    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-    const [audioSettings, setAudioSettings] = useState({
-        music: 50,
-        sfx: 70,
-    });
-
-    const [joyrideRun, setJoyrideRun] = useState(true);
-    const [joyrideStepIndex, setJoyrideStepIndex] = useState(0);
-    const advanceTimerRef = useRef(null);
-
-    const isMountedRef = useRef(true);
-    const currentWordIndexRef = useRef(0);
-    const completionTimerRef = useRef(null);
-    const mispronounceTimerRef = useRef(null);
-
-    const handleJoyrideCallback = (data) => {
-        const { status, index } = data;
-        if (status === STATUS.FINISHED || status === STATUS.SKIPPED) {
-            setJoyrideRun(false);
-            return;
-        }
-        if (typeof index === "number") {
-            setJoyrideStepIndex(index);
+    const advanceGuide = () => {
+        if (stepIndex < GUIDE_STEPS.length - 1) {
+            setStepIndex(stepIndex + 1);
+        } else {
+            setGuideDone(true);
         }
     };
 
-    const joyrideSteps = [
-        {
-            target: '[data-purpose="gameplay-header"]',
-            content: (
-                <div>
-                    <p className="text-xl font-black uppercase tracking-tight mb-2">
-                        YOUR GAME HUD
-                    </p>
-                    <p className="text-sm opacity-80">
-                        This bar shows your current level, score, and lets you
-                        open settings or end the game.
-                    </p>
-                </div>
-            ),
-            placement: "bottom",
-            spotlightPadding: 5,
-        },
-        {
-            target: '[data-purpose="word-display"]',
-            content: (
-                <div>
-                    <p className="text-xl font-black uppercase tracking-tight mb-2">
-                        READ THE WORD
-                    </p>
-                    <p className="text-sm opacity-80">
-                        Say each word clearly into your microphone. Read it
-                        right to smash it!
-                    </p>
-                </div>
-            ),
-            placement: "auto",
-            spotlightPadding: 10,
-        },
-        {
-            target: '[data-purpose="microphone-button"]',
-            content: (
-                <div>
-                    <p className="text-xl font-black uppercase tracking-tight mb-2">
-                        TAP TO PLAY!
-                    </p>
-                    <p className="text-sm opacity-80">
-                        Tap here when you are ready. A 3-2-1 countdown will
-                        appear, then start reading!
-                    </p>
-                </div>
-            ),
-            placement: "auto",
-            spotlightPadding: 10,
-        },
-    ];
-
-    useEffect(() => {
-        if (!joyrideRun) return;
-        advanceTimerRef.current = setTimeout(() => {
-            if (joyrideStepIndex < joyrideSteps.length - 1) {
-                setJoyrideStepIndex(joyrideStepIndex + 1);
-            } else {
-                setJoyrideRun(false);
-            }
-        }, 4000);
-        return () => clearTimeout(advanceTimerRef.current);
-    }, [joyrideStepIndex, joyrideRun, joyrideSteps.length]);
-
-    useEffect(() => {
-        currentWordIndexRef.current = currentWordIndex;
-    }, [currentWordIndex]);
-
-    useEffect(() => {
-        return () => {
-            isMountedRef.current = false;
-            clearTimeout(mispronounceTimerRef.current);
-            if (completionTimerRef.current)
-                clearTimeout(completionTimerRef.current);
-        };
-    }, []);
-
-    const speechRecognitionWords = useMemo(
-        () => (module?.words ? module.words.map((w) => w.word) : []),
-        [module?.words],
-    );
-    const totalWords = speechRecognitionWords.length;
-
-    const handleRestart = () => {
-        window.location.reload();
-    };
-
-    const handleExit = () => {
-        router.visit("/student/dashboard");
-    };
-
-    const moveToNextWord = useCallback(() => {
-        setCurrentWordIndex((prev) => {
-            const next = Math.min(prev + 1, totalWords);
-            currentWordIndexRef.current = next;
-            return next;
-        });
-    }, [totalWords]);
-
-    useEffect(() => {
-        if (
-            gameState === "ACTIVE" &&
-            currentWordIndex >= totalWords &&
-            totalWords > 0
-        ) {
-            if (completionTimerRef.current)
-                clearTimeout(completionTimerRef.current);
-            completionTimerRef.current = setTimeout(() => {
-                if (isMountedRef.current) {
-                    router.visit("/student/tutorial?practiceDone=1");
-                }
-            }, 2000);
-        }
-    }, [currentWordIndex, totalWords, gameState]);
-
-    const handleWordRecognized = useCallback(() => {
-        const points = 1;
-        setWordsSmashed((prev) => prev + 1);
-        currentStreakRef.current += 1;
-        setMaxStreak((m) => Math.max(m, currentStreakRef.current));
-        setPointsFeedbackValue(points);
-        setShowPointsFeedback(true);
-        setTimeout(() => setShowPointsFeedback(false), 500);
-        setScoreEmphasize(true);
-        setTimeout(() => setScoreEmphasize(false), 500);
-
-        clearTimeout(mispronounceTimerRef.current);
-        setIsMispronounced(false);
-
-        moveToNextWord();
-    }, [moveToNextWord]);
-
-    const handleMispronounce = useCallback(() => {
-        currentStreakRef.current = 0;
-        setIsMispronounced(true);
-        clearTimeout(mispronounceTimerRef.current);
-        mispronounceTimerRef.current = setTimeout(() => {
-            setIsMispronounced(false);
-            moveToNextWord();
-        }, 800);
-    }, [moveToNextWord]);
-
-    const updateAudioSetting = useCallback((key, value) => {
-        setAudioSettings((prev) => ({ ...prev, [key]: value }));
-    }, []);
-
-    const handleOpenSettings = useCallback(() => {
-        setIsSettingsOpen(true);
-    }, []);
-
-    const handleCloseSettings = useCallback(() => {
-        setIsSettingsOpen(false);
-    }, []);
-
-    const handlePermissionDenied = useCallback(() => {
-        setGameState("DENIED");
-    }, []);
-
-    const handleMicrophoneClick = useCallback(() => {
-        if (gameState === "IDLE") {
-            setGameState("COUNTDOWN");
-        }
-    }, [gameState]);
-
-    const handleTimeUp = useCallback(() => {
-        clearTimeout(mispronounceTimerRef.current);
+    const navigateAway = useCallback(() => {
         router.visit("/student/tutorial?practiceDone=1");
     }, []);
 
-    const countdownValue = useCountdown(gameState, () =>
-        setGameState("ACTIVE"),
-    );
+    const {
+        totalWords,
+        gameState,
+        setGameState,
+        currentWordIndex,
+        wordsSmashed,
+        scoreEmphasize,
+        showPointsFeedback,
+        pointsFeedbackValue,
+        countdownValue,
+        targetWord,
+        startGame,
+        handleWordRecognized,
+        handleMispronounce,
+    } = useGameplayEngine({
+        words: module?.words,
+        totalWords: module?.words?.length ?? 0,
+        getPoints: () => 1,
+        disableExplosions: true,
+        disableStreakShake: true,
+        disableWordTimeout: true,
+        onComplete: navigateAway,
+        onTimeUp: navigateAway,
+    });
 
-    const targetWord = useMemo(() => {
-        return (
-            speechRecognitionWords[currentWordIndex]
-                ?.replace(/[^\w\s]/g, "")
-                .toLowerCase() || ""
-        );
-    }, [speechRecognitionWords, currentWordIndex]);
+    const handlePermissionDenied = useCallback(() => {
+        setGameState("DENIED");
+    }, [setGameState]);
 
-    useWordSpeechRecognition({
+    const handleMicrophoneClick = useCallback(() => {
+        if (gameState === "IDLE") startGame();
+    }, [gameState, startGame]);
+
+
+
+    useSpeechRecognition({
         isActive: gameState === "ACTIVE" || gameState === "COUNTDOWN",
-        isPaused: isSettingsOpen || gameState === "COUNTDOWN",
         targetWord: targetWord,
         onWordRecognized: handleWordRecognized,
         onPermissionDenied: handlePermissionDenied,
@@ -241,10 +98,8 @@ export default function PracticeRead({ module }) {
     const headerProps = {
         level: "Practice Mode",
         isActive: gameState === "ACTIVE",
-        isPaused: isSettingsOpen,
         wordsSmashed: wordsSmashed,
-        onOpenSettings: handleOpenSettings,
-        onTimeUp: handleTimeUp,
+        onTimeUp: navigateAway,
         scoreEmphasize,
         showPointsFeedback,
         pointsFeedbackValue,
@@ -252,98 +107,44 @@ export default function PracticeRead({ module }) {
 
     return (
         <div className="bg-background text-on-background font-body-md h-screen flex flex-col overflow-x-hidden relative">
-            {joyrideRun && (
-                <Joyride
-                    run={joyrideRun}
-                    stepIndex={joyrideStepIndex}
-                    callback={handleJoyrideCallback}
-                    steps={joyrideSteps}
-                    disableBeacon
-                    continuous
-                    hideBackButton
-                    disableOverlayClose
-                    disableCloseOnOutsideClick
-                    showProgress
-                    styles={{
-                        beacon: {
-                            position: "fixed",
-                            top: "50%",
-                            left: "50%",
-                            transform: "translate(-50%, -50%)",
-                            zIndex: 10001,
-                        },
-                        beaconInner: {
-                            backgroundColor: "#ffffff",
-                        },
-                        beaconOuter: {
-                            backgroundColor: "rgba(255, 255, 255, 0.4)",
-                            borderColor: "#ffffff",
-                            borderWidth: "2px",
-                        },
-                        options: {
-                            arrowColor: "#1e1b4b",
-                                overlayColor: "rgba(0,0,0,0.85)",
-                            zIndex: 10000,
-                        },
-                        tooltip: {
-                            backgroundColor: "#1e1b4b",
-                            borderRadius: "1.5rem",
-                            padding: "2rem",
-                            fontSize: "1.125rem",
-                            color: "#ffffff",
-                        },
-                        tooltipContainer: {
-                            textAlign: "left",
-                        },
-                        tooltipContent: {
-                            padding: 0,
-                            fontSize: "1.125rem",
-                            lineHeight: "1.6",
-                            color: "#ffffff",
-                        },
-                        buttonNext: {
-                            backgroundColor: "#7c3aed",
-                            borderRadius: "0.75rem",
-                            fontSize: "1rem",
-                            fontWeight: 700,
-                            padding: "0.75rem 1.5rem",
-                            color: "#fff",
-                        },
-                        buttonBack: {
-                            fontSize: "1rem",
-                            fontWeight: 600,
-                            color: "#a78bfa",
-                        },
-                        buttonSkip: {
-                            fontSize: "0.875rem",
-                            fontWeight: 600,
-                            color: "#9ca3af",
-                        },
-                    }}
-                />
+            {/* PROGRESS DOTS */}
+            {!guideDone && (
+                <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[60] flex gap-3">
+                    {GUIDE_STEPS.map((_, i) => (
+                        <div
+                            key={i}
+                            className={`w-3 h-3 rounded-full transition-all duration-500 ${
+                                i === stepIndex
+                                    ? "bg-lime-400 scale-125"
+                                    : i < stepIndex
+                                      ? "bg-lime-400/50"
+                                      : "bg-white/20"
+                            }`}
+                        />
+                    ))}
+                </div>
             )}
 
             <DeniedModal gameState={gameState} />
-       
+
             <div data-purpose="gameplay-header">
                 <GameplayHeader {...headerProps} />
             </div>
 
-         
             <div data-purpose="word-display" className="flex-1 flex">
                 <ReadModeMainContent
-                    words={module.words}
+                    words={module?.words}
                     currentIndex={Math.min(currentWordIndex, totalWords - 1)}
                     gameState={gameState}
                     countdownValue={countdownValue}
                     isExploding={false}
-                    isMispronounced={isMispronounced}
+                    isMispronounced={false}
                     showPointsFeedback={showPointsFeedback}
                     pointsFeedbackValue={pointsFeedbackValue}
                 />
             </div>
 
-            {gameState === "IDLE" && !joyrideRun && (
+            {gameState === "IDLE" && guideDone && (
                 <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-40 pointer-events-none flex flex-col items-center justify-end pb-[110px] sm:pb-[140px] md:pb-[160px]">
                     <div className="flex flex-col items-center justify-center animate-bounce scale-90 sm:scale-100">
                         <div className="bg-lime-400 text-slate-950 font-black px-6 sm:px-8 py-3 sm:py-4 rounded-3xl sm:rounded-[2rem] shadow-[0_0_30px_rgba(163,230,53,0.4)] sm:shadow-[0_0_40px_rgba(163,230,53,0.4)] border-4 border-white flex flex-col items-center gap-1 text-center italic uppercase tracking-tighter">
@@ -362,6 +163,39 @@ export default function PracticeRead({ module }) {
                 </div>
             )}
 
+            {/* AVATAR SPEECH BUBBLE GUIDE */}
+            {bodyUrl && !guideDone && step && (
+                <div
+                    className="fixed z-50 bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-4"
+                    data-purpose="avatar-speech"
+                >
+                    <button
+                        onClick={advanceGuide}
+                        className="bg-white/95 backdrop-blur-sm rounded-3xl px-8 py-5 shadow-2xl border-2 border-lime-400 min-w-[260px] max-w-[360px] cursor-pointer hover:scale-105 active:scale-95 transition-all duration-200 text-center animate-fade-in"
+                    >
+                        <p className="text-2xl font-black uppercase tracking-tight text-zinc-900 flex items-center justify-center gap-2">
+                            <span className="text-3xl">{step.emoji}</span>
+                            {step.title}
+                        </p>
+                        <p className="text-base font-bold text-zinc-600 mt-2 leading-snug">
+                            {step.message}
+                        </p>
+                        <p className="text-xs font-black uppercase tracking-wider text-lime-600 mt-4">
+                            {stepIndex < GUIDE_STEPS.length - 1
+                                ? "Tap here to continue →"
+                                : "Tap to finish! ✨"}
+                        </p>
+                    </button>
+                    <img
+                        src={bodyUrl}
+                        alt="Your Avatar"
+                        className="w-48 h-auto md:w-64 lg:w-80 object-contain drop-shadow-[0_0_80px_rgba(163,230,53,0.35)] animate-bounce-slow"
+                    />
+                </div>
+            )}
+
+         
+
             <div className="flex-shrink-0 relative z-50" data-purpose="microphone-button">
                 <Microphone
                     isListening={gameState === "ACTIVE"}
@@ -369,8 +203,6 @@ export default function PracticeRead({ module }) {
                     onClick={handleMicrophoneClick}
                 />
             </div>
-
-
         </div>
     );
 }

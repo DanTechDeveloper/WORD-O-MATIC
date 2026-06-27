@@ -7,9 +7,11 @@ import TapToStartOverlay from "@/Components/Student/TapToStartOverlay";
 import { useCallback } from "react";
 
 import { useGameplayEngine } from "@/hooks/Student/useGameplayEngine";
-import { useSentenceSpeechRecognition } from "@/hooks/Student/useSentenceSpeechRecognition";
+import { useSpeechRecognition } from "@/hooks/Student/useSpeechRecognition";
 
 export default function GameplaySpeakMode({ module }) {
+    const speechRecognitionWords = module?.words?.map((w) => w.word) ?? [];
+
     const {
         totalWords,
         gameState,
@@ -27,8 +29,6 @@ export default function GameplaySpeakMode({ module }) {
         streakShake,
         countdownValue,
         targetWord,
-        speechRecognitionWords,
-        shakeClass,
         handleTimeUp,
         startGame,
         handleWordRecognized,
@@ -69,14 +69,19 @@ export default function GameplaySpeakMode({ module }) {
         }
     }, [gameState, startGame]);
 
-    useSentenceSpeechRecognition({
+    useSpeechRecognition({
         isActive: gameState === "ACTIVE" || gameState === "COUNTDOWN",
         targetWord: targetWord,
         onWordRecognized: handleWordRecognized,
         onPermissionDenied: handlePermissionDenied,
         onMispronounced: handleMispronounce,
         onRecognitionError: undefined,
+        matchMode: "sentence",
     });
+
+    const shakeClass = streakShake
+        ? `animate-streak-shake-${streakShake}`
+        : "";
 
     const headerProps = {
         level: module ? `${module.level} - ${module.title}` : "",

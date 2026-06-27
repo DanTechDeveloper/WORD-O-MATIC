@@ -7,7 +7,7 @@ import TapToStartOverlay from "@/Components/Student/TapToStartOverlay";
 import { useEffect, useCallback } from "react";
 
 import { useGameplayEngine } from "@/hooks/Student/useGameplayEngine";
-import { useWordSpeechRecognition } from "@/hooks/Student/useWordSpeechRecognition";
+import { useSpeechRecognition } from "@/hooks/Student/useSpeechRecognition";
 import { useMicrophonePermission } from "@/hooks/Student/useMicrophonePermission";
 
 export default function GameplayReadMode({ module }) {
@@ -29,7 +29,6 @@ export default function GameplayReadMode({ module }) {
         streakShake,
         countdownValue,
         targetWord,
-        shakeClass,
         handleTimeUp,
         startGame,
         handleWordRecognized,
@@ -78,16 +77,18 @@ export default function GameplayReadMode({ module }) {
         }
     }, [gameState, permissionState, requestPermission, startGame]);
 
-    useWordSpeechRecognition({
+    useSpeechRecognition({
         isActive: gameState === "ACTIVE" || gameState === "COUNTDOWN",
-        isPaused: gameState === "COUNTDOWN",
         targetWord: targetWord,
         onWordRecognized: handleWordRecognized,
         onPermissionDenied: () => setGameState("DENIED"),
         onMispronounced: handleMispronounce,
         onRecognitionError: (err) => console.error("Recognition error:", err),
-        isWordReady: isWordReady,
     });
+
+    const shakeClass = streakShake
+        ? `animate-streak-shake-${streakShake}`
+        : "";
 
     const headerProps = {
         level: module ? `${module.level} - ${module.title}` : "",

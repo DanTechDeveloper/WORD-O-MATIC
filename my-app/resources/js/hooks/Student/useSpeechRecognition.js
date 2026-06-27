@@ -1,15 +1,17 @@
 import { useEffect, useRef } from "react";
 import { isFuzzyMatch } from "@/lib/speechUtils";
 
-export function useSentenceSpeechRecognition({
+export function useSpeechRecognition({
     isActive,
     targetWord,
     onWordRecognized,
     onPermissionDenied,
     onMispronounced,
     onRecognitionError,
+    matchMode = "word",
 }) {
     const recognitionRef = useRef(null);
+    const isWordMode = matchMode === "word";
 
     const gameStateRef = useRef(isActive);
     gameStateRef.current = isActive;
@@ -33,17 +35,26 @@ export function useSentenceSpeechRecognition({
     const lastProcessedIndexRef = useRef(-1);
     const isMountedRef = useRef(false);
     const mispronounceTimeoutRef = useRef(null);
+    const gracePeriodEndRef = useRef(0);
     const restartRetryCountRef = useRef(0);
     const restartTimerRef = useRef(null);
+
+    const clearTimers = () => {
+        if (mispronounceTimeoutRef.current) {
+            clearTimeout(mispronounceTimeoutRef.current);
+            mispronounceTimeoutRef.current = null;
+        }
+        if (restartTimerRef.current) {
+            clearTimeout(restartTimerRef.current);
+            restartTimerRef.current = null;
+        }
+    };
 
     useEffect(() => {
         isMountedRef.current = true;
         return () => {
             isMountedRef.current = false;
-            if (mispronounceTimeoutRef.current)
-                clearTimeout(mispronounceTimeoutRef.current);
-            if (restartTimerRef.current)
-                clearTimeout(restartTimerRef.current);
+            clearTimers();
             if (recognitionRef.current) recognitionRef.current.abort();
         };
     }, []);
@@ -64,6 +75,7 @@ export function useSentenceSpeechRecognition({
 
             recognition.onresult = (event) => {
                 if (!gameStateRef.current) return;
+                if (isWordMode) return;
 
                 if (mispronounceTimeoutRef.current)
                     clearTimeout(mispronounceTimeoutRef.current);
@@ -97,13 +109,53 @@ export function useSentenceSpeechRecognition({
                     if (isMatch && !hasMatchedCurrentRef.current) {
                         hasMatchedCurrentRef.current = true;
                         matchedThisEvent = true;
+                        lastProcessedIndexRef.current = i;
                         onWordRecognizedRef.current?.();
+                        if (isWordMode) break;
                     }
 
-                    lastProcessedIndexRef.current = i;
+                    if (isWordMode) {
+                        if (result.isFinal) {
+                            lastProcessedIndexRef.current = i;
+                            if (!matchedThisEvent && !hasMatchedCurrentRef.current) {
+                                if (mispronounceTimeoutRef.current)
+                                    clearTimeout(mispronounceTimeoutRef.current);
+                                mispronounceTimeoutRef.current = setTimeout(() => {
+                                    if (
+                                        isMountedRef.current &&
+                                        gameStateRef.current &&
+                                        !hasMatchedCurrentRef.current
+                                    ) {
+                                        onMispronouncedRef.current?.(latestTranscript);
+                                    }
+                                }, 200);
+                            }
+                        }
+                    } else {
+                        lastProcessedIndexRef.current = i;
+                    }
                 }
 
-                if (
+                if (isWordMode) {
+                    if (
+                        !matchedThisEvent &&
+                        !hasMatchedCurrentRef.current &&
+                        latestTranscript &&
+                        Date.now() >= gracePeriodEndRef.current
+                    ) {
+                        if (!mispronounceTimeoutRef.current) {
+                            mispronounceTimeoutRef.current = setTimeout(() => {
+                                if (
+                                    isMountedRef.current &&
+                                    gameStateRef.current &&
+                                    !hasMatchedCurrentRef.current
+                                ) {
+                                    onMispronouncedRef.current?.(latestTranscript);
+                                }
+                            }, 500);
+                        }
+                    }
+                } else if (
                     !matchedThisEvent &&
                     !hasMatchedCurrentRef.current &&
                     latestTranscript
@@ -121,10 +173,7 @@ export function useSentenceSpeechRecognition({
             };
 
             recognition.onerror = (event) => {
-                if (mispronounceTimeoutRef.current) {
-                    clearTimeout(mispronounceTimeoutRef.current);
-                    mispronounceTimeoutRef.current = null;
-                }
+                clearTimers();
 
                 if (event.error === "aborted") {
                     console.warn(
@@ -135,7 +184,7 @@ export function useSentenceSpeechRecognition({
                         "Speech Recognition Error: not-allowed",
                         event.error,
                     );
-                    onPermissionDeniedRef.current();
+                    onPermissionDeniedRef.current?.();
                 } else {
                     console.error("Speech Recognition Error:", event.error);
                     if (onRecognitionErrorRef.current)
@@ -150,14 +199,16 @@ export function useSentenceSpeechRecognition({
 
                 if (
                     !isMountedRef.current ||
-                    !gameStateRef.current
+                    !gameStateRef.current ||
+                    (isWordMode)
                 )
                     return;
 
                 const tryRestart = () => {
                     if (
                         !isMountedRef.current ||
-                        !gameStateRef.current
+                        !gameStateRef.current ||
+                        (isWordMode)
                     ) {
                         restartRetryCountRef.current = 0;
                         return;
@@ -193,13 +244,14 @@ export function useSentenceSpeechRecognition({
     useEffect(() => {
         hasMatchedCurrentRef.current = false;
         lastProcessedIndexRef.current = -1;
-        if (mispronounceTimeoutRef.current)
-            clearTimeout(mispronounceTimeoutRef.current);
+        clearTimers();
+        if (isWordMode) {
+            gracePeriodEndRef.current = Date.now() + 900;
+        }
     }, [targetWord]);
 
     useEffect(() => {
         const recognition = recognitionRef.current;
-
         if (!recognition) return;
 
         if (isActive) {

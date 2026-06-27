@@ -10,6 +10,11 @@ export function useGameplayEngine({
     onWordRecognized,
     onMispronounce,
     getPoints,
+    onComplete,
+    onTimeUp: onTimeUpOverride,
+    disableExplosions = false,
+    disableStreakShake = false,
+    disableWordTimeout = false,
 }) {
     const [currentWordIndex, setCurrentWordIndex] = useState(0);
     const [wordsSmashed, setWordsSmashed] = useState(0);
@@ -87,18 +92,14 @@ export function useGameplayEngine({
         });
     }, [totalWords]);
 
-    const speechRecognitionWords = useMemo(
-        () => words.map((w) => w.word),
-        [words],
-    );
-
     const targetWord = useMemo(() => {
+        const allWords = words.map((w) => w.word);
         return (
-            speechRecognitionWords[currentWordIndex]
+            allWords[currentWordIndex]
                 ?.replace(/[^\w\s]/g, "")
                 .toLowerCase() || ""
         );
-    }, [speechRecognitionWords, currentWordIndex]);
+    }, [words, currentWordIndex]);
 
     const persistProgress = useCallback(() => {
         if (!hasSaved.current) {
@@ -107,8 +108,8 @@ export function useGameplayEngine({
                 saveEndpoint,
                 {
                     module_id: moduleId,
-                    words_smashed: wordsSmashed,
-                    streak: maxStreak,
+                    words_smashed: wordsSmashedRef.current,
+                    streak: currentStreakRef.current,
                 },
                 {
                     preserveScroll: true,
@@ -117,7 +118,7 @@ export function useGameplayEngine({
                 },
             );
         }
-    }, [moduleId, wordsSmashed, maxStreak, saveEndpoint]);
+    }, [moduleId, saveEndpoint]);
 
     const persistProgressRef = useRef(persistProgress);
     persistProgressRef.current = persistProgress;
@@ -128,17 +129,21 @@ export function useGameplayEngine({
             currentWordIndex >= totalWords &&
             totalWords > 0
         ) {
+            if (onComplete) {
+                onComplete();
+                return;
+            }
             persistProgressRef.current();
 
             if (completionTimerRef.current)
                 clearTimeout(completionTimerRef.current);
             completionTimerRef.current = setTimeout(() => {
                 if (isMountedRef.current) {
-                    setGameState(wordsSmashed > 0 ? "COMPLETED" : "GAMEOVER");
+                    setGameState(wordsSmashedRef.current > 0 ? "COMPLETED" : "GAMEOVER");
                 }
             }, 1200);
         }
-    }, [currentWordIndex, totalWords, wordsSmashed, gameState]);
+    }, [currentWordIndex, totalWords, wordsSmashed, gameState, onComplete]);
 
     const handleWordRecognized = useCallback(() => {
         const wordObj = words[currentWordIndexRef.current];
@@ -172,7 +177,7 @@ export function useGameplayEngine({
             setFeedbackType(null);
         }, 600);
 
-        if (streak >= 3) {
+        if (!disableStreakShake && streak >= 3) {
             clearTimeout(streakShakeTimerRef.current);
             const intensity = streak >= 10 ? "intense" : streak >= 5 ? "medium" : "subtle";
             setStreakShake(intensity);
@@ -184,13 +189,17 @@ export function useGameplayEngine({
         clearTimeout(mispronounceTimerRef.current);
         setIsMispronounced(false);
 
-        clearTimeout(wordRecognizedTimerRef.current);
-        setIsExploding(true);
-        wordRecognizedTimerRef.current = setTimeout(() => {
-            setIsExploding(false);
+        if (!disableExplosions) {
+            clearTimeout(wordRecognizedTimerRef.current);
+            setIsExploding(true);
+            wordRecognizedTimerRef.current = setTimeout(() => {
+                setIsExploding(false);
+                moveToNextWord();
+            }, 500);
+        } else {
             moveToNextWord();
-        }, 500);
-    }, [words, moveToNextWord]);
+        }
+    }, [words, moveToNextWord, disableExplosions, disableStreakShake]);
 
     const handleMispronounce = useCallback(() => {
         clearTimeout(wordTimeoutRef.current);
@@ -218,6 +227,7 @@ export function useGameplayEngine({
     onMispronounceFnRef.current = handleMispronounce;
 
     useEffect(() => {
+        if (disableWordTimeout) return;
         if (gameState === "ACTIVE" && isWordReady) {
             clearTimeout(wordTimeoutRef.current);
             wordTimeoutRef.current = setTimeout(
@@ -226,20 +236,24 @@ export function useGameplayEngine({
             );
         }
         return () => clearTimeout(wordTimeoutRef.current);
-    }, [currentWordIndex, gameState, isWordReady]);
+    }, [currentWordIndex, gameState, isWordReady, disableWordTimeout]);
 
     const handleTimeUp = useCallback(() => {
         clearTimeout(mispronounceTimerRef.current);
         clearTimeout(wordRecognizedTimerRef.current);
         clearTimeout(wordTimeoutRef.current);
         setIsExploding(false);
+        if (onTimeUpOverride) {
+            onTimeUpOverride();
+            return;
+        }
         persistProgress();
         if (wordsSmashedRef.current >= totalWords) {
             setGameState("COMPLETED");
         } else {
             setGameState("GAMEOVER");
         }
-    }, [persistProgress, totalWords]);
+    }, [persistProgress, totalWords, onTimeUpOverride]);
 
     const countdownValue = useCountdown(gameState, () =>
         setGameState("ACTIVE"),
@@ -270,13 +284,8 @@ export function useGameplayEngine({
         setGameState((prev) => (prev === "IDLE" ? "COUNTDOWN" : prev));
     }, []);
 
-    const shakeClass = streakShake
-        ? `animate-streak-shake-${streakShake}`
-        : "";
-
     return {
         totalWords,
-        speechRecognitionWords,
         gameState,
         setGameState,
         currentWordIndex,
@@ -294,7 +303,6 @@ export function useGameplayEngine({
         streakShake,
         countdownValue,
         targetWord,
-        shakeClass,
         handleTimeUp,
         handlePlayAgain,
         startGame,
