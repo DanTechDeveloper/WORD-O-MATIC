@@ -25,39 +25,47 @@ const BEFORE_STEPS = [
     },
 ];
 
-const AFTER_STEPS = [
+const AFTER_STEPS = (allDone) => [
     {
         target: '[data-purpose="avatar-speech"]',
         title: "AMAZING!",
-        message: "You did it! Story Quest is waiting for you!",
+        message: allDone
+            ? "You completed both practices! You're ready!"
+            : "You did it! Story Quest is waiting for you!",
         emoji: "🎉",
         color: "lime",
     },
-    {
-        target: '[data-purpose="story-mode-unlocked"]',
-        title: "STORY QUEST",
-        message: "Tap here to start your reading adventure!",
-        emoji: "📖",
-        color: "lime",
-    },
-    {
-        target: '[data-purpose="continue-to-dashboard"]',
-        title: "ALL DONE!",
-        message: "Tap the button below to head to your dashboard!",
-        emoji: "🏠",
-        color: "lime",
-    },
+    ...(allDone ? [] : [
+        {
+            target: '[data-purpose="story-mode-unlocked"]',
+            title: "STORY QUEST",
+            message: "Tap here to start your reading adventure!",
+            emoji: "📖",
+            color: "lime",
+        },
+    ]),
+    ...(allDone ? [
+        {
+            target: '[data-purpose="continue-to-dashboard"]',
+            title: "ALL DONE!",
+            message: "Tap the button below to head to your dashboard!",
+            emoji: "🏠",
+            color: "lime",
+        },
+    ] : []),
 ];
 
 export default function Tutorial() {
     const { auth } = usePage().props;
     const params = new URLSearchParams(window.location.search);
-    const practiceDone = params.get("practiceDone") === "1";
+    const practiceDone = params.get("practiceDone") === "1" || sessionStorage.getItem("practiceDone") === "1";
+    const practiceSpeakDone = params.get("practiceSpeakDone") === "1" || sessionStorage.getItem("practiceSpeakDone") === "1";
+    const allPracticeDone = practiceDone && practiceSpeakDone;
 
     const avatarUrl = auth?.user?.student?.avatar;
     const bodyUrl = avatarUrl?.replace("/head.png", "/body.png");
 
-    const steps = practiceDone ? AFTER_STEPS : BEFORE_STEPS;
+    const steps = practiceDone ? AFTER_STEPS(allPracticeDone) : BEFORE_STEPS;
     const [stepIndex, setStepIndex] = useState(0);
     const [guideDone, setGuideDone] = useState(false);
 
@@ -188,7 +196,7 @@ export default function Tutorial() {
                     <Link
                         href={
                             storyQuestUnlocked
-                                ? "/student/gameplaySpeakMode/1"
+                                ? "/student/practice/speak"
                                 : undefined
                         }
                         as={storyQuestUnlocked ? "a" : "div"}
@@ -234,7 +242,16 @@ export default function Tutorial() {
                         </div>
                     </Link>
 
-                    {!practiceDone && (
+                    {practiceSpeakDone ? (
+                        <div
+                            className="absolute inset-0 z-30 bg-black/70 backdrop-blur-[6px] flex flex-col items-center justify-center pointer-events-auto"
+                            data-purpose="story-mode-done"
+                        >
+                            <span className="text-white text-xs font-black tracking-widest uppercase bg-zinc-900 px-4 py-2 rounded-full border border-zinc-800">
+                                Complete ✅
+                            </span>
+                        </div>
+                    ) : !practiceDone ? (
                         <div
                             className="absolute inset-0 z-30 bg-black/70 backdrop-blur-[6px] flex flex-col items-center justify-center pointer-events-auto"
                             data-purpose="story-mode-locked"
@@ -243,15 +260,13 @@ export default function Tutorial() {
                                 Locked During Tutorial 🔒
                             </span>
                         </div>
-                    )}
-
-                    {practiceDone && !storyQuestUnlocked && (
+                    ) : !storyQuestUnlocked ? (
                         <div className="absolute inset-0 z-30 bg-black/60 backdrop-blur-[4px] flex flex-col items-center justify-center pointer-events-auto transition-all duration-500">
                             <span className="text-white/50 text-xs font-black tracking-widest uppercase bg-zinc-900/80 px-4 py-2 rounded-full border border-white/10">
                                 Wait for the guide 👀
                             </span>
                         </div>
-                    )}
+                    ) : null}
                 </div>
 
                 {/* AVATAR SPEECH BUBBLE GUIDE */}
@@ -286,7 +301,7 @@ export default function Tutorial() {
                 )}
 
                 {/* CONTINUE TO DASHBOARD */}
-                <div className={`fixed bottom-8 left-0 right-0 z-40 flex justify-center transition-all duration-500 ${guideDone ? "" : "opacity-0 pointer-events-none"}`}>
+                <div className={`fixed bottom-8 left-0 right-0 z-40 flex justify-center transition-all duration-500 ${guideDone && allPracticeDone ? "" : "opacity-0 pointer-events-none"}`}>
                     <Link
                         href="/student/dashboard"
                         data-purpose="continue-to-dashboard"

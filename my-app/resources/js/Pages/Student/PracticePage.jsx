@@ -110,8 +110,11 @@ export default function PracticePage({ module, mode = "read" }) {
     };
 
     const navigateAway = useCallback(() => {
-        const param = isReadMode ? "practiceDone" : "practiceSpeakDone";
-        router.visit(`/student/tutorial?${param}=1`);
+        sessionStorage.setItem("practiceDone", "1");
+        if (!isReadMode) {
+            sessionStorage.setItem("practiceSpeakDone", "1");
+        }
+        router.visit("/student/tutorial");
     }, [isReadMode]);
 
     const {
@@ -131,6 +134,7 @@ export default function PracticePage({ module, mode = "read" }) {
         streakShake,
         countdownValue,
         targetWord,
+        isWordReady,
         startGame,
         handleWordRecognized,
         handleMispronounce,
@@ -213,6 +217,7 @@ export default function PracticePage({ module, mode = "read" }) {
                     streak={currentStreak}
                     feedbackType={feedbackType}
                     feedbackMessage={feedbackMessage}
+                    isWordReady={isWordReady}
                 />
             </div>
 
