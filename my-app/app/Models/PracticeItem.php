@@ -5,16 +5,16 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class PracticeWord extends Model
+class PracticeItem extends Model
 {
     protected $fillable = [
-        'practice_word_set_id',
-        'word',
+        'practice_set_id',
+        'content',
         'position',
     ];
 
     public function set(): BelongsTo
     {
-        return $this->belongsTo(PracticeWordSet::class, 'practice_word_set_id');
+        return $this->belongsTo(PracticeSet::class, 'practice_set_id');
     }
 }

@@ -75,7 +75,6 @@ export function useSpeechRecognition({
 
             recognition.onresult = (event) => {
                 if (!gameStateRef.current) return;
-                if (isWordMode) return;
 
                 if (mispronounceTimeoutRef.current)
                     clearTimeout(mispronounceTimeoutRef.current);
@@ -197,19 +196,10 @@ export function useSpeechRecognition({
                 hasMatchedCurrentRef.current = false;
                 restartRetryCountRef.current = 0;
 
-                if (
-                    !isMountedRef.current ||
-                    !gameStateRef.current ||
-                    (isWordMode)
-                )
-                    return;
+                if (!isMountedRef.current || !gameStateRef.current) return;
 
                 const tryRestart = () => {
-                    if (
-                        !isMountedRef.current ||
-                        !gameStateRef.current ||
-                        (isWordMode)
-                    ) {
+                    if (!isMountedRef.current || !gameStateRef.current) {
                         restartRetryCountRef.current = 0;
                         return;
                     }
@@ -243,7 +233,6 @@ export function useSpeechRecognition({
 
     useEffect(() => {
         hasMatchedCurrentRef.current = false;
-        lastProcessedIndexRef.current = -1;
         clearTimers();
         if (isWordMode) {
             gracePeriodEndRef.current = Date.now() + 900;

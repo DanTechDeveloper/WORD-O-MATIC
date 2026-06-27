@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Badges;
 use App\Models\GameSession;
 use App\Models\ParagraphModule;
-use App\Models\PracticeWordSet;
+use App\Models\PracticeSet;
 use App\Models\StudentParagraphMastery;
 use App\Models\StudentParagraphProgress;
 use App\Models\StudentProfile;
@@ -289,12 +289,20 @@ class StudentController extends Controller
         return $redirect;
     }
 
-    public function practiceRead()
+    public function practice($mode)
     {
-        $practiceSet = PracticeWordSet::with('words')->where('slug', 'tutorial-practice')->firstOrFail();
+        $practiceSet = PracticeSet::with('items')
+            ->where('slug', "tutorial-practice-{$mode}")
+            ->firstOrFail();
 
-        return Inertia::render('Student/PracticeRead', [
-            'module' => $practiceSet,
+        $module = [
+            'words' => $practiceSet->items->map(fn($item) => ['word' => $item->content])->toArray(),
+            'content' => $practiceSet->content,
+        ];
+
+        return Inertia::render('Student/PracticePage', [
+            'module' => $module,
+            'mode' => $mode,
         ]);
     }
 

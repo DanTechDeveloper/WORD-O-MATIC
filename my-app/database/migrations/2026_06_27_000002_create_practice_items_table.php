@@ -8,17 +8,17 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('practice_word_sets', function (Blueprint $table) {
+        Schema::create('practice_items', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->string('slug')->unique();
-            $table->integer('total_words')->default(0);
+            $table->foreignId('practice_set_id')->constrained()->cascadeOnDelete();
+            $table->string('content');
+            $table->integer('position');
             $table->timestamps();
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('practice_word_sets');
+        Schema::dropIfExists('practice_items');
     }
 };

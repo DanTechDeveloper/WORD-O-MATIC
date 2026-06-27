@@ -12,9 +12,6 @@ export function useGameplayEngine({
     getPoints,
     onComplete,
     onTimeUp: onTimeUpOverride,
-    disableExplosions = false,
-    disableStreakShake = false,
-    disableWordTimeout = false,
 }) {
     const [currentWordIndex, setCurrentWordIndex] = useState(0);
     const [wordsSmashed, setWordsSmashed] = useState(0);
@@ -177,7 +174,7 @@ export function useGameplayEngine({
             setFeedbackType(null);
         }, 600);
 
-        if (!disableStreakShake && streak >= 3) {
+        if (streak >= 3) {
             clearTimeout(streakShakeTimerRef.current);
             const intensity = streak >= 10 ? "intense" : streak >= 5 ? "medium" : "subtle";
             setStreakShake(intensity);
@@ -189,17 +186,13 @@ export function useGameplayEngine({
         clearTimeout(mispronounceTimerRef.current);
         setIsMispronounced(false);
 
-        if (!disableExplosions) {
-            clearTimeout(wordRecognizedTimerRef.current);
-            setIsExploding(true);
-            wordRecognizedTimerRef.current = setTimeout(() => {
-                setIsExploding(false);
-                moveToNextWord();
-            }, 500);
-        } else {
+        clearTimeout(wordRecognizedTimerRef.current);
+        setIsExploding(true);
+        wordRecognizedTimerRef.current = setTimeout(() => {
+            setIsExploding(false);
             moveToNextWord();
-        }
-    }, [words, moveToNextWord, disableExplosions, disableStreakShake]);
+        }, 500);
+    }, [words, moveToNextWord]);
 
     const handleMispronounce = useCallback(() => {
         clearTimeout(wordTimeoutRef.current);
@@ -227,7 +220,6 @@ export function useGameplayEngine({
     onMispronounceFnRef.current = handleMispronounce;
 
     useEffect(() => {
-        if (disableWordTimeout) return;
         if (gameState === "ACTIVE" && isWordReady) {
             clearTimeout(wordTimeoutRef.current);
             wordTimeoutRef.current = setTimeout(
@@ -236,7 +228,7 @@ export function useGameplayEngine({
             );
         }
         return () => clearTimeout(wordTimeoutRef.current);
-    }, [currentWordIndex, gameState, isWordReady, disableWordTimeout]);
+    }, [currentWordIndex, gameState, isWordReady]);
 
     const handleTimeUp = useCallback(() => {
         clearTimeout(mispronounceTimerRef.current);

@@ -6,8 +6,8 @@ use App\Models\User;
 use App\Models\Word;
 use App\Models\WordModule;
 use App\Models\ParagraphModule;
-use App\Models\PracticeWordSet;
-use App\Models\PracticeWord;
+use App\Models\PracticeSet;
+use App\Models\PracticeItem;
 use App\Models\StudentWordProgress;
 use App\Models\StudentParagraphProgress;
 use App\Models\ParagraphWord;
@@ -217,17 +217,34 @@ class DatabaseSeeder extends Seeder
             ]);
         }
 
-        $practiceSet = PracticeWordSet::create([
-            'name' => 'Tutorial Practice',
-            'slug' => 'tutorial-practice',
-            'total_words' => 5,
+        $practiceReadSet = PracticeSet::create([
+            'name' => 'Tutorial Practice - Read',
+            'slug' => 'tutorial-practice-read',
+            'type' => 'word',
+            'total_items' => 5,
         ]);
 
-        $practiceWords = ['cat', 'dog', 'sun', 'hat', 'run'];
-        foreach ($practiceWords as $position => $word) {
-            PracticeWord::create([
-                'practice_word_set_id' => $practiceSet->id,
-                'word' => $word,
+        foreach (['cat', 'dog', 'sun', 'hat', 'run'] as $position => $word) {
+            PracticeItem::create([
+                'practice_set_id' => $practiceReadSet->id,
+                'content' => $word,
+                'position' => $position + 1,
+            ]);
+        }
+
+        $practiceSpeakSet = PracticeSet::create([
+            'name' => 'Tutorial Practice - Speak',
+            'slug' => 'tutorial-practice-speak',
+            'type' => 'sentence',
+            'content' => 'I like to play with my cat.',
+            'total_items' => 7,
+        ]);
+
+        $speakWords = ['I', 'like', 'to', 'play', 'with', 'my', 'cat.'];
+        foreach ($speakWords as $position => $word) {
+            PracticeItem::create([
+                'practice_set_id' => $practiceSpeakSet->id,
+                'content' => $word,
                 'position' => $position + 1,
             ]);
         }

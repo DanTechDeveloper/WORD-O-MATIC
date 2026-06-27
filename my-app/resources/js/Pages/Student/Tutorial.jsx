@@ -40,6 +40,13 @@ const AFTER_STEPS = [
         emoji: "📖",
         color: "lime",
     },
+    {
+        target: '[data-purpose="continue-to-dashboard"]',
+        title: "ALL DONE!",
+        message: "Tap the button below to head to your dashboard!",
+        emoji: "🏠",
+        color: "lime",
+    },
 ];
 
 export default function Tutorial() {
@@ -111,7 +118,7 @@ export default function Tutorial() {
                     <Link
                         href={
                             wordBlastUnlocked
-                                ? "/student/practice-read"
+                                ? "/student/practice/read"
                                 : undefined
                         }
                         as={wordBlastUnlocked ? "a" : "div"}
@@ -279,17 +286,16 @@ export default function Tutorial() {
                 )}
 
                 {/* CONTINUE TO DASHBOARD */}
-                {guideDone && (
-                    <div className="fixed bottom-8 left-0 right-0 z-40 flex justify-center">
-                        <Link
-                            href="/student/dashboard"
-                            className="bg-lime-400 hover:bg-lime-300 text-zinc-950 px-10 py-4 rounded-2xl font-black text-lg tracking-widest uppercase transition-all hover:scale-105 active:scale-95 flex items-center gap-3 shadow-2xl shadow-lime-400/25"
-                        >
-                            Continue to Dashboard
-                            <span className="text-2xl">🏠</span>
-                        </Link>
-                    </div>
-                )}
+                <div className={`fixed bottom-8 left-0 right-0 z-40 flex justify-center transition-all duration-500 ${guideDone ? "" : "opacity-0 pointer-events-none"}`}>
+                    <Link
+                        href="/student/dashboard"
+                        data-purpose="continue-to-dashboard"
+                        className={`bg-lime-400 hover:bg-lime-300 text-zinc-950 px-10 py-4 rounded-2xl font-black text-lg tracking-widest uppercase transition-all hover:scale-105 active:scale-95 flex items-center gap-3 shadow-2xl shadow-lime-400/25 ${ringClass("continue-to-dashboard")}`}
+                    >
+                        Continue to Dashboard
+                        <span className="text-2xl">🏠</span>
+                    </Link>
+                </div>
             </main>
         </div>
     );

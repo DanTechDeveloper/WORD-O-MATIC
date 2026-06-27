@@ -1,46 +1,108 @@
 import ReadModeMainContent from "@/Components/Student/ReadModeMainContent";
+import SpeakModeMainContent from "@/Components/Student/SpeakModeMainContent";
 import { router, usePage } from "@inertiajs/react";
 import GameplayHeader from "@/Components/Student/GameplayHeader";
 import Microphone from "@/Components/Student/Microphone";
 import DeniedModal from "@/Components/Student/DeniedModal";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 
 import { useGameplayEngine } from "@/hooks/Student/useGameplayEngine";
 import { useSpeechRecognition } from "@/hooks/Student/useSpeechRecognition";
 
-const GUIDE_STEPS = [
-    {
-        title: "YOUR GAME HUD",
-        message: "This bar shows your level, score, and lets you open settings or end the game.",
-        emoji: "🎮",
-        color: "lime",
-    },
-    {
-        title: "READ THE WORD",
-        message: "Say each word clearly into your microphone. Read it right to smash it!",
-        emoji: "📢",
-        color: "lime",
-    },
-    {
-        title: "TAP TO PLAY!",
-        message: "Tap the mic when you're ready. A 3-2-1 countdown will appear, then start reading!",
-        emoji: "🎤",
-        color: "lime",
-    },
-];
+const GUIDE_STEPS = {
+    read: [
+        {
+            title: "READ THE WORD",
+            message: "Say each word aloud into the mic. Read it right to BLAST it!",
+            emoji: "📢",
+            color: "lime",
+        },
+        {
+            title: "BLAST & SCORE",
+            message: "Blast words fast! Watch your score grow and your streak build!",
+            emoji: "⚡",
+            color: "lime",
+        },
+        {
+            title: "KEEP MOVING",
+            message: "Words auto-advance after 5 seconds. Try to read them before they go!",
+            emoji: "⏱️",
+            color: "lime",
+        },
+        {
+            title: "TAP TO PLAY!",
+            message: "Tap the mic below when you're ready. 3-2-1 countdown, then go!",
+            emoji: "🎤",
+            color: "lime",
+        },
+    ],
+    speak: [
+        {
+            title: "READ THE SENTENCE",
+            message: "Say the whole sentence clearly, not just one word!",
+            emoji: "📖",
+            color: "lime",
+        },
+        {
+            title: "WATCH IT LIGHT UP",
+            message: "Each word highlights as it's recognized. Follow along!",
+            emoji: "✨",
+            color: "lime",
+        },
+        {
+            title: "NO PRESSURE",
+            message: "Take your time — there's no timer here!",
+            emoji: "😊",
+            color: "lime",
+        },
+        {
+            title: "TAP TO PLAY!",
+            message: "Tap the mic below when you're ready. 3-2-1 countdown, then go!",
+            emoji: "🎤",
+            color: "lime",
+        },
+    ],
+};
 
-export default function PracticeRead({ module }) {
+const CONTENT_COMPONENT = {
+    read: ReadModeMainContent,
+    speak: SpeakModeMainContent,
+};
+
+const OVERLAY_TEXT = {
+    read: {
+        title: "Tap to Practice",
+        subtitle: "Tap the mic & read the words aloud!",
+    },
+    speak: {
+        title: "Tap to Practice",
+        subtitle: "Tap the mic & read the sentence aloud!",
+    },
+};
+
+export default function PracticePage({ module, mode = "read" }) {
     const [stepIndex, setStepIndex] = useState(0);
     const [guideDone, setGuideDone] = useState(false);
- 
+
     const { auth } = usePage().props;
     const avatarUrl = auth?.user?.student?.avatar;
     const bodyUrl = avatarUrl?.replace("/head.png", "/body.png");
 
-    const step = guideDone ? null : GUIDE_STEPS[stepIndex];
+    const steps = GUIDE_STEPS[mode];
+    const step = guideDone ? null : steps[stepIndex];
+    const ContentComponent = CONTENT_COMPONENT[mode];
+    const overlay = OVERLAY_TEXT[mode];
+    const isReadMode = mode === "read";
+
+    const wordsForContent = useMemo(() => {
+        if (mode === "speak") {
+            return (module?.words?.map((w) => w.word) ?? []);
+        }
+        return module?.words;
+    }, [module, mode]);
 
     const advanceGuide = () => {
-        if (stepIndex < GUIDE_STEPS.length - 1) {
+        if (stepIndex < steps.length - 1) {
             setStepIndex(stepIndex + 1);
         } else {
             setGuideDone(true);
@@ -48,8 +110,9 @@ export default function PracticeRead({ module }) {
     };
 
     const navigateAway = useCallback(() => {
-        router.visit("/student/tutorial?practiceDone=1");
-    }, []);
+        const param = isReadMode ? "practiceDone" : "practiceSpeakDone";
+        router.visit(`/student/tutorial?${param}=1`);
+    }, [isReadMode]);
 
     const {
         totalWords,
@@ -57,9 +120,15 @@ export default function PracticeRead({ module }) {
         setGameState,
         currentWordIndex,
         wordsSmashed,
-        scoreEmphasize,
+        currentStreak,
+        isMispronounced,
+        isExploding,
         showPointsFeedback,
         pointsFeedbackValue,
+        scoreEmphasize,
+        feedbackType,
+        feedbackMessage,
+        streakShake,
         countdownValue,
         targetWord,
         startGame,
@@ -69,9 +138,6 @@ export default function PracticeRead({ module }) {
         words: module?.words,
         totalWords: module?.words?.length ?? 0,
         getPoints: () => 1,
-        disableExplosions: true,
-        disableStreakShake: true,
-        disableWordTimeout: true,
         onComplete: navigateAway,
         onTimeUp: navigateAway,
     });
@@ -84,8 +150,6 @@ export default function PracticeRead({ module }) {
         if (gameState === "IDLE") startGame();
     }, [gameState, startGame]);
 
-
-
     useSpeechRecognition({
         isActive: gameState === "ACTIVE" || gameState === "COUNTDOWN",
         targetWord: targetWord,
@@ -93,24 +157,29 @@ export default function PracticeRead({ module }) {
         onPermissionDenied: handlePermissionDenied,
         onMispronounced: handleMispronounce,
         onRecognitionError: undefined,
+        matchMode: isReadMode ? "word" : "sentence",
     });
 
+    const shakeClass = streakShake
+        ? `animate-streak-shake-${streakShake}`
+        : "";
+
     const headerProps = {
-        level: "Practice Mode",
+        level: isReadMode ? "Practice Mode" : "Practice Story Quest",
         isActive: gameState === "ACTIVE",
         wordsSmashed: wordsSmashed,
         onTimeUp: navigateAway,
         scoreEmphasize,
         showPointsFeedback,
         pointsFeedbackValue,
+        streakShake,
     };
 
     return (
-        <div className="bg-background text-on-background font-body-md h-screen flex flex-col overflow-x-hidden relative">
-            {/* PROGRESS DOTS */}
+        <div className={`bg-background text-on-background font-body-md h-screen flex flex-col overflow-x-hidden relative ${shakeClass}`}>
             {!guideDone && (
                 <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[60] flex gap-3">
-                    {GUIDE_STEPS.map((_, i) => (
+                    {steps.map((_, i) => (
                         <div
                             key={i}
                             className={`w-3 h-3 rounded-full transition-all duration-500 ${
@@ -132,15 +201,18 @@ export default function PracticeRead({ module }) {
             </div>
 
             <div data-purpose="word-display" className="flex-1 flex">
-                <ReadModeMainContent
-                    words={module?.words}
+                <ContentComponent
+                    words={wordsForContent}
                     currentIndex={Math.min(currentWordIndex, totalWords - 1)}
                     gameState={gameState}
                     countdownValue={countdownValue}
-                    isExploding={false}
-                    isMispronounced={false}
+                    isExploding={isExploding}
+                    isMispronounced={isMispronounced}
                     showPointsFeedback={showPointsFeedback}
                     pointsFeedbackValue={pointsFeedbackValue}
+                    streak={currentStreak}
+                    feedbackType={feedbackType}
+                    feedbackMessage={feedbackMessage}
                 />
             </div>
 
@@ -152,10 +224,10 @@ export default function PracticeRead({ module }) {
                                 touch_app
                             </span>
                             <span className="text-lg sm:text-xl leading-none">
-                                Tap to Practice
+                                {overlay.title}
                             </span>
                             <span className="text-[9px] sm:text-[10px] md:text-xs tracking-[0.2em] opacity-70 mt-1">
-                                Tap the mic & read the words aloud!
+                                {overlay.subtitle}
                             </span>
                         </div>
                         <div className="w-0 h-0 border-l-[15px] sm:border-l-[20px] border-r-[15px] sm:border-r-[20px] border-t-[20px] sm:border-t-[25px] border-l-transparent border-r-transparent border-t-white -mt-1 drop-shadow-2xl"></div>
@@ -163,10 +235,9 @@ export default function PracticeRead({ module }) {
                 </div>
             )}
 
-            {/* AVATAR SPEECH BUBBLE GUIDE */}
             {bodyUrl && !guideDone && step && (
                 <div
-                    className="fixed z-50 bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-4"
+                    className="fixed z-50 bottom-8 right-6 flex flex-col items-center gap-4"
                     data-purpose="avatar-speech"
                 >
                     <button
@@ -181,7 +252,7 @@ export default function PracticeRead({ module }) {
                             {step.message}
                         </p>
                         <p className="text-xs font-black uppercase tracking-wider text-lime-600 mt-4">
-                            {stepIndex < GUIDE_STEPS.length - 1
+                            {stepIndex < steps.length - 1
                                 ? "Tap here to continue →"
                                 : "Tap to finish! ✨"}
                         </p>
@@ -193,8 +264,6 @@ export default function PracticeRead({ module }) {
                     />
                 </div>
             )}
-
-         
 
             <div className="flex-shrink-0 relative z-50" data-purpose="microphone-button">
                 <Microphone
