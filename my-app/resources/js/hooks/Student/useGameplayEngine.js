@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useCountdown } from "./useCountdown";
 import { router } from "@inertiajs/react";
-import { playSuccessSound } from "@/utils/sounds";
+import { playSuccessSound, playFeedbackSound, playMispronounceSound } from "@/utils/sounds";
 
 export function useGameplayEngine({
     words = [],
@@ -40,6 +40,7 @@ export function useGameplayEngine({
     const streakShakeTimerRef = useRef(null);
     const wordsSmashedRef = useRef(0);
     const mispronounceTimerRef = useRef(null);
+    const mispronounceGuardRef = useRef(false);
     const wordRecognizedTimerRef = useRef(null);
     const onWordRecognizedRef = useRef(onWordRecognized);
     const onMispronounceRef = useRef(onMispronounce);
@@ -172,6 +173,7 @@ export function useGameplayEngine({
         clearTimeout(feedbackTimerRef.current);
         setFeedbackMessage(fbMsg);
         setFeedbackType("correct");
+        playFeedbackSound(fbMsg)
         feedbackTimerRef.current = setTimeout(() => {
             setFeedbackType(null);
         }, 600);
@@ -197,6 +199,9 @@ export function useGameplayEngine({
     }, [words, moveToNextWord]);
 
     const handleMispronounce = useCallback(() => {
+        if (mispronounceGuardRef.current) return
+        mispronounceGuardRef.current = true
+
         clearTimeout(wordTimeoutRef.current);
         const wordObj = words[currentWordIndexRef.current];
         onMispronounceRef.current?.(wordObj);
@@ -208,6 +213,8 @@ export function useGameplayEngine({
         clearTimeout(feedbackTimerRef.current);
         setFeedbackMessage(mispMsg);
         setFeedbackType("mispronounce");
+        playMispronounceSound()
+        playFeedbackSound(mispMsg)
         feedbackTimerRef.current = setTimeout(() => {
             setFeedbackType(null);
         }, 700);
@@ -216,6 +223,7 @@ export function useGameplayEngine({
         clearTimeout(mispronounceTimerRef.current);
         mispronounceTimerRef.current = setTimeout(() => {
             setIsMispronounced(false);
+            mispronounceGuardRef.current = false;
             moveToNextWord();
         }, 800);
     }, [words, moveToNextWord]);

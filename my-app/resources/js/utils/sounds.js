@@ -1,33 +1,40 @@
-export function playSuccessSound() {
+const FEEDBACK_FILES = {
+    "Good!": "good.wav",
+    "Great!": "great.wav",
+    "Great Job!": "great_job.wav",
+    "Excellent!": "excellent.wav",
+    "Almost!": "almost.wav",
+    "Try Again!": "try_again.wav",
+    "So Close!": "so_close.wav",
+    "Keep Going!": "keep_going.wav",
+    "Nice Try!": "nice_try.wav",
+}
+
+function playAudio(path) {
     try {
-        const audio = new Audio("/Sound Effects/word_smashed.mp3")
+        const audio = new Audio(path)
         audio.volume = 1.0
         audio.play()
     } catch (e) {
         // ignore
     }
+}
+
+export function playSuccessSound() {
+    playAudio("/Sound Effects/word_smashed.mp3")
 }
 
 export function playBadgeUnlockSound() {
-    try {
-        const audio = new Audio("/Sound Effects/unlocked_badges_sfx.mp3")
-        audio.volume = 1.0
-        audio.play()
-    } catch (e) {
-        // ignore
-    }
+    playAudio("/Sound Effects/unlocked_badges_sfx.mp3")
 }
 
-export function speakText(text) {
-    try {
-        if (!("speechSynthesis" in window)) return
-        window.speechSynthesis.cancel()
-        const utterance = new SpeechSynthesisUtterance(text)
-        utterance.rate = 1.0
-        utterance.pitch = 1.1
-        utterance.volume = 1.0
-        window.speechSynthesis.speak(utterance)
-    } catch (e) {
-        // ignore
+export function playMispronounceSound() {
+    playAudio("/Sound Effects/mispronounced.mp3")
+}
+
+export function playFeedbackSound(message) {
+    const file = FEEDBACK_FILES[message]
+    if (file) {
+        playAudio("/Sound Effects/" + file)
     }
 }
