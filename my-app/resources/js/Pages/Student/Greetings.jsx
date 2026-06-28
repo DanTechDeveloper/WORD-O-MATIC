@@ -1,155 +1,69 @@
-import { Link, usePage } from "@inertiajs/react";
-import { useState, useEffect } from "react";
+import { usePage, router } from "@inertiajs/react";
+import { useState } from "react";
+import BadgeUnlockModal from "@/Components/Student/BadgeUnlockModal";
+import AvatarSpeechBubble from "@/Components/Student/AvatarSpeechBubble";
 
 export default function Greetings() {
     const { auth, flash } = usePage().props;
     const name = auth?.user?.name || "STUDENT";
+    console.log(usePage());
 
     const studentAvatarUrl = auth?.user?.student?.avatar;
-    const [showBadgeModal, setShowBadgeModal] = useState(false);
-    useEffect(() => {
-        if (flash?.new_badge) {
-            setShowBadgeModal(true);
-        }
-    }, [flash?.new_badge]);
-    console.log(flash);
+    const bodyUrl = studentAvatarUrl?.replace("/head.png", "/body.png");
+    const newBadge = flash?.new_badge;
+    const [showBadgeModal, setShowBadgeModal] = useState(!!newBadge);
 
     return (
-        <div className="m-0 p-0 overflow-hidden">
-            {/* Badge Unlock Modal Overlay */}
-            {showBadgeModal && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/95 backdrop-blur-md transition-all duration-500">
-                    <div className="bg-zinc-900 border-8 border-lime-400 p-12 rounded-[48px] max-w-2xl w-full text-center shadow-[0_0_100px_rgba(163,230,53,0.4)] relative overflow-hidden">
-                       
+        <main className="min-h-screen w-full flex flex-col items-center justify-center relative overflow-hidden bg-zinc-950">
+           
+            <div
+                className="absolute top-10 left-10 text-6xl floating-emoji"
+                style={{ animationDelay: "0s" }}
+            >
+                🤖
+            </div>
+            <div
+                className="absolute top-20 right-20 text-5xl floating-emoji"
+                style={{ animationDelay: "1s" }}
+            >
+                🌟
+            </div>
+            <div
+                className="absolute bottom-20 left-20 text-7xl floating-emoji"
+                style={{ animationDelay: "2s" }}
+            >
+                🚀
+            </div>
+            <div
+                className="absolute bottom-10 right-10 text-6xl floating-emoji"
+                style={{ animationDelay: "0.5s" }}
+            >
+                🎉
+            </div>
+            <div className="absolute top-1/4 right-1/4 text-3xl animate-pulse opacity-40 text-lime-400">
+                ✨
+            </div>
+            <div className="absolute bottom-1/3 left-1/4 text-3xl animate-pulse opacity-40 text-purple-500">
+                ✨
+            </div>
+            <BadgeUnlockModal
+                badge={newBadge}
+                show={showBadgeModal}
+                onContinue={() => setShowBadgeModal(false)}
+                buttonText="CLAIM REWARD!"
+            />
 
-                        <div className="text-9xl md:text-[12rem] mb-8 animate-bounce drop-shadow-[0_20px_50px_rgba(163,230,53,0.3)]">
-                            {flash.new_badge.icon || "🏆"}
-                        </div>
-
-                        <h2 className="text-lime-400 text-6xl md:text-8xl font-black uppercase mb-4 drop-shadow-[0_5px_15px_rgba(0,0,0,0.5)] leading-tight italic tracking-tighter">
-                            UNLOCKED!
-                        </h2>
-
-                        <div className="space-y-2 mb-10 relative z-10">
-                            <p className="text-white text-3xl md:text-5xl font-black uppercase tracking-tight">
-                                {flash.new_badge.name}
-                            </p>
-                            <p className="text-lime-400/70 text-lg md:text-xl font-bold italic">
-                                {flash.new_badge.description}
-                            </p>
-                        </div>
-
-                        <button
-                            onClick={() => setShowBadgeModal(false)}
-                            className="w-full bg-lime-400 hover:bg-lime-300 text-zinc-950 font-black py-6 rounded-2xl border-b-8 border-green-800 text-3xl active:translate-y-1 active:border-b-4 transition-all uppercase tracking-widest"
-                        >
-                            CLAIM REWARD!
-                        </button>
-                    </div>
-                </div>
+            {!showBadgeModal && (
+                <AvatarSpeechBubble
+                    emoji="🤝"
+                    title="GREAT CHOICE!"
+                    message={`I'm your Word Buddy! Together we'll unlock the mystery of the Word-O-Matic, ${name}!`}
+                    bodyUrl={bodyUrl}
+                    onClick={() => router.visit("/student/tutorial")}
+                    footerText="Tap here to start your adventure ✨"
+                    position="center"
+                />
             )}
-            {/* <!-- BEGIN: Main Background Container --> */}
-            <main className="min-h-screen w-full flex flex-col items-center justify-center relative overflow-hidden bg-zinc-950">
-                {/* <!-- BEGIN: Decorative Floating Elements --> */}
-                {/* <!-- Top Left Robot --> */}
-                <div
-                    className="absolute top-10 left-10 text-6xl floating-emoji"
-                    style={{ animationDelay: "0s" }}
-                >
-                    🤖
-                </div>
-                {/* <!-- Top Right Stars --> */}
-                <div
-                    className="absolute top-20 right-20 text-5xl floating-emoji"
-                    style={{ animationDelay: "1s" }}
-                >
-                    🌟
-                </div>
-                {/* <!-- Bottom Left Rocket --> */}
-                <div
-                    className="absolute bottom-20 left-20 text-7xl floating-emoji"
-                    style={{ animationDelay: "2s" }}
-                >
-                    🚀
-                </div>
-                {/* <!-- Bottom Right Party Popper --> */}
-                <div
-                    className="absolute bottom-10 right-10 text-6xl floating-emoji"
-                    style={{ animationDelay: "0.5s" }}
-                >
-                    🎉
-                </div>
-                {/* <!-- Extra sparkles for theme --> */}
-                <div className="absolute top-1/4 right-1/4 text-3xl animate-pulse opacity-40 text-lime-400">
-                    ✨
-                </div>
-                <div className="absolute bottom-1/3 left-1/4 text-3xl animate-pulse opacity-40 text-purple-500">
-                    ✨
-                </div>
-                {/* <!-- END: Decorative Floating Elements --> */}
-
-                {/* <!-- BEGIN: Central Content Card --> */}
-                <section
-                    className="bg-zinc-900 border-4 border-purple-900 tactile-card rounded-[40px] p-12 md:p-20 relative overflow-hidden flex flex-col items-center text-center max-w-4xl mx-4 z-10 w-full md:w-[90%]"
-                    data-purpose="greeting-card"
-                >
-                    {/* <!-- Top Icon/Speech Bubble Style Decor --> */}
-                    <div className="mb-6 animate-bounce-slow">
-                        {studentAvatarUrl && (
-                            <img
-                                src={studentAvatarUrl}
-                                alt="Selected Avatar"
-                                className="w-32 h-32 md:w-40 md:h-40 object-cover rounded-full border-4 border-lime-400 shadow-[0_0_20px_rgba(163,230,53,0.4)]"
-                            />
-                        )}
-                    </div>
-                    {/* <!-- Main Headline --> */}
-                    <h1 className="flex flex-col gap-2 mb-8 select-none max-w-full">
-                        <span className="text-white text-4xl md:text-5xl font-black italic uppercase tracking-tight">
-                            WELCOME,
-                        </span>
-                        <span className="text-lime-400 text-3xl sm:text-5xl md:text-7xl lg:text-8xl font-black uppercase tracking-tight break-words px-4">
-                            {name.toUpperCase()}!
-                        </span>
-                    </h1>
-
-                    {/* <!-- BEGIN: Call to Action --> */}
-                    <div className="w-full flex justify-center">
-                        <Link
-                            href="/student/tutorial"
-                            className="group relative bg-lime-400 hover:bg-lime-300 text-zinc-950 text-2xl md:text-4xl font-black py-6 px-12 rounded-2xl border-b-[6px] border-green-800 tactile-button transition-all flex items-center gap-4 uppercase tracking-tighter active:scale-95"
-                            data-purpose="continue-button"
-                            id="continue-btn"
-                        >
-                            CONTINUE TO TUTORIAL
-                            <span className="text-3xl group-hover:scale-125 transition-transform">
-                                🚀
-                            </span>
-                        </Link>
-                    </div>
-                    {/* <!-- END: Call to Action --> */}
-                    {/* <!-- Footer Help Text --> */}
-                    <p className="mt-8 text-zinc-500 font-bold text-sm tracking-[0.2em] uppercase">
-                        Ready to solve the Mystery of the Word-O-Matic?
-                    </p>
-                </section>
-                <div className="absolute bottom-24 right-24 opacity-10 pointer-events-none">
-                    <svg
-                        className="text-lime-400 animate-[spin_10s_linear_infinite]"
-                        fill="currentColor"
-                        height="120"
-                        viewBox="0 0 24 24"
-                        width="120"
-                    >
-                        <path d="M12 15a3 3 0 100-6 3 3 0 000 6z"></path>
-                        <path
-                            clipRule="evenodd"
-                            d="M1.323 11.447C2.811 6.976 7.028 3.75 12.001 3.75c4.97 0 9.185 3.223 10.675 7.69.12.362.12.752 0 1.113-1.487 4.466-5.705 7.697-10.677 7.697-4.97 0-9.186-3.223-10.675-7.69a1.762 1.762 0 010-1.113zM17.25 12a5.25 5.25 0 11-10.5 0 5.25 5.25 0 0110.5 0z"
-                            fillRule="evenodd"
-                        ></path>
-                    </svg>
-                </div>
-            </main>
-        </div>
+        </main>
     );
 }

@@ -1,5 +1,6 @@
 import { Link, usePage } from "@inertiajs/react";
 import { useState } from "react";
+import AvatarSpeechBubble from "@/Components/Student/AvatarSpeechBubble";
 
 const BEFORE_STEPS = [
     {
@@ -271,31 +272,19 @@ export default function Tutorial() {
 
                 {/* AVATAR SPEECH BUBBLE GUIDE */}
                 {bodyUrl && !guideDone && step && (
-                    <div
-                        className="fixed z-50 bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-4"
-                        data-purpose="avatar-speech"
-                    >
-                        <button
+                    <div data-purpose="avatar-speech">
+                        <AvatarSpeechBubble
+                            emoji={step.emoji}
+                            title={step.title}
+                            message={step.message}
+                            bodyUrl={bodyUrl}
                             onClick={advanceGuide}
-                            className="bg-white/95 backdrop-blur-sm rounded-3xl px-8 py-5 shadow-2xl border-2 border-lime-400 min-w-[260px] max-w-[360px] cursor-pointer hover:scale-105 active:scale-95 transition-all duration-200 text-center animate-fade-in"
-                        >
-                            <p className="text-2xl font-black uppercase tracking-tight text-zinc-900 flex items-center justify-center gap-2">
-                                <span className="text-3xl">{step.emoji}</span>
-                                {step.title}
-                            </p>
-                            <p className="text-base font-bold text-zinc-600 mt-2 leading-snug">
-                                {step.message}
-                            </p>
-                            <p className="text-xs font-black uppercase tracking-wider text-lime-600 mt-4">
-                                {stepIndex < steps.length - 1
+                            footerText={
+                                stepIndex < steps.length - 1
                                     ? "Tap here to continue →"
-                                    : "Tap to finish! ✨"}
-                            </p>
-                        </button>
-                        <img
-                            src={bodyUrl}
-                            alt="Your Avatar"
-                            className="w-48 h-auto md:w-64 lg:w-80 object-contain drop-shadow-[0_0_80px_rgba(163,230,53,0.35)] animate-bounce-slow"
+                                    : "Tap to finish! ✨"
+                            }
+                            position="bottom"
                         />
                     </div>
                 )}
