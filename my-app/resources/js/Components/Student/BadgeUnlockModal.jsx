@@ -1,9 +1,18 @@
+import { useEffect } from "react";
+import { playBadgeUnlockSound } from "@/utils/sounds";
+
 export default function BadgeUnlockModal({
     badge,
     show,
     onContinue,
     buttonText = "TAP TO CONTINUE",
 }) {
+    useEffect(() => {
+        if (show && badge) {
+            playBadgeUnlockSound()
+        }
+    }, [show, badge])
+
     if (!show || !badge) return null;
 
     return (

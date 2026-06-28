@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useCountdown } from "./useCountdown";
 import { router } from "@inertiajs/react";
+import { playSuccessSound } from "@/utils/sounds";
 
 export function useGameplayEngine({
     words = [],
@@ -143,6 +144,7 @@ export function useGameplayEngine({
     }, [currentWordIndex, totalWords, wordsSmashed, gameState, onComplete]);
 
     const handleWordRecognized = useCallback(() => {
+        playSuccessSound()
         const wordObj = words[currentWordIndexRef.current];
         onWordRecognizedRef.current?.(wordObj);
 
@@ -163,8 +165,8 @@ export function useGameplayEngine({
 
         const streak = currentStreakRef.current;
         let fbMsg;
-        if (streak >= 5) fbMsg = "Excellent!";
-        else if (streak >= 3) fbMsg = "Great Job!";
+        if (streak >= 6) fbMsg = "Excellent!";
+        else if (streak >= 4) fbMsg = "Great Job!";
         else if (streak >= 2) fbMsg = "Great!";
         else fbMsg = "Good!";
         clearTimeout(feedbackTimerRef.current);
@@ -174,9 +176,9 @@ export function useGameplayEngine({
             setFeedbackType(null);
         }, 600);
 
-        if (streak >= 3) {
+        if (streak >= 2) {
             clearTimeout(streakShakeTimerRef.current);
-            const intensity = streak >= 10 ? "intense" : streak >= 5 ? "medium" : "subtle";
+            const intensity = streak >= 8 ? "intense" : streak >= 5 ? "medium" : "subtle";
             setStreakShake(intensity);
             streakShakeTimerRef.current = setTimeout(() => {
                 setStreakShake(null);
@@ -202,8 +204,9 @@ export function useGameplayEngine({
         currentStreakRef.current = 0;
         setCurrentStreak(0);
         const mispMsgs = ["Almost!", "Try Again!", "So Close!", "Keep Going!", "Nice Try!"];
+        const mispMsg = mispMsgs[Math.floor(Math.random() * mispMsgs.length)]
         clearTimeout(feedbackTimerRef.current);
-        setFeedbackMessage(mispMsgs[Math.floor(Math.random() * mispMsgs.length)]);
+        setFeedbackMessage(mispMsg);
         setFeedbackType("mispronounce");
         feedbackTimerRef.current = setTimeout(() => {
             setFeedbackType(null);
