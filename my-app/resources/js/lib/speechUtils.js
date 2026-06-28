@@ -1,6 +1,30 @@
 const peq = new Int32Array(0x10000);
 const touched = [];
 
+function standardLevenshtein(s1, s2, start, len1, len2) {
+    const a = s1.slice(start, start + len1);
+    const b = s2.slice(start, start + len2);
+    const m = a.length, n = b.length;
+
+    let prev = new Int32Array(n + 1);
+    let curr = new Int32Array(n + 1);
+    for (let j = 0; j <= n; j++) prev[j] = j;
+
+    for (let i = 1; i <= m; i++) {
+        curr[0] = i;
+        for (let j = 1; j <= n; j++) {
+            const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+            curr[j] = Math.min(
+                prev[j] + 1,
+                curr[j - 1] + 1,
+                prev[j - 1] + cost,
+            );
+        }
+        [prev, curr] = [curr, prev];
+    }
+    return prev[n];
+}
+
 function fastestLevenshtein(a, b) {
     if (a === b) return 0;
 
@@ -24,6 +48,12 @@ function fastestLevenshtein(a, b) {
     len2 -= start;
 
     if (len1 === 0) return len2;
+
+    if (len1 > 31) {
+        return Math.abs(len1 - len2) > maxDist(b.length)
+            ? len1
+            : standardLevenshtein(str1, str2, start, len1, len2);
+    }
 
     for (let i = 0; i < touched.length; i++) peq[touched[i]] = 0;
     touched.length = 0;

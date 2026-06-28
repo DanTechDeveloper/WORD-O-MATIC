@@ -59,7 +59,6 @@ class DatabaseSeeder extends Seeder
                     9 => 'Vocabulary Vortex',
                     10 => 'Mastery Marathon',
                 },
-                'total_points' => $level <= 5 ? 10 : ($level <= 8 ? 15 : 20),
             ]);
 
             foreach ($wordsByModule[$level] as $position => $word) {
@@ -89,7 +88,6 @@ class DatabaseSeeder extends Seeder
                     10 => 'Masterpiece',
                 },
                 'content' => "Sample content for level {$level}.",
-                'total_score' => $level <= 5 ? 10 : ($level <= 8 ? 15 : 20),
             ]);
 
             $contentWords = preg_split('/\s+/', trim("Sample content for level {$level}."), -1, PREG_SPLIT_NO_EMPTY);

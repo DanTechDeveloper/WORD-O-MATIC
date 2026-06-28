@@ -1,6 +1,17 @@
 import { useEffect, useRef } from "react";
 import { isFuzzyMatch } from "@/lib/speechUtils";
 
+function clearTimers(mispronounceTimeoutRef, restartTimerRef) {
+    if (mispronounceTimeoutRef.current) {
+        clearTimeout(mispronounceTimeoutRef.current);
+        mispronounceTimeoutRef.current = null;
+    }
+    if (restartTimerRef.current) {
+        clearTimeout(restartTimerRef.current);
+        restartTimerRef.current = null;
+    }
+}
+
 export function useSpeechRecognition({
     isActive,
     targetWord,
@@ -12,6 +23,8 @@ export function useSpeechRecognition({
 }) {
     const recognitionRef = useRef(null);
     const isWordMode = matchMode === "word";
+    const isWordModeRef = useRef(isWordMode);
+    isWordModeRef.current = isWordMode;
 
     const gameStateRef = useRef(isActive);
     gameStateRef.current = isActive;
@@ -39,22 +52,11 @@ export function useSpeechRecognition({
     const restartRetryCountRef = useRef(0);
     const restartTimerRef = useRef(null);
 
-    const clearTimers = () => {
-        if (mispronounceTimeoutRef.current) {
-            clearTimeout(mispronounceTimeoutRef.current);
-            mispronounceTimeoutRef.current = null;
-        }
-        if (restartTimerRef.current) {
-            clearTimeout(restartTimerRef.current);
-            restartTimerRef.current = null;
-        }
-    };
-
     useEffect(() => {
         isMountedRef.current = true;
         return () => {
             isMountedRef.current = false;
-            clearTimers();
+            clearTimers(mispronounceTimeoutRef, restartTimerRef);
             if (recognitionRef.current) recognitionRef.current.abort();
         };
     }, []);
@@ -76,14 +78,12 @@ export function useSpeechRecognition({
             recognition.onresult = (event) => {
                 if (!gameStateRef.current) return;
 
-                if (mispronounceTimeoutRef.current)
-                    clearTimeout(mispronounceTimeoutRef.current);
-
                 const target = targetWordRef.current.toLowerCase().trim();
                 if (!target) return;
 
                 let matchedThisEvent = false;
                 let latestTranscript = "";
+                let innerPathHandled = false;
 
                 for (let i = event.resultIndex; i < event.results.length; ++i) {
                     if (i <= lastProcessedIndexRef.current) continue;
@@ -96,7 +96,10 @@ export function useSpeechRecognition({
                         .replace(/[^\w\s]/g, "")
                         .trim();
 
-                    if (!transcript) continue;
+                    if (!transcript) {
+                        if (!isWordModeRef.current) lastProcessedIndexRef.current = i;
+                        continue;
+                    }
 
                     latestTranscript = transcript;
 
@@ -110,39 +113,18 @@ export function useSpeechRecognition({
                         matchedThisEvent = true;
                         lastProcessedIndexRef.current = i;
                         onWordRecognizedRef.current?.();
-                        if (isWordMode) break;
+                        if (isWordModeRef.current) break;
+                        continue;
                     }
 
-                    if (isWordMode) {
-                        if (result.isFinal) {
-                            lastProcessedIndexRef.current = i;
-                            if (!matchedThisEvent && !hasMatchedCurrentRef.current) {
-                                if (mispronounceTimeoutRef.current)
-                                    clearTimeout(mispronounceTimeoutRef.current);
-                                mispronounceTimeoutRef.current = setTimeout(() => {
-                                    if (
-                                        isMountedRef.current &&
-                                        gameStateRef.current &&
-                                        !hasMatchedCurrentRef.current
-                                    ) {
-                                        onMispronouncedRef.current?.(latestTranscript);
-                                    }
-                                }, 200);
-                            }
-                        }
-                    } else {
+                    if (isWordModeRef.current && result.isFinal) {
                         lastProcessedIndexRef.current = i;
-                    }
-                }
-
-                if (isWordMode) {
-                    if (
-                        !matchedThisEvent &&
-                        !hasMatchedCurrentRef.current &&
-                        latestTranscript &&
-                        Date.now() >= gracePeriodEndRef.current
-                    ) {
-                        if (!mispronounceTimeoutRef.current) {
+                        if (
+                            !matchedThisEvent &&
+                            !hasMatchedCurrentRef.current &&
+                            Date.now() >= gracePeriodEndRef.current
+                        ) {
+                            clearTimeout(mispronounceTimeoutRef.current);
                             mispronounceTimeoutRef.current = setTimeout(() => {
                                 if (
                                     isMountedRef.current &&
@@ -151,14 +133,45 @@ export function useSpeechRecognition({
                                 ) {
                                     onMispronouncedRef.current?.(latestTranscript);
                                 }
-                            }, 500);
+                            }, 200);
                         }
+                        innerPathHandled = true;
+                        break;
                     }
-                } else if (
-                    !matchedThisEvent &&
-                    !hasMatchedCurrentRef.current &&
-                    latestTranscript
-                ) {
+
+                    if (!isWordModeRef.current) {
+                        lastProcessedIndexRef.current = i;
+                    }
+                }
+
+                if (matchedThisEvent) {
+                    if (mispronounceTimeoutRef.current) {
+                        clearTimeout(mispronounceTimeoutRef.current);
+                        mispronounceTimeoutRef.current = null;
+                    }
+                    return;
+                }
+
+                if (hasMatchedCurrentRef.current) return;
+
+                if (!latestTranscript) return;
+
+                if (isWordModeRef.current) {
+                    if (innerPathHandled) return;
+                    if (Date.now() < gracePeriodEndRef.current) return;
+
+                    clearTimeout(mispronounceTimeoutRef.current);
+                    mispronounceTimeoutRef.current = setTimeout(() => {
+                        if (
+                            isMountedRef.current &&
+                            gameStateRef.current &&
+                            !hasMatchedCurrentRef.current
+                        ) {
+                            onMispronouncedRef.current?.(latestTranscript);
+                        }
+                    }, 500);
+                } else {
+                    clearTimeout(mispronounceTimeoutRef.current);
                     mispronounceTimeoutRef.current = setTimeout(() => {
                         if (
                             isMountedRef.current &&
@@ -172,7 +185,7 @@ export function useSpeechRecognition({
             };
 
             recognition.onerror = (event) => {
-                clearTimers();
+                clearTimers(mispronounceTimeoutRef, restartTimerRef);
 
                 if (event.error === "aborted") {
                     console.warn(
@@ -192,6 +205,7 @@ export function useSpeechRecognition({
             };
 
             recognition.onend = () => {
+                clearTimers(mispronounceTimeoutRef, restartTimerRef);
                 lastProcessedIndexRef.current = -1;
                 hasMatchedCurrentRef.current = false;
                 restartRetryCountRef.current = 0;
@@ -229,13 +243,26 @@ export function useSpeechRecognition({
 
             recognitionRef.current = recognition;
         }
+
+        return () => {
+            clearTimers(mispronounceTimeoutRef, restartTimerRef);
+            if (recognitionRef.current) {
+                recognitionRef.current.abort();
+                recognitionRef.current = null;
+            }
+        };
     }, []);
 
     useEffect(() => {
+        const wasMatched = hasMatchedCurrentRef.current;
         hasMatchedCurrentRef.current = false;
-        clearTimers();
+        lastProcessedIndexRef.current = -1;
+        clearTimers(mispronounceTimeoutRef, restartTimerRef);
         if (isWordMode) {
             gracePeriodEndRef.current = Date.now() + 900;
+        }
+        if (wasMatched && recognitionRef.current && gameStateRef.current) {
+            try { recognitionRef.current.stop(); } catch {}
         }
     }, [targetWord]);
 

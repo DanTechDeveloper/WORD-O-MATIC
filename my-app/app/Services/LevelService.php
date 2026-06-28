@@ -12,8 +12,8 @@ class LevelService
 {
     public function getWordModuleStatuses(int $userId): Collection
     {
-        $modules = WordModule::withCount('words')
-            ->select(['id', 'level', 'title', 'total_points'])
+        $modules = WordModule::select(['id', 'level', 'title'])
+            ->withCount('words')
             ->orderBy('level', 'asc')
             ->get();
 
@@ -21,12 +21,13 @@ class LevelService
             ->get()
             ->keyBy('word_module_id');
 
-        return $this->mapStatuses($modules, $progressRecords, 'total_points');
+        return $this->mapStatuses($modules, $progressRecords);
     }
 
     public function getSpeakModuleStatuses(int $userId): Collection
     {
-        $modules = ParagraphModule::select(['id', 'level', 'title', 'total_score'])
+        $modules = ParagraphModule::select(['id', 'level', 'title'])
+            ->withCount('words')
             ->orderBy('level', 'asc')
             ->get();
 
@@ -34,21 +35,22 @@ class LevelService
             ->get()
             ->keyBy('paragraph_module_id');
 
-        return $this->mapStatuses($modules, $progressRecords, 'total_score');
+        return $this->mapStatuses($modules, $progressRecords);
     }
 
-    private function mapStatuses(Collection $modules, Collection $progressRecords, string $totalField): Collection
+    private function mapStatuses(Collection $modules, Collection $progressRecords): Collection
     {
         $foundCurrent = false;
 
-        return $modules->map(function ($module) use ($progressRecords, &$foundCurrent, $totalField) {
+        return $modules->map(function ($module) use ($progressRecords, &$foundCurrent) {
             $progress = $progressRecords->get($module->id);
+            $wordsSmashed = $progress ? $progress->words_smashed : 0;
+            $totalWords = $module->words_count ?? 0;
 
-            if ($progress && $progress->status === 'completed') {
+            if ($totalWords > 0 && $wordsSmashed >= $totalWords) {
                 $status = 'completed';
-            } elseif ($progress && $progress->status === 'in_progress') {
+            } elseif ($wordsSmashed > 0) {
                 $status = 'in_progress';
-                $foundCurrent = true;
             } elseif (! $foundCurrent) {
                 $status = 'current';
                 $foundCurrent = true;
@@ -60,10 +62,10 @@ class LevelService
                 'id' => $module->id,
                 'level' => $module->level,
                 'title' => $module->title,
-                'total_points' => $module->{$totalField},
+                'total_points' => $totalWords,
                 'status' => $status,
-                'words_smashed' => $progress ? $progress->words_smashed : 0,
-                'score' => $progress ? $progress->words_smashed : 0,
+                'words_smashed' => $wordsSmashed,
+                'score' => $wordsSmashed,
             ];
         });
     }

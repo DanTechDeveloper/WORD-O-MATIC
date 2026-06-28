@@ -13,12 +13,20 @@ class WordModule extends Model
     protected $fillable = [
         'level',
         'title',
-        'total_points',
     ];
+
+    protected $appends = ['total_points'];
 
     public function words(): HasMany
     {
         return $this->hasMany(Word::class)->orderBy('position');
+    }
+
+    public function getTotalPointsAttribute(): int
+    {
+        return $this->relationLoaded('words')
+            ? $this->words->count()
+            : ($this->words_count ?? $this->words()->count());
     }
 
     public static function trainingWordsForUser(int $userId): array
@@ -76,8 +84,6 @@ class WordModule extends Model
 
         $module->words()->delete();
 
-        $totalPoints = 0;
-
         foreach ($data['words'] as $index => $wordData) {
             $wordText = trim($wordData['word'] ?? '');
 
@@ -89,11 +95,7 @@ class WordModule extends Model
                     'points' => $points,
                     'position' => $index + 1,
                 ]);
-
-                $totalPoints += $points;
             }
         }
-
-        $module->update(['total_points' => $data['totalScore'] ?? $totalPoints]);
     }
 }

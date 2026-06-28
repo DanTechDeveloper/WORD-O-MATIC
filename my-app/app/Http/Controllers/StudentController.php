@@ -154,8 +154,9 @@ class StudentController extends Controller
 
     public function readModeLevels()
     {
-        return Inertia::render('Student/ReadModeLevels', [
+        return Inertia::render('Student/LevelsPage', [
             'modules' => $this->levelService->getWordModuleStatuses(auth()->id()),
+            'mode' => 'read',
         ]);
     }
 
@@ -163,7 +164,7 @@ class StudentController extends Controller
     {
         // Fetch module with words and calculate student progress
         $module = WordModule::with('words')
-            ->select(['id', 'level', 'title', 'total_points'])
+            ->select(['id', 'level', 'title'])
             ->findOrFail($id);
 
         $userId = auth()->id();
@@ -236,15 +237,16 @@ class StudentController extends Controller
 
     public function speakModeLevels()
     {
-        return Inertia::render('Student/SpeakModeLevels', [
+        return Inertia::render('Student/LevelsPage', [
             'modules' => $this->levelService->getSpeakModuleStatuses(auth()->id()),
+            'mode' => 'speak',
         ]);
     }
 
     public function gameplaySpeakMode($id)
     {
         $module = ParagraphModule::with('words')
-            ->select(['id', 'level', 'title', 'content', 'total_score'])
+            ->select(['id', 'level', 'title', 'content'])
             ->findOrFail($id);
 
         $userId = auth()->id();

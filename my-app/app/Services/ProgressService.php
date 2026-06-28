@@ -31,7 +31,8 @@ class ProgressService
             $progress->accuracy = $accuracy;
         }
 
-        $progress->status = $wordsSmashed >= $module->total_points ? 'completed' : 'in_progress';
+        $totalWords = $module->words()->count();
+        $progress->status = $wordsSmashed >= $totalWords ? 'completed' : 'in_progress';
         $progress->save();
 
         if ($isNewBest || $isBetterAccuracy) {
@@ -74,7 +75,8 @@ class ProgressService
             $progress->accuracy = $accuracy;
         }
 
-        $progress->status = $wordsSmashed >= $module->total_score ? 'completed' : 'in_progress';
+        $totalWords = $module->words()->count();
+        $progress->status = $wordsSmashed >= $totalWords ? 'completed' : 'in_progress';
         $progress->save();
 
         if ($isNewBest || $isBetterAccuracy) {

@@ -12,8 +12,10 @@ class ParagraphModule extends Model
     use HasFactory;
 
     protected $fillable = [
-        'level', 'title', 'content', 'total_score',
+        'level', 'title', 'content',
     ];
+
+    protected $appends = ['total_score'];
 
     protected $table = 'paragraph_modules';
 
@@ -25,6 +27,13 @@ class ParagraphModule extends Model
     public function words(): HasMany
     {
         return $this->hasMany(ParagraphWord::class)->orderBy('position');
+    }
+
+    public function getTotalScoreAttribute(): int
+    {
+        return $this->relationLoaded('words')
+            ? $this->words->count()
+            : ($this->words_count ?? $this->words()->count());
     }
 
     public static function trainingWordsForUser(int $userId): array
@@ -75,16 +84,11 @@ class ParagraphModule extends Model
 
     public static function saveWithContent(array $data): void
     {
-        $wordCount = !empty(trim($data['content'] ?? ''))
-            ? count(preg_split('/\s+/', trim($data['content']), -1, PREG_SPLIT_NO_EMPTY))
-            : 0;
-
         $module = self::updateOrCreate(
             ['level' => $data['level']],
             [
                 'title' => $data['title'],
                 'content' => $data['content'] ?? '',
-                'total_score' => $wordCount,
             ],
         );
 

@@ -155,7 +155,7 @@ export default function PracticePage({ module, mode = "read" }) {
     }, [gameState, startGame]);
 
     useSpeechRecognition({
-        isActive: gameState === "ACTIVE" || gameState === "COUNTDOWN",
+        isActive: gameState === "ACTIVE",
         targetWord: targetWord,
         onWordRecognized: handleWordRecognized,
         onPermissionDenied: handlePermissionDenied,

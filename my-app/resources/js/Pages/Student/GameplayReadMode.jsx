@@ -78,7 +78,7 @@ export default function GameplayReadMode({ module }) {
     }, [gameState, permissionState, requestPermission, startGame]);
 
     useSpeechRecognition({
-        isActive: gameState === "ACTIVE" || gameState === "COUNTDOWN",
+        isActive: gameState === "ACTIVE",
         targetWord: targetWord,
         onWordRecognized: handleWordRecognized,
         onPermissionDenied: () => setGameState("DENIED"),

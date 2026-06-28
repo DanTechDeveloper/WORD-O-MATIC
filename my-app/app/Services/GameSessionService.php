@@ -21,7 +21,6 @@ class GameSessionService
             moduleType: 'word',
             wordsSmashed: $wordsSmashed,
             streak: $streak,
-            totalField: 'total_points',
             updateProgress: fn ($m, $w, $a) => $this->progressService->updateWordProgress($user->student, $m, $w, $a),
         );
     }
@@ -34,7 +33,6 @@ class GameSessionService
             moduleType: 'paragraph',
             wordsSmashed: $wordsSmashed,
             streak: $streak,
-            totalField: 'total_score',
             updateProgress: fn ($m, $w, $a) => $this->progressService->updateParagraphProgress($user->student, $m, $w, $a),
         );
     }
@@ -45,10 +43,9 @@ class GameSessionService
         string $moduleType,
         int $wordsSmashed,
         ?int $streak,
-        string $totalField,
         callable $updateProgress,
     ): array {
-        $totalPoints = $module->{$totalField};
+        $totalPoints = $module->words()->count();
 
         $accuracy = $totalPoints > 0
             ? round(min(($wordsSmashed / $totalPoints) * 100, 100), 2)

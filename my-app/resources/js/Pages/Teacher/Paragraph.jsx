@@ -46,7 +46,6 @@ export default function Paragraph({ modules }) {
                 level: level,
                 title: newTitle,
                 content: newEntries[0] || "",
-                total_score: newPoints,
             },
             {
                 onSuccess: () => closeModal(),

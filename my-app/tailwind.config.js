@@ -22,10 +22,26 @@ export default {
                     "0%": { opacity: "0", transform: "translateY(12px)" },
                     "100%": { opacity: "1", transform: "translateY(0)" },
                 },
+                "glow-pulse": {
+                    "0%, 100%": {
+                        boxShadow:
+                            "0 0 8px rgba(255,59,192,0.3), 0 0 16px rgba(255,59,192,0.1)",
+                    },
+                    "50%": {
+                        boxShadow:
+                            "0 0 20px rgba(255,59,192,0.6), 0 0 40px rgba(255,59,192,0.3)",
+                    },
+                },
+                "shimmer": {
+                    "0%": { transform: "translateX(-100%) skewX(-15deg)" },
+                    "100%": { transform: "translateX(300%) skewX(-15deg)" },
+                },
             },
             animation: {
                 "bounce-slow": "bounce-slow 2s ease-in-out infinite",
                 "fade-in": "fade-in 0.4s ease-out both",
+                "glow-pulse": "glow-pulse 2s ease-in-out infinite",
+                "shimmer": "shimmer 2.5s ease-in-out infinite",
             },
             colors: {
                 'surface-container-lowest': '#0c0c1f',
