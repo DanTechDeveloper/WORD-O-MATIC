@@ -25,11 +25,11 @@ class DashboardService
             $avgRead = $sectionStudents->avg('wordBlastAcc');
             $avgSpeak = $sectionStudents->avg('storyQuestAcc');
 
-            if ($avgRead === null && $avgSpeak === null || ($avgRead == 0.0 && $avgSpeak == 0.0)) {
+            if (!$avgRead && !$avgSpeak) {
                 $status = 'Not Started';
             } else {
-                $overall = (($avgRead ?? 0) + ($avgSpeak ?? 0)) / 2;
-                $status = $overall >= 80 ? 'On Track' : ($overall >= 60 ? 'Needs Support' : 'At Risk');
+                $overallAvg = (($avgRead ?? 0) + ($avgSpeak ?? 0)) / 2;
+                $status = $overallAvg >= 80 ? 'On Track' : ($overallAvg >= 60 ? 'Needs Support' : 'At Risk');
             }
 
             return [
@@ -46,22 +46,29 @@ class DashboardService
         $needsSupport = 0;
         $onTrack = 0;
         $notStarted = 0;
+        $playing = 0;
 
-        foreach ($allStudents as $s) {
-            $r = $s->wordBlastAcc;
-            $sp = $s->storyQuestAcc;
+        foreach ($allStudents as $student) {
+            $wordBlast = $student->wordBlastAcc;
+            $storyQuest = $student->storyQuestAcc;
 
-            if ($r == 0 && $sp == 0) {
+            if (!$wordBlast && !$storyQuest) {
                 $notStarted++;
 
                 continue;
             }
 
-            $avg = (($r ?? 0) + ($sp ?? 0)) / 2;
+            if (!$wordBlast || !$storyQuest) {
+                $playing++;
 
-            if ($avg >= 80) {
+                continue;
+            }
+
+            $overallAvg = ($wordBlast + $storyQuest) / 2;
+
+            if ($overallAvg >= 80) {
                 $onTrack++;
-            } elseif ($avg >= 60) {
+            } elseif ($overallAvg >= 60) {
                 $needsSupport++;
             } else {
                 $atRisk++;
@@ -86,6 +93,7 @@ class DashboardService
             'sectionPerformance' => $sectionPerformance,
             'chartCounts' => [
                 'notStarted' => $notStarted,
+                'playing' => $playing,
                 'atRisk' => $atRisk,
                 'needsSupport' => $needsSupport,
                 'onTrack' => $onTrack,

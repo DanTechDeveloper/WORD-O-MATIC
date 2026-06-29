@@ -47,6 +47,7 @@ class ProgressService
 
         if ($isNewBest || $isBetterAccuracy) {
             $student->update(['wordBlastAcc' => $accuracy]);
+            $this->recalculateStatus($student);
         }
 
         if ($progress->status === 'completed' && $module->level >= $student->read_level) {
@@ -99,6 +100,7 @@ class ProgressService
 
         if ($isNewBest || $isBetterAccuracy) {
             $student->update(['storyQuestAcc' => $accuracy]);
+            $this->recalculateStatus($student);
         }
 
         if ($progress->status === 'completed' && $module->level >= $student->speak_level) {
@@ -113,6 +115,26 @@ class ProgressService
             if ($delta > 0) {
                 $student->increment('points', $delta);
             }
+        }
+    }
+
+    private function recalculateStatus(StudentProfile $student): void
+    {
+        $fresh = $student->fresh();
+        $wb = $fresh->wordBlastAcc;
+        $sq = $fresh->storyQuestAcc;
+
+        if (!$wb && !$sq) {
+            $status = 'notStarted';
+        } elseif (!$wb || !$sq) {
+            $status = 'playing';
+        } else {
+            $avg = ($wb + $sq) / 2;
+            $status = $avg >= 80 ? 'onTrack' : ($avg >= 60 ? 'support' : 'atRisk');
+        }
+
+        if ($fresh->status !== $status) {
+            $student->update(['status' => $status]);
         }
     }
 }

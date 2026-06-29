@@ -16,7 +16,7 @@ export default function StudentDetail({ data }) {
         stats: [
             {
                 label: "Word Smashed",
-                value: data.student?.words_smashed?.toLocaleString() || "0",
+                value: data.student?.points?.toLocaleString() || "0",
                 icon: "reorder",
                 color: "text-lime-400",
             },

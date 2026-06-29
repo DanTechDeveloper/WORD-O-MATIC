@@ -11,7 +11,6 @@ export default function Sidebar({ isOpen, onClose }) {
 
     const navItems = [
         { label: "Dashboard", href: "/teacher/dashboard", icon: "dashboard" },
-        // { label: "Classes", href: "/teacher/classes", icon: "groups" },
         { label: "Students", href: "/teacher/students", icon: "person" },
         { label: "WORD BLAST", href: "/teacher/wordModules", icon: "abc" },
         {
@@ -24,11 +23,6 @@ export default function Sidebar({ isOpen, onClose }) {
             label: "Leaderboards",
             href: "/teacher/leaderboards",
             icon: "leaderboard",
-        },
-        {
-            label: "Badges",
-            href: "/teacher/badges",
-            icon: "badge",
         },
         { label: "Reports", href: "/teacher/reports", icon: "assessment" },
     ];

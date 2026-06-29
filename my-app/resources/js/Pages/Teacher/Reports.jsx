@@ -7,6 +7,7 @@ const STATUS_CONFIG = {
     support: { label: "Needs Support", color: "bg-amber-500", border: "border-amber-500", text: "text-amber-400", bg: "bg-amber-500/10" },
     onTrack: { label: "On Track", color: "bg-lime-500", border: "border-lime-500", text: "text-lime-400", bg: "bg-lime-500/10" },
     notStarted: { label: "Not Started", color: "bg-slate-500", border: "border-slate-500", text: "text-slate-400", bg: "bg-slate-500/10" },
+    playing: { label: "Playing", color: "bg-sky-500", border: "border-sky-500", text: "text-sky-400", bg: "bg-sky-500/10" },
 };
 
 export default function Reports({ grouped, flash, deadline }) {
@@ -102,7 +103,7 @@ export default function Reports({ grouped, flash, deadline }) {
         );
     };
 
-    const statusOrder = ["atRisk", "support", "onTrack", "notStarted"];
+    const statusOrder = ["atRisk", "support", "onTrack", "playing", "notStarted"];
 
     const renderDeadlineBanner = () => {
         if (!deadlineValue) return null;
@@ -444,7 +445,7 @@ export default function Reports({ grouped, flash, deadline }) {
                                 download_for_offline
                             </span>
                             Initialize Extraction Sequence
-                        </button>
+                        </button>saveDeadline
                     </div>
                 </>
             ) : (

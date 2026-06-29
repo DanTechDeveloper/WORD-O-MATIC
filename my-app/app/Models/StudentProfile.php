@@ -23,8 +23,6 @@ class StudentProfile extends Model
         'status',
         'wordBlastAcc',
         'storyQuestAcc',
-        'words_smashed',
-        'accuracy',
         'read_level',
         'speak_level',
         'section',
