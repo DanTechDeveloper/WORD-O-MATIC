@@ -46,7 +46,8 @@ class ProgressService
         }
 
         if ($isNewBest || $isBetterAccuracy) {
-            $student->update(['wordBlastAcc' => $accuracy]);
+            $avgAccuracy = StudentWordProgress::where('user_id', $student->user_id)->avg('accuracy');
+            $student->update(['wordBlastAcc' => round($avgAccuracy, 2)]);
             $this->recalculateStatus($student);
         }
 
@@ -99,7 +100,8 @@ class ProgressService
         }
 
         if ($isNewBest || $isBetterAccuracy) {
-            $student->update(['storyQuestAcc' => $accuracy]);
+            $avgAccuracy = StudentParagraphProgress::where('user_id', $student->user_id)->avg('accuracy');
+            $student->update(['storyQuestAcc' => round($avgAccuracy, 2)]);
             $this->recalculateStatus($student);
         }
 

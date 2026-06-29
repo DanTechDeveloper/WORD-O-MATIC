@@ -19,7 +19,13 @@ const statusTabs = [
 
 export default function Students({ data, sections, filters }) {
     const students = data.data ?? [];
-    const meta = data.meta ?? {};
+    const meta = {
+        current_page: data.current_page ?? 1,
+        last_page: data.last_page ?? 1,
+        from: data.from,
+        to: data.to,
+        total: data.total,
+    };
 
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [statusTab, setStatusTab] = useState(filters.status ?? "");
@@ -223,17 +229,19 @@ export default function Students({ data, sections, filters }) {
                                     <div className="flex items-center gap-4 flex-wrap">
                                         <div className="flex items-center gap-1.5">
                                             <div className={`w-2.5 h-2.5 rounded-full ${wRisk.dot}`}></div>
-                                            <span className="text-[10px] text-slate-500 font-label-bold uppercase">Word Blast Accuracy:</span>
+                                            <span className="text-[10px] text-slate-500 font-label-bold uppercase">Word Blast:</span>
                                             <span className={`font-label-bold text-xs ${wRisk.text} uppercase`}>
                                                 {wAcc == null || wAcc === 0 ? "N/A" : wAcc + "%"}
                                             </span>
+                                            <span className="text-[10px] text-lime-400/80 font-label-bold">Lv.{student.readLevel}</span>
                                         </div>
                                         <div className="flex items-center gap-1.5">
                                             <div className={`w-2.5 h-2.5 rounded-full ${pRisk.dot}`}></div>
-                                            <span className="text-[10px] text-slate-500 font-label-bold uppercase">Story Quest Accuracy:</span>
+                                            <span className="text-[10px] text-slate-500 font-label-bold uppercase">Story Quest:</span>
                                             <span className={`font-label-bold text-xs ${pRisk.text} uppercase`}>
                                                 {pAcc == null || pAcc === 0 ? "N/A" : pAcc + "%"}
                                             </span>
+                                            <span className="text-[10px] text-lime-400/80 font-label-bold">Lv.{student.speakLevel}</span>
                                         </div>
                                         <Link href={`/teacher/studentDetails/${student.id}`} className="ml-auto bg-lime-400 text-slate-950 px-4 py-2 rounded-xl border-3 border-slate-950 shadow-[4px_4px_0_0_#3f6212] font-black uppercase italic text-xs tracking-tighter hover:translate-y-0.5 hover:shadow-[2px_2px_0_0_#3f6212] transition-all">
                                             View
@@ -253,8 +261,8 @@ export default function Students({ data, sections, filters }) {
                         <thead>
                             <tr className="bg-slate-900 border-b-4 border-slate-800">
                                 <th className="px-6 py-5 font-headline-md text-sm uppercase tracking-widest text-lime-400">Name</th>
-                                <th className="px-6 py-5 font-headline-md text-sm uppercase tracking-widest text-lime-400">Word Blast Accuracy</th>
-                                <th className="px-6 py-5 font-headline-md text-sm uppercase tracking-widest text-lime-400">Story Quest Accuracy</th>
+                                <th className="px-6 py-5 font-headline-md text-sm uppercase tracking-widest text-lime-400">Word Blast</th>
+                                <th className="px-6 py-5 font-headline-md text-sm uppercase tracking-widest text-lime-400">Story Quest</th>
                                 <th className="px-6 py-5 font-headline-md text-sm uppercase tracking-widest text-lime-400">Final Status</th>
                                 <th className="px-6 py-5 font-headline-md text-sm uppercase tracking-widest text-lime-400">Action</th>
                             </tr>
@@ -286,6 +294,7 @@ export default function Students({ data, sections, filters }) {
                                                 <span className={`font-label-bold ${wRisk.text} uppercase`}>
                                                     {wAcc == null || wAcc === 0 ? "N/A" : wAcc + "%"}
                                                 </span>
+                                                <span className="text-xs text-lime-400/80 font-label-bold">Lv.{student.readLevel}</span>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
@@ -294,6 +303,7 @@ export default function Students({ data, sections, filters }) {
                                                 <span className={`font-label-bold ${pRisk.text} uppercase`}>
                                                     {pAcc == null || pAcc === 0 ? "N/A" : pAcc + "%"}
                                                 </span>
+                                                <span className="text-xs text-lime-400/80 font-label-bold">Lv.{student.speakLevel}</span>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">

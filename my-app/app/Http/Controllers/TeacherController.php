@@ -86,6 +86,8 @@ class TeacherController extends Controller
                 'rotation' => 'rotate-['.rand(-3, 3).'deg]',
                 'wordBlastAcc' => $user->student?->wordBlastAcc,
                 'storyQuestAcc' => $user->student?->storyQuestAcc,
+                'readLevel' => $user->student?->read_level ?? 1,
+                'speakLevel' => $user->student?->speak_level ?? 1,
                 'status' => $this->computeStatus($user->student?->status ?? 'notStarted'),
             ]);
 
