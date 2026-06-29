@@ -23,26 +23,25 @@ export function useSpeechRecognition({
 }) {
     const recognitionRef = useRef(null);
     const isWordMode = matchMode === "word";
-    const isWordModeRef = useRef(isWordMode);
-    isWordModeRef.current = isWordMode;
 
-    const gameStateRef = useRef(isActive);
-    gameStateRef.current = isActive;
-
-    const targetWordRef = useRef(targetWord);
-    targetWordRef.current = targetWord;
-
-    const onWordRecognizedRef = useRef(onWordRecognized);
-    onWordRecognizedRef.current = onWordRecognized;
-
-    const onPermissionDeniedRef = useRef(onPermissionDenied);
-    onPermissionDeniedRef.current = onPermissionDenied;
-
-    const onMispronouncedRef = useRef(onMispronounced);
-    onMispronouncedRef.current = onMispronounced;
-
-    const onRecognitionErrorRef = useRef(onRecognitionError);
-    onRecognitionErrorRef.current = onRecognitionError;
+    const propsRef = useRef({
+        isActive,
+        isWordMode,
+        targetWord,
+        onWordRecognized,
+        onPermissionDenied,
+        onMispronounced,
+        onRecognitionError,
+    })
+    propsRef.current = {
+        isActive,
+        isWordMode,
+        targetWord,
+        onWordRecognized,
+        onPermissionDenied,
+        onMispronounced,
+        onRecognitionError,
+    }
 
     const hasMatchedCurrentRef = useRef(false);
     const lastProcessedIndexRef = useRef(-1);
@@ -76,9 +75,9 @@ export function useSpeechRecognition({
             recognition.lang = "en-US";
 
             recognition.onresult = (event) => {
-                if (!gameStateRef.current) return;
+                if (!propsRef.current.isActive) return;
 
-                const target = targetWordRef.current.toLowerCase().trim();
+                const target = propsRef.current.targetWord.toLowerCase().trim();
                 if (!target) return;
 
                 let matchedThisEvent = false;
@@ -97,7 +96,7 @@ export function useSpeechRecognition({
                         .trim();
 
                     if (!transcript) {
-                        if (!isWordModeRef.current) lastProcessedIndexRef.current = i;
+                        if (!propsRef.current.isWordMode) lastProcessedIndexRef.current = i;
                         continue;
                     }
 
@@ -112,12 +111,12 @@ export function useSpeechRecognition({
                         hasMatchedCurrentRef.current = true;
                         matchedThisEvent = true;
                         lastProcessedIndexRef.current = i;
-                        onWordRecognizedRef.current?.();
-                        if (isWordModeRef.current) break;
+                        propsRef.current.onWordRecognized?.();
+                        if (propsRef.current.isWordMode) break;
                         continue;
                     }
 
-                    if (isWordModeRef.current && result.isFinal) {
+                    if (propsRef.current.isWordMode && result.isFinal) {
                         lastProcessedIndexRef.current = i;
                         if (
                             !matchedThisEvent &&
@@ -128,10 +127,10 @@ export function useSpeechRecognition({
                             mispronounceTimeoutRef.current = setTimeout(() => {
                                 if (
                                     isMountedRef.current &&
-                                    gameStateRef.current &&
+                                    propsRef.current.isActive &&
                                     !hasMatchedCurrentRef.current
                                 ) {
-                                    onMispronouncedRef.current?.(latestTranscript);
+                                    propsRef.current.onMispronounced?.(latestTranscript);
                                 }
                             }, 200);
                         }
@@ -139,7 +138,7 @@ export function useSpeechRecognition({
                         break;
                     }
 
-                    if (!isWordModeRef.current) {
+                    if (!propsRef.current.isWordMode) {
                         lastProcessedIndexRef.current = i;
                     }
                 }
@@ -156,7 +155,7 @@ export function useSpeechRecognition({
 
                 if (!latestTranscript) return;
 
-                if (isWordModeRef.current) {
+                if (propsRef.current.isWordMode) {
                     if (innerPathHandled) return;
                     if (Date.now() < gracePeriodEndRef.current) return;
 
@@ -164,10 +163,10 @@ export function useSpeechRecognition({
                     mispronounceTimeoutRef.current = setTimeout(() => {
                         if (
                             isMountedRef.current &&
-                            gameStateRef.current &&
+                            propsRef.current.isActive &&
                             !hasMatchedCurrentRef.current
                         ) {
-                            onMispronouncedRef.current?.(latestTranscript);
+                            propsRef.current.onMispronounced?.(latestTranscript);
                         }
                     }, 500);
                 } else {
@@ -175,10 +174,10 @@ export function useSpeechRecognition({
                     mispronounceTimeoutRef.current = setTimeout(() => {
                         if (
                             isMountedRef.current &&
-                            gameStateRef.current &&
+                            propsRef.current.isActive &&
                             !hasMatchedCurrentRef.current
                         ) {
-                            onMispronouncedRef.current?.(latestTranscript);
+                            propsRef.current.onMispronounced?.(latestTranscript);
                         }
                     }, 900);
                 }
@@ -196,11 +195,11 @@ export function useSpeechRecognition({
                         "Speech Recognition Error: not-allowed",
                         event.error,
                     );
-                    onPermissionDeniedRef.current?.();
+                    propsRef.current.onPermissionDenied?.();
                 } else {
                     console.error("Speech Recognition Error:", event.error);
-                    if (onRecognitionErrorRef.current)
-                        onRecognitionErrorRef.current(event.error);
+                    if (propsRef.current.onRecognitionError)
+                        propsRef.current.onRecognitionError(event.error);
                 }
             };
 
@@ -210,10 +209,10 @@ export function useSpeechRecognition({
                 hasMatchedCurrentRef.current = false;
                 restartRetryCountRef.current = 0;
 
-                if (!isMountedRef.current || !gameStateRef.current) return;
+                if (!isMountedRef.current || !propsRef.current.isActive) return;
 
                 const tryRestart = () => {
-                    if (!isMountedRef.current || !gameStateRef.current) {
+                    if (!isMountedRef.current || !propsRef.current.isActive) {
                         restartRetryCountRef.current = 0;
                         return;
                     }
@@ -261,7 +260,7 @@ export function useSpeechRecognition({
         if (isWordMode) {
             gracePeriodEndRef.current = Date.now() + 900;
         }
-        if (wasMatched && recognitionRef.current && gameStateRef.current) {
+        if (wasMatched && recognitionRef.current && propsRef.current.isActive) {
             try { recognitionRef.current.stop(); } catch {}
         }
     }, [targetWord]);
