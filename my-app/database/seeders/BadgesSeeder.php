@@ -19,31 +19,31 @@ class BadgesSeeder extends Seeder
             [
                 'name' => 'First Steps',
                 'slug' => 'first-steps',
-                'description' => 'Great start! You have accumulated your first 10 total points.',
-                'requirement' => 'Reach 10 total points.',
+                'description' => 'Great start! You have accumulated your first 5 total points.',
+                'requirement' => 'Reach 5 total points.',
                 'metric' => 'total_points',
                 'operator' => '>=',
-                'threshold_score' => 10,
+                'threshold_score' => 5,
                 'icon' => '🌱'
             ],
             [
                 'name' => 'Word Master',
                 'slug' => 'word-master',
-                'description' => 'Recognized for mastering words across modules by earning 50 total points.',
-                'requirement' => 'Reach 50 total points.',
+                'description' => 'Recognized for mastering words across modules by earning 30 total points.',
+                'requirement' => 'Reach 30 total points.',
                 'metric' => 'total_points',
                 'operator' => '>=',
-                'threshold_score' => 50,
+                'threshold_score' => 30,
                 'icon' => '🏆'
             ],
             [
                 'name' => 'Story Finisher',
                 'slug' => 'story-finisher',
-                'description' => 'Awarded for completing multiple paragraph modules and hitting 200 total points.',
-                'requirement' => 'Reach 200 total points.',
+                'description' => 'Awarded for completing multiple paragraph modules and hitting 100 total points.',
+                'requirement' => 'Reach 100 total points.',
                 'metric' => 'total_points',
                 'operator' => '>=',
-                'threshold_score' => 200,
+                'threshold_score' => 100,
                 'icon' => '📚'
             ],
 
@@ -53,11 +53,11 @@ class BadgesSeeder extends Seeder
             [
                 'name' => 'On Fire',
                 'slug' => 'on-fire',
-                'description' => 'Unstoppable! Maintained a 5-game winning streak.',
-                'requirement' => 'Get a 5-game streak.',
+                'description' => 'Unstoppable! Got 3 correct in a row.',
+                'requirement' => 'Get a 3-game streak.',
                 'metric' => 'streak',
                 'operator' => '>=',
-                'threshold_score' => 5,
+                'threshold_score' => 3,
                 'icon' => '🔥'
             ],
 
@@ -67,11 +67,11 @@ class BadgesSeeder extends Seeder
             [
                 'name' => 'Clear Speaker',
                 'slug' => 'clear-speaker',
-                'description' => 'Earned by achieving an outstanding 90% accuracy in a single game.',
-                'requirement' => 'Get 90% accuracy or higher.',
+                'description' => 'Earned by achieving 80% accuracy in a single game.',
+                'requirement' => 'Get 80% accuracy or higher.',
                 'metric' => 'accuracy',
                 'operator' => '>=',
-                'threshold_score' => 90,
+                'threshold_score' => 80,
                 'icon' => '🎤'
             ],
 

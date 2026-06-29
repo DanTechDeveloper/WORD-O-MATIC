@@ -40,6 +40,15 @@ class BadgeService
             return [];
         }
 
+        $uniqueModules = GameSession::where('user_id', $user->id)
+            ->whereNotNull('module_id')
+            ->selectRaw('COUNT(DISTINCT CONCAT(module_id, "-", module_type)) as cnt')
+            ->value('cnt');
+
+        if ($uniqueModules < 2) {
+            return [];
+        }
+
         $earnedBadgeIds = $user->badges()->pluck('badges.id')->toArray();
 
         $badgesToCheck = Badges::whereNotIn('id', $earnedBadgeIds)

@@ -86,9 +86,10 @@ function fastestLevenshtein(a, b) {
 }
 
 function maxDist(wordLength) {
-    if (wordLength <= 4) return 0;
-    if (wordLength <= 8) return 1;
-    return 2;
+    if (wordLength <= 3) return 0;
+    if (wordLength <= 5) return 1;
+    if (wordLength <= 8) return 2;
+    return 3;
 }
 
 export function isFuzzyMatch(spoken, target) {
@@ -100,10 +101,20 @@ export function isFuzzyMatch(spoken, target) {
 
     const wordsA = a.split(/\s+/)
     const wordsB = b.split(/\s+/)
-    if (wordsA.length !== wordsB.length) return false;
 
-    return wordsA.every((word, i) => {
-        if (word === wordsB[i]) return true
-        return fastestLevenshtein(word, wordsB[i]) <= maxDist(wordsB[i].length)
+    if (wordsA.length === wordsB.length) {
+        return wordsA.every((word, i) => {
+            if (word === wordsB[i]) return true
+            return fastestLevenshtein(word, wordsB[i]) <= maxDist(wordsB[i].length)
+        })
+    }
+
+    return wordsB.every((targetWord) => {
+        const limit = maxDist(targetWord.length)
+        return wordsA.some((spokenWord) => {
+            if (spokenWord === targetWord) return true
+            if (Math.abs(spokenWord.length - targetWord.length) > limit) return false
+            return fastestLevenshtein(spokenWord, targetWord) <= limit
+        })
     })
 }

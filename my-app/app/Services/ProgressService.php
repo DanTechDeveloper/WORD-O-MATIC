@@ -3,8 +3,10 @@
 namespace App\Services;
 
 use App\Models\ParagraphModule;
+use App\Models\StudentParagraphMastery;
 use App\Models\StudentParagraphProgress;
 use App\Models\StudentProfile;
+use App\Models\StudentWordMastery;
 use App\Models\StudentWordProgress;
 use App\Models\WordModule;
 
@@ -35,18 +37,26 @@ class ProgressService
         $progress->status = $wordsSmashed >= $totalWords ? 'completed' : 'in_progress';
         $progress->save();
 
+        if ($progress->status === 'completed') {
+            $wordIds = $module->words()->pluck('id');
+            StudentWordMastery::where('user_id', $student->user_id)
+                ->whereIn('word_id', $wordIds)
+                ->where('status', 'training')
+                ->update(['status' => 'mastered']);
+        }
+
         if ($isNewBest || $isBetterAccuracy) {
             $student->update(['wordBlastAcc' => $accuracy]);
         }
 
-        if ($module->level >= $student->read_level) {
+        if ($progress->status === 'completed' && $module->level >= $student->read_level) {
             $student->update([
                 'read_level' => $module->level + 1,
                 'read_progress' => StudentWordProgress::where('user_id', $student->user_id)->where('status', 'completed')->count(),
                 'points' => StudentWordProgress::where('user_id', $student->user_id)->sum('words_smashed') +
                             StudentParagraphProgress::where('user_id', $student->user_id)->sum('words_smashed'),
             ]);
-        } else {
+        } elseif ($isNewBest || $isBetterAccuracy) {
             $delta = max(0, $wordsSmashed - $previousBest);
             if ($delta > 0) {
                 $student->increment('points', $delta);
@@ -79,18 +89,26 @@ class ProgressService
         $progress->status = $wordsSmashed >= $totalWords ? 'completed' : 'in_progress';
         $progress->save();
 
+        if ($progress->status === 'completed') {
+            $paraWordIds = $module->words()->pluck('id');
+            StudentParagraphMastery::where('user_id', $student->user_id)
+                ->whereIn('paragraph_word_id', $paraWordIds)
+                ->where('status', 'training')
+                ->update(['status' => 'mastered']);
+        }
+
         if ($isNewBest || $isBetterAccuracy) {
             $student->update(['storyQuestAcc' => $accuracy]);
         }
 
-        if ($module->level >= $student->speak_level) {
+        if ($progress->status === 'completed' && $module->level >= $student->speak_level) {
             $student->update([
                 'speak_level' => $module->level + 1,
                 'speak_progress' => StudentParagraphProgress::where('user_id', $student->user_id)->where('status', 'completed')->count(),
                 'points' => StudentWordProgress::where('user_id', $student->user_id)->sum('words_smashed') +
                             StudentParagraphProgress::where('user_id', $student->user_id)->sum('words_smashed'),
             ]);
-        } else {
+        } elseif ($isNewBest || $isBetterAccuracy) {
             $delta = max(0, $wordsSmashed - $previousBest);
             if ($delta > 0) {
                 $student->increment('points', $delta);

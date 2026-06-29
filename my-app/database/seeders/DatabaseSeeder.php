@@ -72,6 +72,19 @@ class DatabaseSeeder extends Seeder
         }
 
         $paragraphModules = [];
+        $paragraphsByLevel = [
+            1 => 'I see a cat. The cat is big and fat.',
+            2 => 'The sun is hot. A dog can run fast in the park.',
+            3 => 'Once upon a time a little frog sat on a rock. He liked to jump into the pond.',
+            4 => 'The boy went to the store to buy some milk. He also got a loaf of bread and fresh eggs for his mom.',
+            5 => 'My favorite pet is a kitten. It has soft white fur and bright green eyes. I play with it every day after school.',
+            6 => 'The prefix re means again so replay means to play again. The word unhappy means not happy. Learning prefixes helps us understand new words.',
+            7 => 'She walked slowly through the garden. The flowers were beautiful and colorful. She felt joyful as she picked a sunflower for her mother.',
+            8 => 'A rainbow appears after the rain when the sun shines. It has many beautiful colors like red orange yellow green blue indigo and violet.',
+            9 => 'Exploring a rainforest is an adventure. You can discover enormous trees colorful birds and magnificent butterflies. It is an extraordinary place to visit and learn about nature.',
+            10 => 'Perseverance means never giving up even when things are difficult. With determination and collaboration we can accomplish anything. Every challenge is an opportunity for growth and learning.',
+        ];
+
         foreach (range(1, 10) as $level) {
             $paragraphModules[$level] = ParagraphModule::create([
                 'level' => $level,
@@ -87,10 +100,10 @@ class DatabaseSeeder extends Seeder
                     9 => 'Complex Narratives',
                     10 => 'Masterpiece',
                 },
-                'content' => "Sample content for level {$level}.",
+                'content' => $paragraphsByLevel[$level],
             ]);
 
-            $contentWords = preg_split('/\s+/', trim("Sample content for level {$level}."), -1, PREG_SPLIT_NO_EMPTY);
+            $contentWords = preg_split('/\s+/', trim($paragraphsByLevel[$level]), -1, PREG_SPLIT_NO_EMPTY);
             foreach ($contentWords as $pos => $word) {
                 ParagraphWord::create([
                     'paragraph_module_id' => $paragraphModules[$level]->id,
@@ -205,8 +218,8 @@ class DatabaseSeeder extends Seeder
                 'avatar' => $data['avatar'],
                 'read_progress' => $wLevels,
                 'speak_progress' => $sLevels,
-                'read_level' => $wLevels + 1,
-                'speak_level' => $sLevels + 1,
+                'read_level' => $wLevels,
+                'speak_level' => $sLevels,
                 'status' => $data['status'],
                 'wordBlastAcc' => $wAcc,
                 'storyQuestAcc' => $sAcc,
