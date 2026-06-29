@@ -6,7 +6,7 @@ import AddStudentModal from "@/Components/Teacher/AddStudentModal";
 const sortOptions = [
     { value: "risk", label: "Risk Level" },
     { value: "name", label: "Name (A-Z)" },
-    { value: "recent", label: "Recent Activity" },
+    { value: "level", label: "Level (Lowest First)" },
 ];
 
 const statusTabs = [
@@ -15,6 +15,7 @@ const statusTabs = [
     { value: "support", label: "Needs Support" },
     { value: "onTrack", label: "On Track" },
     { value: "in_progress", label: "In Progress" },
+    { value: "notStarted", label: "Not Started" },
 ];
 
 export default function Students({ data, sections, filters }) {

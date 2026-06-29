@@ -172,6 +172,7 @@ class DatabaseSeeder extends Seeder
                 'status' => $status,
                 'avatar' => "/images/avatars/{$avatarChar}/head.png",
                 'parent_email' => $hasEmail ? "parent.stu{$num}@email.com" : null,
+                'gender' => $i % 2 === 0 ? 'male' : 'female',
             ];
         }
 
@@ -250,6 +251,7 @@ class DatabaseSeeder extends Seeder
             $user->student()->create([
                 'points' => $totalWordsSmashed,
                 'avatar' => $data['avatar'],
+                'gender' => $data['gender'],
                 'read_progress' => $wLevels,
                 'speak_progress' => $sLevels,
                 'read_level' => $wLevels,

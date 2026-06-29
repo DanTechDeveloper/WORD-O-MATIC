@@ -61,7 +61,7 @@ class TeacherController extends Controller
         $sortMap = [
             'name' => ['users.name', $direction],
             'risk' => ['students.wordBlastAcc', 'desc'],
-            'recent' => ['students.updated_at', 'desc'],
+            'level' => ['students.read_level', 'asc'],
         ];
 
         [$sortCol, $sortDir] = $sortMap[$sort] ?? ['users.name', 'asc'];
@@ -147,6 +147,7 @@ class TeacherController extends Controller
             'studentID' => 'required',
             'section' => 'required',
             'pin' => 'required',
+            'gender' => 'nullable|in:male,female',
         ]);
 
         $student = User::create([
@@ -156,15 +157,22 @@ class TeacherController extends Controller
             'role' => 'student',
         ]);
 
+        $defaultAvatar = match ($request->gender) {
+            'male' => '/images/boy.svg',
+            'female' => '/images/girl.svg',
+            default => null,
+        };
+
         $student->student()->create([
             'points' => 0,
-            'avatar' => null,
+            'avatar' => $defaultAvatar,
             'read_progress' => 0,
             'speak_progress' => 0,
             'status' => 'notStarted',
             'wordBlastAcc' => 0.0,
             'storyQuestAcc' => 0.0,
             'section' => $request->section,
+            'gender' => $request->gender,
         ]);
 
         return redirect()->back();

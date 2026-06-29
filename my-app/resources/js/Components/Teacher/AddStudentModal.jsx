@@ -7,6 +7,7 @@ export default function AddStudentModal({ isOpen, onClose }) {
         pin: "",
         studentID: "",
         section: "",
+        gender: "",
     });
 
     // Function to generate a random 4-digit PIN
@@ -23,6 +24,7 @@ export default function AddStudentModal({ isOpen, onClose }) {
                 studentID: "",
                 section: "",
                 pin: Math.floor(1000 + Math.random() * 9000).toString(),
+                gender: "",
             });
         } else {
             reset();
@@ -160,6 +162,44 @@ export default function AddStudentModal({ isOpen, onClose }) {
                             </p>
                         )}
                     </div>
+                    {/* Gender Selection */}
+                    <div className="space-y-2">
+                        <label className="block text-xs font-black text-slate-500 uppercase tracking-widest ml-2">
+                            GENDER
+                        </label>
+                        <div className="flex gap-3">
+                            <label className={`flex-1 flex items-center justify-center gap-2 p-3 sm:p-4 rounded-xl sm:rounded-2xl border-3 sm:border-4 cursor-pointer transition-all font-black uppercase text-sm ${data.gender === 'male' ? 'bg-sky-900/50 border-sky-500 text-sky-400' : 'bg-slate-950 border-slate-800 text-slate-500 hover:border-slate-600'}`}>
+                                <input
+                                    type="radio"
+                                    name="gender"
+                                    value="male"
+                                    checked={data.gender === 'male'}
+                                    onChange={(e) => setData("gender", e.target.value)}
+                                    className="sr-only"
+                                />
+                                <span className="material-symbols-outlined">male</span>
+                                Male
+                            </label>
+                            <label className={`flex-1 flex items-center justify-center gap-2 p-3 sm:p-4 rounded-xl sm:rounded-2xl border-3 sm:border-4 cursor-pointer transition-all font-black uppercase text-sm ${data.gender === 'female' ? 'bg-pink-900/50 border-pink-500 text-pink-400' : 'bg-slate-950 border-slate-800 text-slate-500 hover:border-slate-600'}`}>
+                                <input
+                                    type="radio"
+                                    name="gender"
+                                    value="female"
+                                    checked={data.gender === 'female'}
+                                    onChange={(e) => setData("gender", e.target.value)}
+                                    className="sr-only"
+                                />
+                                <span className="material-symbols-outlined">female</span>
+                                Female
+                            </label>
+                        </div>
+                        {errors.gender && (
+                            <p className="text-rose-500 text-[10px] font-black mt-1 uppercase ml-2">
+                                {errors.gender}
+                            </p>
+                        )}
+                    </div>
+
                     {/* Action Buttons */}
                     <div className="pt-4 flex gap-4">
                         <button

@@ -27,6 +27,7 @@ class StudentProfile extends Model
         'speak_level',
         'section',
         'tutorial_completed_at',
+        'gender',
     ];
 
     protected $casts = [
