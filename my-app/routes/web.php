@@ -40,6 +40,7 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/studentDetails/{student}', [TeacherController::class, 'show'])->name('studentDetails.show');
             Route::get('/reports', [TeacherController::class, 'reports'])->name('reports');
             Route::post('/reports/send-emails', [TeacherController::class, 'sendReportEmails'])->name('reports.sendEmails');
+            Route::post('/reports/deadline', [TeacherController::class, 'saveDeadline'])->name('reports.deadline');
             Route::get('/leaderboards', [TeacherController::class, 'leaderboards'])->name('leaderboards');
             Route::get('/assignments', [TeacherController::class, 'assignments'])->name('assignments');
             Route::get('/badges', [TeacherController::class, 'badges'])->name('badges');

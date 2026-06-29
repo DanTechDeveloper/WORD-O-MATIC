@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Mail\StudentReportMail;
 use App\Models\ParagraphModule;
+use App\Models\Setting;
 use App\Models\StudentProfile;
 use App\Models\User;
 use App\Models\WordModule;
@@ -259,7 +260,25 @@ class TeacherController extends Controller
 
         return Inertia::render('Teacher/Reports', [
             'grouped' => $grouped,
+            'deadline' => Setting::getValue('report_deadline'),
         ]);
+    }
+
+    public function saveDeadline(Request $request)
+    {
+        if (empty($request->deadline)) {
+            Setting::where('key', 'report_deadline')->delete();
+
+            return redirect()->back()->with('deadline_cleared', true);
+        }
+
+        $request->validate([
+            'deadline' => 'required|date|after:now',
+        ]);
+
+        Setting::setValue('report_deadline', $request->deadline);
+
+        return redirect()->back()->with('deadline_set', true);
     }
 
     public function sendReportEmails(Request $request)

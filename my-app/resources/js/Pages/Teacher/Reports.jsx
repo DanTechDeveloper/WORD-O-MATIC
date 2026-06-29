@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { router } from "@inertiajs/react";
 import DashboardLayout from "@/Layouts/Teacher/DashboardLayout";
+
 const STATUS_CONFIG = {
     atRisk: { label: "At Risk", color: "bg-rose-500", border: "border-rose-500", text: "text-rose-400", bg: "bg-rose-500/10" },
     support: { label: "Needs Support", color: "bg-amber-500", border: "border-amber-500", text: "text-amber-400", bg: "bg-amber-500/10" },
@@ -8,10 +9,12 @@ const STATUS_CONFIG = {
     notStarted: { label: "Not Started", color: "bg-slate-500", border: "border-slate-500", text: "text-slate-400", bg: "bg-slate-500/10" },
 };
 
-export default function Reports({ grouped, flash }) {
+export default function Reports({ grouped, flash, deadline }) {
     const [tab, setTab] = useState("parents");
     const [selectedIds, setSelectedIds] = useState(new Set());
     const [sending, setSending] = useState(false);
+    const [deadlineValue, setDeadlineValue] = useState(deadline || "");
+    const [savingDeadline, setSavingDeadline] = useState(false);
 
     const reportTypes = [
         {
@@ -33,6 +36,9 @@ export default function Reports({ grouped, flash }) {
             color: "bg-blue-500",
         },
     ];
+
+    const isPastDeadline = deadlineValue && new Date(deadlineValue) < new Date();
+    const deadlineDate = deadlineValue ? new Date(deadlineValue) : null;
 
     const toggleStudent = (id) => {
         setSelectedIds((prev) => {
@@ -70,7 +76,147 @@ export default function Reports({ grouped, flash }) {
         );
     };
 
+    const saveDeadline = () => {
+        if (!deadlineValue) return;
+        setSavingDeadline(true);
+        router.post(
+            route("teacher.reports.deadline"),
+            { deadline: deadlineValue },
+            {
+                preserveScroll: true,
+                preserveState: true,
+                onFinish: () => setSavingDeadline(false),
+            }
+        );
+    };
+
+    const clearDeadline = () => {
+        setDeadlineValue("");
+        router.post(
+            route("teacher.reports.deadline"),
+            { deadline: "" },
+            {
+                preserveScroll: true,
+                preserveState: true,
+            }
+        );
+    };
+
     const statusOrder = ["atRisk", "support", "onTrack", "notStarted"];
+
+    const renderDeadlineBanner = () => {
+        if (!deadlineValue) return null;
+
+        if (isPastDeadline) {
+            return (
+                <div className="mb-8 bg-lime-500/10 border-2 border-lime-500 rounded-2xl p-5 flex items-center gap-4">
+                    <span className="material-symbols-outlined text-lime-400 text-3xl">
+                        check_circle
+                    </span>
+                    <div>
+                        <p className="text-white font-black uppercase italic text-sm">
+                            Report deadline has passed
+                        </p>
+                        <p className="text-slate-400 text-sm font-semibold mt-1">
+                            All report actions are now available. Deadline was set to {deadlineDate.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" })}.
+                        </p>
+                    </div>
+                </div>
+            );
+        }
+
+        return (
+            <div className="mb-8 bg-amber-500/10 border-2 border-amber-500 rounded-2xl p-5 flex items-center gap-4">
+                <span className="material-symbols-outlined text-amber-400 text-3xl">
+                    schedule
+                </span>
+                <div>
+                    <p className="text-white font-black uppercase italic text-sm">
+                        Reporting deadline not yet reached
+                    </p>
+                    <p className="text-slate-400 text-sm font-semibold mt-1">
+                        Reports are set to be generated after {deadlineDate.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" })}. You may still proceed, but data may not be final.
+                    </p>
+                </div>
+            </div>
+        );
+    };
+
+    const renderDeadlineSetter = () => (
+        <div className="bg-slate-900 border-4 border-slate-800 p-8 rounded-[2.5rem] shadow-[8px_8px_0_0_#020617] mb-8">
+            <h2 className="text-2xl font-black text-white uppercase italic mb-6 flex items-center gap-3">
+                <span className="material-symbols-outlined text-purple-400">
+                    event
+                </span>
+                Report Deadline
+            </h2>
+            <p className="text-slate-400 text-sm font-semibold mb-6">
+                Set a deadline for this reporting period. Once the deadline passes, generate and send reports with the final data.
+            </p>
+
+            <div className="flex items-end gap-4">
+                <div className="flex-1 space-y-3">
+                    <label className="text-slate-500 text-xs font-black uppercase tracking-widest block">
+                        Deadline Date & Time
+                    </label>
+                    <input
+                        type="datetime-local"
+                        value={deadlineValue ? deadlineValue.slice(0, 16) : ""}
+                        onChange={(e) => setDeadlineValue(e.target.value)}
+                        className="w-full bg-slate-950 border-2 border-slate-800 rounded-xl p-4 text-white font-bold focus:border-purple-500 transition-all outline-none"
+                    />
+                </div>
+                <button
+                    onClick={saveDeadline}
+                    disabled={!deadlineValue || savingDeadline}
+                    className={`px-8 py-4 rounded-xl font-black uppercase italic text-sm transition-all flex items-center gap-2 ${
+                        deadlineValue && !savingDeadline
+                            ? "bg-purple-500 text-slate-950 shadow-[4px_4px_0_0_#1e1b4b] hover:translate-x-[-2px] hover:translate-y-[-2px]"
+                            : "bg-slate-800 text-slate-600 cursor-not-allowed shadow-none"
+                    }`}
+                >
+                    {savingDeadline ? (
+                        <>
+                            <span className="material-symbols-outlined animate-spin">
+                                progress_activity
+                            </span>
+                            Saving...
+                        </>
+                    ) : (
+                        <>
+                            <span className="material-symbols-outlined">
+                                save
+                            </span>
+                            Save Deadline
+                        </>
+                    )}
+                </button>
+                {deadlineValue && (
+                    <button
+                        onClick={clearDeadline}
+                        className="px-6 py-4 rounded-xl font-black uppercase italic text-sm transition-all bg-slate-800 text-slate-400 hover:text-rose-400 hover:bg-slate-800/80 border-2 border-slate-700"
+                    >
+                        Clear
+                    </button>
+                )}
+            </div>
+
+            {deadlineValue && (
+                <div className="mt-6 pt-6 border-t-2 border-slate-800">
+                    <div className="flex items-center gap-3">
+                        <span className={`material-symbols-outlined ${isPastDeadline ? "text-lime-400" : "text-amber-400"}`}>
+                            {isPastDeadline ? "check_circle" : "hourglass_empty"}
+                        </span>
+                        <span className="text-slate-400 font-semibold text-sm">
+                            {isPastDeadline
+                                ? `Deadline passed on ${deadlineDate.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" })}`
+                                : `Deadline set for ${deadlineDate.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" })}`}
+                        </span>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
 
     const renderStudentList = () => (
         <div className="space-y-6">
@@ -187,6 +333,32 @@ export default function Reports({ grouped, flash }) {
                     </p>
                 </div>
             )}
+
+            {flash?.deadline_set && (
+                <div className="mb-6 bg-lime-500/10 border-2 border-lime-500 rounded-2xl p-4 flex items-center gap-3">
+                    <span className="material-symbols-outlined text-lime-400">
+                        check_circle
+                    </span>
+                    <p className="text-white font-bold text-sm">
+                        Report deadline has been saved.
+                    </p>
+                </div>
+            )}
+
+            {flash?.deadline_cleared && (
+                <div className="mb-6 bg-slate-800 border-2 border-slate-700 rounded-2xl p-4 flex items-center gap-3">
+                    <span className="material-symbols-outlined text-slate-400">
+                        remove_circle
+                    </span>
+                    <p className="text-white font-bold text-sm">
+                        Report deadline has been removed.
+                    </p>
+                </div>
+            )}
+
+            {renderDeadlineSetter()}
+
+            {renderDeadlineBanner()}
 
             <div className="flex gap-1 bg-slate-900 border-2 border-slate-800 p-1.5 rounded-2xl mb-8 w-fit">
                 <button
