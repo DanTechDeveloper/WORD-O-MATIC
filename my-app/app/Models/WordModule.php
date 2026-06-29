@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class WordModule extends Model
@@ -31,25 +32,39 @@ class WordModule extends Model
 
     public static function trainingWordsForUser(int $userId): array
     {
-        $modules = self::with('words')->orderBy('level', 'asc')->get();
-
-        $masteryProgress = DB::table('student_word_mastery')
+        $mastery = DB::table('student_word_mastery')
             ->where('user_id', $userId)
             ->get()
-            ->groupBy('word_id');
+            ->keyBy('word_id');
 
+        return self::buildTrainingWords(self::with('words')->orderBy('level')->get(), $mastery);
+    }
+
+    public static function trainingWordsForUsers(array $userIds): Collection
+    {
+        $modules = self::with('words')->orderBy('level')->get();
+
+        $masteryByUser = DB::table('student_word_mastery')
+            ->whereIn('user_id', $userIds)
+            ->get()
+            ->groupBy('user_id');
+
+        return collect($userIds)->mapWithKeys(fn ($id) => [
+            $id => self::buildTrainingWords($modules, ($masteryByUser->get($id) ?? collect())->keyBy('word_id')),
+        ]);
+    }
+
+    private static function buildTrainingWords($modules, $mastery): array
+    {
         $training = [];
-
         foreach ($modules as $module) {
-            $trainingWords = $module->words->filter(function ($word) use ($masteryProgress) {
-                return isset($masteryProgress[$word->id]) && $masteryProgress[$word->id][0]->status === 'training';
-            })->pluck('word')->values();
-
-            if ($trainingWords->isNotEmpty()) {
-                $training["Level {$module->level}: {$module->title}"] = $trainingWords->toArray();
+            $words = $module->words->filter(fn ($w) =>
+                isset($mastery[$w->id]) && $mastery[$w->id]->status === 'training'
+            )->pluck('word')->values();
+            if ($words->isNotEmpty()) {
+                $training["Level {$module->level}: {$module->title}"] = $words->toArray();
             }
         }
-
         return $training;
     }
 

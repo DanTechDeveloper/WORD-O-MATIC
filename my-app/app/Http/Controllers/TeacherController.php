@@ -247,20 +247,24 @@ class TeacherController extends Controller
         $students = User::with('student')
             ->where('role', 'student')
             ->orderBy('name', 'asc')
-            ->get()
-            ->map(fn ($user) => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'section' => $user->student?->section ?? '',
-                'wordBlastAcc' => $user->student?->wordBlastAcc ?? 0,
-                'storyQuestAcc' => $user->student?->storyQuestAcc ?? 0,
-                'read_level' => $user->student?->read_level ?? 1,
-                'speak_level' => $user->student?->speak_level ?? 1,
-                'status' => $user->student?->status ?? 'notStarted',
-                'parent_email' => $user->student?->parent_email,
-                'trainingWords' => WordModule::trainingWordsForUser($user->id),
-                'paragraphTrainingWords' => ParagraphModule::trainingWordsForUser($user->id),
-            ]);
+            ->get();
+
+        $wordTraining = WordModule::trainingWordsForUsers($students->pluck('id')->all());
+        $paraTraining = ParagraphModule::trainingWordsForUsers($students->pluck('id')->all());
+
+        $students = $students->map(fn ($user) => [
+            'id' => $user->id,
+            'name' => $user->name,
+            'section' => $user->student?->section ?? '',
+            'wordBlastAcc' => $user->student?->wordBlastAcc ?? 0,
+            'storyQuestAcc' => $user->student?->storyQuestAcc ?? 0,
+            'read_level' => $user->student?->read_level ?? 1,
+            'speak_level' => $user->student?->speak_level ?? 1,
+            'status' => $user->student?->status ?? 'notStarted',
+            'parent_email' => $user->student?->parent_email,
+            'trainingWords' => $wordTraining[$user->id] ?? [],
+            'paragraphTrainingWords' => $paraTraining[$user->id] ?? [],
+        ]);
 
         $grouped = [
             'atRisk' => $students->where('status', 'atRisk')->values(),
@@ -303,6 +307,9 @@ class TeacherController extends Controller
             ->whereIn('id', $request->student_ids)
             ->get();
 
+        $wordTraining = WordModule::trainingWordsForUsers($request->student_ids);
+        $paraTraining = ParagraphModule::trainingWordsForUsers($request->student_ids);
+
         $sent = 0;
         $failed = 0;
 
@@ -323,8 +330,8 @@ class TeacherController extends Controller
                 'read_level' => $user->student?->read_level ?? 1,
                 'speak_level' => $user->student?->speak_level ?? 1,
                 'status' => $user->student?->status ?? 'notStarted',
-                'trainingWords' => WordModule::trainingWordsForUser($user->id),
-                'paragraphTrainingWords' => ParagraphModule::trainingWordsForUser($user->id),
+                'trainingWords' => $wordTraining[$user->id] ?? [],
+                'paragraphTrainingWords' => $paraTraining[$user->id] ?? [],
             ]));
 
             $sent++;
