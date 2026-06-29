@@ -312,10 +312,10 @@ class StudentController extends Controller
         $session = GameSession::findOrFail($id);
 
         if ($session->module_type === 'word') {
-            $module = WordModule::find($session->module_id);
+            $module = WordModule::withCount('words')->find($session->module_id);
             $totalItems = $module->total_points;
         } else {
-            $module = ParagraphModule::find($session->module_id);
+            $module = ParagraphModule::withCount('words')->find($session->module_id);
             $totalItems = $module->total_score;
         }
 

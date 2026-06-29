@@ -4,10 +4,11 @@ import GameplayHeader from "@/Components/Student/GameplayHeader";
 import Microphone from "@/Components/Student/Microphone";
 import DeniedModal from "@/Components/Student/DeniedModal";
 import TapToStartOverlay from "@/Components/Student/TapToStartOverlay";
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 
 import { useGameplayEngine } from "@/hooks/Student/useGameplayEngine";
 import { useSpeechRecognition } from "@/hooks/Student/useSpeechRecognition";
+import { useMicrophonePermission } from "@/hooks/Student/useMicrophonePermission";
 
 export default function GameplaySpeakMode({ module }) {
     const speechRecognitionWords = module?.words?.map((w) => w.word) ?? [];
@@ -59,15 +60,27 @@ export default function GameplaySpeakMode({ module }) {
         },
     });
 
+    const { permissionState, requestPermission } = useMicrophonePermission();
+
+    useEffect(() => {
+        if (permissionState === "denied") {
+            setGameState("DENIED");
+        }
+    }, [permissionState, setGameState]);
+
     const handlePermissionDenied = useCallback(() => {
         setGameState("DENIED");
     }, [setGameState]);
 
-    const handleMicrophoneClick = useCallback(() => {
+    const handleMicrophoneClick = useCallback(async () => {
         if (gameState === "IDLE") {
+            if (permissionState === "prompt") {
+                const granted = await requestPermission();
+                if (!granted) return;
+            }
             startGame();
         }
-    }, [gameState, startGame]);
+    }, [gameState, permissionState, requestPermission, startGame]);
 
     useSpeechRecognition({
         isActive: gameState === "ACTIVE",
