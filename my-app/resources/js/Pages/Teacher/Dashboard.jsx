@@ -62,7 +62,7 @@ export default function Dashboard({
 
     const chartData = [
         { name: "Not Started", value: chartCounts?.notStarted ?? 0, color: "#64748b" },
-        { name: "Playing", value: chartCounts?.playing ?? 0, color: "#38bdf8" },
+        { name: "In Progress", value: chartCounts?.in_progress ?? 0, color: "#38bdf8" },
         { name: "At Risk", value: chartCounts?.atRisk ?? 0, color: "#fb7185" },
         { name: "Needs Support", value: chartCounts?.needsSupport ?? 0, color: "#fbbf24" },
         { name: "On Track", value: chartCounts?.onTrack ?? 0, color: "#a3e635" },

@@ -45,7 +45,6 @@ class StudentController extends Controller
                 'badges', 'read_level', 'speak_level',
             ])
             ->first();
-
         return Inertia::render('Student/Dashboard', [
             'data' => $data,
         ]);

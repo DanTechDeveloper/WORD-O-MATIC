@@ -14,7 +14,7 @@ const statusTabs = [
     { value: "atRisk", label: "At Risk" },
     { value: "support", label: "Needs Support" },
     { value: "onTrack", label: "On Track" },
-    { value: "playing", label: "Playing" },
+    { value: "in_progress", label: "In Progress" },
 ];
 
 export default function Students({ data, sections, filters }) {
@@ -103,7 +103,7 @@ export default function Students({ data, sections, filters }) {
         onTrack: "bg-green-900/50 text-green-400 border-green-500",
         support: "bg-tertiary-container text-on-tertiary-container border-tertiary",
         notStarted: "bg-slate-800/50 text-slate-500 border-slate-700",
-        playing: "bg-sky-900/50 text-sky-400 border-sky-500",
+        in_progress: "bg-sky-900/50 text-sky-400 border-sky-500",
     };
 
     return (

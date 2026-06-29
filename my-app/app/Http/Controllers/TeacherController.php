@@ -117,7 +117,7 @@ class TeacherController extends Controller
             'atRisk' => 'At Risk',
             'support' => 'Needs Support',
             'notStarted' => 'Not Started',
-            'playing' => 'Playing',
+            'in_progress' => 'In Progress',
         ];
 
         return [

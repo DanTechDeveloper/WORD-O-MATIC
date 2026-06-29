@@ -144,7 +144,7 @@ class DatabaseSeeder extends Seeder
                 $wAcc = 0.0;
                 $sAcc = 0.0;
             } elseif ($roll < 3) {
-                $status = 'playing';
+                $status = 'in_progress';
                 $wAcc = round(rand(20, 90) + rand(0, 99) / 100, 2);
                 $sAcc = 0.0;
             } elseif ($roll < 5) {

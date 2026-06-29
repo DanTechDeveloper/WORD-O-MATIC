@@ -127,7 +127,7 @@ class ProgressService
         if (!$wb && !$sq) {
             $status = 'notStarted';
         } elseif (!$wb || !$sq) {
-            $status = 'playing';
+            $status = 'in_progress';
         } else {
             $avg = ($wb + $sq) / 2;
             $status = $avg >= 80 ? 'onTrack' : ($avg >= 60 ? 'support' : 'atRisk');

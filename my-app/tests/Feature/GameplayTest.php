@@ -66,7 +66,7 @@ class GameplayTest extends TestCase
         $this->student->refresh();
 
         // Word Blast may progress, Story Quest wala → dapat 'playing'
-        $this->assertEquals('playing', $this->student->student->status);
+        $this->assertEquals('in_progress', $this->student->student->status);
         $this->assertEquals(70, $this->student->student->wordBlastAcc);
         $this->assertEquals(0, $this->student->student->storyQuestAcc);
     }

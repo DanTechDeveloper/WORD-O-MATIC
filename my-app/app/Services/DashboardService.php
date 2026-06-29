@@ -46,11 +46,11 @@ class DashboardService
         $needsSupport = 0;
         $onTrack = 0;
         $notStarted = 0;
-        $playing = 0;
+        $inProgress = 0;
 
         foreach ($allStudents as $student) {
-            $wordBlast = $student->wordBlastAcc;
-            $storyQuest = $student->storyQuestAcc;
+            $wordBlast = (float) $student->wordBlastAcc;
+            $storyQuest = (float) $student->storyQuestAcc;
 
             if (!$wordBlast && !$storyQuest) {
                 $notStarted++;
@@ -59,7 +59,7 @@ class DashboardService
             }
 
             if (!$wordBlast || !$storyQuest) {
-                $playing++;
+                $inProgress++;
 
                 continue;
             }
@@ -93,7 +93,7 @@ class DashboardService
             'sectionPerformance' => $sectionPerformance,
             'chartCounts' => [
                 'notStarted' => $notStarted,
-                'playing' => $playing,
+                'in_progress' => $inProgress,
                 'atRisk' => $atRisk,
                 'needsSupport' => $needsSupport,
                 'onTrack' => $onTrack,
