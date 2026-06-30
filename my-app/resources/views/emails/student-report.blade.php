@@ -125,7 +125,7 @@
                         @endif
 
                         <p style="color:#475569;font-size:12px;text-align:center;margin:0;border-top:2px solid #334155;padding-top:24px">
-                            Word-O-Matic &bull; Automated Performance Report
+                            Word-O-Matic &bull; As of {{ $data['reported_at'] }}
                         </p>
                     </td>
                 </tr>

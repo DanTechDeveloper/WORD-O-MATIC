@@ -38,14 +38,18 @@ class WordModule extends Model
         return self::buildTrainingWords(self::with('words')->orderBy('level')->get(), $mastery);
     }
 
-    public static function trainingWordsForUsers(array $userIds): Collection
+    public static function trainingWordsForUsers(array $userIds, ?string $cutoff = null): Collection
     {
         $modules = self::with('words')->orderBy('level')->get();
 
-        $masteryByUser = DB::table('student_word_mastery')
-            ->whereIn('user_id', $userIds)
-            ->get()
-            ->groupBy('user_id');
+        $query = DB::table('student_word_mastery')
+            ->whereIn('user_id', $userIds);
+
+        if ($cutoff) {
+            $query->where('created_at', '<=', $cutoff);
+        }
+
+        $masteryByUser = $query->get()->groupBy('user_id');
 
         return collect($userIds)->mapWithKeys(fn ($id) => [
             $id => self::buildTrainingWords($modules, ($masteryByUser->get($id) ?? collect())->keyBy('word_id')),

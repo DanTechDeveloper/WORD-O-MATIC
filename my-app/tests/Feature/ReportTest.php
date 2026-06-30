@@ -118,6 +118,8 @@ class ReportTest extends TestCase
     {
         $this->actingAs($this->teacher);
 
+        Setting::setValue('report_deadline', now()->subDay()->format('Y-m-d\TH:i'));
+
         $response = $this->post(route('teacher.reports.sendEmails'), [
             'student_ids' => [$this->student->id],
         ]);
@@ -134,6 +136,8 @@ class ReportTest extends TestCase
         ]);
 
         $this->actingAs($this->teacher);
+
+        Setting::setValue('report_deadline', now()->subDay()->format('Y-m-d\TH:i'));
 
         $response = $this->post(route('teacher.reports.sendEmails'), [
             'student_ids' => [$this->student->id, $noEmailStudent->id],

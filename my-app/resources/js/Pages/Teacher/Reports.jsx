@@ -1,6 +1,19 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { router } from "@inertiajs/react";
 import DashboardLayout from "@/Layouts/Teacher/DashboardLayout";
+
+const formatDate = (date) =>
+    date?.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+    });
+
+const tomorrow = new Date();
+tomorrow.setDate(tomorrow.getDate() + 1);
+const minDate = tomorrow.toISOString().slice(0, 16);
 
 const STATUS_CONFIG = {
     atRisk: { label: "At Risk", color: "bg-rose-500", border: "border-rose-500", text: "text-rose-400", bg: "bg-rose-500/10" },
@@ -14,6 +27,7 @@ export default function Reports({ grouped, flash, deadline }) {
     const [tab, setTab] = useState("parents");
     const [selectedIds, setSelectedIds] = useState(new Set());
     const [sending, setSending] = useState(false);
+    const sendingRef = useRef(false);
     const [deadlineValue, setDeadlineValue] = useState(deadline || "");
     const [savingDeadline, setSavingDeadline] = useState(false);
 
@@ -39,6 +53,8 @@ export default function Reports({ grouped, flash, deadline }) {
     ];
 
     const isPastDeadline = deadlineValue && new Date(deadlineValue) < new Date();
+    const isDeadlineSet = !!deadlineValue;
+    const isDeadlineSaved = !!deadline;
     const deadlineDate = deadlineValue ? new Date(deadlineValue) : null;
 
     const toggleStudent = (id) => {
@@ -64,7 +80,8 @@ export default function Reports({ grouped, flash, deadline }) {
     };
 
     const sendEmails = () => {
-        if (selectedIds.size === 0) return;
+        if (selectedIds.size === 0 || sendingRef.current) return;
+        sendingRef.current = true;
         setSending(true);
         router.post(
             route("teacher.reports.sendEmails"),
@@ -72,7 +89,10 @@ export default function Reports({ grouped, flash, deadline }) {
             {
                 preserveScroll: true,
                 preserveState: true,
-                onFinish: () => setSending(false),
+                onFinish: () => {
+                    setSending(false);
+                    sendingRef.current = false;
+                },
             }
         );
     };
@@ -133,7 +153,7 @@ export default function Reports({ grouped, flash, deadline }) {
                             Report deadline has passed
                         </p>
                         <p className="text-slate-400 text-sm font-semibold mt-1">
-                            All report actions are now available. Deadline was set to {deadlineDate.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" })}.
+                            All report actions are now available. Deadline was set to {formatDate(deadlineDate)}.
                         </p>
                     </div>
                 </div>
@@ -149,9 +169,9 @@ export default function Reports({ grouped, flash, deadline }) {
                     <p className="text-white font-black uppercase italic text-sm">
                         Reporting deadline not yet reached
                     </p>
-                    <p className="text-slate-400 text-sm font-semibold mt-1">
-                        Reports are set to be generated after {deadlineDate.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" })}. You may still proceed, but data may not be final.
-                    </p>
+                        <p className="text-slate-400 text-sm font-semibold mt-1">
+                            Reports are set to be generated after {formatDate(deadlineDate)}. You may still proceed, but data may not be final.
+                        </p>
                 </div>
             </div>
         );
@@ -174,18 +194,25 @@ export default function Reports({ grouped, flash, deadline }) {
                     <label className="text-slate-500 text-xs font-black uppercase tracking-widest block">
                         Deadline Date & Time
                     </label>
-                    <input
-                        type="datetime-local"
-                        value={deadlineValue ? deadlineValue.slice(0, 16) : ""}
-                        onChange={(e) => setDeadlineValue(e.target.value)}
-                        className="w-full bg-slate-950 border-2 border-slate-800 rounded-xl p-4 text-white font-bold focus:border-purple-500 transition-all outline-none"
-                    />
+                    <div className="relative">
+                        <input
+                            type="datetime-local"
+                            value={deadlineValue ? deadlineValue.slice(0, 16) : ""}
+                            min={minDate}
+                            disabled={isDeadlineSaved}
+                            onChange={(e) => setDeadlineValue(e.target.value)}
+                            className="w-full bg-slate-950 border-2 border-slate-800 rounded-xl p-4 text-white font-bold focus:border-purple-500 transition-all outline-none [color-scheme:dark] disabled:opacity-50 disabled:cursor-not-allowed"
+                        />
+                        <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-purple-400 pointer-events-none">
+                            calendar_month
+                        </span>
+                    </div>
                 </div>
                 <button
                     onClick={saveDeadline}
-                    disabled={!deadlineValue || savingDeadline}
+                    disabled={!deadlineValue || savingDeadline || isDeadlineSaved}
                     className={`px-8 py-4 rounded-xl font-black uppercase italic text-sm transition-all flex items-center gap-2 ${
-                        deadlineValue && !savingDeadline
+                        deadlineValue && !savingDeadline && !isDeadlineSaved
                             ? "bg-purple-500 text-slate-950 shadow-[4px_4px_0_0_#1e1b4b] hover:translate-x-[-2px] hover:translate-y-[-2px]"
                             : "bg-slate-800 text-slate-600 cursor-not-allowed shadow-none"
                     }`}
@@ -196,6 +223,13 @@ export default function Reports({ grouped, flash, deadline }) {
                                 progress_activity
                             </span>
                             Saving...
+                        </>
+                    ) : isDeadlineSaved ? (
+                        <>
+                            <span className="material-symbols-outlined">
+                                check
+                            </span>
+                            Deadline Set
                         </>
                     ) : (
                         <>
@@ -224,8 +258,8 @@ export default function Reports({ grouped, flash, deadline }) {
                         </span>
                         <span className="text-slate-400 font-semibold text-sm">
                             {isPastDeadline
-                                ? `Deadline passed on ${deadlineDate.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" })}`
-                                : `Deadline set for ${deadlineDate.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" })}`}
+                                ? `Deadline passed on ${formatDate(deadlineDate)}`
+                                : `Deadline set for ${formatDate(deadlineDate)}`}
                         </span>
                     </div>
                 </div>
@@ -255,11 +289,12 @@ export default function Reports({ grouped, flash, deadline }) {
                                 <input
                                     type="checkbox"
                                     checked={allSelected}
+                                    disabled={!isPastDeadline}
                                     ref={(el) => {
                                         if (el) el.indeterminate = someSelected && !allSelected;
                                     }}
                                     onChange={() => toggleGroup(students)}
-                                    className="w-5 h-5 rounded border-slate-600 bg-slate-800 text-purple-500 focus:ring-purple-500"
+                                    className="w-5 h-5 rounded border-slate-600 bg-slate-800 text-purple-500 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
                                 />
                                 <div className={`${cfg.color} w-3 h-3 rounded-full`} />
                                 <span className="text-white font-black uppercase italic text-sm">
@@ -275,13 +310,16 @@ export default function Reports({ grouped, flash, deadline }) {
                             {students.map((student) => (
                                 <label
                                     key={student.id}
-                                    className="flex items-center gap-4 px-6 py-3 hover:bg-slate-800/50 cursor-pointer transition-colors"
+                                    className={`flex items-center gap-4 px-6 py-3 transition-colors ${
+                                        isPastDeadline ? "hover:bg-slate-800/50 cursor-pointer" : "cursor-default"
+                                    }`}
                                 >
                                     <input
                                         type="checkbox"
                                         checked={selectedIds.has(student.id)}
+                                        disabled={!isPastDeadline}
                                         onChange={() => toggleStudent(student.id)}
-                                        className="w-5 h-5 rounded border-slate-600 bg-slate-800 text-purple-500 focus:ring-purple-500"
+                                        className="w-5 h-5 rounded border-slate-600 bg-slate-800 text-purple-500 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
                                     />
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2">
@@ -340,7 +378,7 @@ export default function Reports({ grouped, flash, deadline }) {
                     </span>
                     <p className="text-white font-bold text-sm">
                         {flash.sent > 0
-                            ? `${flash.sent} email(s) sent successfully.`
+                            ? `${flash.sent} email(s) sent successfully — As of ${flash.reported_at}.`
                             : "No emails were sent."}
                         {flash.failed > 0 && (
                             <span className="text-amber-400 ml-2">
@@ -507,14 +545,12 @@ export default function Reports({ grouped, flash, deadline }) {
                         ))}
                     </div>
 
-                    {renderStudentList()}
-
-                    <div className="mt-8 pt-6 border-t-2 border-slate-800">
+                    <div className="mb-6">
                         <button
                             onClick={sendEmails}
-                            disabled={selectedIds.size === 0 || sending}
+                            disabled={selectedIds.size === 0 || sending || !isPastDeadline}
                             className={`w-full p-5 rounded-2xl font-black uppercase italic text-xl tracking-tighter shadow-[8px_8px_0_0_#3f6212] transition-all flex items-center justify-center gap-4 ${
-                                selectedIds.size === 0 || sending
+                                selectedIds.size === 0 || sending || !isPastDeadline
                                     ? "bg-slate-800 text-slate-600 cursor-not-allowed shadow-none"
                                     : "bg-lime-400 border-4 border-slate-950 text-slate-950 hover:translate-y-1 hover:shadow-[4px_4px_0_0_#3f6212]"
                             }`}
@@ -526,16 +562,42 @@ export default function Reports({ grouped, flash, deadline }) {
                                     </span>
                                     Sending...
                                 </>
+                            ) : !isPastDeadline && isDeadlineSet ? (
+                                <>
+                                    <span className="material-symbols-outlined">
+                                        lock
+                                    </span>
+                                    Unlocks {formatDate(deadlineDate)}
+                                </>
+                            ) : !isDeadlineSet ? (
+                                <>
+                                    <span className="material-symbols-outlined">
+                                        lock
+                                    </span>
+                                    Set a deadline above first
+                                </>
                             ) : (
                                 <>
                                     <span className="material-symbols-outlined">
                                         send
                                     </span>
-                                    Send Report to Selected Parents
+                                    Send Report — As of {formatDate(deadlineDate)}
                                 </>
                             )}
                         </button>
+                        {!isPastDeadline && isDeadlineSet && (
+                            <p className="text-amber-400/70 text-xs font-bold text-center mt-4">
+                                Button will unlock on {formatDate(deadlineDate)}
+                            </p>
+                        )}
+                        {!isDeadlineSet && (
+                            <p className="text-amber-400/70 text-xs font-bold text-center mt-4">
+                                Set a report deadline above to enable sending
+                            </p>
+                        )}
                     </div>
+
+                    {renderStudentList()}
                 </div>
             )}
         </DashboardLayout>

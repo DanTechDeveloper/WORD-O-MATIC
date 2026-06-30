@@ -2,6 +2,7 @@ import DashboardLayout from "@/Layouts/Teacher/DashboardLayout";
 import { Link, router } from "@inertiajs/react";
 import { useRef, useState } from "react";
 import AddStudentModal from "@/Components/Teacher/AddStudentModal";
+import EditStudentModal from "@/Components/Teacher/EditStudentModal";
 
 const sortOptions = [
     { value: "risk", label: "Risk Level" },
@@ -29,6 +30,7 @@ export default function Students({ data, sections, filters }) {
     };
 
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [editStudent, setEditStudent] = useState(null);
     const [statusTab, setStatusTab] = useState(filters.status ?? "");
     const searchRef = useRef(null);
     const debounceRef = useRef(null);
@@ -242,9 +244,17 @@ export default function Students({ data, sections, filters }) {
                                                 {pAcc == null ? "N/A" : pAcc + "%"}
                                             </span>
                                         </div>
-                                        <Link href={`/teacher/studentDetails/${student.id}`} className="ml-auto bg-lime-400 text-slate-950 px-4 py-2 rounded-xl border-3 border-slate-950 shadow-[4px_4px_0_0_#3f6212] font-black uppercase italic text-xs tracking-tighter hover:translate-y-0.5 hover:shadow-[2px_2px_0_0_#3f6212] transition-all">
-                                            View
-                                        </Link>
+                                        <div className="ml-auto flex gap-2">
+                                            <button
+                                                onClick={() => setEditStudent(student)}
+                                                className="bg-purple-500 text-white px-4 py-2 rounded-xl border-3 border-slate-950 shadow-[4px_4px_0_0_#4c1d95] font-black uppercase italic text-xs tracking-tighter hover:translate-y-0.5 hover:shadow-[2px_2px_0_0_#4c1d95] transition-all"
+                                            >
+                                                Edit
+                                            </button>
+                                            <Link href={`/teacher/studentDetails/${student.id}`} className="bg-lime-400 text-slate-950 px-4 py-2 rounded-xl border-3 border-slate-950 shadow-[4px_4px_0_0_#3f6212] font-black uppercase italic text-xs tracking-tighter hover:translate-y-0.5 hover:shadow-[2px_2px_0_0_#3f6212] transition-all">
+                                                View
+                                            </Link>
+                                        </div>
                                     </div>
                                 </div>
                             );
@@ -308,11 +318,19 @@ export default function Students({ data, sections, filters }) {
                                                 {student.status?.label || "Not Started"}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 text-slate-400 font-body-md">
-                                            <Link href={`/teacher/studentDetails/${student.id}`}
-                                                className="bg-lime-400 text-slate-950 px-6 py-3 rounded-2xl border-4 border-slate-950 shadow-[6px_6px_0_0_#3f6212] font-black uppercase italic text-xs tracking-tighter hover:translate-y-0.5 hover:shadow-[3px_3px_0_0_#3f6212] transition-all flex items-center justify-center gap-2">
-                                                View
-                                            </Link>
+                                        <td className="px-6 py-4">
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={() => setEditStudent(student)}
+                                                    className="bg-purple-500 text-white px-6 py-3 rounded-2xl border-4 border-slate-950 shadow-[6px_6px_0_0_#4c1d95] font-black uppercase italic text-xs tracking-tighter hover:translate-y-0.5 hover:shadow-[3px_3px_0_0_#4c1d95] transition-all flex items-center justify-center gap-2"
+                                                >
+                                                    Edit
+                                                </button>
+                                                <Link href={`/teacher/studentDetails/${student.id}`}
+                                                    className="bg-lime-400 text-slate-950 px-6 py-3 rounded-2xl border-4 border-slate-950 shadow-[6px_6px_0_0_#3f6212] font-black uppercase italic text-xs tracking-tighter hover:translate-y-0.5 hover:shadow-[3px_3px_0_0_#3f6212] transition-all flex items-center justify-center gap-2">
+                                                    View
+                                                </Link>
+                                            </div>
                                         </td>
                                     </tr>
                                 );
@@ -371,6 +389,11 @@ export default function Students({ data, sections, filters }) {
             <AddStudentModal
                 isOpen={isAddModalOpen}
                 onClose={() => setIsAddModalOpen(false)}
+            />
+            <EditStudentModal
+                isOpen={!!editStudent}
+                onClose={() => setEditStudent(null)}
+                student={editStudent}
             />
         </>
     );

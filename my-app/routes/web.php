@@ -44,6 +44,8 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/leaderboards', [TeacherController::class, 'leaderboards'])->name('leaderboards');
             Route::get('/assignments', [TeacherController::class, 'assignments'])->name('assignments');
             Route::get('/badges', [TeacherController::class, 'badges'])->name('badges');
+            Route::get('/studentPins', [TeacherController::class, 'studentPins'])->name('studentPins');
+            Route::put('/students/{student}', [TeacherController::class, 'updateStudent'])->name('students.update');
         });
 
     Route::prefix('student')

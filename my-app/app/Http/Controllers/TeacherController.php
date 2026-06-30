@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
+use Carbon\Carbon;
 
 class TeacherController extends Controller
 {
@@ -96,8 +97,11 @@ class TeacherController extends Controller
                     'id' => $user->id,
                     'fullName' => $user->name,
                     'studentID' => $user->student_id,
+                    'pin' => $user->pin_plain ?? '',
                     'avatar' => $student?->avatar,
                     'section' => $student?->section ?? '',
+                    'gender' => $student?->gender ?? '',
+                    'parent_email' => $student?->parent_email ?? '',
                     'rotation' => 'rotate-['.rand(-3, 3).'deg]',
                     'currentWordBlastAcc' => $currentWordAcc ? round($currentWordAcc, 2) : null,
                     'currentStoryQuestAcc' => $currentStoryAcc ? round($currentStoryAcc, 2) : null,
@@ -166,12 +170,14 @@ class TeacherController extends Controller
             'section' => 'required',
             'pin' => 'required',
             'gender' => 'nullable|in:male,female',
+            'parent_email' => 'nullable|email',
         ]);
 
         $student = User::create([
             'name' => $request->fullName,
             'student_id' => $request->studentID,
             'pin' => Hash::make($request->pin),
+            'pin_plain' => $request->pin,
             'role' => 'student',
         ]);
 
@@ -191,6 +197,7 @@ class TeacherController extends Controller
             'storyQuestAcc' => 0.0,
             'section' => $request->section,
             'gender' => $request->gender,
+            'parent_email' => $request->parent_email,
         ]);
 
         return redirect()->back();
@@ -322,12 +329,24 @@ class TeacherController extends Controller
             'student_ids.*' => 'integer|exists:users,id',
         ]);
 
+        $deadline = Setting::getValue('report_deadline');
+
+        if (empty($deadline)) {
+            return redirect()->back()->withErrors(['No report deadline set. Set a deadline first.']);
+        }
+
+        $deadlineTs = Carbon::parse($deadline);
+
+        if ($deadlineTs->isFuture()) {
+            return redirect()->back()->withErrors(['Report deadline has not yet been reached.']);
+        }
+
         $students = User::with('student')
             ->whereIn('id', $request->student_ids)
             ->get();
 
-        $wordTraining = WordModule::trainingWordsForUsers($request->student_ids);
-        $paraTraining = ParagraphModule::trainingWordsForUsers($request->student_ids);
+        $wordTraining = WordModule::trainingWordsForUsers($request->student_ids, $deadline);
+        $paraTraining = ParagraphModule::trainingWordsForUsers($request->student_ids, $deadline);
 
         $sent = 0;
         $failed = 0;
@@ -351,6 +370,7 @@ class TeacherController extends Controller
                 'status' => $user->student?->status ?? 'notStarted',
                 'trainingWords' => $wordTraining[$user->id] ?? [],
                 'paragraphTrainingWords' => $paraTraining[$user->id] ?? [],
+                'reported_at' => $deadlineTs->format('F j, Y \a\t g:i A'),
             ]));
 
             $sent++;
@@ -358,7 +378,8 @@ class TeacherController extends Controller
 
         return redirect()->back()
             ->with('sent', $sent)
-            ->with('failed', $failed);
+            ->with('failed', $failed)
+            ->with('reported_at', $deadlineTs->format('F j, Y \a\t g:i A'));
     }
 
     public function studentDetails()
@@ -384,5 +405,46 @@ class TeacherController extends Controller
     public function badges()
     {
         return Inertia::render('Teacher/Badges');
+    }
+
+    public function studentPins()
+    {
+        return inertia()->render('Teacher/Students', [
+            'existingPins' => User::where('role', 'student')
+                ->whereNotNull('pin_plain')
+                ->pluck('pin_plain'),
+        ]);
+    }
+
+    public function updateStudent(Request $request, $id)
+    {
+        $user = User::findOrFail($id);
+
+        $request->validate([
+            'fullName' => 'required',
+            'section' => 'required',
+            'gender' => 'nullable|in:male,female',
+            'parent_email' => 'nullable|email',
+        ]);
+
+        $pin = $request->pin;
+        $updateData = [
+            'name' => $request->fullName,
+        ];
+
+        if ($pin && $pin !== $user->pin_plain) {
+            $updateData['pin'] = Hash::make($pin);
+            $updateData['pin_plain'] = $pin;
+        }
+
+        $user->update($updateData);
+
+        $user->student()->update([
+            'section' => $request->section,
+            'gender' => $request->gender,
+            'parent_email' => $request->parent_email,
+        ]);
+
+        return redirect()->back()->with('success', 'Student updated successfully.');
     }
 }
