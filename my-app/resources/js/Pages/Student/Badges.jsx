@@ -147,6 +147,14 @@ export default function Badges({ badges }) {
 
     return (
         <DashboardLayout>
+            <div class="mb-4">
+                <Link
+                    href="/student/dashboard"
+                    class="bg-surface-container-high border-4 border-surface-variant p-2 rounded-full text-on-surface inline-flex items-center justify-center hover:bg-surface-variant active-3d transition-all aspect-square shadow-lg w-12 h-12"
+                >
+                    <span class="material-symbols-outlined text-3xl">arrow_back</span>
+                </Link>
+            </div>
             {/* <!-- Section Header --> */}
             <div class="mb-12 text-center">
                 <h2 class="font-headline-xl text-[45px] text-on-background uppercase tracking-tighter mb-4 drop-shadow-[4px_4px_0px_rgba(114,18,255,1)]">

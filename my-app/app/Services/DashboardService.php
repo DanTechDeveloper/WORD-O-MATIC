@@ -27,6 +27,8 @@ class DashboardService
 
             if (!$avgRead && !$avgSpeak) {
                 $status = 'Not Started';
+            } elseif (!$avgRead || !$avgSpeak) {
+                $status = 'In Progress';
             } else {
                 $overallAvg = (($avgRead ?? 0) + ($avgSpeak ?? 0)) / 2;
                 $status = $overallAvg >= 80 ? 'On Track' : ($overallAvg >= 60 ? 'Needs Support' : 'At Risk');

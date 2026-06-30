@@ -30,6 +30,14 @@ export default function Leaderboards({ leaderboard, currentUserRank, totalStuden
     return (
         <DashboardLayout>
             <div className="max-w-full mx-auto px-margin mt-12 flex flex-col items-center">
+                <div className="w-full max-w-4xl mb-4">
+                    <Link
+                        href="/student/dashboard"
+                        className="bg-surface-container-high border-4 border-surface-variant p-2 rounded-full text-on-surface flex items-center justify-center hover:bg-surface-variant active-3d transition-all aspect-square shadow-lg w-12 h-12"
+                    >
+                        <span className="material-symbols-outlined text-3xl">arrow_back</span>
+                    </Link>
+                </div>
                 <div className="relative mb-4 text-center">
                     <h1 className="font-headline-xl text-5xl md:text-7xl leading-none uppercase italic text-white">
                         LEADERBOARDS

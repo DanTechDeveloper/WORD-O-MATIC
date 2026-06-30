@@ -271,6 +271,7 @@ class TeacherController extends Controller
             'support' => $students->where('status', 'support')->values(),
             'onTrack' => $students->where('status', 'onTrack')->values(),
             'notStarted' => $students->where('status', 'notStarted')->values(),
+            'in_progress' => $students->where('status', 'in_progress')->values(),
         ];
 
         return Inertia::render('Teacher/Reports', [

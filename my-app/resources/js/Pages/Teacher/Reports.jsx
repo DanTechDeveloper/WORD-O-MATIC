@@ -103,7 +103,21 @@ export default function Reports({ grouped, flash, deadline }) {
         );
     };
 
-    const statusOrder = ["atRisk", "support", "onTrack", "in_progress", "notStarted"];
+    const [statusTab, setStatusTab] = useState("");
+    const [searchQuery, setSearchQuery] = useState("");
+
+    const statusTabs = [
+        { value: "", label: "All" },
+        { value: "atRisk", label: "At Risk" },
+        { value: "support", label: "Needs Support" },
+        { value: "onTrack", label: "On Track" },
+        { value: "in_progress", label: "In Progress" },
+        { value: "notStarted", label: "Not Started" },
+    ];
+
+    const statusOrder = statusTab
+        ? [statusTab]
+        : ["atRisk", "support", "onTrack", "in_progress", "notStarted"];
 
     const renderDeadlineBanner = () => {
         if (!deadlineValue) return null;
@@ -222,7 +236,9 @@ export default function Reports({ grouped, flash, deadline }) {
     const renderStudentList = () => (
         <div className="space-y-6">
             {statusOrder.map((statusKey) => {
-                const students = grouped[statusKey] || [];
+                const students = (grouped[statusKey] || []).filter((s) =>
+                    s.name.toLowerCase().includes(searchQuery.toLowerCase())
+                );
                 const cfg = STATUS_CONFIG[statusKey];
                 if (students.length === 0) return null;
 
@@ -460,6 +476,35 @@ export default function Reports({ grouped, flash, deadline }) {
                         <span className="text-slate-500 text-sm font-bold">
                             {selectedIds.size} selected
                         </span>
+                    </div>
+
+                    <div className="relative mb-4">
+                        <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-lime-400">
+                            search
+                        </span>
+                        <input
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full bg-slate-950 border-2 border-slate-800 rounded-xl pl-12 pr-4 py-3 text-white font-bold focus:outline-none focus:border-lime-500 transition-all text-sm"
+                            placeholder="Search student by name..."
+                            type="text"
+                        />
+                    </div>
+
+                    <div className="flex items-center bg-slate-950 border-2 border-slate-800 p-1 rounded-xl mb-6 overflow-x-auto">
+                        {statusTabs.map((tab) => (
+                            <button
+                                key={tab.value}
+                                onClick={() => setStatusTab(tab.value)}
+                                className={`px-4 py-2 font-black text-xs whitespace-nowrap rounded-lg transition-all ${
+                                    statusTab === tab.value
+                                        ? "bg-lime-400 text-slate-950 shadow-[2px_2px_0_0_#3f6212]"
+                                        : "text-slate-400 hover:text-lime-300"
+                                }`}
+                            >
+                                {tab.label}
+                            </button>
+                        ))}
                     </div>
 
                     {renderStudentList()}

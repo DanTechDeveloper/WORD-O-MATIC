@@ -45,6 +45,7 @@ class StudentController extends Controller
                 'badges', 'read_level', 'speak_level',
             ])
             ->first();
+
         return Inertia::render('Student/Dashboard', [
             'data' => $data,
         ]);
@@ -297,7 +298,7 @@ class StudentController extends Controller
             ->firstOrFail();
 
         $module = [
-            'words' => $practiceSet->items->map(fn($item) => ['word' => $item->content])->toArray(),
+            'words' => $practiceSet->items->map(fn ($item) => ['word' => $item->content])->toArray(),
             'content' => $practiceSet->content,
         ];
 

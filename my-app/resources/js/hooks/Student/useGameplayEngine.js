@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useCountdown } from "./useCountdown";
 import { router } from "@inertiajs/react";
-import { playSuccessSound, playFeedbackSound, playMispronounceSound } from "@/utils/sounds";
+import { playSuccessSound, playFeedbackSound, playMispronounceSound, playTimeWarningSound } from "@/utils/sounds";
 
 export function useGameplayEngine({
     words = [],
@@ -32,6 +32,7 @@ export function useGameplayEngine({
     const currentStreakRef = useRef(0);
     const hasSaved = useRef(false);
     const wordTimeoutRef = useRef(null);
+    const wordTimeoutWarningRef = useRef(null);
     const feedbackTimerRef = useRef(null);
     const isMountedRef = useRef(true);
     const currentWordIndexRef = useRef(0);
@@ -78,6 +79,7 @@ export function useGameplayEngine({
             clearTimeout(feedbackTimerRef.current);
             clearTimeout(streakShakeTimerRef.current);
             clearTimeout(wordTimeoutRef.current);
+            clearTimeout(wordTimeoutWarningRef.current);
             if (completionTimerRef.current)
                 clearTimeout(completionTimerRef.current);
         };
@@ -162,7 +164,21 @@ export function useGameplayEngine({
         setShowPointsFeedback(true);
         setTimeout(() => setShowPointsFeedback(false), 500);
         setScoreEmphasize(true);
-        setTimeout(() => setScoreEmphasize(false), 500);
+        setTimeout(() => setScoreEmphasize(false), 500); useEffect(() => {
+        if (gameState === "ACTIVE" && isWordReady) {
+            clearTimeout(wordTimeoutRef.current);
+            clearTimeout(wordTimeoutWarningRef.current);
+            wordTimeoutWarningRef.current = setTimeout(playTimeWarningSound, 4000);
+            wordTimeoutRef.current = setTimeout(
+                () => onMispronounceFnRef.current(),
+                5000,
+            );
+        }
+        return () => {
+            clearTimeout(wordTimeoutRef.current);
+            clearTimeout(wordTimeoutWarningRef.current);
+        };
+    }, [currentWordIndex, gameState, isWordReady]);
 
         const streak = currentStreakRef.current;
         let fbMsg;
@@ -203,6 +219,7 @@ export function useGameplayEngine({
         mispronounceGuardRef.current = true
 
         clearTimeout(wordTimeoutRef.current);
+        clearTimeout(wordTimeoutWarningRef.current);
         const wordObj = words[currentWordIndexRef.current];
         onMispronounceRef.current?.(wordObj);
 
@@ -233,18 +250,24 @@ export function useGameplayEngine({
     useEffect(() => {
         if (gameState === "ACTIVE" && isWordReady) {
             clearTimeout(wordTimeoutRef.current);
+            clearTimeout(wordTimeoutWarningRef.current);
+            wordTimeoutWarningRef.current = setTimeout(playTimeWarningSound, 4000);
             wordTimeoutRef.current = setTimeout(
                 () => onMispronounceFnRef.current(),
                 5000,
             );
         }
-        return () => clearTimeout(wordTimeoutRef.current);
+        return () => {
+            clearTimeout(wordTimeoutRef.current);
+            clearTimeout(wordTimeoutWarningRef.current);
+        };
     }, [currentWordIndex, gameState, isWordReady]);
 
     const handleTimeUp = useCallback(() => {
         clearTimeout(mispronounceTimerRef.current);
         clearTimeout(wordRecognizedTimerRef.current);
         clearTimeout(wordTimeoutRef.current);
+        clearTimeout(wordTimeoutWarningRef.current);
         setIsExploding(false);
         if (onTimeUpOverride) {
             onTimeUpOverride();
@@ -267,6 +290,7 @@ export function useGameplayEngine({
         clearTimeout(mispronounceTimerRef.current);
         clearTimeout(wordRecognizedTimerRef.current);
         clearTimeout(wordTimeoutRef.current);
+        clearTimeout(wordTimeoutWarningRef.current);
         if (completionTimerRef.current) {
             clearTimeout(completionTimerRef.current);
         }
