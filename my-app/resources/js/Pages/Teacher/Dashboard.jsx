@@ -56,9 +56,13 @@ export default function Dashboard({
     const filteredTopStudents = topStudents
         .filter((s) => !nameFilter || s.name.toLowerCase().includes(nameFilter.toLowerCase()))
         .filter((s) => !selectedSection || s.section === selectedSection)
-        .slice(0, 10);
+        .slice(0, 10)
+        .map((s, i) => ({ ...s, rank: i + 1 }));
 
     const sectionListForFilter = [...new Set(topStudents.map((s) => s.section).filter(Boolean))];
+
+    const RANK_COLORS = ["#fbbf24", "#94a3b8", "#d97706"];
+    const RANK_EMOJIS = ["🥇", "🥈", "🥉"];
 
     const chartData = [
         { name: "Not Started", value: chartCounts?.notStarted ?? 0, color: "#64748b" },
@@ -300,70 +304,76 @@ export default function Dashboard({
                         </div>
                     </div>
                 </div>
-                <div className="h-[300px] w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <BarChart
-                            layout="vertical"
-                            data={filteredTopStudents}
-                            margin={{
-                                top: 20,
-                                right: 30,
-                                left: 20,
-                                bottom: 5,
-                            }}
-                        >
-                            <CartesianGrid
-                                strokeDasharray="3 3"
-                                stroke="#1e293b"
-                            />
-                            <XAxis
-                                type="number"
-                                stroke="#94a3b8"
-                                tickFormatter={(value) =>
-                                    value.toLocaleString()
-                                }
-                            />
-                            <YAxis
-                                dataKey="name"
-                                type="category"
-                                stroke="#94a3b8"
-                                width={130}
-                                tick={{ fill: "#e2e8f0", fontWeight: "bold" }}
-                            />
-                            <Tooltip
-                                cursor={{ fill: "rgba(255,255,255,0.1)" }}
-                                contentStyle={{
-                                    backgroundColor: "#0f172a",
-                                    border: "2px solid #334155",
-                                    borderRadius: "12px",
+                {filteredTopStudents.length > 0 ? (
+                    <div
+                        className="w-full"
+                        style={{ height: `${Math.max(200, filteredTopStudents.length * 50)}px` }}
+                    >
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart
+                                layout="vertical"
+                                data={filteredTopStudents}
+                                margin={{
+                                    top: 10,
+                                    right: 30,
+                                    left: 20,
+                                    bottom: 5,
                                 }}
-                                itemStyle={{
-                                    color: "#a3e635",
-                                    fontSize: "14px",
-                                    fontWeight: "black",
-                                }}
-                                labelStyle={{
-                                    color: "#cbd5e1",
-                                    fontSize: "11px",
-                                    fontWeight: "bold",
-                                }}
-                                formatter={(value, name, props) => {
-                                    const student = props.payload;
-                                    return [
-                                        `${value.toLocaleString()} Points`,
-                                        `${student.section || 'N/A'} • ${student.wordBlastAcc || 0}% Word / ${student.storyQuestAcc || 0}% Story`,
-                                    ];
-                                }}
-                            />
-                            <Bar
-                                dataKey="points"
-                                fill="#a3e635"
-                                radius={[10, 10, 10, 10]}
-                            />
-                        </BarChart>
-                    </ResponsiveContainer>
-                </div>
-                {filteredTopStudents.length === 0 && (
+                            >
+                                <CartesianGrid
+                                    strokeDasharray="3 3"
+                                    stroke="#1e293b"
+                                    horizontal={false}
+                                />
+                                <XAxis
+                                    type="number"
+                                    stroke="#94a3b8"
+                                    tickFormatter={(value) => value.toLocaleString()}
+                                />
+                                <YAxis
+                                    dataKey="name"
+                                    type="category"
+                                    stroke="#94a3b8"
+                                    width={160}
+                                    tick={{ fill: "#e2e8f0", fontWeight: "bold", fontSize: 12 }}
+                                    tickFormatter={(value, index) => {
+                                        const student = filteredTopStudents[index];
+                                        const emoji = student?.rank <= 3 ? `${RANK_EMOJIS[student.rank - 1]} ` : "";
+                                        return `${emoji}${value}`;
+                                    }}
+                                />
+                                <Tooltip
+                                    cursor={{ fill: "rgba(255,255,255,0.1)" }}
+                                    content={({ active, payload }) => {
+                                        if (!active || !payload?.length) return null;
+                                        const s = payload[0].payload;
+                                        return (
+                                            <div className="bg-slate-950 border-2 border-slate-700 rounded-xl px-4 py-3 shadow-lg">
+                                                <p className="text-white font-black text-sm mb-2">
+                                                    {s.rank <= 3 ? `${RANK_EMOJIS[s.rank - 1]} ` : ""}{s.name}
+                                                </p>
+                                                <div className="space-y-1 text-xs">
+                                                    <p className="text-lime-400 font-black">{s.points.toLocaleString()} Points</p>
+                                                    <p className="text-slate-400 font-semibold">Section: {s.section || 'N/A'}</p>
+                                                    <p className="text-purple-400 font-semibold">Word Blast: {s.wordBlastAcc ?? 0}%</p>
+                                                    <p className="text-cyan-400 font-semibold">Story Quest: {s.storyQuestAcc ?? 0}%</p>
+                                                </div>
+                                            </div>
+                                        );
+                                    }}
+                                />
+                                <Bar dataKey="points" radius={[10, 10, 10, 10]}>
+                                    {filteredTopStudents.map((entry, index) => (
+                                        <Cell
+                                            key={`cell-${index}`}
+                                            fill={index < 3 ? RANK_COLORS[index] : "#a3e635"}
+                                        />
+                                    ))}
+                                </Bar>
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+                ) : (
                     <div className="text-center py-10 text-slate-600 font-black uppercase tracking-widest text-sm">
                         No students match the current filters
                     </div>
