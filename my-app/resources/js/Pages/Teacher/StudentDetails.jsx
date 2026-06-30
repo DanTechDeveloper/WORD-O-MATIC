@@ -1,10 +1,7 @@
 import DashboardLayout from "@/Layouts/Teacher/DashboardLayout";
 import { Link } from "@inertiajs/react";
-import { useState } from "react";
 
 export default function StudentDetail({ data }) {
-    const [activeMode, setActiveMode] = useState("read");
-
     const student = {
         id: data.student_id,
         section: data.student?.section,
@@ -40,40 +37,49 @@ export default function StudentDetail({ data }) {
         speakCurriculum: data.speakCurriculum || [],
     };
 
-    const currentReadLevel = data.student?.read_level || 1;
-    const currentSpeakLevel = data.student?.speak_level || 1;
-
-    const calcModeProgress = (curriculum, completedCount) => {
-        const total = curriculum.length;
+    const calcOverallProgress = (curriculum) => {
+        let mastered = 0;
+        let total = 0;
+        curriculum.forEach((level) => {
+            mastered += level.mastered.length;
+            total += level.words_count || 0;
+        });
         if (!total) return 0;
-        return Math.round(((completedCount ?? 0) / total) * 100);
+        return Math.round((mastered / total) * 100);
     };
 
-    const getModuleTitle = (curriculum, levelNum) => {
-        const current = curriculum.find((l) => l.level_num === levelNum);
-        return current?.level?.split(": ")[1] || `Module ${levelNum}`;
+    const calcMasteredCount = (curriculum) => {
+        return curriculum.reduce((sum, level) => sum + level.mastered.length, 0);
     };
+
+    const calcTotalWords = (curriculum) => {
+        return curriculum.reduce((sum, level) => sum + (level.words_count || 0), 0);
+    };
+
+    const readTotal = calcTotalWords(student.readCurriculum);
+    const speakTotal = calcTotalWords(student.speakCurriculum);
+    const readMastered = calcMasteredCount(student.readCurriculum);
+    const speakMastered = calcMasteredCount(student.speakCurriculum);
 
     const modes = [
         {
-            name: "Read Mode",
-            level: `Lvl ${currentReadLevel}`,
-            sub: getModuleTitle(student.readCurriculum, currentReadLevel),
-            progress: calcModeProgress(student.readCurriculum, data.student?.read_progress),
+            name: "Word Blast",
+            level: `${readMastered}`,
+            sub: readTotal > 0 ? `out of ${readTotal} Words` : "No words",
+            progress: calcOverallProgress(student.readCurriculum),
             color: "bg-lime-400",
         },
         {
-            name: "Speak Mode",
-            level: `Lvl ${currentSpeakLevel}`,
-            sub: getModuleTitle(student.speakCurriculum, currentSpeakLevel),
-            progress: calcModeProgress(student.speakCurriculum, data.student?.speak_progress),
+            name: "Story Quest",
+            level: `${speakMastered}`,
+            sub: speakTotal > 0 ? `out of ${speakTotal} Items` : "No items",
+            progress: calcOverallProgress(student.speakCurriculum),
             color: "bg-cyan-400",
         },
     ];
 
     return (
         <DashboardLayout>
-            {/* Back Button & Header */}
             <div className="mb-10">
                 <Link
                     href="/teacher/students"
@@ -85,9 +91,7 @@ export default function StudentDetail({ data }) {
                     Back to Fleet Command
                 </Link>
 
-                {/* User Profile & General Statistics */}
                 <div className="flex flex-col lg:flex-row gap-8 items-start">
-                    {/* Profile Card */}
                     <div className="bg-slate-900 rounded-[2.5rem] border-4 border-slate-800 p-8 flex items-center gap-6 shadow-[8px_8px_0_0_#020617] w-full lg:w-auto">
                         <div className="w-24 h-24 rounded-2xl bg-slate-950 border-4 border-lime-400 overflow-hidden rotate-3 shadow-[4px_4px_0_0_#3f6212]">
                             <img
@@ -109,7 +113,6 @@ export default function StudentDetail({ data }) {
                         </div>
                     </div>
 
-                    {/* Stats Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 flex-1 w-full">
                         {student.stats.map((stat, i) => (
                             <div
@@ -135,10 +138,10 @@ export default function StudentDetail({ data }) {
                 </div>
             </div>
 
-            {/* Current Level Of Mode */}
+            {/* Overall Status */}
             <div className="mb-12">
                 <h2 className="text-xl font-black text-slate-500 uppercase italic tracking-tighter mb-6 flex items-center gap-2">
-                    <span className="w-8 h-1 bg-slate-800"></span> Current Level
+                    <span className="w-8 h-1 bg-slate-800"></span> Overall
                     Status
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -159,7 +162,7 @@ export default function StudentDetail({ data }) {
                                     </div>
                                     <div className="text-right">
                                         <div className="text-slate-500 font-black uppercase text-[10px] tracking-widest mb-1">
-                                            Rank
+                                            Progress
                                         </div>
                                         <div className="text-white font-black uppercase italic tracking-tighter">
                                             {mode.sub}
@@ -182,8 +185,11 @@ export default function StudentDetail({ data }) {
                 </div>
             </div>
 
-            {/* Read Mode: Mastery & Training Zones */}
-            {activeMode === "read" && (
+            {/* Word Blast: Mastery & Training Zones */}
+            <div className="mb-12">
+                <h2 className="text-xl font-black text-white uppercase italic tracking-tighter mb-6 flex items-center gap-2">
+                    <span className="w-8 h-1 bg-lime-400"></span> Word Blast
+                </h2>
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-10">
                     <div className="space-y-6">
                         <div className="flex items-center gap-4">
@@ -249,10 +255,13 @@ export default function StudentDetail({ data }) {
                         </div>
                     </div>
                 </div>
-            )}
+            </div>
 
-            {/* Speak Mode: Mastery & Training Zones */}
-            {activeMode === "speak" && (
+            {/* Story Quest: Mastery & Training Zones */}
+            <div className="mb-12">
+                <h2 className="text-xl font-black text-white uppercase italic tracking-tighter mb-6 flex items-center gap-2">
+                    <span className="w-8 h-1 bg-cyan-400"></span> Story Quest
+                </h2>
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-10">
                     <div className="space-y-6">
                         <div className="flex items-center gap-4">
@@ -317,38 +326,6 @@ export default function StudentDetail({ data }) {
                             ))}
                         </div>
                     </div>
-                </div>
-            )}
-
-            {/* Mode Selector Bar */}
-            <div className="flex justify-center mt-12">
-                <div className="bg-slate-950 p-2 rounded-[2rem] border-4 border-slate-800 flex gap-2 shadow-[8px_8px_0_0_#020617]">
-                    <button
-                        onClick={() => setActiveMode("read")}
-                        className={`px-8 py-4 rounded-2xl font-black uppercase italic tracking-tighter transition-all flex items-center gap-3 ${
-                            activeMode === "read"
-                                ? "bg-lime-400 text-slate-950 shadow-[0_0_20px_rgba(163,230,53,0.4)]"
-                                : "text-slate-500 hover:text-white hover:bg-slate-900"
-                        }`}
-                    >
-                        <span className="material-symbols-outlined font-black">
-                            menu_book
-                        </span>
-                        WORD BLAST
-                    </button>
-                    <button
-                        onClick={() => setActiveMode("speak")}
-                        className={`px-8 py-4 rounded-2xl font-black uppercase italic tracking-tighter transition-all flex items-center gap-3 ${
-                            activeMode === "speak"
-                                ? "bg-cyan-400 text-slate-950 shadow-[0_0_20px_rgba(34,211,238,0.4)]"
-                                : "text-slate-500 hover:text-white hover:bg-slate-900"
-                        }`}
-                    >
-                        <span className="material-symbols-outlined font-black">
-                            mic
-                        </span>
-                        STORY QUEST
-                    </button>
                 </div>
             </div>
         </DashboardLayout>

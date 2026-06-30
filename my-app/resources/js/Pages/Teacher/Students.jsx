@@ -207,8 +207,6 @@ export default function Students({ data, sections, filters }) {
                 <div className="bg-slate-900 rounded-2xl lg:rounded-[2.5rem] border-4 border-slate-800 overflow-hidden shadow-[8px_8px_0_0_#020617]">
                     <div className="block lg:hidden divide-y-2 divide-slate-800/50">
                         {students.map((student, index) => {
-                            const cwAcc = student.currentWordBlastAcc;
-                            const cpAcc = student.currentStoryQuestAcc;
                             const wAcc = student.wordBlastAcc;
                             const pAcc = student.storyQuestAcc;
                             const wRisk = riskStyles[computeRisk(wAcc)];
@@ -234,17 +232,15 @@ export default function Students({ data, sections, filters }) {
                                             <div className={`w-2.5 h-2.5 rounded-full ${wRisk.dot}`}></div>
                                             <span className="text-[10px] text-slate-500 font-label-bold uppercase">Word Blast:</span>
                                             <span className={`font-label-bold text-xs ${wRisk.text} uppercase`}>
-                                                {cwAcc == null ? "N/A" : cwAcc + "%"}
+                                                {wAcc == null ? "N/A" : wAcc + "%"}
                                             </span>
-                                            <span className="text-[10px] text-lime-400/80 font-label-bold">Lv.{student.readLevel}</span>
                                         </div>
                                         <div className="flex items-center gap-1.5">
                                             <div className={`w-2.5 h-2.5 rounded-full ${pRisk.dot}`}></div>
                                             <span className="text-[10px] text-slate-500 font-label-bold uppercase">Story Quest:</span>
                                             <span className={`font-label-bold text-xs ${pRisk.text} uppercase`}>
-                                                {cpAcc == null ? "N/A" : cpAcc + "%"}
+                                                {pAcc == null ? "N/A" : pAcc + "%"}
                                             </span>
-                                            <span className="text-[10px] text-lime-400/80 font-label-bold">Lv.{student.speakLevel}</span>
                                         </div>
                                         <Link href={`/teacher/studentDetails/${student.id}`} className="ml-auto bg-lime-400 text-slate-950 px-4 py-2 rounded-xl border-3 border-slate-950 shadow-[4px_4px_0_0_#3f6212] font-black uppercase italic text-xs tracking-tighter hover:translate-y-0.5 hover:shadow-[2px_2px_0_0_#3f6212] transition-all">
                                             View
@@ -272,8 +268,6 @@ export default function Students({ data, sections, filters }) {
                         </thead>
                         <tbody className="divide-y-2 divide-slate-800/50">
                             {students.map((student, index) => {
-                                const cwAcc = student.currentWordBlastAcc;
-                                const cpAcc = student.currentStoryQuestAcc;
                                 const wAcc = student.wordBlastAcc;
                                 const pAcc = student.storyQuestAcc;
                                 const wRisk = riskStyles[computeRisk(wAcc)];
@@ -297,18 +291,16 @@ export default function Students({ data, sections, filters }) {
                                             <div className="flex items-center gap-2">
                                                 <div className={`w-3 h-3 rounded-full ${wRisk.dot}`}></div>
                                                 <span className={`font-label-bold ${wRisk.text} uppercase`}>
-                                                    {cwAcc == null ? "N/A" : cwAcc + "%"}
+                                                    {wAcc == null ? "N/A" : wAcc + "%"}
                                                 </span>
-                                                <span className="text-xs text-lime-400/80 font-label-bold">Lv.{student.readLevel}</span>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-2">
                                                 <div className={`w-3 h-3 rounded-full ${pRisk.dot}`}></div>
                                                 <span className={`font-label-bold ${pRisk.text} uppercase`}>
-                                                    {cpAcc == null ? "N/A" : cpAcc + "%"}
+                                                    {pAcc == null ? "N/A" : pAcc + "%"}
                                                 </span>
-                                                <span className="text-xs text-lime-400/80 font-label-bold">Lv.{student.speakLevel}</span>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
