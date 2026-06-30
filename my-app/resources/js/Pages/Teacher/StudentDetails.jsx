@@ -5,7 +5,6 @@ import { useState } from "react";
 export default function StudentDetail({ data }) {
     const [activeMode, setActiveMode] = useState("read");
 
-    console.log(data);
     const student = {
         id: data.student_id,
         section: data.student?.section,
