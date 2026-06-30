@@ -40,8 +40,10 @@ class TeacherController extends Controller
         $search = $request->input('search', '');
         $status = $request->input('status', '');
 
-        $query = User::with('student')
-            ->where('role', 'student');
+        $query = User::with([
+            'student.wordProgress.wordModule',
+            'student.paragraphProgress.paragraphModule',
+        ])->where('role', 'student');
 
         if ($section) {
             $query->whereHas('student', fn ($q) => $q->where('section', $section));
@@ -77,19 +79,35 @@ class TeacherController extends Controller
         }
 
         $students = $query->paginate(8)
-            ->through(fn ($user) => [
-                'id' => $user->id,
-                'fullName' => $user->name,
-                'studentID' => $user->student_id,
-                'avatar' => $user->student?->avatar,
-                'section' => $user->student?->section ?? '',
-                'rotation' => 'rotate-['.rand(-3, 3).'deg]',
-                'wordBlastAcc' => $user->student?->wordBlastAcc,
-                'storyQuestAcc' => $user->student?->storyQuestAcc,
-                'readLevel' => $user->student?->read_level ?? 1,
-                'speakLevel' => $user->student?->speak_level ?? 1,
-                'status' => $this->computeStatus($user->student?->status ?? 'notStarted'),
-            ]);
+            ->through(function ($user) {
+                $student = $user->student;
+                $readLevel = $student?->read_level ?? 1;
+                $speakLevel = $student?->speak_level ?? 1;
+
+                $currentWordAcc = $student?->wordProgress
+                    ->filter(fn ($p) => $p->wordModule?->level === $readLevel)
+                    ->avg('accuracy');
+
+                $currentStoryAcc = $student?->paragraphProgress
+                    ->filter(fn ($p) => $p->paragraphModule?->level === $speakLevel)
+                    ->avg('accuracy');
+
+                return [
+                    'id' => $user->id,
+                    'fullName' => $user->name,
+                    'studentID' => $user->student_id,
+                    'avatar' => $student?->avatar,
+                    'section' => $student?->section ?? '',
+                    'rotation' => 'rotate-['.rand(-3, 3).'deg]',
+                    'currentWordBlastAcc' => $currentWordAcc ? round($currentWordAcc, 2) : null,
+                    'currentStoryQuestAcc' => $currentStoryAcc ? round($currentStoryAcc, 2) : null,
+                    'wordBlastAcc' => $student?->wordBlastAcc,
+                    'storyQuestAcc' => $student?->storyQuestAcc,
+                    'readLevel' => $readLevel,
+                    'speakLevel' => $speakLevel,
+                    'status' => $this->computeStatus($student?->status ?? 'notStarted'),
+                ];
+            });
 
         $sections = StudentProfile::whereHas('user', fn ($q) => $q->where('role', 'student'))
             ->whereNotNull('section')

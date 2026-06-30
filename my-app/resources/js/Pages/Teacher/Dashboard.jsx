@@ -23,6 +23,7 @@ export default function Dashboard({
     topStudents = [],
     auth,
 }) {
+    const [topSort, setTopSort] = useState("points");
     const [selectedSection, setSelectedSection] = useState("");
     const [nameFilter, setNameFilter] = useState("");
     const sectionList = sectionPerformance.map((item) => item.section);
@@ -53,13 +54,24 @@ export default function Dashboard({
         },
     ];
 
-    const filteredTopStudents = topStudents
+    const currentList = topStudents[topSort] ?? [];
+    const filteredTopStudents = currentList
         .filter((s) => !nameFilter || s.name.toLowerCase().includes(nameFilter.toLowerCase()))
         .filter((s) => !selectedSection || s.section === selectedSection)
         .slice(0, 10)
         .map((s, i) => ({ ...s, rank: i + 1 }));
 
-    const sectionListForFilter = [...new Set(topStudents.map((s) => s.section).filter(Boolean))];
+    const allStudents = [...(topStudents.points ?? []), ...(topStudents.wordBlast ?? []), ...(topStudents.storyQuest ?? [])];
+    const sectionListForFilter = [...new Set(allStudents.map((s) => s.section).filter(Boolean))];
+
+    const TOP_SORT_OPTIONS = [
+        { value: "points", label: "Points", icon: "military_tech" },
+        { value: "wordBlast", label: "Word Blast", icon: "auto_stories" },
+        { value: "storyQuest", label: "Story Quest", icon: "record_voice_over" },
+    ];
+
+    const topBarKey = topSort === "points" ? "points" : topSort === "wordBlast" ? "wordBlastAcc" : "storyQuestAcc";
+    const topBarLabel = topSort === "points" ? "Points" : topSort === "wordBlast" ? "Word Blast Acc (%)" : "Story Quest Acc (%)";
 
     const RANK_COLORS = ["#fbbf24", "#94a3b8", "#d97706"];
     const RANK_EMOJIS = ["🥇", "🥈", "🥉"];
@@ -274,7 +286,23 @@ export default function Dashboard({
                         </span>
                         Top Performing Students
                     </h2>
-                    <div className="flex gap-3">
+                    <div className="flex flex-col sm:flex-row gap-3">
+                        <div className="flex bg-slate-950 rounded-xl border-2 border-slate-800 p-1">
+                            {TOP_SORT_OPTIONS.map((opt) => (
+                                <button
+                                    key={opt.value}
+                                    onClick={() => setTopSort(opt.value)}
+                                    className={`flex items-center gap-1.5 px-3 py-2 rounded-lg font-black uppercase text-[10px] tracking-widest transition-all ${
+                                        topSort === opt.value
+                                            ? "bg-lime-400 text-slate-950 shadow-[2px_2px_0_0_#3f6212]"
+                                            : "text-slate-500 hover:text-lime-300"
+                                    }`}
+                                >
+                                    <span className="material-symbols-outlined text-sm">{opt.icon}</span>
+                                    {opt.label}
+                                </button>
+                            ))}
+                        </div>
                         <div className="relative">
                             <input
                                 type="text"
@@ -328,7 +356,7 @@ export default function Dashboard({
                                 <XAxis
                                     type="number"
                                     stroke="#94a3b8"
-                                    tickFormatter={(value) => value.toLocaleString()}
+                                    tickFormatter={(value) => value.toLocaleString() + (topSort !== "points" ? "%" : "")}
                                 />
                                 <YAxis
                                     dataKey="name"
@@ -347,22 +375,26 @@ export default function Dashboard({
                                     content={({ active, payload }) => {
                                         if (!active || !payload?.length) return null;
                                         const s = payload[0].payload;
+                                        const highlight = topSort === "points" ? "text-lime-400" : topSort === "wordBlast" ? "text-purple-400" : "text-cyan-400";
                                         return (
                                             <div className="bg-slate-950 border-2 border-slate-700 rounded-xl px-4 py-3 shadow-lg">
                                                 <p className="text-white font-black text-sm mb-2">
                                                     {s.rank <= 3 ? `${RANK_EMOJIS[s.rank - 1]} ` : ""}{s.name}
                                                 </p>
                                                 <div className="space-y-1 text-xs">
-                                                    <p className="text-lime-400 font-black">{s.points.toLocaleString()} Points</p>
+                                                    <p className={`font-black ${highlight}`}>
+                                                        {topSort === "points" ? s.points.toLocaleString() + " Points" : topSort === "wordBlast" ? s.wordBlastAcc + "% Word Blast" : s.storyQuestAcc + "% Story Quest"}
+                                                    </p>
                                                     <p className="text-slate-400 font-semibold">Section: {s.section || 'N/A'}</p>
-                                                    <p className="text-purple-400 font-semibold">Word Blast: {s.wordBlastAcc ?? 0}%</p>
-                                                    <p className="text-cyan-400 font-semibold">Story Quest: {s.storyQuestAcc ?? 0}%</p>
+                                                    {topSort !== "points" && <p className="text-lime-400 font-semibold">{s.points.toLocaleString()} Points</p>}
+                                                    {topSort !== "wordBlast" && <p className="text-purple-400 font-semibold">Word Blast: {s.wordBlastAcc ?? 0}%</p>}
+                                                    {topSort !== "storyQuest" && <p className="text-cyan-400 font-semibold">Story Quest: {s.storyQuestAcc ?? 0}%</p>}
                                                 </div>
                                             </div>
                                         );
                                     }}
                                 />
-                                <Bar dataKey="points" radius={[10, 10, 10, 10]}>
+                                <Bar dataKey={topBarKey} radius={[10, 10, 10, 10]}>
                                     {filteredTopStudents.map((entry, index) => (
                                         <Cell
                                             key={`cell-${index}`}

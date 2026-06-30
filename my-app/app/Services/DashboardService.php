@@ -79,12 +79,18 @@ class DashboardService
 
         $totalStudents = User::where('role', 'student')->count();
 
-        $topStudents = StudentProfile::join('users', 'users.id', '=', 'students.user_id')
+        $baseQuery = fn ($orderBy) => StudentProfile::join('users', 'users.id', '=', 'students.user_id')
             ->where('users.role', 'student')
-            ->orderBy('students.points', 'desc')
-            ->limit(50)
+            ->orderByRaw($orderBy)
+            ->limit(10)
             ->select('users.name', 'students.section', 'students.points', 'students.wordBlastAcc', 'students.storyQuestAcc')
             ->get();
+
+        $topStudents = [
+            'points' => $baseQuery('students.points desc'),
+            'wordBlast' => $baseQuery('students.wordBlastAcc desc'),
+            'storyQuest' => $baseQuery('students.storyQuestAcc desc'),
+        ];
 
         return [
             'topStudents' => $topStudents,
