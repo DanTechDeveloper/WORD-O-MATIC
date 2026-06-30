@@ -19,32 +19,23 @@ class GameSession extends Model
         'streak',
     ];
 
-    /**
-     * BUSINESS LOGIC: Sentralisadong taga-log ng bawat laro
-     */
     public static function logSession($userId, $moduleId, $moduleType, $score, $accuracy, $streak)
     {
         return self::create([
             'user_id'     => $userId,
             'module_id'   => $moduleId,
-            'module_type' => $moduleType, // Masasave nito ay 'word' o 'paragraph'
+            'module_type' => $moduleType,
             'score'       => $score,
             'accuracy'    => $accuracy,
             'streak'      => $streak ?? 0,
         ]);
     }
 
-    /**
-     * Get the user that owns the game session.
-     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    /**
-     * Get the parent module (WordModule or ParagraphModule).
-     */
     public function module(): MorphTo
     {
         return $this->morphTo(null, 'module_type', 'module_id');

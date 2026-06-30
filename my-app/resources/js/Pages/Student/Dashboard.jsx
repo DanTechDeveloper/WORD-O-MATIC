@@ -1,15 +1,23 @@
 import { Link, usePage } from "@inertiajs/react";
+import { useState } from "react";
 import DashboardLayout from "../../Layouts/Student/DashboardLayout";
+import BadgeUnlockModal from "@/Components/Student/BadgeUnlockModal";
 
 export default function Dashboard({ data }) {
     const readProgress = data?.read_progress;
     const speakProgress = data?.speak_progress;
     const lastLevel = data?.last_active_level;
 
-    const { auth } = usePage().props;
+    const { auth, flash } = usePage().props;
+    const [showBadgeModal, setShowBadgeModal] = useState(!!flash?.new_badge);
 
     return (
         <>
+            <BadgeUnlockModal
+                badge={flash?.new_badge}
+                show={showBadgeModal}
+                onContinue={() => setShowBadgeModal(false)}
+            />
             <DashboardLayout>
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                     {/* <!-- Hero Tile --> */}

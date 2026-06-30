@@ -1,6 +1,7 @@
-import { Link, usePage } from "@inertiajs/react";
-import { useState } from "react";
+import { Link, router, usePage } from "@inertiajs/react";
+import { useEffect, useState } from "react";
 import AvatarSpeechBubble from "@/Components/Student/AvatarSpeechBubble";
+import BadgeUnlockModal from "@/Components/Student/BadgeUnlockModal";
 
 const BEFORE_STEPS = [
     {
@@ -45,15 +46,7 @@ const AFTER_STEPS = (allDone) => [
             color: "lime",
         },
     ]),
-    ...(allDone ? [
-        {
-            target: '[data-purpose="continue-to-dashboard"]',
-            title: "ALL DONE!",
-            message: "Tap the button below to head to your dashboard!",
-            emoji: "🏠",
-            color: "lime",
-        },
-    ] : []),
+
 ];
 
 export default function Tutorial() {
@@ -69,6 +62,13 @@ export default function Tutorial() {
     const steps = practiceDone ? AFTER_STEPS(allPracticeDone) : BEFORE_STEPS;
     const [stepIndex, setStepIndex] = useState(0);
     const [guideDone, setGuideDone] = useState(false);
+    const [showBadgeModal, setShowBadgeModal] = useState(false);
+
+    useEffect(() => {
+        if (allPracticeDone && guideDone) {
+            setShowBadgeModal(true);
+        }
+    }, [allPracticeDone, guideDone]);
 
     const step = guideDone ? null : steps[stepIndex];
 
@@ -289,17 +289,18 @@ export default function Tutorial() {
                     </div>
                 )}
 
-                {/* CONTINUE TO DASHBOARD */}
-                <div className={`fixed bottom-8 left-0 right-0 z-40 flex justify-center transition-all duration-500 ${guideDone && allPracticeDone ? "" : "opacity-0 pointer-events-none"}`}>
-                    <Link
-                        href="/student/dashboard"
-                        data-purpose="continue-to-dashboard"
-                        className={`bg-lime-400 hover:bg-lime-300 text-zinc-950 px-10 py-4 rounded-2xl font-black text-lg tracking-widest uppercase transition-all hover:scale-105 active:scale-95 flex items-center gap-3 shadow-2xl shadow-lime-400/25 ${ringClass("continue-to-dashboard")}`}
-                    >
-                        Continue to Dashboard
-                        <span className="text-2xl">🏠</span>
-                    </Link>
-                </div>
+                {showBadgeModal && (
+                    <BadgeUnlockModal
+                        badge={{
+                            name: 'Tutorial Complete',
+                            description: 'Welcome aboard! Awarded for successfully completing the introductory guide.',
+                            icon: '🚀',
+                            slug: 'tutorial-complete',
+                        }}
+                        show={true}
+                        onContinue={() => router.post("/student/tutorial/complete")}
+                    />
+                )}
             </main>
         </div>
     );
