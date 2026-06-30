@@ -12,8 +12,8 @@ use App\Models\StudentProfile;
 use App\Models\StudentWordMastery;
 use App\Models\WordModule;
 use App\Services\BadgeService;
-use App\Services\GameSessionService;
 use App\Services\LevelService;
+use App\Services\ProgressService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -21,8 +21,8 @@ class StudentController extends Controller
 {
     public function __construct(
         protected BadgeService $badgeService,
-        protected GameSessionService $gameSessionService,
         protected LevelService $levelService,
+        protected ProgressService $progressService,
     ) {}
 
     public function splashScreen()
@@ -185,9 +185,14 @@ class StudentController extends Controller
         $user = auth()->user();
         $module = WordModule::findOrFail($request->module_id);
 
-        [$session, $accuracy] = $this->gameSessionService->saveWordResult(
-            $user, $module, $request->words_smashed, $request->streak,
+        $totalPoints = $module->words()->count();
+        $accuracy = $totalPoints > 0
+            ? round(min(($request->words_smashed / $totalPoints) * 100, 100), 2)
+            : 0;
+        $session = GameSession::logSession(
+            $user->id, $module->id, 'word', $request->words_smashed, $accuracy, $request->streak ?? 0,
         );
+        $this->progressService->updateWordProgress($user->student, $module, $request->words_smashed, $accuracy);
 
         $redirect = redirect()->route('student.results', ['id' => $session->id]);
         $newBadges = $this->badgeService->checkGameplayBadges($user, $session->id, $accuracy);
@@ -271,9 +276,14 @@ class StudentController extends Controller
         $user = auth()->user();
         $module = ParagraphModule::findOrFail($request->module_id);
 
-        [$session, $accuracy] = $this->gameSessionService->saveParagraphResult(
-            $user, $module, $request->words_smashed, $request->streak,
+        $totalPoints = $module->words()->count();
+        $accuracy = $totalPoints > 0
+            ? round(min(($request->words_smashed / $totalPoints) * 100, 100), 2)
+            : 0;
+        $session = GameSession::logSession(
+            $user->id, $module->id, 'paragraph', $request->words_smashed, $accuracy, $request->streak ?? 0,
         );
+        $this->progressService->updateParagraphProgress($user->student, $module, $request->words_smashed, $accuracy);
 
         $redirect = redirect()->route('student.results', ['id' => $session->id]);
         $newBadges = $this->badgeService->checkGameplayBadges($user, $session->id, $accuracy);

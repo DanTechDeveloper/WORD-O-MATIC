@@ -12,28 +12,24 @@ class LevelService
 {
     public function getWordModuleStatuses(int $userId): Collection
     {
-        $modules = WordModule::select(['id', 'level', 'title'])
-            ->withCount('words')
-            ->orderBy('level', 'asc')
-            ->get();
-
-        $progressRecords = StudentWordProgress::where('user_id', $userId)
-            ->get()
-            ->keyBy('word_module_id');
-
-        return $this->mapStatuses($modules, $progressRecords);
+        return $this->getModuleStatuses($userId, WordModule::class, StudentWordProgress::class, 'word_module_id');
     }
 
     public function getSpeakModuleStatuses(int $userId): Collection
     {
-        $modules = ParagraphModule::select(['id', 'level', 'title'])
+        return $this->getModuleStatuses($userId, ParagraphModule::class, StudentParagraphProgress::class, 'paragraph_module_id');
+    }
+
+    private function getModuleStatuses(int $userId, string $moduleClass, string $progressClass, string $fk): Collection
+    {
+        $modules = $moduleClass::select(['id', 'level', 'title'])
             ->withCount('words')
             ->orderBy('level', 'asc')
             ->get();
 
-        $progressRecords = StudentParagraphProgress::where('user_id', $userId)
+        $progressRecords = $progressClass::where('user_id', $userId)
             ->get()
-            ->keyBy('paragraph_module_id');
+            ->keyBy($fk);
 
         return $this->mapStatuses($modules, $progressRecords);
     }
