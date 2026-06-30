@@ -26,7 +26,9 @@ class DashboardServiceTest extends TestCase
 
         $this->assertEquals(0, $stats['totalStudents']);
         $this->assertEquals(0, $stats['totalClassPoints']);
-        $this->assertEmpty($stats['topStudents']);
+        $this->assertEmpty($stats['topStudents']['points']);
+        $this->assertEmpty($stats['topStudents']['wordBlast']);
+        $this->assertEmpty($stats['topStudents']['storyQuest']);
         $this->assertEmpty($stats['sectionPerformance']);
     }
 
@@ -109,7 +111,7 @@ class DashboardServiceTest extends TestCase
         $this->assertEquals(1, $stats['chartCounts']['notStarted']);
         $this->assertEquals(1, $stats['chartCounts']['in_progress']);
         $this->assertEquals(1, $stats['chartCounts']['atRisk']);
-        $this->assertEquals(1, $stats['chartCounts']['needsSupport']);
+        $this->assertEquals(1, $stats['chartCounts']['support']);
         $this->assertEquals(1, $stats['chartCounts']['onTrack']);
     }
 
@@ -123,8 +125,8 @@ class DashboardServiceTest extends TestCase
 
         $stats = $this->dashboardService->stats();
 
-        $this->assertEquals(100, $stats['topStudents'][0]->points);
-        $this->assertEquals(10, $stats['topStudents'][1]->points);
+        $this->assertEquals(100, $stats['topStudents']['points'][0]->points);
+        $this->assertEquals(10, $stats['topStudents']['points'][1]->points);
     }
 
     public function test_top_students_limited_to_50(): void
@@ -136,7 +138,9 @@ class DashboardServiceTest extends TestCase
 
         $stats = $this->dashboardService->stats();
 
-        $this->assertCount(50, $stats['topStudents']);
+        $this->assertCount(50, $stats['topStudents']['points']);
+        $this->assertCount(50, $stats['topStudents']['wordBlast']);
+        $this->assertCount(50, $stats['topStudents']['storyQuest']);
     }
 
     public function test_teacher_can_view_dashboard(): void
