@@ -86,6 +86,28 @@ export default function Dashboard({ data }) {
                         </Link>
                     </section>
 
+                    {/* <!-- Quick Nav Tiles --> */}
+                    <section className="lg:col-span-12 grid grid-cols-2 gap-4">
+                        <Link
+                            href="/student/leaderboards"
+                            className="bg-surface-container-high border border-surface-variant/20 rounded-2xl p-5 shadow-sm hover:shadow-md hover:scale-[1.01] transition-all text-center flex flex-col items-center gap-2"
+                        >
+                            <span className="material-symbols-outlined text-4xl text-lime-400" style={{ fontVariationSettings: "'FILL' 1" }}>
+                                leaderboard
+                            </span>
+                            <span className="text-sm font-black uppercase tracking-wider">Leaderboards</span>
+                        </Link>
+                        <Link
+                            href="/student/badges"
+                            className="bg-surface-container-high border border-surface-variant/20 rounded-2xl p-5 shadow-sm hover:shadow-md hover:scale-[1.01] transition-all text-center flex flex-col items-center gap-2"
+                        >
+                            <span className="material-symbols-outlined text-4xl text-lime-400" style={{ fontVariationSettings: "'FILL' 1" }}>
+                                military_tech
+                            </span>
+                            <span className="text-sm font-black uppercase tracking-wider">Badges</span>
+                        </Link>
+                    </section>
+
                     {/* <!-- Mission Progress Tile --> */}
                     <section className="lg:col-span-12 bg-surface-container rounded-3xl border border-surface-variant/20 p-5 lg:p-8 shadow-sm">
                         <div className="flex justify-between items-center mb-6">

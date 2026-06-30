@@ -71,12 +71,22 @@ Skip this process for simple, straightforward tasks.
 
 ## Code Review
 
-When reviewing code:
+Differentiate verified findings from suspected findings.
 
-- Distinguish verified findings from suspected findings.
-- Do not present assumptions as confirmed defects.
-- Cite the relevant code that supports each finding.
-- If verification requires runtime behavior, database contents, configuration, or external context, explicitly state that the finding requires confirmation.
+Do not present assumptions as confirmed defects.
+
+Use the following confidence levels:
+
+- **Verified** — Supported directly by the provided code or other available evidence.
+- **Likely** — Strong evidence suggests an issue, but confirmation requires additional context.
+- **Possible** — A potential concern based on common patterns or incomplete information.
+
+For every finding:
+
+- State the confidence level.
+- Cite the relevant code that supports the finding.
+- Explain why it is a problem.
+- If additional information is required (runtime behavior, database contents, configuration, production environment, etc.), explicitly state what must be verified before treating it as a confirmed issue.
 
 Prioritize findings in this order:
 
@@ -86,8 +96,6 @@ Prioritize findings in this order:
 4. Performance
 5. Maintainability
 6. Style
-
----
 
 ## Safety
 

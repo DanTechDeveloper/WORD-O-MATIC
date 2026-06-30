@@ -25,9 +25,7 @@ class WordModule extends Model
 
     public function getTotalPointsAttribute(): int
     {
-        return $this->relationLoaded('words')
-            ? $this->words->count()
-            : ($this->words_count ?? $this->words()->count());
+        return $this->relationLoaded('words') ? $this->words->count() : ($this->words_count ?? $this->words()->count());
     }
 
     public static function trainingWordsForUser(int $userId): array

@@ -19,7 +19,7 @@ export default function LevelsPage({ modules, mode }) {
         mode === "read" ? "student/gameplayReadMode" : "student/gameplaySpeakMode"
 
     return (
-        <DashboardLayout minimal={true}>
+        <DashboardLayout>
             {/* Header — sits directly on layout background */}
             <div className="flex items-center gap-3 md:gap-4 mb-6 pt-6 lg:pt-10 mt-6">
                 <Link
