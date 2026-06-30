@@ -37,25 +37,40 @@ export default function StudentDetail({ data }) {
                 color: "text-cyan-400",
             },
         ],
-        modes: [
-            {
-                name: "Read Mode",
-                level: `Lvl ${data.student?.read_level || 1}`,
-                sub: "Speed Scholar",
-                progress: data.student?.read_progress || 0,
-                color: "bg-lime-400",
-            },
-            {
-                name: "Speak Mode",
-                level: `Lvl ${data.student?.speak_level || 1}`,
-                sub: "Vocal Voyager",
-                progress: data.student?.speak_progress || 0,
-                color: "bg-cyan-400",
-            },
-        ],
         readCurriculum: data.readCurriculum || [],
         speakCurriculum: data.speakCurriculum || [],
     };
+
+    const currentReadLevel = data.student?.read_level || 1;
+    const currentSpeakLevel = data.student?.speak_level || 1;
+
+    const calcModeProgress = (curriculum, completedCount) => {
+        const total = curriculum.length;
+        if (!total) return 0;
+        return Math.round(((completedCount ?? 0) / total) * 100);
+    };
+
+    const getModuleTitle = (curriculum, levelNum) => {
+        const current = curriculum.find((l) => l.level_num === levelNum);
+        return current?.level?.split(": ")[1] || `Module ${levelNum}`;
+    };
+
+    const modes = [
+        {
+            name: "Read Mode",
+            level: `Lvl ${currentReadLevel}`,
+            sub: getModuleTitle(student.readCurriculum, currentReadLevel),
+            progress: calcModeProgress(student.readCurriculum, data.student?.read_progress),
+            color: "bg-lime-400",
+        },
+        {
+            name: "Speak Mode",
+            level: `Lvl ${currentSpeakLevel}`,
+            sub: getModuleTitle(student.speakCurriculum, currentSpeakLevel),
+            progress: calcModeProgress(student.speakCurriculum, data.student?.speak_progress),
+            color: "bg-cyan-400",
+        },
+    ];
 
     return (
         <DashboardLayout>
@@ -128,7 +143,7 @@ export default function StudentDetail({ data }) {
                     Status
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    {student.modes.map((mode, i) => (
+                    {modes.map((mode, i) => (
                         <div
                             key={i}
                             className="bg-slate-900 rounded-[2rem] border-4 border-slate-800 p-8 shadow-[8px_8px_0_0_#020617] relative overflow-hidden group"
@@ -160,7 +175,7 @@ export default function StudentDetail({ data }) {
                                     ></div>
                                 </div>
                                 <div className="mt-2 text-right text-[10px] font-black text-slate-600 uppercase tracking-widest">
-                                    {mode.progress}% to next rank
+                                    {mode.progress}% Complete
                                 </div>
                             </div>
                         </div>

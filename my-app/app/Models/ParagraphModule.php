@@ -87,6 +87,8 @@ class ParagraphModule extends Model
         return $modules->map(function ($module) use ($masteryProgress) {
             return [
                 'level' => "Level {$module->level}: {$module->title}",
+                'level_num' => $module->level,
+                'words_count' => $module->words->count(),
                 'mastered' => $module->words->filter(function ($word) use ($masteryProgress) {
                     return isset($masteryProgress[$word->id]) && $masteryProgress[$word->id][0]->status === 'mastered';
                 })->pluck('word')->values(),
