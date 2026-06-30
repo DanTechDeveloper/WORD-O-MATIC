@@ -1,36 +1,48 @@
 # Architecture
 
+> Version 1.0
+
 ## Backend
 
-- Controllers remain thin.
-- Validation uses Form Requests.
-- Authorization uses Policies.
-- Business logic belongs in Services when reused.
-- Notifications use Laravel Notifications.
+| Layer | Role |
+|---|---|
+| Controllers | `UserController`, `StudentController`, `TeacherController` — thin, delegate to services |
+| Services | `ProgressService`, `GameSessionService`, `BadgeService`, `LevelService`, `DashboardService` |
+| Models | 15 Eloquent models (`User`, `StudentProfile`, `WordModule`, `ParagraphModule`, `GameSession`, `Badge`, ...) |
+| Validation | Form Requests |
+| Auth | Policies |
+| Notifications | Laravel Mail (`Mail::to()->send()`, no queue) |
 
 ## Frontend
 
-- Pages live in resources/js/Pages
-- Shared UI lives in Components
-- Layouts wrap pages
-- Hooks contain reusable logic
+| Layer | Detail |
+|---|---|
+| Framework | React 18 + Inertia.js v2 |
+| Build | Vite 8 (`@vitejs/plugin-react`, `laravel-vite-plugin`) |
+| CSS | Tailwind 3 (`@tailwindcss/forms`) |
+| Charts | Recharts 3.8 |
+| Pages | `resources/js/Pages/{Auth,Student,Teacher,Testing}/` |
+| Components | `resources/js/Components/` |
+| Hooks | `resources/js/hooks/` |
 
 ## Data Flow
 
-Teacher
-↓
-Controller
-↓
-Service
-↓
-Models
-↓
-Database
+```
+Action → Controller → Service → Model → DB → Inertia Response → React Page
+```
 
-## Principles
+## Key Decisions
 
-Reuse existing code.
+| Decision | Rationale |
+|---|---|
+| Denormalized stats on `StudentProfile` | Avoid JOIN-heavy aggregations on dashboard |
+| Progress overwritten, not versioned | Only `game_sessions` is append-only |
+| Morph map for modules | `'word' → WordModule`, `'paragraph' → ParagraphModule` |
+| Synchronous email | No queue infrastructure |
 
-Prefer Laravel conventions.
+## Auth Flow
 
-Avoid duplicate business logic.
+```
+Guest → Login → Student: 5-step onboarding → Dashboard
+               → Teacher: Dashboard (no onboarding)
+```

@@ -1,15 +1,20 @@
 {
   "$schema": "https://opencode.ai/config.json",
 
-  "instructions": [
-    "my-app/docs/RULES.md",
-    "my-app/docs/AGENTS.md"
-  ],
+  "instructions": [],
+
+  "references": {
+    "docs": {
+      "path": "my-app/docs",
+      "description": "Project documentation: architecture, conventions, database, deployment, gameplay, gamification, modules, reports, rules, developer guide"
+    }
+  },
   "plugin": [
     "opencode-history-search",
     "opencode-web-fetch",
     "opencode-notifier",
-    "opencode-wakatime"
+    "opencode-wakatime",
+    "@dietrichgebert/ponytail"
   ],
 
   "permission": {

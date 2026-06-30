@@ -1,24 +1,39 @@
 # Conventions
 
-## PHP
+> Version 1.0
 
-- Follow Laravel naming.
-- Keep methods focused.
-- Avoid unnecessary comments.
+## PHP / Laravel
 
-## React
+- Laravel naming: snake_case tables, camelCase methods, singular models.
+- One responsibility per method.
+- Comments explain _why_, not _what_.
+- Reusable logic in Services, not Controllers.
+- Validation: Form Requests. Auth: Policies.
 
-- Plain JSX.
-- Prefer local state.
-- Reuse components.
+## React / Inertia
+
+- Plain JSX, functional components.
+- Local state (`useState`). No global state.
+- Reuse from `resources/js/Components/`.
+- Pages: `resources/js/Pages/{Student,Teacher,Auth}/`.
+- Hooks: `resources/js/hooks/`.
+- Forms: `router.post` / `router.put`.
 
 ## Files
 
 - One responsibility per file.
-- Follow existing folder structure.
+- Models in `app/Models/`, controllers in `app/Http/Controllers/`, services in `app/Services/`.
 
-## Comments
+## Database
 
-Explain why.
+- New field: migration → `$fillable` → controller response.
+- Morph maps: `AppServiceProvider::boot()`.
 
-Never explain obvious code.
+## Testing
+
+- `RefreshDatabase`. SQLite in-memory. Mail driver: `array`.
+
+## General
+
+- Extend before create.
+- After each task: list files changed + what changed + untouched + follow-up.

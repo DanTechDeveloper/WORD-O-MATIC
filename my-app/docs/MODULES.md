@@ -1,18 +1,36 @@
 # Modules
 
-Teachers
+> Version 1.0
 
-- Create
-- Publish
-- Archive
+## Structure
 
-Students
+| Type | Count | Content |
+|---|---|---|
+| Word modules | 10 | 10 words each, progressive difficulty |
+| Paragraph modules | 10 | Paragraph-based, progressive difficulty |
 
-- View assignments
-- Complete modules
+Seeded via `DatabaseSeeder`.
+
+## Teacher
+
+| Action | Route |
+|---|---|
+| View word modules | `GET /teacher/wordModules` |
+| View paragraph modules | `GET /teacher/paragraphModules` |
+| Update word modules | `PUT /teacher/wordModules` |
+| Update paragraph modules | `PUT /teacher/paragraphModules` |
+
+## Student
+
+| View | Route |
+|---|---|
+| Read levels | `/student/readModeLevels` |
+| Speak levels | `/student/speakModeLevels` |
+
+Status mapped by `LevelService`: `locked`, `current`, `in_progress`, `completed`.
 
 ## Rules
 
-Modules may have deadlines.
-
-Completed modules cannot be replayed unless allowed.
+- Sequential — no skipping.
+- Deadlines set by teacher in Reports.
+- Completed modules not replayable unless conditions met.
