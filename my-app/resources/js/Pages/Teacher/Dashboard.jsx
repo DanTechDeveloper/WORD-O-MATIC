@@ -214,13 +214,7 @@ export default function Dashboard({
                             </tr>
                         </thead>
                         <tbody className="divide-y-2 divide-slate-800/50">
-                            {sectionPerformance
-                                .filter(
-                                    (item) =>
-                                        !selectedSection ||
-                                        item.section === selectedSection,
-                                )
-                                .map((item, idx) => (
+                            {sectionPerformance.map((item, idx) => (
                                     <tr
                                         key={idx}
                                         className="hover:bg-slate-900/50 transition-all"
