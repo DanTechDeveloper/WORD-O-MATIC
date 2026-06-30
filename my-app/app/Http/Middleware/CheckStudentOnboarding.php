@@ -16,7 +16,9 @@ class CheckStudentOnboarding
         $user = $request->user();
 
         if ($user && $user->role === 'student') {
-            $hasAvatar = $user->student && ! empty($user->student->avatar);
+            $avatar = $user->student?->avatar;
+            $defaults = ['/images/boy.svg', '/images/girl.svg'];
+            $hasAvatar = $avatar && ! in_array($avatar, $defaults);
         }
 
         // Scenario: New student or student without an avatar
