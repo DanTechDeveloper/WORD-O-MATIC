@@ -110,16 +110,28 @@
                                     Keep up the fantastic work!
                                 </p>
                             </div>
-                        @else
-                            <div style="background:#450a0a;border:2px solid #ef4444;border-radius:16px;padding:24px;margin-bottom:32px">
-                                <h2 style="color:#fca5a5;font-size:14px;font-weight:900;text-transform:uppercase;letter-spacing:1px;margin:0 0 12px">
+                        @elseif ($data['status'] === 'support')
+                            <div style="background:#451a03;border:2px solid #f59e0b;border-radius:16px;padding:24px;margin-bottom:32px">
+                                <h2 style="color:#fbbf24;font-size:14px;font-weight:900;text-transform:uppercase;letter-spacing:1px;margin:0 0 12px">
                                     Recommended Interventions
                                 </h2>
-                                <ul style="margin:0;padding-left:20px;color:#fecaca;font-size:14px;line-height:1.8">
+                                <ul style="margin:0;padding-left:20px;color:#fef3c7;font-size:14px;line-height:1.8">
                                     <li>Practice 15 minutes daily on Word Blast levels 1-{{ $data['read_level'] }}</li>
-                                    <li>Review flashcards for the words listed above</li>
-                                    <li>Encourage daily reading at home</li>
-                                    <li>Schedule a 1-on-1 session with the teacher</li>
+                                    <li>Review the training words listed above with your child</li>
+                                    <li>Encourage your child to read aloud at home for 10 minutes a day</li>
+                                    <li>Check in with the teacher for progress tips</li>
+                                </ul>
+                            </div>
+                        @elseif ($data['status'] === 'atRisk')
+                            <div style="background:#450a0a;border:2px solid #ef4444;border-radius:16px;padding:24px;margin-bottom:32px">
+                                <h2 style="color:#fca5a5;font-size:14px;font-weight:900;text-transform:uppercase;letter-spacing:1px;margin:0 0 12px">
+                                    Urgent Interventions Needed
+                                </h2>
+                                <ul style="margin:0;padding-left:20px;color:#fecaca;font-size:14px;line-height:1.8">
+                                    <li>Schedule a 1-on-1 session with the teacher as soon as possible</li>
+                                    <li>Practice Word Blast levels 1-{{ $data['read_level'] }} for 15-20 minutes daily</li>
+                                    <li>Review flashcards for the training words listed above</li>
+                                    <li>Read short stories together every day</li>
                                 </ul>
                             </div>
                         @endif
