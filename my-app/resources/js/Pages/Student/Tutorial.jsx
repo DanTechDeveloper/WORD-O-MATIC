@@ -154,7 +154,7 @@ export default function Tutorial() {
                             </div>
 
                             <h2 className="text-white text-5xl md:text-7xl lg:text-8xl font-black italic uppercase tracking-tighter mb-4">
-                                WORD BLAST{" "}
+                                WORD BLA ST{" "}
                                 <span className="text-purple-500">MODE</span>
                             </h2>
                             <p className="text-zinc-400 text-lg md:text-2xl font-bold uppercase tracking-[0.2em] max-w-sm">
@@ -298,9 +298,19 @@ export default function Tutorial() {
                             slug: 'tutorial-complete',
                         }}
                         show={true}
-                        onContinue={() => router.post("/student/tutorial/complete")}
+                        onContinue={() => setShowBadgeModal(false)}
                     />
                 )}
+
+                <div className={`fixed bottom-8 left-0 right-0 z-40 flex justify-center transition-all duration-500 ${guideDone && allPracticeDone && !showBadgeModal ? "" : "opacity-0 pointer-events-none"}`}>
+                    <button
+                        onClick={() => router.post("/student/tutorial/complete")}
+                        className="bg-lime-400 hover:bg-lime-300 text-zinc-950 px-10 py-4 rounded-2xl font-black text-lg tracking-widest uppercase transition-all hover:scale-105 active:scale-95 flex items-center gap-3 shadow-2xl shadow-lime-400/25 cursor-pointer"
+                    >
+                        Continue to Dashboard
+                        <span className="text-2xl">🏠</span>
+                    </button>
+                </div>
             </main>
         </div>
     );

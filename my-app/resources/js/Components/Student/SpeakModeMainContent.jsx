@@ -12,6 +12,7 @@ const SpeakModeMainContent = memo(function SpeakModeMainContent({
     streak,
     feedbackType,
     feedbackMessage,
+    streakShake,
 }) {
     const isActive = gameState === "ACTIVE";
 
@@ -80,34 +81,6 @@ const SpeakModeMainContent = memo(function SpeakModeMainContent({
                 </div>
             ) : (
                 <div className="flex-1 flex flex-col relative">
-                    {streak > 0 && (
-                        <div
-                            key={`streak-${streak}`}
-                            className="absolute top-8 left-1/2 z-30 animate-streak-bounce-in"
-                            style={{ transform: "translateX(-50%)" }}
-                        >
-                            <div className="flex items-center gap-1.5 sm:gap-2 bg-gradient-to-r from-amber-500/20 to-orange-600/20 backdrop-blur-sm rounded-full px-3 sm:px-4 py-1.5 sm:py-2 border border-amber-400/40 shadow-lg shadow-amber-500/20 animate-streak-glow">
-                                <span
-                                    className="material-symbols-outlined text-xl sm:text-2xl"
-                                    style={{
-                                        color:
-                                            streak >= 5
-                                                ? "#ff4444"
-                                                : streak >= 3
-                                                  ? "#ff8800"
-                                                  : "#ffcc00",
-                                        filter: `drop-shadow(0 0 6px ${streak >= 5 ? "#ff444488" : streak >= 3 ? "#ff880088" : "#ffcc0088"})`,
-                                    }}
-                                >
-                                    local_fire_department
-                                </span>
-                                <span className="text-lg sm:text-xl font-black text-white">
-                                    {streak}
-                                </span>
-                            </div>
-                        </div>
-                    )}
-
                     <div className="flex-1 flex items-center justify-center px-4 sm:px-8 py-16">
                         {isActive && isExploding && (
                             <div
@@ -121,13 +94,13 @@ const SpeakModeMainContent = memo(function SpeakModeMainContent({
                         )}
 
                         <div className="relative w-full max-w-5xl">
-                            {feedbackType && (
-                                <div className="absolute -top-12 left-1/2 -translate-x-1/2 animate-feedback-pop text-center z-10 whitespace-nowrap">
+                            <div className="flex items-center justify-center gap-4 mb-4">
+                                {feedbackType && (
                                     <span
-                                        className={`font-black italic ${
+                                        className={`font-black italic whitespace-nowrap ${
                                             feedbackType === "correct"
-                                                ? "text-3xl sm:text-4xl text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-amber-400 to-orange-500"
-                                                : "text-2xl sm:text-3xl text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-sky-400 to-blue-500"
+                                                ? "text-xl sm:text-2xl md:text-3xl text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-amber-400 to-orange-500"
+                                                : "text-lg sm:text-xl md:text-2xl text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-sky-400 to-blue-500"
                                         }`}
                                         style={{
                                             filter:
@@ -142,23 +115,32 @@ const SpeakModeMainContent = memo(function SpeakModeMainContent({
                                     >
                                         {feedbackMessage}
                                     </span>
-                                </div>
-                            )}
+                                )}
 
-                            {showPointsFeedback && (
-                                <div
-                                    className="absolute -top-10 left-1/2 -translate-x-1/2 animate-float-score text-3xl sm:text-4xl font-black italic z-10 whitespace-nowrap"
-                                    style={{
-                                        color: "#FFCC00",
-                                        textShadow: "4px 4px 0px rgba(0,0,0,0.5)",
-                                        WebkitTextStroke: "2px #827717",
-                                    }}
-                                >
-                                    +{pointsFeedbackValue}
-                                </div>
-                            )}
+                                {feedbackType === "correct" && (
+                                    <div className="flex items-center gap-1 bg-gradient-to-r from-amber-500/20 to-orange-600/20 backdrop-blur-sm rounded-full px-2.5 py-1 sm:px-3 sm:py-1.5 border border-amber-400/40 shadow-lg shadow-amber-500/20">
+                                        <span
+                                            className="material-symbols-outlined text-lg sm:text-xl"
+                                            style={{
+                                                color:
+                                                    streak >= 5
+                                                        ? "#ff4444"
+                                                        : streak >= 3
+                                                          ? "#ff8800"
+                                                          : "#ffcc00",
+                                                filter: `drop-shadow(0 0 6px ${streak >= 5 ? "#ff444488" : streak >= 3 ? "#ff880088" : "#ffcc0088"})`,
+                                            }}
+                                        >
+                                            local_fire_department
+                                        </span>
+                                        <span className="text-base sm:text-lg md:text-xl font-black text-white">
+                                            {streak}
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
 
-                            <div className={`font-headline-xl text-left leading-relaxed tracking-tight select-none text-4xl md:text-5xl lg:text-6xl flex flex-wrap gap-x-4 gap-y-3 ${isMispronounced ? "animate-shake" : ""}`}>
+                            <div className={`font-headline-xl text-left leading-relaxed tracking-tight select-none text-4xl md:text-5xl lg:text-6xl flex flex-wrap gap-x-4 gap-y-3 ${isMispronounced ? "animate-shake" : ""} ${streakShake ? `animate-streak-shake-${streakShake}` : ""}`}>
                                 {words.map((word, index) => (
                                     <span
                                         key={index}
@@ -175,6 +157,19 @@ const SpeakModeMainContent = memo(function SpeakModeMainContent({
                                 ))}
                             </div>
                         </div>
+
+                        {showPointsFeedback && (
+                            <div
+                                className="absolute -top-10 left-1/2 -translate-x-1/2 animate-float-score text-3xl sm:text-4xl font-black italic z-10 whitespace-nowrap"
+                                style={{
+                                    color: "#FFCC00",
+                                    textShadow: "4px 4px 0px rgba(0,0,0,0.5)",
+                                    WebkitTextStroke: "2px #827717",
+                                }}
+                            >
+                                +{pointsFeedbackValue}
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

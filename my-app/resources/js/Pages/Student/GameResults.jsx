@@ -1,7 +1,50 @@
 import { Link, usePage } from "@inertiajs/react";
 import { useState } from "react";
-import BadgeCard from "@/Components/Student/BadgeCard";
 import BadgeUnlockModal from "@/Components/Student/BadgeUnlockModal";
+
+function Stars({ filled, total }) {
+    return (
+        <div className="flex justify-center gap-2">
+            {Array.from({ length: total }, (_, i) => (
+                <span
+                    key={i}
+                    className={`text-4xl sm:text-5xl ${i < filled ? "opacity-100" : "opacity-20"}`}
+                >
+                    ⭐
+                </span>
+            ))}
+        </div>
+    );
+}
+
+function NextBadge({ badge }) {
+    const pct = badge.threshold > 0 ? Math.min((badge.current_value / badge.threshold) * 100, 100) : 0;
+    const nearComplete = pct >= 80;
+    return (
+        <div className="bg-surface-container rounded-2xl p-5 border border-surface-variant/20 flex items-center gap-4">
+            <div className="w-16 h-16 bg-primary/10 rounded-xl flex items-center justify-center text-4xl flex-shrink-0 border border-primary/20">
+                {badge.icon}
+            </div>
+            <div className="flex-1 min-w-0">
+                <div className="text-base font-bold text-on-surface mb-2 truncate">
+                    Next: {badge.name}
+                </div>
+                <div className="h-4 bg-background rounded-full overflow-hidden border border-surface-variant/10">
+                    <div
+                        className="h-full rounded-full transition-all duration-1000"
+                        style={{
+                            width: `${pct}%`,
+                            background: nearComplete
+                                ? "linear-gradient(90deg, #d1bcff, #bcff00)"
+                                : "linear-gradient(90deg, #d1bcff, #7000ff)",
+                        }}
+                    />
+                </div>
+            </div>
+            {nearComplete && <span className="text-2xl">✨</span>}
+        </div>
+    );
+}
 
 export default function GameResults({
     session,
@@ -9,135 +52,95 @@ export default function GameResults({
     totalItems,
     badgeProgress,
 }) {
-    const accuracy = session.accuracy;
-    const isPerfect = parseFloat(accuracy) >= 100;
+    const score = Math.min(parseInt(session.score) || 0, totalItems);
+    const isPerfect = score >= totalItems;
     const { flash } = usePage().props;
-    const newBadgeSlug = flash?.new_badge?.slug;
+    const newBadgeSlugs = flash?.new_badges?.map(b => b.slug) ?? [];
+    const newBadges = badgeProgress?.filter(b => newBadgeSlugs.includes(b.slug)) ?? [];
+    const [badgeIndex, setBadgeIndex] = useState(0);
 
-    const hasNewBadge = badgeProgress?.some((b) => newBadgeSlug === b.slug);
-    const newBadge = hasNewBadge
-        ? badgeProgress?.find((b) => newBadgeSlug === b.slug)
-        : null;
+    const nextBadge = badgeProgress?.filter((b) => !b.is_earned).sort((a, b) => {
+        const ap = a.threshold > 0 ? (a.current_value / a.threshold) : 0;
+        const bp = b.threshold > 0 ? (b.current_value / b.threshold) : 0;
+        return bp - ap;
+    })[0] ?? null;
 
-    const [step, setStep] = useState(0);
-
-
-
-    const activeBadges = badgeProgress?.filter((b) => !b.is_earned) ?? [];
-
-    /* ───────── results view (shared by both scenarios) ───────── */
-    const renderResultsView = (badgeHeading) => (
+    const renderResults = () => (
         <div className="bg-background text-on-background font-body-md">
-            <div className="relative min-h-[calc(100vh-6rem)] flex flex-col items-center justify-center py-12 px-4">
+            <div className="relative min-h-screen flex flex-col items-center justify-center px-6 py-12">
                 <div className="absolute top-1/2 left-1/4 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-primary/10 blur-[120px] rounded-full -z-10 animate-pulse" />
 
-                <div className="w-full max-w-7xl mx-auto flex flex-col gap-8">
-                    {/* Stats */}
+                {isPerfect && (
+                    <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
+                        {["🎉","⭐","✨","🌟","🎊","💫","🔥"].map((e, i) => (
+                            <span
+                                key={i}
+                                className="absolute text-3xl animate-bounce"
+                                style={{
+                                    left: `${10 + i * 12}%`,
+                                    top: `${-10 - i * 5}%`,
+                                    animationDelay: `${i * 0.15}s`,
+                                    animationDuration: `${1 + (i % 3) * 0.5}s`,
+                                }}
+                            >
+                                {e}
+                            </span>
+                        ))}
+                    </div>
+                )}
+                <div className="w-full max-w-lg mx-auto flex flex-col gap-8 animate-fade-in">
                     <div className="text-center">
-                        <h1 className="text-6xl md:text-7xl font-black text-secondary-container tracking-tighter drop-shadow-[4px_4px_0px_#3c0090] mb-3 uppercase leading-none">
-                            🚀{" "}
-                            {isPerfect
-                                ? "MISSION PERFECT!"
-                                : "MISSION COMPLETE!"}
+                        <h1 className="text-6xl sm:text-7xl font-black text-primary uppercase leading-tight">
+                            {isPerfect ? "PERFECT!" : "GREAT JOB!"}
                         </h1>
-                        <p className="text-xl md:text-2xl font-bold text-primary tracking-wide uppercase">
+                        <p className="text-lg font-bold text-on-surface-variant uppercase tracking-wider mt-2">
                             {moduleTitle}
                         </p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="bg-surface-container p-8 border-4 border-primary-container rounded-[2rem] neo-brutal-shadow-purple">
-                            <span className="font-label-bold text-on-surface-variant mb-4 block uppercase tracking-widest italic">
-                                🏆 TOTAL SCORE
-                            </span>
-                            <div className="text-[80px] md:text-[110px] font-black text-white leading-none tracking-tighter inline-block">
-                                {session.score}
-                                <span className="text-primary-container">
-                                    {" "}
-                                    / {totalItems}
-                                </span>
+                    <Stars filled={score} total={totalItems} />
+
+                    <div className="flex gap-4">
+                        <div className="flex-1 bg-surface-container rounded-2xl py-6 px-4 text-center border border-surface-variant/20">
+                            <div className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1">
+                                Score
+                            </div>
+                            <div className="text-5xl sm:text-6xl font-black text-lime-400">
+                                {score}
                             </div>
                         </div>
-
-                        <div className="bg-surface-container p-6 border-4 border-on-tertiary-fixed-variant rounded-[2rem] neo-brutal-shadow-lime flex items-center justify-between gap-6">
-                            <div className="shrink-0">
-                                <span className="font-label-bold text-on-surface-variant block mb-1 uppercase text-xs italic tracking-widest">
-                                    🎯 Accuracy Rate
-                                </span>
-                                <div className="text-6xl font-black text-[#bcff00] italic drop-shadow-[3px_3px_0px_#1a3300]">
-                                    {accuracy}%
-                                </div>
+                        <div className="flex-1 bg-surface-container rounded-2xl py-6 px-4 text-center border border-surface-variant/20">
+                            <div className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1">
+                                Total
                             </div>
-                            <div className="flex-1">
-                                <div className="w-full h-4 bg-surface-container-highest rounded-full overflow-hidden border-2 border-black">
-                                    <div
-                                        className="h-full bg-[#bcff00] transition-all duration-1000"
-                                        style={{ width: `${accuracy}%` }}
-                                    ></div>
-                                </div>
-                                <div className="mt-2 flex items-center gap-2 text-tertiary text-xs font-black uppercase tracking-widest">
-                                    <span className="material-symbols-outlined text-sm">
-                                        bolt
-                                    </span>
-                                    FAST REFLEXES!
-                                </div>
+                            <div className="text-5xl sm:text-6xl font-black text-on-surface">
+                                {totalItems}
                             </div>
                         </div>
                     </div>
 
-                    {/* Badge Progress */}
-                    {activeBadges.length > 0 && (
-                        <section className="bg-surface-container p-6 border-4 border-slate-900 rounded-[2.5rem] shadow-[8px_8px_0_0_#0f172a]">
-                            <h2 className="font-headline-sm text-primary tracking-wide mb-6 uppercase text-center flex items-center gap-3 justify-center">
-                                <span className="material-symbols-outlined text-3xl">
-                                    stars
-                                </span>
-                                ✨ {badgeHeading}
-                            </h2>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                {activeBadges.map((badge) =>
-                                    <BadgeCard key={badge.slug} badge={badge} compact />,
-                                )}
-                            </div>
-                        </section>
-                    )}
+                    <div className="text-center text-xl sm:text-2xl font-bold text-lime-400">
+                        😊 {isPerfect ? "Amazing!" : "You're doing great!"}
+                    </div>
 
-                    {/* Action Buttons */}
-                    <div className="flex flex-col justify-center items-center sm:flex-row gap-4 w-full">
+                    {nextBadge && <NextBadge badge={nextBadge} />}
+
+                    <div className="flex gap-4">
                         <button
                             onClick={() =>
                                 (window.location.href =
                                     window.location.origin +
                                     `/student/gameplay${session.module_type === "word" ? "Read" : "Speak"}Mode/${session.module_id}`)
                             }
-                            className="flex-1 bg-tertiary text-on-tertiary-fixed font-headline-sm py-5 rounded-2xl border-4 border-black neo-brutal-shadow-orange flex items-center justify-center gap-3 active:translate-x-1 active:translate-y-1 active:shadow-none transition-all hover:bg-tertiary-fixed"
+                            className="flex-1 bg-surface-container-high text-on-surface font-bold py-5 rounded-2xl border border-surface-variant/20 text-base uppercase tracking-wider active:scale-[0.97] transition-all hover:bg-surface-container-highest"
                         >
-                            <span className="material-symbols-outlined">
-                                refresh
-                            </span>
-                            RETRY
+                            🔄 Again
                         </button>
                         <Link
                             href="/student/dashboard"
-                            className="flex-1 bg-primary text-white font-headline-sm py-5 rounded-2xl border-4 border-black neo-brutal-shadow-purple flex items-center justify-center gap-3 active:translate-x-1 active:translate-y-1 active:shadow-none transition-all hover:brightness-110"
+                            className="flex-1 bg-primary text-on-primary font-bold py-5 rounded-2xl border border-surface-variant/20 text-base uppercase tracking-wider active:scale-[0.97] transition-all hover:brightness-110 text-center"
                         >
-                            <span className="material-symbols-outlined">
-                                map
-                            </span>
-                            BACK TO MAP
-                        </Link>
-                        <Link
-                            href={
-                                session.module_type === "word"
-                                    ? "/student/readModeLevels"
-                                    : "/student/speakModeLevels"
-                            }
-                            className="flex-1 bg-primary-container text-white font-headline-sm py-5 rounded-2xl border-4 border-black neo-brutal-shadow-purple flex items-center justify-center gap-3 active:translate-x-1 active:translate-y-1 active:shadow-none transition-all hover:brightness-110"
-                        >
-                            <span className="material-symbols-outlined">
-                                home
-                            </span>
-                            MENU
+                            🏠 Home
                         </Link>
                     </div>
                 </div>
@@ -145,26 +148,17 @@ export default function GameResults({
         </div>
     );
 
-    /* ══════ WALANG BAGONG BADGE ══════ */
-    if (!hasNewBadge) {
-        return renderResultsView("QUEST PROGRESS");
-    }
-
-    /* ══════ MAY BAGONG BADGE ══════ */
-
-    /* Step 0: Celebration */
-    if (step === 0) {
+    if (newBadges.length > 0 && badgeIndex < newBadges.length) {
         return (
             <div className="bg-background text-on-background font-body-md">
                 <BadgeUnlockModal
-                    badge={newBadge}
+                    badge={newBadges[badgeIndex]}
                     show={true}
-                    onContinue={() => setStep(1)}
+                    onContinue={() => setBadgeIndex(i => i + 1)}
                 />
             </div>
         );
     }
 
-    /* Step 1: Results with badge progress */
-    return renderResultsView("YOUR NEXT TO ACHIEVE");
+    return renderResults();
 }

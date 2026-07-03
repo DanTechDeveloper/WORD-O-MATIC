@@ -94,9 +94,14 @@ const BADGE_UI_CONFIG = {
 };
 
 export default function Badges({ badges }) {
-    // 1. Map dynamic badges from the backend response
     const dynamicAchievements = (badges || []).map((badge) => {
         const ui = BADGE_UI_CONFIG[badge.slug] || BADGE_UI_CONFIG.default;
+        const hasThreshold = badge.threshold != null && badge.current_value != null;
+        const progress = badge.is_earned
+            ? 100
+            : hasThreshold
+                ? Math.min((badge.current_value / badge.threshold) * 100, 100)
+                : 0;
         return {
             id: badge.id,
             slug: badge.slug,
@@ -104,46 +109,18 @@ export default function Badges({ badges }) {
             description: badge.description,
             requirement: badge.requirement,
             icon: ui.icon,
-            progress: badge.is_earned ? 100 : 0,
+            progress,
             isLocked: !badge.is_earned,
             statusLabel: ui.statusLabel,
             colors: ui.colors,
+            hasThreshold,
+            currentValue: badge.current_value,
+            threshold: badge.threshold,
         };
     });
 
-    // 2. Keep the other hardcoded ones that aren't in the response yet
-    // These will be removed once your backend provides them in the 'badges' prop
-    const legacyHardcoded = [
-        {
-            id: "tutorial-completion",
-            title: "Tutorial Master",
-            description: "Completed both tutorial modes",
-            requirement: "Learn the basics of Read and Speak modes.",
-            ...BADGE_UI_CONFIG["tutorial-completion"],
-            progress: 100,
-            isLocked: false,
-        },
-        {
-            id: "on-fire",
-            title: "On Fire",
-            description: "5 correct words in a row",
-            requirement: "Keep the momentum going for 5 correct words.",
-            ...BADGE_UI_CONFIG["on-fire"],
-            progress: 80,
-            isLocked: true,
-        },
-        // Add any others here...
-    ].filter((h) => !dynamicAchievements.some((d) => d.slug === h.id));
-
-    // 3. Separate earned vs locked for ordered sections
-    const earnedAchievements = [
-        ...dynamicAchievements,
-        ...legacyHardcoded,
-    ].filter((b) => !b.isLocked);
-    const lockedAchievements = [
-        ...dynamicAchievements,
-        ...legacyHardcoded,
-    ].filter((b) => b.isLocked);
+    const earnedAchievements = dynamicAchievements.filter((b) => !b.isLocked);
+    const lockedAchievements = dynamicAchievements.filter((b) => b.isLocked);
 
     return (
         <DashboardLayout>
@@ -265,10 +242,11 @@ export default function Badges({ badges }) {
                                             {badge.requirement}
                                         </p>
                                     </div>
+                                    {badge.hasThreshold && (
                                     <div class="w-full">
                                         <div class="flex justify-between text-xs font-bold text-on-surface-variant mb-1">
                                             <span>Progress</span>
-                                            <span>{badge.progress}%</span>
+                                            <span>{badge.currentValue}/{badge.threshold}</span>
                                         </div>
                                         <div class="w-full bg-slate-900 h-4 rounded-full border-2 border-purple-900 overflow-hidden">
                                             <div
@@ -281,6 +259,7 @@ export default function Badges({ badges }) {
                                             ></div>
                                         </div>
                                     </div>
+                                    )}
                                 </div>
                             </div>
                         ))}

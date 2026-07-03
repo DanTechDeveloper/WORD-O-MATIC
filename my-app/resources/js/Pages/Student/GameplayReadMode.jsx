@@ -86,10 +86,6 @@ export default function GameplayReadMode({ module }) {
         onRecognitionError: (err) => console.error("Recognition error:", err),
     });
 
-    const shakeClass = streakShake
-        ? `animate-streak-shake-${streakShake}`
-        : "";
-
     const headerProps = {
         level: module ? `${module.level} - ${module.title}` : "",
         isActive: gameState === "ACTIVE",
@@ -102,7 +98,7 @@ export default function GameplayReadMode({ module }) {
     };
 
     return (
-        <div className={`bg-background text-on-background font-body-md h-screen flex flex-col overflow-x-hidden ${shakeClass}`}>
+        <div className="bg-background text-on-background font-body-md h-screen flex flex-col overflow-x-hidden">
             <DeniedModal gameState={gameState} />
             <GameplayHeader {...headerProps} />
             <ReadModeMainContent
@@ -118,6 +114,7 @@ export default function GameplayReadMode({ module }) {
                 feedbackType={feedbackType}
                 feedbackMessage={feedbackMessage}
                 isWordReady={isWordReady}
+                streakShake={streakShake}
             />
             {gameState === "IDLE" && (
                 <TapToStartOverlay color="lime" permissionState={permissionState} />

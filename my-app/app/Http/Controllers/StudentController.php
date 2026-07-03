@@ -143,9 +143,26 @@ class StudentController extends Controller
     public function badges()
     {
         $user = auth()->user();
+        $student = $user->student;
+
         $badges = Badges::withExists(['users as is_earned' => function ($query) use ($user) {
             $query->where('student_badges.user_id', $user->id);
-        }])->get();
+        }])->get()->map(function ($badge) use ($user, $student) {
+            $badge->threshold = $badge->threshold_score;
+
+            if ($badge->threshold_score !== null) {
+                $badge->current_value = match ($badge->metric) {
+                    'total_points' => $student ? $student->points : 0,
+                    'streak' => GameSession::where('user_id', $user->id)->max('streak') ?? 0,
+                    'accuracy' => GameSession::where('user_id', $user->id)->max('accuracy') ?? 0,
+                    default => 0,
+                };
+            } else {
+                $badge->current_value = null;
+            }
+
+            return $badge;
+        });
 
         return Inertia::render('Student/Badges', [
             'badges' => $badges,
@@ -198,13 +215,16 @@ class StudentController extends Controller
         $newBadges = $this->badgeService->checkGameplayBadges($user, $session->id, $accuracy);
 
         if (! empty($newBadges)) {
-            $badge = $newBadges[0];
-            $redirect->with('new_badge', [
-                'name' => $badge->name,
-                'description' => $badge->description,
-                'slug' => $badge->slug,
-                'icon' => $badge->icon,
-            ]);
+            $badgesData = [];
+            foreach ($newBadges as $badge) {
+                $badgesData[] = [
+                    'name' => $badge->name,
+                    'description' => $badge->description,
+                    'slug' => $badge->slug,
+                    'icon' => $badge->icon,
+                ];
+            }
+            $redirect->with('new_badges', $badgesData);
         }
 
         return $redirect;
@@ -289,13 +309,16 @@ class StudentController extends Controller
         $newBadges = $this->badgeService->checkGameplayBadges($user, $session->id, $accuracy);
 
         if (! empty($newBadges)) {
-            $badge = $newBadges[0];
-            $redirect->with('new_badge', [
-                'name' => $badge->name,
-                'description' => $badge->description,
-                'slug' => $badge->slug,
-                'icon' => $badge->icon,
-            ]);
+            $badgesData = [];
+            foreach ($newBadges as $badge) {
+                $badgesData[] = [
+                    'name' => $badge->name,
+                    'description' => $badge->description,
+                    'slug' => $badge->slug,
+                    'icon' => $badge->icon,
+                ];
+            }
+            $redirect->with('new_badges', $badgesData);
         }
 
         return $redirect;

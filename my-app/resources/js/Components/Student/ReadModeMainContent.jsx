@@ -23,6 +23,7 @@ const ReadModeMainContent = memo(function ReadModeMainContent({
     feedbackType,
     feedbackMessage,
     isWordReady,
+    streakShake,
 }) {
     const isActive = gameState === "ACTIVE";
     const word = words?.[currentIndex];
@@ -150,44 +151,53 @@ const ReadModeMainContent = memo(function ReadModeMainContent({
                             transform: "translateX(-50%)",
                         }}
                     >
-                        {feedbackType && (
-                            <div className="absolute -top-14 sm:-top-16 md:-top-20 animate-feedback-from-word text-center w-full px-2">
-                                <span
-                                    className={`font-black italic ${
-                                        feedbackType === "correct"
-                                            ? "text-3xl sm:text-4xl md:text-5xl text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-amber-400 to-orange-500"
-                                            : "text-2xl sm:text-3xl md:text-4xl text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-sky-400 to-blue-500"
-                                    }`}
-                                    style={{
-                                        filter:
+                        <div className={`relative ${isMispronounced ? "animate-shake" : ""} ${streakShake ? `animate-streak-shake-${streakShake}` : ""}`}>
+                            <div className="flex items-center justify-center gap-4 mb-2">
+                                {feedbackType && (
+                                    <span
+                                        className={`font-black italic ${
                                             feedbackType === "correct"
-                                                ? "drop-shadow(0 0 20px rgba(255,200,0,0.5)) drop-shadow(0 2px 2px rgba(0,0,0,0.3))"
-                                                : "drop-shadow(0 0 16px rgba(34,211,238,0.4)) drop-shadow(0 2px 2px rgba(0,0,0,0.3))",
-                                        WebkitTextStroke:
-                                            feedbackType === "correct"
-                                                ? "1.5px #92400e"
-                                                : "1.5px #075985",
-                                    }}
-                                >
-                                    {feedbackMessage}
-                                </span>
-                            </div>
-                        )}
+                                                ? "text-xl sm:text-2xl md:text-3xl text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-amber-400 to-orange-500"
+                                                : "text-lg sm:text-xl md:text-2xl text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-sky-400 to-blue-500"
+                                        }`}
+                                        style={{
+                                            filter:
+                                                feedbackType === "correct"
+                                                    ? "drop-shadow(0 0 20px rgba(255,200,0,0.5)) drop-shadow(0 2px 2px rgba(0,0,0,0.3))"
+                                                    : "drop-shadow(0 0 16px rgba(34,211,238,0.4)) drop-shadow(0 2px 2px rgba(0,0,0,0.3))",
+                                            WebkitTextStroke:
+                                                feedbackType === "correct"
+                                                    ? "1.5px #92400e"
+                                                    : "1.5px #075985",
+                                        }}
+                                    >
+                                        {feedbackMessage}
+                                    </span>
+                                )}
 
-                        {showPointsFeedback && (
-                            <div
-                                className="absolute -top-12 sm:-top-14 md:-top-16 animate-float-score text-3xl sm:text-4xl md:text-6xl font-black italic"
-                                style={{
-                                    color: "#FFCC00",
-                                    textShadow: "4px 4px 0px rgba(0,0,0,0.5)",
-                                    WebkitTextStroke: "2px #827717",
-                                }}
-                            >
-                                +{pointsFeedbackValue}
+                                {feedbackType === "correct" && (
+                                    <div className="flex items-center gap-1 bg-gradient-to-r from-amber-500/20 to-orange-600/20 backdrop-blur-sm rounded-full px-2.5 py-1 sm:px-3 sm:py-1.5 border border-amber-400/40 shadow-lg shadow-amber-500/20">
+                                        <span
+                                            className="material-symbols-outlined text-lg sm:text-xl"
+                                            style={{
+                                                color:
+                                                    streak >= 5
+                                                        ? "#ff4444"
+                                                        : streak >= 3
+                                                          ? "#ff8800"
+                                                          : "#ffcc00",
+                                                filter: `drop-shadow(0 0 6px ${streak >= 5 ? "#ff444488" : streak >= 3 ? "#ff880088" : "#ffcc0088"})`,
+                                            }}
+                                        >
+                                            local_fire_department
+                                        </span>
+                                        <span className="text-base sm:text-lg md:text-xl font-black text-white">
+                                            {streak}
+                                        </span>
+                                    </div>
+                                )}
                             </div>
-                        )}
 
-                        <div className={`relative ${isMispronounced ? "animate-shake" : ""}`}>
                             {isExploding && (
                                 <div
                                     className="absolute inset-0 rounded-full pointer-events-none"
@@ -247,35 +257,20 @@ const ReadModeMainContent = memo(function ReadModeMainContent({
                                 })}
                             </p>
                         </div>
-                    </div>
 
-                    {streak > 0 && (
-                        <div
-                            key={`streak-${streak}`}
-                            className="absolute top-6 left-1/2 z-30 animate-streak-bounce-in"
-                            style={{ transform: "translateX(-50%)" }}
-                        >
-                            <div className="flex items-center gap-1.5 sm:gap-2 bg-gradient-to-r from-amber-500/20 to-orange-600/20 backdrop-blur-sm rounded-full px-3 sm:px-4 py-1.5 sm:py-2 border border-amber-400/40 shadow-lg shadow-amber-500/20 animate-streak-glow">
-                                <span
-                                    className="material-symbols-outlined text-xl sm:text-2xl"
-                                    style={{
-                                        color:
-                                            streak >= 5
-                                                ? "#ff4444"
-                                                : streak >= 3
-                                                  ? "#ff8800"
-                                                  : "#ffcc00",
-                                        filter: `drop-shadow(0 0 6px ${streak >= 5 ? "#ff444488" : streak >= 3 ? "#ff880088" : "#ffcc0088"})`,
-                                    }}
-                                >
-                                    local_fire_department
-                                </span>
-                                <span className="text-lg sm:text-xl md:text-2xl font-black text-white">
-                                    {streak}
-                                </span>
+                        {showPointsFeedback && (
+                            <div
+                                className="absolute -top-12 sm:-top-14 md:-top-16 animate-float-score text-3xl sm:text-4xl md:text-6xl font-black italic"
+                                style={{
+                                    color: "#FFCC00",
+                                    textShadow: "4px 4px 0px rgba(0,0,0,0.5)",
+                                    WebkitTextStroke: "2px #827717",
+                                }}
+                            >
+                                +{pointsFeedbackValue}
                             </div>
-                        </div>
-                    )}
+                        )}
+                    </div>
 
                 </>
             ) : null}

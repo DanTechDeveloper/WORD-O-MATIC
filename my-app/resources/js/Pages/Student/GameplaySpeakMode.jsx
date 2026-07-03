@@ -92,10 +92,6 @@ export default function GameplaySpeakMode({ module }) {
         matchMode: "sentence",
     });
 
-    const shakeClass = streakShake
-        ? `animate-streak-shake-${streakShake}`
-        : "";
-
     const headerProps = {
         level: module ? `${module.level} - ${module.title}` : "",
         isActive: gameState === "ACTIVE",
@@ -108,7 +104,7 @@ export default function GameplaySpeakMode({ module }) {
     };
 
     return (
-        <div className={`bg-background text-on-background font-body-md h-screen flex flex-col overflow-x-hidden ${shakeClass}`}>
+        <div className="bg-background text-on-background font-body-md h-screen flex flex-col overflow-x-hidden">
             <DeniedModal gameState={gameState} />
             <GameplayHeader {...headerProps} />
             {gameState === "IDLE" && (
@@ -126,6 +122,7 @@ export default function GameplaySpeakMode({ module }) {
                 streak={currentStreak}
                 feedbackType={feedbackType}
                 feedbackMessage={feedbackMessage}
+                streakShake={streakShake}
             />
             <div className="flex-shrink-0 relative z-50">
                 <Microphone

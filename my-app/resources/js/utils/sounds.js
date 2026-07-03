@@ -32,24 +32,6 @@ export function playMispronounceSound() {
     playAudio("/Sound Effects/mispronounced.mp3")
 }
 
-export function playTimeWarningSound() {
-    try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.frequency.value = 660;
-        gain.gain.setValueAtTime(0.2, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
-        osc.start(ctx.currentTime);
-        osc.stop(ctx.currentTime + 0.2);
-        setTimeout(() => ctx.close(), 300);
-    } catch (e) {
-        // ignore
-    }
-}
-
 export function playFeedbackSound(message) {
     const file = FEEDBACK_FILES[message]
     if (file) {
