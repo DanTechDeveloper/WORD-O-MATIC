@@ -1,8 +1,27 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
+import { usePage, Link } from "@inertiajs/react";
 import Sidebar from "../../Components/Teacher/Sidebar";
 
 export default function DashboardLayout({ children }) {
     const [isSidebarOpen, setSidebarOpen] = useState(false);
+    const [showNotifs, setShowNotifs] = useState(false);
+    const notifRef = useRef();
+
+    const { teacher } = usePage().props;
+    const alerts = teacher ? [
+        ...(!teacher.has_deadline ? [{ msg: "No report deadline set", href: "/teacher/reports", icon: "event" }] : []),
+        ...(!teacher.has_word_modules ? [{ msg: "No Word Blast modules yet", href: "/teacher/word", icon: "book" }] : []),
+        ...(!teacher.has_paragraph_modules ? [{ msg: "No Story Quest modules yet", href: "/teacher/paragraph", icon: "menu_book" }] : []),
+    ] : [];
+    const hasAlerts = alerts.length > 0;
+
+    useEffect(() => {
+        const handleClick = (e) => {
+            if (notifRef.current && !notifRef.current.contains(e.target)) setShowNotifs(false);
+        };
+        document.addEventListener("mousedown", handleClick);
+        return () => document.removeEventListener("mousedown", handleClick);
+    }, []);
 
     return (
         <>
@@ -40,9 +59,38 @@ export default function DashboardLayout({ children }) {
                 </div>
                 <div className="flex items-center gap-3 md:gap-6">
                     <div className="hidden sm:flex items-center gap-4 text-slate-400">
-                        <span className="material-symbols-outlined hover:text-purple-400 cursor-pointer active:scale-95 transition-all">
-                            notifications
-                        </span>
+                        <div ref={notifRef} className="relative">
+                            <button onClick={() => setShowNotifs(!showNotifs)} className="relative hover:text-purple-400 active:scale-95 transition-all">
+                                <span className="material-symbols-outlined">notifications</span>
+                                {hasAlerts && (
+                                    <span className="absolute -top-1 -right-1 w-3 h-3 bg-rose-500 rounded-full border-2 border-slate-950" />
+                                )}
+                            </button>
+                            {showNotifs && (
+                                <div className="absolute top-full right-0 mt-2 w-80 bg-slate-900 border-2 border-slate-800 rounded-2xl shadow-[8px_8px_0_0_#020617] overflow-hidden z-50">
+                                <div className="p-4 border-b-2 border-slate-800">
+                                    <p className="font-black text-sm text-white uppercase tracking-widest">Alerts</p>
+                                </div>
+                                {alerts.length === 0 ? (
+                                    <div className="p-6 text-center text-slate-500 text-sm font-bold">All good!</div>
+                                ) : (
+                                    <div className="divide-y divide-slate-800">
+                                        {alerts.map((a, i) => (
+                                            <Link key={i} href={a.href} className="flex items-center gap-3 p-4 hover:bg-slate-800/50 transition-colors" onClick={() => setShowNotifs(false)}>
+                                                <span className="material-symbols-outlined text-amber-400">{a.icon}</span>
+                                                <p className="text-sm font-bold text-slate-300">{a.msg}</p>
+                                            </Link>
+                                        ))}
+                                    </div>
+                                )}
+                                <div className="p-3 border-t-2 border-slate-800 text-center">
+                                    <Link href="/teacher/reports" className="text-xs font-bold text-purple-400 hover:text-purple-300 uppercase tracking-widest" onClick={() => setShowNotifs(false)}>
+                                        View All
+                                    </Link>
+                                </div>
+                                </div>
+                            )}
+                        </div>
                     </div>
                     <div className="flex items-center gap-3 pl-3 md:pl-6 border-l-2 border-slate-900">
                         <span className="hidden lg:inline font-lexend text-sm font-bold tracking-tight text-on-surface">

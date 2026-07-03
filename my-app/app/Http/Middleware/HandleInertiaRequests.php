@@ -2,49 +2,46 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Setting;
+use App\Models\WordModule;
+use App\Models\ParagraphModule;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
 {
-    /**
-     * The root template that is loaded on the first page visit.
-     *
-     * @var string
-     */
     protected $rootView = 'app';
 
-    /**
-     * Determine the current asset version.
-     */
     public function version(Request $request): ?string
     {
         return parent::version($request);
     }
 
-    /**
-     * Define the props that are shared by default.
-     *
-     * @return array<string, mixed>
-     */
     public function share(Request $request): array
     {
         return [
             ...parent::share($request),
-            
+
             'auth' => [
                 'user' => fn () => $request->user() ? $request->user()->load(['student' => function ($query) {
                     $query->select('id', 'user_id', 'points', 'avatar');
             }]) : null,
             ],
-            
+
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
                 'error' => fn () => $request->session()->get('error'),
                 'new_badge' => fn () => $request->session()->get('new_badge'),
+                'new_badges' => fn () => $request->session()->get('new_badges'),
                 'sent' => fn () => $request->session()->get('sent'),
                 'failed' => fn () => $request->session()->get('failed'),
             ],
+
+            'teacher' => fn () => $request->user() && $request->user()->isTeacher() ? [
+                'has_deadline' => !empty(Setting::getValue('report_deadline')),
+                'has_word_modules' => WordModule::exists(),
+                'has_paragraph_modules' => ParagraphModule::exists(),
+            ] : null,
         ];
     }
 }
