@@ -50,7 +50,9 @@ class TeacherController extends Controller
             $query->whereHas('student', fn ($q) => $q->where('section', $section));
         }
 
-        if ($status) {
+        if ($status === 'no_email') {
+            $query->whereHas('student', fn ($q) => $q->whereNull('parent_email')->orWhere('parent_email', ''));
+        } elseif ($status) {
             $query->whereHas('student', fn ($q) => $q->where('status', $status));
         }
 

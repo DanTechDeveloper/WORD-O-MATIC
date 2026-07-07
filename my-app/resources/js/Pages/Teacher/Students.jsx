@@ -16,6 +16,7 @@ const statusTabs = [
     { value: "support", label: "Needs Support" },
     { value: "onTrack", label: "On Track" },
     { value: "in_progress", label: "In Progress" },
+    { value: "no_email", label: "No Email" },
     { value: "notStarted", label: "Not Started" },
 ];
 
