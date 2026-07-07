@@ -10,6 +10,7 @@ use App\Models\StudentParagraphMastery;
 use App\Models\StudentParagraphProgress;
 use App\Models\StudentProfile;
 use App\Models\StudentWordMastery;
+use App\Models\StudentWordProgress;
 use App\Models\WordModule;
 use App\Services\BadgeService;
 use App\Services\LevelService;
@@ -37,17 +38,19 @@ class StudentController extends Controller
 
     public function dashboard()
     {
-        $data = auth()->user()->student()
-            ->with('user:id,name,student_id')
-            ->select([
-                'user_id',
-                'read_progress', 'speak_progress',
-                'badges', 'read_level', 'speak_level',
-            ])
-            ->first();
+        $user = auth()->user();
+
+        $totalReadPoints = WordModule::withCount('words')->get()->sum('words_count');
+        $totalSpeakPoints = ParagraphModule::withCount('words')->get()->sum('words_count');
+
+        $earnedReadPoints = StudentWordProgress::where('user_id', $user->id)->sum('words_smashed');
+        $earnedSpeakPoints = StudentParagraphProgress::where('user_id', $user->id)->sum('words_smashed');
 
         return Inertia::render('Student/Dashboard', [
-            'data' => $data,
+            'totalReadPoints' => $totalReadPoints,
+            'totalSpeakPoints' => $totalSpeakPoints,
+            'earnedReadPoints' => $earnedReadPoints,
+            'earnedSpeakPoints' => $earnedSpeakPoints,
         ]);
     }
 

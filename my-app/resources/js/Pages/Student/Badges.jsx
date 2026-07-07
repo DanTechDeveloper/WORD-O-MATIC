@@ -1,10 +1,7 @@
+import { useEffect } from "react";
 import DashboardLayout from "@/Layouts/Student/DashboardLayout";
 import { Link } from "@inertiajs/react";
 
-/**
- * UI Configuration Mapping
- * Keys match the 'slug' provided by the backend response.
- */
 const METRIC_LABELS = {
     total_points: "Points",
     streak: "Streak",
@@ -57,7 +54,6 @@ const BADGE_UI_CONFIG = {
             title: "text-secondary",
         },
     },
-    // Add mappings for other hardcoded IDs to maintain consistency
     "tutorial-completion": {
         icon: "🚀",
         statusLabel: "COMPLETED",
@@ -94,6 +90,10 @@ const BADGE_UI_CONFIG = {
 };
 
 export default function Badges({ badges }) {
+    useEffect(() => {
+        localStorage.removeItem('hasNewBadge');
+    }, []);
+
     const dynamicAchievements = (badges || []).map((badge) => {
         const ui = BADGE_UI_CONFIG[badge.slug] || BADGE_UI_CONFIG.default;
         const hasThreshold = badge.threshold != null && badge.current_value != null;
@@ -124,80 +124,51 @@ export default function Badges({ badges }) {
 
     return (
         <DashboardLayout>
-            <div class="mb-4">
+            <div className="mb-4 pt-2">
                 <Link
                     href="/student/dashboard"
-                    class="bg-surface-container-high border-4 border-surface-variant p-2 rounded-full text-on-surface inline-flex items-center justify-center hover:bg-surface-variant active-3d transition-all aspect-square shadow-lg w-12 h-12"
+                    className="bg-surface-container-high border-2 border-surface-variant/50 p-2 rounded-full text-on-surface inline-flex items-center justify-center hover:bg-surface-variant transition-all aspect-square shadow-lg w-12 h-12"
                 >
-                    <span class="material-symbols-outlined text-3xl">arrow_back</span>
+                    <span className="material-symbols-outlined text-2xl">arrow_back</span>
                 </Link>
             </div>
-            {/* <!-- Section Header --> */}
-            <div class="mb-12 text-center">
-                <h2 class="font-headline-xl text-[45px] text-on-background uppercase tracking-tighter mb-4 drop-shadow-[4px_4px_0px_rgba(114,18,255,1)]">
-                    GALACTIC ACHIEVEMENTS
+
+            <div className="mb-8 text-center">
+                <h2 className="text-4xl lg:text-6xl font-black text-on-surface uppercase tracking-tight mb-2 flex items-center justify-center gap-3">
+                    <span>🏆</span> Achievements
                 </h2>
-                <p class="font-body-lg text-[20px] text-on-surface-variant max-w-2xl mx-auto">
-                    Your cosmic journey is paying off, Cadet! Check out the
-                    powerful artifacts you've unlocked in the linguistics
-                    nebula.
+                <p className="text-on-surface-variant text-base font-bold max-w-lg mx-auto">
+                    Collect them all by completing challenges
                 </p>
             </div>
 
-            {/* <!-- Unlocked Artifacts Section --> */}
+            {/* Unlocked */}
             {earnedAchievements.length > 0 && (
-                <div class="mb-8">
-                    <h3 class="font-headline-md text-headline-md text-on-background uppercase tracking-tight mb-6 flex items-center gap-2">
-                        <span class="material-symbols-outlined text-primary">
-                            verified
-                        </span>
-                        Unlocked Artifacts
+                <div className="mb-10">
+                    <h3 className="text-xl font-black text-on-surface uppercase tracking-wider mb-4 flex items-center gap-2">
+                        <span className="text-lime-400 text-2xl">✦</span>
+                        Unlocked
                     </h3>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-gutter">
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                         {earnedAchievements.map((badge) => (
                             <div
                                 key={badge.id}
-                                class={`group relative bg-surface-container border-4 border-purple-900 p-card-padding rounded-xl transition-all duration-200 badge-card-hover hover:-translate-y-1 ${badge.colors.shadow.replace("shadow-", "shadow-[8px_8px_0px_0px_")}]`}
+                                className="relative bg-surface-container rounded-xl border border-surface-variant/20 p-5 text-center hover:-translate-y-1 transition-all duration-200"
                             >
-                                <div
-                                    class={`absolute -top-6 -right-2 font-black px-4 py-2 rounded-lg border-2 rotate-12 z-10 ${badge.colors.bg} ${badge.colors.text} ${badge.colors.border}`}
-                                    style={{
-                                        boxShadow:
-                                            "4px 4px 0px 0px rgba(0,0,0,0.5)",
-                                    }}
-                                >
+                                <div className={`absolute -top-3 right-2 text-xs font-black px-2.5 py-1 rounded-md ${badge.colors.bg} ${badge.colors.text} border ${badge.colors.border}`}>
                                     {badge.statusLabel}
                                 </div>
-                                <div class="flex flex-col items-center text-center space-y-6">
-                                    <div
-                                        class={`w-32 h-32 ${badge.colors.bg} ${badge.colors.border} border-4 rounded-full flex items-center justify-center text-6xl`}
-                                        style={{
-                                            boxShadow:
-                                                "0px 6px 0px 0px rgba(0,0,0,0.3)",
-                                        }}
-                                    >
-                                        {badge.icon}
-                                    </div>
-                                    <div>
-                                        <h3
-                                            class={`font-headline-md text-headline-md mb-2 uppercase tracking-tight ${badge.colors.title}`}
-                                        >
-                                            {badge.title}
-                                        </h3>
-                                        <p class="font-body-md text-body-md text-on-surface-variant">
-                                            {badge.description}
-                                        </p>
-                                    </div>
-                                    <div class="w-full bg-slate-900 h-4 rounded-full border-2 border-purple-900 overflow-hidden">
-                                        <div
-                                            class={`h-full ${badge.colors.bg}`}
-                                            style={{
-                                                width: `${badge.progress}%`,
-                                                boxShadow:
-                                                    "inset 0 2px 4px rgba(0,0,0,0.3)",
-                                            }}
-                                        ></div>
-                                    </div>
+                                <div className={`w-20 h-20 mx-auto mb-3 rounded-full ${badge.colors.bg} ${badge.colors.border} border-2 flex items-center justify-center text-4xl`}>
+                                    {badge.icon}
+                                </div>
+                                <h4 className={`text-base font-black uppercase tracking-tight ${badge.colors.title}`}>
+                                    {badge.title}
+                                </h4>
+                                <p className="text-xs text-on-surface-variant/70 mt-1 leading-tight">
+                                    {badge.description}
+                                </p>
+                                <div className="mt-3 w-full bg-slate-900 h-2 rounded-full overflow-hidden">
+                                    <div className={`h-full ${badge.colors.bg}`} style={{ width: `${badge.progress}%` }} />
                                 </div>
                             </div>
                         ))}
@@ -205,68 +176,43 @@ export default function Badges({ badges }) {
                 </div>
             )}
 
-            {/* <!-- Cosmic Quests in Progress Section --> */}
+            {/* Locked */}
             {lockedAchievements.length > 0 && (
-                <div class="mt-12">
-                    <h3 class="font-headline-md text-headline-md text-on-background uppercase tracking-tight mb-6 flex items-center gap-2">
-                        <span class="material-symbols-outlined text-secondary">
-                            pending_actions
-                        </span>
-                        Cosmic Quests in Progress
+                <div>
+                    <h3 className="text-xl font-black text-on-surface uppercase tracking-wider mb-4 flex items-center gap-2">
+                        <span className="text-on-surface-variant/50 text-2xl">✦</span>
+                        To Unlock
                     </h3>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-gutter">
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                         {lockedAchievements.map((badge) => (
                             <div
                                 key={badge.id}
-                                class="group relative bg-surface-container border-4 border-purple-900 p-card-padding rounded-xl transition-all duration-200 opacity-90"
-                                style={{ boxShadow: "8px 8px 0px 0px #1a1a2e" }}
+                                className="relative bg-surface-container-low rounded-xl border border-dashed border-surface-variant/20 p-5 text-center opacity-70"
                             >
-                                <div class="flex flex-col items-center text-center space-y-6">
-                                    <div
-                                        class="w-32 h-32 bg-slate-800 border-4 border-slate-950 rounded-full flex items-center justify-center text-6xl grayscale"
-                                        style={{
-                                            boxShadow:
-                                                "0px 6px 0px 0px #0c0c1f",
-                                        }}
-                                    >
-                                        {badge.icon}
-                                    </div>
-                                    <div>
-                                        <h3 class="font-headline-md text-headline-md text-primary mb-1 uppercase tracking-tight">
-                                            {badge.title}
-                                        </h3>
-                                        <p class="font-body-md text-body-md text-on-surface-variant mb-1">
-                                            {badge.description}
-                                        </p>
-                                        <p class="text-[12px] font-bold text-primary uppercase tracking-widest">
-                                            {badge.requirement}
-                                        </p>
-                                    </div>
-                                    {badge.hasThreshold && (
-                                    <div class="w-full">
-                                        <div class="flex justify-between text-xs font-bold text-on-surface-variant mb-1">
-                                            <span>Progress</span>
+                                <div className="w-20 h-20 mx-auto mb-3 rounded-full bg-slate-800 border-2 border-slate-700 flex items-center justify-center text-4xl grayscale">
+                                    {badge.icon}
+                                </div>
+                                <h4 className="text-base font-black uppercase tracking-tight text-on-surface-variant/60">
+                                    {badge.title}
+                                </h4>
+                                <p className="text-xs text-on-surface-variant/40 mt-1 leading-tight">
+                                    {badge.description}
+                                </p>
+                                {badge.hasThreshold && (
+                                    <div className="mt-3">
+                                        <div className="flex justify-between text-xs font-bold text-on-surface-variant/50 mb-1">
                                             <span>{badge.currentValue}/{badge.threshold}</span>
                                         </div>
-                                        <div class="w-full bg-slate-900 h-4 rounded-full border-2 border-purple-900 overflow-hidden">
-                                            <div
-                                                class={`h-full ${badge.colors.bg}`}
-                                                style={{
-                                                    width: `${badge.progress}%`,
-                                                    boxShadow:
-                                                        "inset 0 2px 4px rgba(0,0,0,0.3)",
-                                                }}
-                                            ></div>
+                                        <div className="w-full bg-slate-900 h-2 rounded-full overflow-hidden">
+                                            <div className="h-full bg-slate-700" style={{ width: `${badge.progress}%` }} />
                                         </div>
                                     </div>
-                                    )}
-                                </div>
+                                )}
                             </div>
                         ))}
                     </div>
                 </div>
             )}
-           
         </DashboardLayout>
     );
 }
