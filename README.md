@@ -1,86 +1,324 @@
 # Word-O-Matic
 
-A gamified literacy platform for students. Word Blast (reading) and Story Quest (speaking) with a sci-fi theme — teachers monitor progress, assign modules, and track performance.
+A gamified literacy platform designed to improve students' reading and speaking skills through interactive mini-games.
 
-## Stack
+Students learn through:
 
-| Layer | Tech |
-|---|---|
-| Backend | PHP 8.3, Laravel 13, Sanctum |
+- **Word Blast** – Reading-focused word recognition game
+- **Story Quest** – Speaking-focused storytelling activity
+
+The platform uses a sci-fi themed interface to increase engagement while giving teachers tools to monitor student progress, assign learning modules, and analyze performance.
+
+---
+
+# Tech Stack
+
+| Layer | Technology |
+|--------|------------|
+| Backend | PHP 8.3, Laravel 13, Laravel Sanctum |
 | Frontend | React 18, Inertia.js v2, Tailwind CSS v3 |
-| Database | MySQL (prod), SQLite `:memory:` (tests) |
-| Charts | recharts (PieChart, BarChart) |
+| Database | MySQL (Production), SQLite `:memory:` (Testing) |
+| Charts | Recharts (PieChart, BarChart) |
 | Icons | Material Symbols |
 
-## Setup
+---
+
+# Setup
+
+Install all dependencies and prepare the application:
 
 ```bash
 composer run setup
 ```
 
-Runs: `composer install` → `.env` → key generate → migrate → `npm install && npm build`.
+This command performs the following:
 
-## Development
+1. Installs Composer dependencies
+2. Creates the `.env` file
+3. Generates the application key
+4. Runs database migrations
+5. Installs NPM packages
+6. Builds frontend assets
+
+---
+
+# Development
+
+Run the complete local development environment:
 
 ```bash
 composer run dev
 ```
 
-Starts artisan serve, queue worker, log watcher, and Vite dev server via concurrently.
+This starts:
 
-## Testing
+- Laravel development server
+- Queue worker
+- Log watcher
+- Vite development server
+
+All services run concurrently.
+
+---
+
+# Testing
+
+Run the automated test suite:
 
 ```bash
 composer run test
-# or
+```
+
+or
+
+```bash
 php artisan test
 ```
 
-Uses SQLite `:memory:` — no external DB needed.
+Tests use an in-memory SQLite database, so no external database configuration is required.
 
-## Seed Database
+---
+
+# Seed Database
+
+Populate the application with demo data:
 
 ```bash
 php artisan migrate:fresh --seed
 ```
 
-Creates 1 teacher (`admin`/`password`) and 100 students across 3 sectors with varied progress/status.
+This creates:
 
-## Architecture
+- **1 Teacher Account**
+  - Username: `admin`
+  - Password: `password`
 
-- **16 models** — `User`, `StudentProfile`, `WordModule`, `ParagraphModule`, `Word`, `ParagraphWord`, progress/mastery tables, badges, game sessions, settings
-- **Key services** — `ProgressService` (best-score-only, writes progress + denormalized fields), `BadgeService`, `LevelService`, `DashboardService`
-- **Routes** — Guest (`/`, `/teacher/login`), Teacher (`/teacher/*`), Student (`/student/*`)
-- **Student onboarding** — Avatar selection enforced by `CheckStudentOnboarding` middleware
-- **Data sharing** — `HandleInertiaRequests::share()` exposes auth, flash, and teacher context globally
-- **Cascade deletes** — All child tables (`students`, `game_sessions`, `progress`, `mastery`, `badges`) use `cascadeOnDelete` on `user_id`
+- **100 Student Accounts**
+  - Distributed across three sectors
+  - Randomized progress
+  - Various completion statuses
+  - Sample gameplay history
 
-## Project Structure
+---
+
+# Architecture
+
+## Models
+
+The application contains **16 Eloquent models**, including:
+
+- User
+- StudentProfile
+- WordModule
+- ParagraphModule
+- Word
+- ParagraphWord
+- Progress models
+- Mastery models
+- Badge
+- GameSession
+- Setting
+
+---
+
+## Core Services
+
+### ProgressService
+
+Responsible for:
+
+- Saving gameplay results
+- Recording only the student's **highest score**
+- Updating progress
+- Maintaining denormalized statistics
+- Computing accuracy and level information
+
+### BadgeService
+
+Handles:
+
+- Badge eligibility
+- Badge assignment
+- Achievement progression
+
+### LevelService
+
+Responsible for:
+
+- Student progression
+- Module unlocking
+- Level gating
+
+### DashboardService
+
+Provides teacher dashboard analytics including:
+
+- Student statistics
+- Progress summaries
+- Chart data
+- Performance metrics
+
+---
+
+# Routing
+
+### Guest
+
+- `/`
+- `/teacher/login`
+
+### Teacher
+
+All teacher functionality is available under:
 
 ```
+/teacher/*
+```
+
+Including:
+
+- Dashboard
+- Student Management
+- Reports
+- Module Management
+
+### Student
+
+All student functionality is available under:
+
+```
+/student/*
+```
+
+Including:
+
+- Onboarding
+- Dashboard
+- Gameplay
+- Leaderboards
+- Progress Tracking
+
+---
+
+# Student Onboarding
+
+Students are required to complete avatar selection before accessing the platform.
+
+This is enforced through the:
+
+```
+CheckStudentOnboarding
+```
+
+middleware.
+
+---
+
+# Global Data Sharing
+
+The application uses:
+
+```
+HandleInertiaRequests::share()
+```
+
+to expose global frontend data, including:
+
+- Authenticated user
+- Flash messages
+- Teacher context
+
+---
+
+# Database Design
+
+Foreign key relationships use cascading deletes.
+
+Deleting a user automatically removes related records, including:
+
+- Student profiles
+- Game sessions
+- Progress
+- Mastery
+- Badges
+
+---
+
+# Project Structure
+
+```text
 app/
-  Http/Controllers/
-    TeacherController.php    — Teacher CRUD, reports, modules, delete student
-    StudentController.php    — Gameplay, onboarding, leaderboards, progress
-    UserController.php       — Login/logout
-  Services/
-    ProgressService.php      — Updates progress & denormalized accuracy/levels (best score only)
-    DashboardService.php     — Teacher dashboard stats & chart data
-    BadgeService.php         — Badge assignment logic
-    LevelService.php         — Progression gating
-  Middleware/
-    HandleInertiaRequests.php — Global data sharing (auth, flash, teacher context)
-    EnsureUserRole.php        — Role-based access
-    CheckStudentOnboarding.php — Avatar check
-  Models/                    — 16 Eloquent models
+├── Http/
+│   └── Controllers/
+│       ├── TeacherController.php
+│       ├── StudentController.php
+│       └── UserController.php
+│
+├── Services/
+│   ├── ProgressService.php
+│   ├── DashboardService.php
+│   ├── BadgeService.php
+│   └── LevelService.php
+│
+├── Middleware/
+│   ├── HandleInertiaRequests.php
+│   ├── EnsureUserRole.php
+│   └── CheckStudentOnboarding.php
+│
+└── Models/
+    └── 16 Eloquent models
+
 database/
-  migrations/                — Schema + seed data
-  seeders/
-    DatabaseSeeder.php       — 100 students with varied data
-resources/js/
-  Pages/Teacher/             — Dashboard, Students (with delete), StudentDetails, Reports, etc.
-  Pages/Student/             — Splash, avatar, dashboard, gameplay (random words), leaderboards
-  Layouts/                   — Teacher (sidebar) and Student (minimal) layouts
-  Components/                — Shared UI and Teacher-specific components
-  hooks/Student/             — useGameplayEngine, useSpeechRecognition, etc.
+├── migrations/
+└── seeders/
+    └── DatabaseSeeder.php
+
+resources/
+└── js/
+    ├── Pages/
+    │   ├── Teacher/
+    │   └── Student/
+    │
+    ├── Layouts/
+    ├── Components/
+    └── hooks/
+        └── Student/
 ```
+
+---
+
+# Key Features
+
+## Teacher
+
+- Student management
+- Module assignment
+- Progress monitoring
+- Performance reports
+- Dashboard analytics
+- Leaderboards
+- Student detail pages
+
+## Student
+
+- Avatar onboarding
+- Word Blast gameplay
+- Story Quest gameplay
+- Progress tracking
+- Leaderboards
+- Achievement badges
+
+---
+
+# Highlights
+
+- Laravel 13 + React 18 + Inertia.js architecture
+- Best-score-only progress tracking
+- Gamified literacy activities
+- Teacher analytics dashboard
+- Achievement and badge system
+- Level progression system
+- Responsive Tailwind CSS interface
+- SQLite in-memory testing
+- Seeded demo environment
+- Cascading database relationships
