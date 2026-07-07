@@ -96,11 +96,7 @@ export default function DashboardLayout({ children }) {
                         <span className="hidden lg:inline font-lexend text-sm font-bold tracking-tight text-on-surface">
                             WORD-O-MATIC Dashboard
                         </span>
-                        <img
-                            alt="Teacher Avatar"
-                            className="w-8 h-8 md:w-10 md:h-10 rounded-full border-2 border-lime-400 shadow-[2px_2px_0_0_#1e1b4b]"
-                            src="https://lh3.googleusercontent.com/aida-public/AB6AXuD-aAdAygbsmdnYFpAJlBlYH_jBeRdTzzJavuoVIUGTfLwRk_UZSL-Q8wOw3157urqXZN-xKQvc13Fdf5lxyGDT7qOdhwkNn6s9-yUL_4GIU-dKjABZnxqzTXE8MKYWRJWCytbZg6XU36uAw6eyH9q6hkFJ27qcPCc3lLIbDP0CR7gYjBrkt6YjLKEAPGHBUZxHRmpffZfcNdD4IwKDu-pqquLhcMTYXMIuTQ9Xh-7wlzk6-15ADPSzkhft2EcVUfK0Ftol66reTRpL"
-                        />
+                     
                     </div>
                 </div>
             </header>
