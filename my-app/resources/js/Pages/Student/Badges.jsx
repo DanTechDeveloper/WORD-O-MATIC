@@ -149,25 +149,25 @@ export default function Badges({ badges }) {
                         <span className="text-lime-400 text-2xl">✦</span>
                         Unlocked
                     </h3>
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                         {earnedAchievements.map((badge) => (
                             <div
                                 key={badge.id}
-                                className="relative bg-surface-container rounded-xl border border-surface-variant/20 p-5 text-center hover:-translate-y-1 transition-all duration-200"
+                                className="relative bg-surface-container rounded-xl border border-surface-variant/20 p-6 text-center hover:-translate-y-1 transition-all duration-200"
                             >
-                                <div className={`absolute -top-3 right-2 text-xs font-black px-2.5 py-1 rounded-md ${badge.colors.bg} ${badge.colors.text} border ${badge.colors.border}`}>
+                                <div className={`absolute -top-3 right-2 text-sm font-black px-3 py-1 rounded-md ${badge.colors.bg} ${badge.colors.text} border ${badge.colors.border}`}>
                                     {badge.statusLabel}
                                 </div>
-                                <div className={`w-20 h-20 mx-auto mb-3 rounded-full ${badge.colors.bg} ${badge.colors.border} border-2 flex items-center justify-center text-4xl`}>
+                                <div className={`w-24 h-24 mx-auto mb-3 rounded-full ${badge.colors.bg} ${badge.colors.border} border-2 flex items-center justify-center text-5xl`}>
                                     {badge.icon}
                                 </div>
-                                <h4 className={`text-base font-black uppercase tracking-tight ${badge.colors.title}`}>
+                                <h4 className={`text-lg font-black uppercase tracking-tight ${badge.colors.title}`}>
                                     {badge.title}
                                 </h4>
-                                <p className="text-xs text-on-surface-variant/70 mt-1 leading-tight">
+                                <p className="text-sm text-on-surface-variant/70 mt-1 leading-tight">
                                     {badge.description}
                                 </p>
-                                <div className="mt-3 w-full bg-slate-900 h-2 rounded-full overflow-hidden">
+                                <div className="mt-3 w-full bg-slate-900 h-2.5 rounded-full overflow-hidden">
                                     <div className={`h-full ${badge.colors.bg}`} style={{ width: `${badge.progress}%` }} />
                                 </div>
                             </div>
@@ -183,27 +183,27 @@ export default function Badges({ badges }) {
                         <span className="text-on-surface-variant/50 text-2xl">✦</span>
                         To Unlock
                     </h3>
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                         {lockedAchievements.map((badge) => (
                             <div
                                 key={badge.id}
-                                className="relative bg-surface-container-low rounded-xl border border-dashed border-surface-variant/20 p-5 text-center opacity-70"
+                                className="relative bg-surface-container-low rounded-xl border border-dashed border-surface-variant/20 p-6 text-center opacity-70"
                             >
-                                <div className="w-20 h-20 mx-auto mb-3 rounded-full bg-slate-800 border-2 border-slate-700 flex items-center justify-center text-4xl grayscale">
+                                <div className="w-24 h-24 mx-auto mb-3 rounded-full bg-slate-800 border-2 border-slate-700 flex items-center justify-center text-5xl grayscale">
                                     {badge.icon}
                                 </div>
-                                <h4 className="text-base font-black uppercase tracking-tight text-on-surface-variant/60">
+                                <h4 className="text-lg font-black uppercase tracking-tight text-on-surface-variant/60">
                                     {badge.title}
                                 </h4>
-                                <p className="text-xs text-on-surface-variant/40 mt-1 leading-tight">
+                                <p className="text-sm text-on-surface-variant/40 mt-1 leading-tight">
                                     {badge.description}
                                 </p>
                                 {badge.hasThreshold && (
                                     <div className="mt-3">
-                                        <div className="flex justify-between text-xs font-bold text-on-surface-variant/50 mb-1">
+                                        <div className="flex justify-between text-sm font-bold text-on-surface-variant/50 mb-1">
                                             <span>{badge.currentValue}/{badge.threshold}</span>
                                         </div>
-                                        <div className="w-full bg-slate-900 h-2 rounded-full overflow-hidden">
+                                        <div className="w-full bg-slate-900 h-2.5 rounded-full overflow-hidden">
                                             <div className="h-full bg-slate-700" style={{ width: `${badge.progress}%` }} />
                                         </div>
                                     </div>
