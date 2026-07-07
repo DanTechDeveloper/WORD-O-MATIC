@@ -11,9 +11,8 @@ const formatDate = (date) =>
         minute: "2-digit",
     });
 
-const tomorrow = new Date();
-tomorrow.setDate(tomorrow.getDate() + 1);
-const minDate = tomorrow.toISOString().slice(0, 16);
+const now = new Date();
+const minDate = now.toISOString().slice(0, 16);
 
 const STATUS_CONFIG = {
     atRisk: { label: "At Risk", color: "bg-rose-500", border: "border-rose-500", text: "text-rose-400", bg: "bg-rose-500/10" },

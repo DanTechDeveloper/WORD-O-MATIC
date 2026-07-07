@@ -35,6 +35,7 @@ class HandleInertiaRequests extends Middleware
                 'new_badges' => fn () => $request->session()->get('new_badges'),
                 'sent' => fn () => $request->session()->get('sent'),
                 'failed' => fn () => $request->session()->get('failed'),
+                'reported_at' => fn () => $request->session()->get('reported_at'),
             ],
 
             'teacher' => fn () => $request->user() && $request->user()->isTeacher() ? [

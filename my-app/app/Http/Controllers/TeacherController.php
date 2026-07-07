@@ -335,7 +335,7 @@ class TeacherController extends Controller
             return redirect()->back()->withErrors(['No report deadline set. Set a deadline first.']);
         }
 
-        $deadlineTs = Carbon::parse($deadline);
+        $deadlineTs = Carbon::parse($deadline, config('app.timezone'));
 
         if ($deadlineTs->isFuture()) {
             return redirect()->back()->withErrors(['Report deadline has not yet been reached.']);
@@ -360,7 +360,7 @@ class TeacherController extends Controller
                 continue;
             }
 
-            Mail::to($parentEmail)->send(new StudentReportMail([
+            Mail::to($parentEmail)->queue(new StudentReportMail([
                 'name' => $user->name,
                 'section' => $user->student?->section ?? '',
                 'wordBlastAcc' => $user->student?->wordBlastAcc ?? 0,
@@ -446,5 +446,12 @@ class TeacherController extends Controller
         ]);
 
         return redirect()->back()->with('success', 'Student updated successfully.');
+    }
+
+    public function destroy($id)
+    {
+        User::findOrFail($id)->delete();
+
+        return redirect()->back()->with('success', 'Student deleted successfully.');
     }
 }

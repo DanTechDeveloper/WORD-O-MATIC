@@ -244,17 +244,30 @@ export default function Students({ data, sections, filters }) {
                                                 {pAcc == null ? "N/A" : pAcc + "%"}
                                             </span>
                                         </div>
-                                        <div className="ml-auto flex gap-2">
-                                            <button
-                                                onClick={() => setEditStudent(student)}
-                                                className="bg-purple-500 text-white px-4 py-2 rounded-xl border-3 border-slate-950 shadow-[4px_4px_0_0_#4c1d95] font-black uppercase italic text-xs tracking-tighter hover:translate-y-0.5 hover:shadow-[2px_2px_0_0_#4c1d95] transition-all"
-                                            >
-                                                Edit
-                                            </button>
-                                            <Link href={`/teacher/studentDetails/${student.id}`} className="bg-lime-400 text-slate-950 px-4 py-2 rounded-xl border-3 border-slate-950 shadow-[4px_4px_0_0_#3f6212] font-black uppercase italic text-xs tracking-tighter hover:translate-y-0.5 hover:shadow-[2px_2px_0_0_#3f6212] transition-all">
-                                                View
-                                            </Link>
-                                        </div>
+            <div className="ml-auto flex gap-2">
+                                                <Link href={`/teacher/studentDetails/${student.id}`} className="bg-lime-400 text-slate-950 px-4 py-2 rounded-xl border-3 border-slate-950 shadow-[4px_4px_0_0_#3f6212] font-black uppercase italic text-xs tracking-tighter hover:translate-y-0.5 hover:shadow-[2px_2px_0_0_#3f6212] transition-all">
+                                                    View
+                                                </Link>
+                                                <button
+                                                    onClick={() => setEditStudent(student)}
+                                                    className="bg-purple-500 text-white px-4 py-2 rounded-xl border-3 border-slate-950 shadow-[4px_4px_0_0_#4c1d95] font-black uppercase italic text-xs tracking-tighter hover:translate-y-0.5 hover:shadow-[2px_2px_0_0_#4c1d95] transition-all"
+                                                >
+                                                    Edit
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        if (window.confirm(`Delete ${student.fullName}? This cannot be undone.`)) {
+                                                            router.delete(`/teacher/students/${student.id}`, {
+                                                                preserveState: true,
+                                                                preserveScroll: true,
+                                                            });
+                                                        }
+                                                    }}
+                                                    className="bg-rose-600 text-white px-4 py-2 rounded-xl border-3 border-slate-950 shadow-[4px_4px_0_0_#7f1d1d] font-black uppercase italic text-xs tracking-tighter hover:translate-y-0.5 hover:shadow-[2px_2px_0_0_#7f1d1d] transition-all"
+                                                >
+                                                    Delete
+                                                </button>
+                                            </div>
                                     </div>
                                 </div>
                             );
@@ -320,16 +333,29 @@ export default function Students({ data, sections, filters }) {
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex gap-2">
+                                                <Link href={`/teacher/studentDetails/${student.id}`}
+                                                    className="bg-lime-400 text-slate-950 px-6 py-3 rounded-2xl border-4 border-slate-950 shadow-[6px_6px_0_0_#3f6212] font-black uppercase italic text-xs tracking-tighter hover:translate-y-0.5 hover:shadow-[3px_3px_0_0_#3f6212] transition-all flex items-center justify-center gap-2">
+                                                    View
+                                                </Link>
                                                 <button
                                                     onClick={() => setEditStudent(student)}
                                                     className="bg-purple-500 text-white px-6 py-3 rounded-2xl border-4 border-slate-950 shadow-[6px_6px_0_0_#4c1d95] font-black uppercase italic text-xs tracking-tighter hover:translate-y-0.5 hover:shadow-[3px_3px_0_0_#4c1d95] transition-all flex items-center justify-center gap-2"
                                                 >
                                                     Edit
                                                 </button>
-                                                <Link href={`/teacher/studentDetails/${student.id}`}
-                                                    className="bg-lime-400 text-slate-950 px-6 py-3 rounded-2xl border-4 border-slate-950 shadow-[6px_6px_0_0_#3f6212] font-black uppercase italic text-xs tracking-tighter hover:translate-y-0.5 hover:shadow-[3px_3px_0_0_#3f6212] transition-all flex items-center justify-center gap-2">
-                                                    View
-                                                </Link>
+                                                <button
+                                                    onClick={() => {
+                                                        if (window.confirm(`Delete ${student.fullName}? This cannot be undone.`)) {
+                                                            router.delete(`/teacher/students/${student.id}`, {
+                                                                preserveState: true,
+                                                                preserveScroll: true,
+                                                            });
+                                                        }
+                                                    }}
+                                                    className="bg-rose-600 text-white px-6 py-3 rounded-2xl border-4 border-slate-950 shadow-[6px_6px_0_0_#7f1d1d] font-black uppercase italic text-xs tracking-tighter hover:translate-y-0.5 hover:shadow-[3px_3px_0_0_#7f1d1d] transition-all flex items-center justify-center gap-2"
+                                                >
+                                                    Delete
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>
