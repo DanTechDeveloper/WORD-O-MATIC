@@ -65,6 +65,11 @@ export default function GameResults({
         return bp - ap;
     })[0] ?? null;
 
+    const done = badgeIndex >= newBadges.length;
+    if (done && newBadges.length > 0) {
+        localStorage.setItem('hasNewBadge', '1');
+    }
+
     const renderResults = () => (
         <div className="bg-background text-on-background font-body-md">
             <div className="relative min-h-screen flex flex-col items-center justify-center px-6 py-12">

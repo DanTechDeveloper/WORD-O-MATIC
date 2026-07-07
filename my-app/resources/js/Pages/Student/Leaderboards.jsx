@@ -6,34 +6,31 @@ export default function Leaderboards({ leaderboard, totalStudents }) {
     const currentUserId = auth.user?.id;
     const currentUserName = auth.user?.name ?? "You";
     const currentEntry = leaderboard.find((e) => e.user_id === currentUserId);
-   
 
     return (
         <DashboardLayout>
-            <div className="max-w-full mx-auto px-margin mt-12 flex flex-col items-center">
-                <div className="w-full max-w-4xl mb-4">
+            <div className="max-w-4xl mx-auto pt-2">
+                <div className="mb-4">
                     <Link
                         href="/student/dashboard"
-                        className="bg-surface-container-high border-4 border-surface-variant p-2 rounded-full text-on-surface flex items-center justify-center hover:bg-surface-variant active-3d transition-all aspect-square shadow-lg w-12 h-12"
+                        className="bg-surface-container-high border-2 border-surface-variant/50 p-2 rounded-full text-on-surface inline-flex items-center justify-center hover:bg-surface-variant transition-all shadow-lg w-12 h-12"
                     >
-                        <span className="material-symbols-outlined text-3xl">
-                            arrow_back
-                        </span>
+                        <span className="material-symbols-outlined text-2xl">arrow_back</span>
                     </Link>
                 </div>
-                 <div className="text-center mb-8">
-                    <h1 className="text-5xl md:text-6xl font-black text-on-surface uppercase tracking-tight">
-                        Leaderboard
+
+                <div className="text-center mb-8">
+                    <h1 className="text-4xl lg:text-6xl font-black text-on-surface uppercase tracking-tight flex items-center justify-center gap-3">
+                        <span>🏆</span> Leaderboard
                     </h1>
                 </div>
+
+                {/* Current user highlight */}
                 {currentEntry && (
-                    <div
-                        className="w-full max-w-4xl mb-6 bg-lime-400/10 border-2 border-lime-400 rounded-2xl p-6 flex items-center justify-between"
-                        style={{
-                            boxShadow: "4px 4px 0px 0px rgba(163,230,53,0.3)",
-                        }}
+                    <div className="mb-6 bg-lime-400/10 border-2 border-lime-400/50 rounded-xl p-5 flex items-center justify-between"
+                        style={{ boxShadow: "0 0 20px rgba(163,230,53,0.1)" }}
                     >
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-6">
                             <div className="w-14 h-14 rounded-xl overflow-hidden flex items-center justify-center bg-surface-container-high">
                                 {currentEntry.avatar ? (
                                     <img src={currentEntry.avatar} alt="" className="w-full h-full object-cover" />
@@ -42,98 +39,64 @@ export default function Leaderboards({ leaderboard, totalStudents }) {
                                 )}
                             </div>
                             <div>
-                                <p className="text-2xl font-black text-lime-400">
-                                    {currentUserName}
-                                </p>
-                                <p className="text-sm text-on-surface-variant font-bold">
-                                    That's you!
-                                </p>
+                                <p className="text-2xl font-black text-lime-400">{currentUserName}</p>
+                                <p className="text-sm text-on-surface-variant font-bold">That's you!</p>
                             </div>
                         </div>
                         <div className="text-right">
-                            <p className="text-3xl font-black text-lime-400">
-                                {currentEntry.points}
-                            </p>
-                            <p className="text-xs text-on-surface-variant font-bold">
-                                pts
-                            </p>
+                            <p className="text-3xl font-black text-lime-400">{currentEntry.points}</p>
+                            <p className="text-xs text-on-surface-variant font-bold uppercase">pts</p>
                         </div>
                     </div>
                 )}
 
-               
-
                 {totalStudents === 0 && (
-                    <div className="text-zinc-500 text-center py-20">
+                    <div className="text-center py-20">
                         <p className="text-4xl mb-4">🚀</p>
-                        <p className="font-black uppercase tracking-widest text-sm">
-                            No explorers yet
-                        </p>
-                        <p className="text-xs mt-2">
-                            Complete your first exercise to appear on the board!
-                        </p>
+                        <p className="font-black uppercase tracking-widest text-base text-on-surface-variant">No explorers yet</p>
+                        <p className="text-sm text-on-surface-variant/60 mt-2">Complete your first exercise to appear on the board!</p>
                     </div>
                 )}
 
                 {totalStudents > 0 && (
-                    <div className="w-full max-w-4xl mb-12 space-y-3">
+                    <div className="space-y-4 mb-12">
                         {leaderboard.map((entry, i) => {
                             const rank = i + 1;
-                            const isCurrentUser =
-                                entry.user_id === currentUserId;
+                            const isCurrentUser = entry.user_id === currentUserId;
                             const isTop3 = rank <= 3;
                             const medals = ["🥇", "🥈", "🥉"];
 
                             return (
                                 <div
                                     key={entry.user_id}
-                                    className={`flex items-center justify-between p-5 rounded-2xl border-2 transition-all ${
+                                    className={`flex items-center justify-between p-6 rounded-xl border-2 transition-all ${
                                         isCurrentUser
-                                            ? "bg-lime-400/15 border-lime-400"
-                                            : "bg-surface-container border-surface-variant/30"
+                                            ? "bg-lime-400/10 border-lime-400/50"
+                                            : "bg-surface-container border-surface-variant/20"
                                     }`}
-                                    style={{
-                                        boxShadow: isCurrentUser
-                                            ? "4px 4px 0px 0px rgba(163,230,53,0.4)"
-                                            : "4px 4px 0px 0px rgba(0,0,0,0.3)",
-                                    }}
                                 >
-                                    <div className="flex items-center gap-4">
-                                        <span className="text-3xl font-black w-10 text-center">
-                                            {isTop3 ? medals[i] : rank}
+                                    <div className="flex items-center gap-8">
+                                        <span className="text-4xl font-black w-14 text-center">
+                                            {isTop3 ? medals[i] : `#${rank}`}
                                         </span>
                                         <div className="w-12 h-12 rounded-xl overflow-hidden flex items-center justify-center bg-surface-container-high">
                                             {entry.avatar ? (
-                                                <img
-                                                    src={entry.avatar}
-                                                    alt=""
-                                                    className="w-full h-full object-cover"
-                                                />
+                                                <img src={entry.avatar} alt="" className="w-full h-full object-cover" />
                                             ) : (
-                                                <span className="text-2xl">
-                                                    😊
-                                                </span>
+                                                <span className="text-2xl">😊</span>
                                             )}
                                         </div>
                                         <div>
-                                            <p
-                                                className={`font-bold text-xl ${isCurrentUser ? "text-lime-400" : "text-on-surface"}`}
-                                            >
-                                                {isCurrentUser
-                                                    ? currentUserName
-                                                    : `Explorer ${rank}`}
+                                            <p className={`font-black text-lg ${isCurrentUser ? "text-lime-400" : "text-on-surface"}`}>
+                                                {isCurrentUser ? currentUserName : `Explorer ${rank}`}
                                             </p>
                                         </div>
                                     </div>
                                     <div className="text-right">
-                                        <p
-                                            className={`font-black text-2xl ${isCurrentUser ? "text-lime-400" : "text-on-surface"}`}
-                                        >
+                                        <p className={`font-black text-2xl ${isCurrentUser ? "text-lime-400" : "text-on-surface"}`}>
                                             {entry.points}
                                         </p>
-                                        <p className="text-xs text-on-surface-variant font-bold">
-                                            pts
-                                        </p>
+                                        <p className="text-xs text-on-surface-variant font-bold uppercase">pts</p>
                                     </div>
                                 </div>
                             );
@@ -141,16 +104,13 @@ export default function Leaderboards({ leaderboard, totalStudents }) {
                     </div>
                 )}
 
-                <div className="w-full flex justify-center mb-16">
+                <div className="flex justify-center mb-12">
                     <Link
                         href="/student/dashboard"
-                        className="group relative px-12 py-6 bg-lime-400 border-4 border-[#3c6e00] rounded-2xl font-black text-lg text-[#0c2200] transition-all duration-75 uppercase italic flex items-center gap-4 shadow-[8px_8px_0_0_#3c6e00] active:translate-y-1 active:shadow-[4px_4px_0_0_#3c6e00]"
+                        className="inline-flex items-center gap-2 bg-lime-400 text-slate-950 font-black px-8 py-4 rounded-xl text-base border-b-2 border-lime-700 hover:border-b-[3px] transition-all shadow-lg shadow-lime-400/20 uppercase tracking-wider"
                     >
-                        <span className="text-2xl">🚀</span>
-                        Back to Home
-                        <span className="text-2xl group-hover:translate-x-1 transition-transform">
-                            →
-                        </span>
+                        <span className="text-xl">🚀</span>
+                        Back to Games
                     </Link>
                 </div>
             </div>

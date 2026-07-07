@@ -49,7 +49,10 @@ export default function Greetings() {
             <BadgeUnlockModal
                 badge={newBadge}
                 show={showBadgeModal}
-                onContinue={() => setShowBadgeModal(false)}
+                onContinue={() => {
+                    setShowBadgeModal(false);
+                    localStorage.setItem('hasNewBadge', '1');
+                }}
                 buttonText="CLAIM REWARD!"
             />
 

@@ -298,7 +298,10 @@ export default function Tutorial() {
                             slug: 'tutorial-complete',
                         }}
                         show={true}
-                        onContinue={() => setShowBadgeModal(false)}
+                        onContinue={() => {
+                            setShowBadgeModal(false);
+                            localStorage.setItem('hasNewBadge', '1');
+                        }}
                     />
                 )}
 
