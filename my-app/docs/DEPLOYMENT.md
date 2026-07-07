@@ -1,6 +1,6 @@
 # Deployment
 
-> Version 1.0
+> Version 1.1
 
 ## Requirements
 
@@ -28,6 +28,16 @@ php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 ```
+
+## Queue Worker
+
+Emails use `Mail::to()->queue()`, so a queue worker must run:
+
+```bash
+php artisan queue:work --queue=default
+```
+
+Ensure the `QUEUE_CONNECTION` env is set to `database` (default for this project).
 
 ## Checks
 

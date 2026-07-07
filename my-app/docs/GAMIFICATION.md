@@ -1,12 +1,12 @@
 # Gamification
 
-> Version 1.0
+> Version 1.1
 
 ## XP & Points
 
-- Points per word module completion (individual word `points` values).
+- Points per module: word smashes in Read and Speak modes.
 - Accumulated on `StudentProfile.points`.
-- Recalculated from `game_sessions` on new best score.
+- Updated only on new best score (not overwritten by retries).
 
 ## Levels
 
@@ -28,7 +28,7 @@ Badges defined in `badges` table (`operator`, `threshold_score`). Unlock once pe
 
 ## Leaderboards
 
-Available at `/student/leaderboards` and `/teacher/leaderboards`. Read-only.
+Available at `/student/leaderboards` and `/teacher/leaderboards`. **Best-score based** — retries don't overwrite higher existing scores.
 
 ## Status Categories
 
@@ -40,4 +40,8 @@ Available at `/student/leaderboards` and `/teacher/leaderboards`. Read-only.
 | Needs Support | Low accuracy |
 | On Track | Meeting expectations |
 
-Computed by `ProgressService::recalculateStatus()`.
+Computed by `ProgressService::recalculateStatus()` based on `wordBlastAcc` and `storyQuestAcc` averages.
+
+## Student Deletion
+
+Deleting a student (Teacher → Students → Delete) cascade-removes all related records: progress, mastery, game sessions, badges, and profile. Irreversible.

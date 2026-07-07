@@ -1,6 +1,6 @@
 # Conventions
 
-> Version 1.0
+> Version 1.1
 
 ## PHP / Laravel
 
@@ -8,7 +8,8 @@
 - One responsibility per method.
 - Comments explain _why_, not _what_.
 - Reusable logic in Services, not Controllers.
-- Validation: Form Requests. Auth: Policies.
+- Validation: inline `$request->validate()` in controllers (not Form Requests).
+- Auth: middleware-based (`EnsureUserRole`), no Policy files.
 
 ## React / Inertia
 
@@ -28,6 +29,7 @@
 
 - New field: migration → `$fillable` → controller response.
 - Morph maps: `AppServiceProvider::boot()`.
+- All foreign keys on `user_id` use `cascadeOnDelete`.
 
 ## Testing
 

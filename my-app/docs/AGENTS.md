@@ -1,6 +1,6 @@
 # Word-O-Matic
 
-> Version 1.1 — Developer Guide
+> Version 1.2 — Developer Guide
 
 Run commands from `my-app/`.
 
@@ -25,10 +25,11 @@ No lint, typecheck, or CI.
 
 | Role | Prefix | Middleware | Login |
 |---|---|---|---|
-| Teacher | `/teacher` | `EnsureUserRole` | email + username + password |
-| Student | `/student` | `EnsureUserRole` + `CheckStudentOnboarding` | name + 4-digit PIN |
+| Teacher | `/teacher` | `role:teacher` | username + password |
+| Student | `/student` | `role:student` + `CheckStudentOnboarding` | name + 4-digit PIN |
 
-PIN stored as bcrypt + plain text (`pin_plain`).
+Teacher login: `UserController@teacherLoginPost` — validates `username` + `password`, no email.
+PIN stored as bcrypt (`pin`) + plain text (`pin_plain`).
 
 ## Onboarding
 
@@ -36,17 +37,18 @@ PIN stored as bcrypt + plain text (`pin_plain`).
 splashScreen → avatarSelection → greetings → tutorial → completeTutorial → dashboard
 ```
 
-Enforced by `CheckStudentOnboarding`.
+Enforced by `CheckStudentOnboarding` middleware.
 
 ## Services
 
 | Service | Responsibility |
 |---|---|
-| `ProgressService` | Update word/paragraph progress, recalculate status |
-| `GameSessionService` | Log game session, delegate to ProgressService |
+| `ProgressService` | Update word/paragraph progress (best score only), recalculate status |
 | `BadgeService` | Award badges, check thresholds |
 | `LevelService` | Module lock/current/completed status per student |
 | `DashboardService` | Teacher dashboard stats |
+
+Session logging done via `GameSession::logSession()` static method on the model (no service class).
 
 ## Conventions
 
@@ -56,6 +58,8 @@ Enforced by `CheckStudentOnboarding`.
 - Frontend pages: `resources/js/Pages/{Student,Teacher}/`. Hooks: `hooks/`. Components: `Components/`.
 - Inertia forms: `router.post` / `router.put`.
 - New DB field: migration → `$fillable` → controller response array.
+- Validation: inline `$request->validate()` in controllers (no Form Request pattern).
+- Auth: middleware-based (`EnsureUserRole`), no Policy files.
 
 ## Test Quirks
 
@@ -63,3 +67,15 @@ Enforced by `CheckStudentOnboarding`.
 - SQLite in-memory — no MySQL features.
 - Mail driver: `array`.
 - `DashboardServiceTest` has 2 pre-existing failures (unrelated).
+
+## Data Flow
+
+```
+Controller → Service → Model → DB
+                         ↓
+HandleInertiaRequests::share() ← session flash + auth
+                         ↓
+              Inertia Response → React $page.props
+```
+
+Global data shared via `HandleInertiaRequests`: `auth.user`, `flash` (success, error, new_badge, sent, failed, reported_at), `teacher` flags.

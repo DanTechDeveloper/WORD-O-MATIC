@@ -1,13 +1,13 @@
 # Modules
 
-> Version 1.0
+> Version 1.1
 
 ## Structure
 
 | Type | Count | Content |
 |---|---|---|
-| Word modules | 10 | 10 words each, progressive difficulty |
-| Paragraph modules | 10 | Paragraph-based, progressive difficulty |
+| Word modules | 10 | 10 words each, progressive difficulty, randomized per gameplay |
+| Paragraph modules | 10 | Paragraph-based, progressive difficulty, fixed order |
 
 Seeded via `DatabaseSeeder`.
 
@@ -19,6 +19,7 @@ Seeded via `DatabaseSeeder`.
 | View paragraph modules | `GET /teacher/paragraphModules` |
 | Update word modules | `PUT /teacher/wordModules` |
 | Update paragraph modules | `PUT /teacher/paragraphModules` |
+| Delete student | `DELETE /teacher/students/{id}` |
 
 ## Student
 

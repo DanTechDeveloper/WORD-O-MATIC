@@ -1,6 +1,6 @@
 # Rules
 
-> Version 1.0
+> Version 1.1
 
 ## Code
 
@@ -13,15 +13,18 @@
 ## Architecture
 
 - Thin controllers. Business logic in Services when reused.
-- Validation: Form Requests. Authorization: Policies.
-- Notifications: Laravel Notifications.
-- `StudentProfile` stats denormalized — recalculated on new best score.
+- Validation: inline `$request->validate()` in controllers.
+- Auth: middleware-based (`EnsureUserRole`), no Policy files.
+- Notifications: Laravel Mail, queued (`->queue()`).
+- `StudentProfile` stats denormalized — recalculated on new best score only.
 - Progress overwritten in place. Only `game_sessions` is append-only.
+- Global data shared via `HandleInertiaRequests::share()`.
 
 ## Database
 
 - New field: migration → `$fillable` → controller response array.
 - Laravel migrations only. No raw SQL.
+- All `user_id` foreign keys: `cascadeOnDelete`.
 - Morph maps in `AppServiceProvider`: `'word' → WordModule`, `'paragraph' → ParagraphModule`.
 
 ## Testing
@@ -41,3 +44,9 @@
 - Deadline stored in `settings` table.
 - Before deadline: checkboxes disabled, Send locked, deadline save locked.
 - After deadline: all enabled.
+- Emails queued, not synchronous.
+
+## Student Deletion
+
+- One `$user->delete()` cascade-removes all related records.
+- Irreversible — no soft deletes.
