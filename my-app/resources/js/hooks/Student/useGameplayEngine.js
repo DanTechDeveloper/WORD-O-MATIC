@@ -16,7 +16,6 @@ export function useGameplayEngine({
 }) {
     const [currentWordIndex, setCurrentWordIndex] = useState(0);
     const [wordsSmashed, setWordsSmashed] = useState(0);
-    const [correctCount, setCorrectCount] = useState(0);
     const [gameState, setGameState] = useState("IDLE");
     const [isMispronounced, setIsMispronounced] = useState(false);
     const [isExploding, setIsExploding] = useState(false);
@@ -28,7 +27,6 @@ export function useGameplayEngine({
     const [feedbackMessage, setFeedbackMessage] = useState("");
     const [isWordReady, setIsWordReady] = useState(true);
     const [streakShake, setStreakShake] = useState(null);
-    const [maxStreak, setMaxStreak] = useState(0);
 
     const currentStreakRef = useRef(0);
     const hasSaved = useRef(false);
@@ -39,8 +37,10 @@ export function useGameplayEngine({
     const completionTimerRef = useRef(null);
     const wordEntryTimerRef = useRef(null);
     const streakShakeTimerRef = useRef(null);
+    const showPointsFeedbackTimerRef = useRef(null);
+    const scoreEmphasizeTimerRef = useRef(null);
     const wordsSmashedRef = useRef(0);
-    const correctCountRef = useRef(0);
+    const wordCountRef = useRef(0);
     const mispronounceTimerRef = useRef(null);
     const mispronounceGuardRef = useRef(false);
     const wordRecognizedTimerRef = useRef(null);
@@ -50,18 +50,6 @@ export function useGameplayEngine({
 
     onWordRecognizedRef.current = onWordRecognized;
     onMispronounceRef.current = onMispronounce;
-
-    useEffect(() => {
-        currentWordIndexRef.current = currentWordIndex;
-    }, [currentWordIndex]);
-
-    useEffect(() => {
-        wordsSmashedRef.current = wordsSmashed;
-    }, [wordsSmashed]);
-
-    useEffect(() => {
-        correctCountRef.current = correctCount;
-    }, [correctCount]);
 
     useEffect(() => {
         if (gameState === "ACTIVE") {
@@ -84,6 +72,8 @@ export function useGameplayEngine({
             clearTimeout(feedbackTimerRef.current);
             clearTimeout(streakShakeTimerRef.current);
             clearTimeout(wordTimeoutRef.current);
+            clearTimeout(showPointsFeedbackTimerRef.current);
+            clearTimeout(scoreEmphasizeTimerRef.current);
             if (completionTimerRef.current)
                 clearTimeout(completionTimerRef.current);
         };
@@ -114,13 +104,11 @@ export function useGameplayEngine({
                 {
                     module_id: moduleId,
                     words_smashed: wordsSmashedRef.current,
-                    words_count: correctCountRef.current,
+                    words_count: wordCountRef.current,
                     streak: currentStreakRef.current,
                 },
                 {
                     preserveScroll: true,
-                    onSuccess: () =>
-                        console.log("Progress saved successfully!"),
                 },
             );
         }
@@ -162,19 +150,16 @@ export function useGameplayEngine({
             wordsSmashedRef.current = next;
             return next;
         });
-        setCorrectCount((prev) => {
-            const next = prev + 1;
-            correctCountRef.current = next;
-            return next;
-        });
+        wordCountRef.current += 1;
         currentStreakRef.current += 1;
         setCurrentStreak(currentStreakRef.current);
-        setMaxStreak((m) => Math.max(m, currentStreakRef.current));
         setPointsFeedbackValue(points);
         setShowPointsFeedback(true);
-        setTimeout(() => setShowPointsFeedback(false), 500);
+        clearTimeout(showPointsFeedbackTimerRef.current);
+        showPointsFeedbackTimerRef.current = setTimeout(() => setShowPointsFeedback(false), 500);
         setScoreEmphasize(true);
-        setTimeout(() => setScoreEmphasize(false), 500);
+        clearTimeout(scoreEmphasizeTimerRef.current);
+        scoreEmphasizeTimerRef.current = setTimeout(() => setScoreEmphasize(false), 500);
 
         const streak = currentStreakRef.current;
         let fbMsg;
@@ -200,6 +185,7 @@ export function useGameplayEngine({
         }
 
         clearTimeout(mispronounceTimerRef.current);
+        mispronounceGuardRef.current = false;
         setIsMispronounced(false);
 
         clearTimeout(wordRecognizedTimerRef.current);
@@ -265,7 +251,7 @@ export function useGameplayEngine({
             return;
         }
         persistProgress();
-        if (correctCountRef.current >= totalWords) {
+        if (wordCountRef.current >= totalWords) {
             setGameState("COMPLETED");
         } else {
             setGameState("GAMEOVER");
@@ -287,10 +273,10 @@ export function useGameplayEngine({
         currentWordIndexRef.current = 0;
         setCurrentWordIndex(0);
         setWordsSmashed(0);
-        setCorrectCount(0);
-        correctCountRef.current = 0;
+        wordCountRef.current = 0;
         currentStreakRef.current = 0;
-        setMaxStreak(0);
+        setCurrentStreak(0);
+        mispronounceGuardRef.current = false;
         setIsMispronounced(false);
         setIsExploding(false);
         setFeedbackType(null);
@@ -309,8 +295,6 @@ export function useGameplayEngine({
         setGameState,
         currentWordIndex,
         wordsSmashed,
-        correctCount,
-        maxStreak,
         currentStreak,
         isMispronounced,
         isExploding,

@@ -103,7 +103,7 @@ export default function GameplayReadMode({ module }) {
             <GameplayHeader {...headerProps} />
             <ReadModeMainContent
                 words={module?.words}
-                currentIndex={Math.min(currentWordIndex, totalWords - 1)}
+                currentIndex={Math.max(0, Math.min(currentWordIndex, totalWords - 1))}
                 gameState={gameState}
                 countdownValue={countdownValue}
                 isExploding={isExploding}

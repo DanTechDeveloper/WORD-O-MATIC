@@ -102,10 +102,9 @@ export function useSpeechRecognition({
 
                     latestTranscript = transcript;
 
-                    const wordsInTranscript = transcript.split(/\s+/);
-                    const isMatch = wordsInTranscript.some(
-                        (w) => isFuzzyMatch(w, target),
-                    );
+                    const isMatch = propsRef.current.isWordMode
+                        ? transcript.split(/\s+/).some((w) => isFuzzyMatch(w, target))
+                        : isFuzzyMatch(transcript, target) || transcript.includes(target);
 
                     if (isMatch && !hasMatchedCurrentRef.current) {
                         hasMatchedCurrentRef.current = true;
