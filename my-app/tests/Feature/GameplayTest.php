@@ -59,6 +59,7 @@ class GameplayTest extends TestCase
             $this->student->student,
             $this->module,
             wordsSmashed: 5,
+            wordsCount: 5,
             accuracy: 70
         );
 
@@ -78,6 +79,7 @@ class GameplayTest extends TestCase
             $this->student->student,
             $this->module,
             wordsSmashed: 10,
+            wordsCount: 10,
             accuracy: 90
         );
 
@@ -100,6 +102,7 @@ class GameplayTest extends TestCase
             $this->student->student,
             $paraModule,
             wordsSmashed: 6,
+            wordsCount: 6,
             accuracy: 88
         );
 

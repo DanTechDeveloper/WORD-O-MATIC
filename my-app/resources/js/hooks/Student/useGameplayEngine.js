@@ -16,6 +16,7 @@ export function useGameplayEngine({
 }) {
     const [currentWordIndex, setCurrentWordIndex] = useState(0);
     const [wordsSmashed, setWordsSmashed] = useState(0);
+    const [correctCount, setCorrectCount] = useState(0);
     const [gameState, setGameState] = useState("IDLE");
     const [isMispronounced, setIsMispronounced] = useState(false);
     const [isExploding, setIsExploding] = useState(false);
@@ -39,6 +40,7 @@ export function useGameplayEngine({
     const wordEntryTimerRef = useRef(null);
     const streakShakeTimerRef = useRef(null);
     const wordsSmashedRef = useRef(0);
+    const correctCountRef = useRef(0);
     const mispronounceTimerRef = useRef(null);
     const mispronounceGuardRef = useRef(false);
     const wordRecognizedTimerRef = useRef(null);
@@ -56,6 +58,10 @@ export function useGameplayEngine({
     useEffect(() => {
         wordsSmashedRef.current = wordsSmashed;
     }, [wordsSmashed]);
+
+    useEffect(() => {
+        correctCountRef.current = correctCount;
+    }, [correctCount]);
 
     useEffect(() => {
         if (gameState === "ACTIVE") {
@@ -108,6 +114,7 @@ export function useGameplayEngine({
                 {
                     module_id: moduleId,
                     words_smashed: wordsSmashedRef.current,
+                    words_count: correctCountRef.current,
                     streak: currentStreakRef.current,
                 },
                 {
@@ -153,6 +160,11 @@ export function useGameplayEngine({
         setWordsSmashed((prev) => {
             const next = prev + points;
             wordsSmashedRef.current = next;
+            return next;
+        });
+        setCorrectCount((prev) => {
+            const next = prev + 1;
+            correctCountRef.current = next;
             return next;
         });
         currentStreakRef.current += 1;
@@ -253,7 +265,7 @@ export function useGameplayEngine({
             return;
         }
         persistProgress();
-        if (wordsSmashedRef.current >= totalWords) {
+        if (correctCountRef.current >= totalWords) {
             setGameState("COMPLETED");
         } else {
             setGameState("GAMEOVER");
@@ -275,6 +287,8 @@ export function useGameplayEngine({
         currentWordIndexRef.current = 0;
         setCurrentWordIndex(0);
         setWordsSmashed(0);
+        setCorrectCount(0);
+        correctCountRef.current = 0;
         currentStreakRef.current = 0;
         setMaxStreak(0);
         setIsMispronounced(false);
@@ -295,6 +309,7 @@ export function useGameplayEngine({
         setGameState,
         currentWordIndex,
         wordsSmashed,
+        correctCount,
         maxStreak,
         currentStreak,
         isMispronounced,
