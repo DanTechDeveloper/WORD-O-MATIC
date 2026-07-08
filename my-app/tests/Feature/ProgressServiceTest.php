@@ -49,7 +49,7 @@ class ProgressServiceTest extends TestCase
     {
         $this->progressService->updateWordProgress(
             $this->student->student, $this->wordModule,
-            wordsSmashed: 5, accuracy: 90
+            wordsSmashed: 5, wordsCount: 5, accuracy: 90
         );
 
         $this->student->refresh();
@@ -60,7 +60,7 @@ class ProgressServiceTest extends TestCase
     {
         $this->progressService->updateWordProgress(
             $this->student->student, $this->wordModule,
-            wordsSmashed: 3, accuracy: 70
+            wordsSmashed: 3, wordsCount: 3, accuracy: 70
         );
 
         $this->student->refresh();
@@ -71,12 +71,12 @@ class ProgressServiceTest extends TestCase
     {
         $this->progressService->updateWordProgress(
             $this->student->student, $this->wordModule,
-            wordsSmashed: 3, accuracy: 70
+            wordsSmashed: 3, wordsCount: 3, accuracy: 70
         );
 
         $this->progressService->updateWordProgress(
             $this->student->student, $this->wordModule,
-            wordsSmashed: 5, accuracy: 90
+            wordsSmashed: 5, wordsCount: 5, accuracy: 90
         );
 
         $this->student->refresh();
@@ -87,12 +87,12 @@ class ProgressServiceTest extends TestCase
     {
         $this->progressService->updateWordProgress(
             $this->student->student, $this->wordModule,
-            wordsSmashed: 5, accuracy: 90
+            wordsSmashed: 5, wordsCount: 5, accuracy: 90
         );
 
         $this->progressService->updateWordProgress(
             $this->student->student, $this->wordModule,
-            wordsSmashed: 2, accuracy: 50
+            wordsSmashed: 2, wordsCount: 2, accuracy: 50
         );
 
         $this->student->refresh();
@@ -110,7 +110,7 @@ class ProgressServiceTest extends TestCase
 
         $this->progressService->updateWordProgress(
             $this->student->student, $this->wordModule,
-            wordsSmashed: 5, accuracy: 90
+            wordsSmashed: 5, wordsCount: 5, accuracy: 90
         );
 
         $this->assertEquals(
@@ -126,12 +126,12 @@ class ProgressServiceTest extends TestCase
 
         $this->progressService->updateWordProgress(
             $this->student->student, $this->wordModule,
-            wordsSmashed: 5, accuracy: 80
+            wordsSmashed: 5, wordsCount: 5, accuracy: 80
         );
 
         $this->progressService->updateWordProgress(
             $this->student->student, $module2,
-            wordsSmashed: 1, accuracy: 60
+            wordsSmashed: 1, wordsCount: 1, accuracy: 60
         );
 
         $this->student->refresh();
@@ -145,12 +145,12 @@ class ProgressServiceTest extends TestCase
 
         $this->progressService->updateWordProgress(
             $this->student->student, $this->wordModule,
-            wordsSmashed: 5, accuracy: 90
+            wordsSmashed: 5, wordsCount: 5, accuracy: 90
         );
 
         $this->progressService->updateWordProgress(
             $this->student->student, $module2,
-            wordsSmashed: 1, accuracy: 60
+            wordsSmashed: 1, wordsCount: 1, accuracy: 60
         );
 
         $this->student->refresh();
@@ -161,7 +161,7 @@ class ProgressServiceTest extends TestCase
     {
         $this->progressService->updateWordProgress(
             $this->student->student, $this->wordModule,
-            wordsSmashed: 5, accuracy: 90
+            wordsSmashed: 5, wordsCount: 5, accuracy: 90
         );
 
         $this->student->refresh();
@@ -170,7 +170,7 @@ class ProgressServiceTest extends TestCase
 
     public function test_null_student_does_nothing(): void
     {
-        $this->progressService->updateWordProgress(null, $this->wordModule, 5, 90);
+        $this->progressService->updateWordProgress(null, $this->wordModule, 5, 5, 90);
 
         $this->assertEquals(0, StudentWordProgress::count());
     }
@@ -179,7 +179,7 @@ class ProgressServiceTest extends TestCase
     {
         $this->progressService->updateParagraphProgress(
             $this->student->student, $this->paraModule,
-            wordsSmashed: 4, accuracy: 85
+            wordsSmashed: 4, wordsCount: 4, accuracy: 85
         );
 
         $this->student->refresh();
@@ -197,7 +197,7 @@ class ProgressServiceTest extends TestCase
 
         $this->progressService->updateParagraphProgress(
             $this->student->student, $this->paraModule,
-            wordsSmashed: 4, accuracy: 85
+            wordsSmashed: 4, wordsCount: 4, accuracy: 85
         );
 
         $this->assertEquals(
@@ -214,7 +214,7 @@ class ProgressServiceTest extends TestCase
 
         $this->progressService->updateWordProgress(
             $this->student->student, $module2,
-            wordsSmashed: 1, accuracy: 85
+            wordsSmashed: 1, wordsCount: 1, accuracy: 85
         );
 
         $this->student->refresh();
