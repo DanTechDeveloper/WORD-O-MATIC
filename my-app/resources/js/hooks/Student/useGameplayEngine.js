@@ -57,6 +57,11 @@ export function useGameplayEngine({
             clearTimeout(wordEntryTimerRef.current);
             wordEntryTimerRef.current = setTimeout(() => {
                 setIsWordReady(true);
+                clearTimeout(wordTimeoutRef.current);
+                wordTimeoutRef.current = setTimeout(
+                    () => onMispronounceFnRef.current(),
+                    5000,
+                );
             }, 1000);
         }
         return () => {
@@ -144,7 +149,7 @@ export function useGameplayEngine({
         const wordObj = words[currentWordIndexRef.current];
         onWordRecognizedRef.current?.(wordObj);
 
-        const points = typeof getPoints === "function" ? getPoints(wordObj) : wordObj?.points || 1;
+        const points = typeof getPoints === "function" ? getPoints(wordObj) : wordObj?.points ?? 1;
         setWordsSmashed((prev) => {
             const next = prev + points;
             wordsSmashedRef.current = next;
@@ -184,6 +189,7 @@ export function useGameplayEngine({
             }, intensity === "intense" ? 500 : 400);
         }
 
+        clearTimeout(wordTimeoutRef.current);
         clearTimeout(mispronounceTimerRef.current);
         mispronounceGuardRef.current = false;
         setIsMispronounced(false);
@@ -194,7 +200,7 @@ export function useGameplayEngine({
             setIsExploding(false);
             moveToNextWord();
         }, 500);
-    }, [words, moveToNextWord]);
+    }, [moveToNextWord]);
 
     const handleMispronounce = useCallback(() => {
         if (mispronounceGuardRef.current) return
@@ -224,22 +230,9 @@ export function useGameplayEngine({
             mispronounceGuardRef.current = false;
             moveToNextWord();
         }, 800);
-    }, [words, moveToNextWord]);
+    }, [moveToNextWord]);
 
     onMispronounceFnRef.current = handleMispronounce;
-
-    useEffect(() => {
-        if (gameState === "ACTIVE" && isWordReady) {
-            clearTimeout(wordTimeoutRef.current);
-            wordTimeoutRef.current = setTimeout(
-                () => onMispronounceFnRef.current(),
-                5000,
-            );
-        }
-        return () => {
-            clearTimeout(wordTimeoutRef.current);
-        };
-    }, [currentWordIndex, gameState, isWordReady]);
 
     const handleTimeUp = useCallback(() => {
         clearTimeout(mispronounceTimerRef.current);
@@ -261,29 +254,6 @@ export function useGameplayEngine({
     const countdownValue = useCountdown(gameState, () =>
         setGameState("ACTIVE"),
     );
-
-    const handlePlayAgain = useCallback(() => {
-        hasSaved.current = false;
-        clearTimeout(mispronounceTimerRef.current);
-        clearTimeout(wordRecognizedTimerRef.current);
-        clearTimeout(wordTimeoutRef.current);
-        if (completionTimerRef.current) {
-            clearTimeout(completionTimerRef.current);
-        }
-        currentWordIndexRef.current = 0;
-        setCurrentWordIndex(0);
-        setWordsSmashed(0);
-        wordCountRef.current = 0;
-        currentStreakRef.current = 0;
-        setCurrentStreak(0);
-        mispronounceGuardRef.current = false;
-        setIsMispronounced(false);
-        setIsExploding(false);
-        setFeedbackType(null);
-        setFeedbackMessage("");
-        setStreakShake(null);
-        setGameState("COUNTDOWN");
-    }, []);
 
     const startGame = useCallback(() => {
         setGameState((prev) => (prev === "IDLE" ? "COUNTDOWN" : prev));
@@ -308,7 +278,6 @@ export function useGameplayEngine({
         countdownValue,
         targetWord,
         handleTimeUp,
-        handlePlayAgain,
         startGame,
         handleWordRecognized,
         handleMispronounce,

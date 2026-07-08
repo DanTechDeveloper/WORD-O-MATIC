@@ -4,14 +4,14 @@ import GameplayHeader from "@/Components/Student/GameplayHeader";
 import Microphone from "@/Components/Student/Microphone";
 import DeniedModal from "@/Components/Student/DeniedModal";
 import TapToStartOverlay from "@/Components/Student/TapToStartOverlay";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 
 import { useGameplayEngine } from "@/hooks/Student/useGameplayEngine";
 import { useSpeechRecognition } from "@/hooks/Student/useSpeechRecognition";
 import { useMicrophonePermission } from "@/hooks/Student/useMicrophonePermission";
 
 export default function GameplaySpeakMode({ module }) {
-    const speechRecognitionWords = module?.words?.map((w) => w.word) ?? [];
+    const speechRecognitionWords = useMemo(() => module?.words?.map((w) => w.word) ?? [], [module?.words]);
 
     const {
         totalWords,
