@@ -79,7 +79,7 @@ const GameplayHeader = memo(function GameplayHeader({
                         </div>
                         <div className="relative">
                             <p className="text-on-background/60 text-[10px] sm:text-xs font-black uppercase tracking-widest leading-none mb-1">
-                                Words Smashed
+                                Score
                             </p>
                             <p className="text-on-background text-2xl sm:text-3xl font-black leading-none italic">
                                 <span

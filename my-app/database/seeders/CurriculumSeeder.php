@@ -59,7 +59,7 @@ class CurriculumSeeder extends Seeder
                 Word::create([
                     'word_module_id' => $module->id,
                     'word' => $word,
-                    'points' => 1,
+                    'points' => rand(1, 5),
                     'position' => $position + 1,
                 ]);
             }

@@ -46,7 +46,7 @@ Enforced by `CheckStudentOnboarding` middleware.
 | `ProgressService` | Update word/paragraph progress (best score only), recalculate status |
 | `BadgeService` | Award badges, check thresholds |
 | `LevelService` | Module lock/current/completed status per student |
-| `DashboardService` | Teacher dashboard stats |
+| `TeacherController::dashboardStats()` | Teacher dashboard stats (private method, no service class) |
 
 Session logging done via `GameSession::logSession()` static method on the model (no service class).
 
@@ -66,7 +66,7 @@ Session logging done via `GameSession::logSession()` static method on the model 
 - `RefreshDatabase` — all tests in transactions.
 - SQLite in-memory — no MySQL features.
 - Mail driver: `array`.
-- `DashboardServiceTest` has 2 pre-existing failures (unrelated).
+- DashboardServiceTest deleted — logic inlined into TeacherController.
 
 ## Data Flow
 

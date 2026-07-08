@@ -8,9 +8,11 @@ use App\Models\ParagraphModule;
 use App\Models\PracticeSet;
 use App\Models\StudentParagraphMastery;
 use App\Models\StudentParagraphProgress;
+use App\Models\ParagraphWord;
 use App\Models\StudentProfile;
 use App\Models\StudentWordMastery;
 use App\Models\StudentWordProgress;
+use App\Models\Word;
 use App\Models\WordModule;
 use App\Services\BadgeService;
 use App\Services\LevelService;
@@ -40,8 +42,8 @@ class StudentController extends Controller
     {
         $user = auth()->user();
 
-        $totalReadPoints = WordModule::withCount('words')->get()->sum('words_count');
-        $totalSpeakPoints = ParagraphModule::withCount('words')->get()->sum('words_count');
+        $totalReadPoints = (int) Word::sum('points');
+        $totalSpeakPoints = (int) ParagraphWord::count();
 
         $earnedReadPoints = StudentWordProgress::where('user_id', $user->id)->sum('words_smashed');
         $earnedSpeakPoints = StudentParagraphProgress::where('user_id', $user->id)->sum('words_smashed');
@@ -193,9 +195,9 @@ class StudentController extends Controller
         $user = auth()->user();
         $module = WordModule::findOrFail($request->module_id);
 
-        $totalPoints = $module->words()->count();
-        $accuracy = $totalPoints > 0
-            ? round(min(($request->words_smashed / $totalPoints) * 100, 100), 2)
+        $totalPossible = $module->words()->sum('points');
+        $accuracy = $totalPossible > 0
+            ? round(min(($request->words_smashed / $totalPossible) * 100, 100), 2)
             : 0;
         $session = GameSession::logSession(
             $user->id, $module->id, 'word', $request->words_smashed, $accuracy, $request->streak ?? 0,
