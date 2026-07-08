@@ -295,6 +295,7 @@ resources/
 - Module assignment
 - Progress monitoring
 - Performance reports
+- Parent Report emails — send performance overviews to parents via Gmail SMTP with deadline-based gating
 - Dashboard analytics
 - Leaderboards
 - Student detail pages
@@ -318,6 +319,7 @@ resources/
 - Teacher analytics dashboard
 - Achievement and badge system
 - Level progression system
+- Parent report email delivery with sent-student tracking
 - Responsive Tailwind CSS interface
 - SQLite in-memory testing
 - Seeded demo environment
