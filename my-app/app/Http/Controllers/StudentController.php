@@ -342,11 +342,10 @@ class StudentController extends Controller
 
         if ($session->module_type === 'word') {
             $module = WordModule::withCount('words')->find($session->module_id);
-            $totalItems = $module->total_points;
         } else {
             $module = ParagraphModule::withCount('words')->find($session->module_id);
-            $totalItems = $module->total_score;
         }
+        $totalItems = $module->words_count;
 
         $user = auth()->user();
         $badgeProgress = $user ? $this->badgeService->getBadgeProgress($user, $session) : [];

@@ -52,8 +52,10 @@ export default function GameResults({
     totalItems,
     badgeProgress,
 }) {
-    const score = Math.min(parseInt(session.score) || 0, totalItems);
-    const isPerfect = score >= totalItems;
+    const displayScore = parseInt(session.score) || 0;
+    const accuracyPct = parseFloat(session.accuracy) || 0;
+    const starScore = Math.round((accuracyPct / 100) * totalItems);
+    const isPerfect = accuracyPct >= 100;
     const { flash } = usePage().props;
     const newBadgeSlugs = flash?.new_badges?.map(b => b.slug) ?? [];
     const newBadges = badgeProgress?.filter(b => newBadgeSlugs.includes(b.slug)) ?? [];
@@ -103,7 +105,7 @@ export default function GameResults({
                         </p>
                     </div>
 
-                    <Stars filled={score} total={totalItems} />
+                    <Stars filled={starScore} total={totalItems} />
 
                     <div className="flex gap-4">
                         <div className="flex-1 bg-surface-container rounded-2xl py-6 px-4 text-center border border-surface-variant/20">
@@ -111,12 +113,12 @@ export default function GameResults({
                                 Score
                             </div>
                             <div className="text-5xl sm:text-6xl font-black text-lime-400">
-                                {score}
+                                {displayScore}
                             </div>
                         </div>
                         <div className="flex-1 bg-surface-container rounded-2xl py-6 px-4 text-center border border-surface-variant/20">
                             <div className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1">
-                                Total
+                                Words
                             </div>
                             <div className="text-5xl sm:text-6xl font-black text-on-surface">
                                 {totalItems}
