@@ -66,6 +66,7 @@ export function useGameplayEngine({
         }
         return () => {
             clearTimeout(wordEntryTimerRef.current);
+            clearTimeout(wordTimeoutRef.current);
         };
     }, [currentWordIndex, gameState]);
 
@@ -138,7 +139,7 @@ export function useGameplayEngine({
                 clearTimeout(completionTimerRef.current);
             completionTimerRef.current = setTimeout(() => {
                 if (isMountedRef.current) {
-                    setGameState(wordsSmashedRef.current > 0 ? "COMPLETED" : "GAMEOVER");
+                    setGameState(wordCountRef.current > 0 ? "COMPLETED" : "GAMEOVER");
                 }
             }, 1200);
         }
@@ -244,7 +245,7 @@ export function useGameplayEngine({
             return;
         }
         persistProgress();
-        if (wordCountRef.current >= totalWords) {
+        if (wordCountRef.current > 0) {
             setGameState("COMPLETED");
         } else {
             setGameState("GAMEOVER");
