@@ -12,10 +12,10 @@ Route::middleware('guest')->group(function () {
     Route::post('/', [UserController::class, 'login']);
     Route::get('/teacher/login', [UserController::class, 'teacherLogin'])->name('teacher.login');
     Route::post('/teacher/login', [UserController::class, 'teacherLoginPost']);
-    // Route::get('/tutorial', [StudentController::class, 'tutorial'])->name('tutorial');
+    Route::get('/tutorial', [StudentController::class, 'tutorial'])->name('tutorial');
 });
 
-// Route::inertia("/", "Testing/Microphone");
+//   Route::inertia("/", "Testing/Microphone");
 
 Route::middleware(['auth'])->group(function () {
     Route::post('/logout', [UserController::class, 'logout'])->name('logout');

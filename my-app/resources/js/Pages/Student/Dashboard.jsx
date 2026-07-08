@@ -1,4 +1,4 @@
-import { Link, usePage } from "@inertiajs/react";
+import { Link } from "@inertiajs/react";
 import { useState, useEffect, useCallback } from "react";
 import DashboardLayout from "../../Layouts/Student/DashboardLayout";
 
