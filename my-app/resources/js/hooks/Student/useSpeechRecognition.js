@@ -76,6 +76,8 @@ export function useSpeechRecognition({
 
             recognition.onresult = (event) => {
                 if (!propsRef.current.isActive) return;
+                clearTimeout(mispronounceTimeoutRef.current);
+                mispronounceTimeoutRef.current = null;
 
                 const target = propsRef.current.targetWord.toLowerCase().trim();
                 if (!target) return;
