@@ -108,11 +108,11 @@ export default function GameplaySpeakMode({ module }) {
             <DeniedModal gameState={gameState} />
             <GameplayHeader {...headerProps} />
             {gameState === "IDLE" && (
-                <TapToStartOverlay color="sky" />
+                <TapToStartOverlay color="sky" permissionState={permissionState} />
             )}
             <SpeakModeMainContent
                 words={speechRecognitionWords}
-                currentIndex={Math.min(currentWordIndex, totalWords - 1)}
+                currentIndex={Math.max(0, Math.min(currentWordIndex, totalWords - 1))}
                 gameState={gameState}
                 countdownValue={countdownValue}
                 isExploding={isExploding}

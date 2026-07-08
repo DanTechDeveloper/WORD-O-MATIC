@@ -207,7 +207,7 @@ export default function PracticePage({ module, mode = "read" }) {
             <div data-purpose="word-display" className="flex-1 flex">
                 <ContentComponent
                     words={wordsForContent}
-                    currentIndex={Math.min(currentWordIndex, totalWords - 1)}
+                    currentIndex={Math.max(0, Math.min(currentWordIndex, totalWords - 1))}
                     gameState={gameState}
                     countdownValue={countdownValue}
                     isExploding={isExploding}
