@@ -57,7 +57,7 @@ Session logging done via `GameSession::logSession()` static method on the model 
 - After each task: list changed files + what changed + intentionally untouched + follow-up.
 - Frontend pages: `resources/js/Pages/{Student,Teacher}/`. Hooks: `hooks/`. Components: `Components/`.
 - Inertia forms: `router.post` / `router.put`.
-- New DB field: migration → `$fillable` → controller response array.
+- New DB field: migration → `$fillable` → controller response array. (Fields missing from `$fillable` are silently dropped by mass-assignment, e.g., `report_sent_at` bug.)
 - Validation: inline `$request->validate()` in controllers (no Form Request pattern).
 - Auth: middleware-based (`EnsureUserRole`), no Policy files.
 

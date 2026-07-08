@@ -1,6 +1,6 @@
 # Database
 
-> Version 1.1
+> Version 1.2
 
 All migrations in `database/migrations/`. No raw SQL. All foreign keys on `user_id` use `cascadeOnDelete`.
 
@@ -17,7 +17,7 @@ All migrations in `database/migrations/`. No raw SQL. All foreign keys on `user_
 
 | Table | Key Fields | Notes |
 |---|---|---|
-| `students` | `user_id, points, avatar, status, wordBlastAcc, storyQuestAcc, read_level, speak_level, section, gender, parent_email, tutorial_completed_at` | Denormalized stats, best-score-only updates. Cascade on `user_id`. |
+| `students` | `user_id, points, avatar, status, wordBlastAcc, storyQuestAcc, read_level, speak_level, section, gender, parent_email, tutorial_completed_at, report_sent_at` | Denormalized stats, best-score-only updates. `report_sent_at` set when parent report email is queued. Cascade on `user_id`. |
 | `student_word_progress` | `user_id, word_module_id, status, words_smashed, accuracy` | Overwritten on best score. Cascade. |
 | `student_paragraph_progress` | `user_id, paragraph_module_id, status, words_smashed` | Overwritten on best score. Cascade. |
 | `student_word_mastery` | `user_id, word_id, status` | Per-word mastery toggle. Cascade. |

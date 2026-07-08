@@ -1,6 +1,6 @@
 # Reports
 
-> Version 1.1
+> Version 1.2
 
 ## Dashboard
 
@@ -30,6 +30,12 @@ Training words filtered by `created_at <= deadline`.
 - Teacher clicks Send — response returns immediately, mail processed by queue worker.
 - `reported_at` = deadline timestamp (not current time).
 - Flash data (`sent`, `failed`, `reported_at`) exposed to frontend via `HandleInertiaRequests`.
+
+## Sent Tracking
+
+- `students.report_sent_at` timestamp set after each successful email queue (line 379 of `TeacherController`).
+- Students with a non-null `report_sent_at` are hidden from the selection list and moved to a collapsible "Already Sent" section above the student list.
+- Field must be added to `$fillable` in `StudentProfile` model (silent drop otherwise).
 
 ## Exports
 
