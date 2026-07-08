@@ -65,7 +65,7 @@ export default function Reports({ grouped, flash, deadline }) {
             { student_ids: Array.from(selectedIds) },
             {
                 preserveScroll: true,
-                preserveState: true,
+                onSuccess: () => setSelectedIds(new Set()),
                 onFinish: () => {
                     setSending(false);
                     sendingRef.current = false;
@@ -102,6 +102,7 @@ export default function Reports({ grouped, flash, deadline }) {
 
     const [statusTab, setStatusTab] = useState("");
     const [searchQuery, setSearchQuery] = useState("");
+    const [showSent, setShowSent] = useState(false);
 
     const statusTabs = [
         { value: "", label: "All" },
@@ -244,98 +245,162 @@ export default function Reports({ grouped, flash, deadline }) {
         </div>
     );
 
-    const renderStudentList = () => (
-        <div className="space-y-6">
-            {statusOrder.map((statusKey) => {
-                const students = (grouped[statusKey] || []).filter((s) =>
-                    s.name.toLowerCase().includes(searchQuery.toLowerCase())
-                );
-                const cfg = STATUS_CONFIG[statusKey];
-                if (students.length === 0) return null;
+    const allStudentsFlat = Object.values(grouped).flat();
+    const sentIds = new Set(allStudentsFlat.filter((s) => s.report_sent_at).map((s) => s.id));
+    const sentStudents = allStudentsFlat.filter((s) => s.report_sent_at);
 
-                const allSelected = students.every((s) => selectedIds.has(s));
-                const someSelected = students.some((s) => selectedIds.has(s));
+    const renderSentSection = () => {
+        if (sentStudents.length === 0) return null;
 
-                return (
-                    <div
-                        key={statusKey}
-                        className={`${cfg.bg} border-2 ${cfg.border} rounded-2xl overflow-hidden`}
-                    >
-                        <div className="flex items-center justify-between px-6 py-4 border-b-2 border-slate-700/50">
-                            <div className="flex items-center gap-3">
-                                <input
-                                    type="checkbox"
-                                    checked={allSelected}
-                                    disabled={!isPastDeadline}
-                                    ref={(el) => {
-                                        if (el) el.indeterminate = someSelected && !allSelected;
-                                    }}
-                                    onChange={() => toggleGroup(students)}
-                                    className="w-5 h-5 rounded border-slate-600 bg-slate-800 text-purple-500 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                                />
-                                <div className={`${cfg.color} w-3 h-3 rounded-full`} />
-                                <span className="text-white font-black uppercase italic text-sm">
-                                    {cfg.label}
-                                </span>
-                                <span className="text-slate-500 font-bold text-sm">
-                                    ({students.length})
-                                </span>
+        return (
+            <div className="mb-6 bg-slate-900 border-2 border-slate-700 rounded-2xl overflow-hidden">
+                <button
+                    onClick={() => setShowSent((prev) => !prev)}
+                    className="w-full flex items-center justify-between px-6 py-4 transition-colors hover:bg-slate-800/50"
+                >
+                    <div className="flex items-center gap-3">
+                        <span className={`material-symbols-outlined text-slate-400 transition-transform ${showSent ? "rotate-90" : ""}`}>
+                            chevron_right
+                        </span>
+                        <span className="text-white font-black uppercase italic text-sm">
+                            Already Sent
+                        </span>
+                        <span className="text-slate-500 font-bold text-sm">
+                            ({sentStudents.length})
+                        </span>
+                    </div>
+                </button>
+
+                {showSent && (
+                    <div className="divide-y divide-slate-700/30 border-t border-slate-700/50">
+                        {sentStudents.map((student) => (
+                            <div
+                                key={student.id}
+                                className="flex items-center gap-4 px-6 py-3"
+                            >
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-white font-bold truncate">
+                                            {student.name}
+                                        </span>
+                                        <span className="text-xs text-lime-400 font-black uppercase shrink-0 border border-lime-500/50 px-2 py-0.5 rounded-full">
+                                            Sent
+                                        </span>
+                                        {!student.parent_email && (
+                                            <span className="text-xs text-rose-400 font-black uppercase shrink-0 border border-rose-500/50 px-2 py-0.5 rounded-full">
+                                                No Email
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="text-slate-600 shrink-0">
+                                    <span className="material-symbols-outlined text-lg">
+                                        {student.parent_email ? "mail" : "mail_off"}
+                                    </span>
+                                </div>
                             </div>
-                        </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        );
+    };
 
-                        <div className="divide-y divide-slate-700/30">
-                            {students.map((student) => (
-                                <label
-                                    key={student.id}
-                                    className={`flex items-center gap-4 px-6 py-3 transition-colors ${
-                                        isPastDeadline ? "hover:bg-slate-800/50 cursor-pointer" : "cursor-default"
-                                    }`}
-                                >
+    const renderStudentList = () => {
+
+        return (
+            <div className="space-y-6">
+                {statusOrder.map((statusKey) => {
+                    const students = (grouped[statusKey] || [])
+                        .filter((s) => !sentIds.has(s.id))
+                        .filter((s) => s.name.toLowerCase().includes(searchQuery.toLowerCase()));
+                    const cfg = STATUS_CONFIG[statusKey];
+                    if (students.length === 0) return null;
+
+                    const allSelected = students.every((s) => selectedIds.has(s));
+                    const someSelected = students.some((s) => selectedIds.has(s));
+
+                    return (
+                        <div
+                            key={statusKey}
+                            className={`${cfg.bg} border-2 ${cfg.border} rounded-2xl overflow-hidden`}
+                        >
+                            <div className="flex items-center justify-between px-6 py-4 border-b-2 border-slate-700/50">
+                                <div className="flex items-center gap-3">
                                     <input
                                         type="checkbox"
-                                        checked={selectedIds.has(student.id)}
+                                        checked={allSelected}
                                         disabled={!isPastDeadline}
-                                        onChange={() => toggleStudent(student.id)}
+                                        ref={(el) => {
+                                            if (el) el.indeterminate = someSelected && !allSelected;
+                                        }}
+                                        onChange={() => toggleGroup(students)}
                                         className="w-5 h-5 rounded border-slate-600 bg-slate-800 text-purple-500 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
                                     />
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-white font-bold truncate">
-                                                {student.name}
-                                            </span>
-                                            {!student.parent_email && (
-                                                <span className="text-xs text-rose-400 font-black uppercase shrink-0 border border-rose-500/50 px-2 py-0.5 rounded-full">
-                                                    No Email
-                                                </span>
-                                            )}
-                                        </div>
-                                        <div className="flex items-center gap-4 text-xs text-slate-500 font-semibold mt-0.5">
-                                            <span>Word Blast: {student.wordBlastAcc ?? 0}%</span>
-                                            <span>Story Quest: {student.storyQuestAcc ?? 0}%</span>
-                                        </div>
-                                    </div>
-                                    <div className="text-slate-600 shrink-0">
-                                        <span className="material-symbols-outlined text-lg">
-                                            {student.parent_email ? "mail" : "mail_off"}
-                                        </span>
-                                    </div>
-                                </label>
-                            ))}
-                        </div>
-                    </div>
-                );
-            })}
+                                    <div className={`${cfg.color} w-3 h-3 rounded-full`} />
+                                    <span className="text-white font-black uppercase italic text-sm">
+                                        {cfg.label}
+                                    </span>
+                                    <span className="text-slate-500 font-bold text-sm">
+                                        ({students.length})
+                                    </span>
+                                </div>
+                            </div>
 
-            {statusOrder.every((k) => (grouped[k] || []).length === 0) && (
-                <div className="text-center py-20">
-                    <span className="material-symbols-outlined text-6xl text-slate-700 mb-4">
-                        group_off
-                    </span>
-                    <p className="text-slate-500 font-bold">No students found.</p>
-                </div>
-            )}
-        </div>
-    );
+                            <div className="divide-y divide-slate-700/30">
+                                {students.map((student) => (
+                                    <label
+                                        key={student.id}
+                                        className={`flex items-center gap-4 px-6 py-3 transition-colors ${
+                                            isPastDeadline ? "hover:bg-slate-800/50 cursor-pointer" : "cursor-default"
+                                        }`}
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedIds.has(student.id)}
+                                            disabled={!isPastDeadline}
+                                            onChange={() => toggleStudent(student.id)}
+                                            className="w-5 h-5 rounded border-slate-600 bg-slate-800 text-purple-500 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        />
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-white font-bold truncate">
+                                                    {student.name}
+                                                </span>
+                                                {!student.parent_email && (
+                                                    <span className="text-xs text-rose-400 font-black uppercase shrink-0 border border-rose-500/50 px-2 py-0.5 rounded-full">
+                                                        No Email
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div className="flex items-center gap-4 text-xs text-slate-500 font-semibold mt-0.5">
+                                                <span>Word Blast: {student.wordBlastAcc ?? 0}%</span>
+                                                <span>Story Quest: {student.storyQuestAcc ?? 0}%</span>
+                                            </div>
+                                        </div>
+                                        <div className="text-slate-600 shrink-0">
+                                            <span className="material-symbols-outlined text-lg">
+                                                {student.parent_email ? "mail" : "mail_off"}
+                                            </span>
+                                        </div>
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
+                    );
+                })}
+
+                {statusOrder.every((k) => (grouped[k] || []).length === 0) && (
+                    <div className="text-center py-20">
+                        <span className="material-symbols-outlined text-6xl text-slate-700 mb-4">
+                            group_off
+                        </span>
+                        <p className="text-slate-500 font-bold">No students found.</p>
+                    </div>
+                )}
+            </div>
+        );
+    };
 
     return (
         <DashboardLayout>
@@ -485,6 +550,8 @@ export default function Reports({ grouped, flash, deadline }) {
                             </p>
                         )}
                     </div>
+
+                    {renderSentSection()}
 
                     {renderStudentList()}
                 </div>

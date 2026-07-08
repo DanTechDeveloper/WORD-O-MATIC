@@ -289,6 +289,7 @@ class TeacherController extends Controller
             'speak_level' => $user->student?->speak_level ?? 1,
             'status' => $user->student?->status ?? 'notStarted',
             'parent_email' => $user->student?->parent_email,
+            'report_sent_at' => $user->student?->report_sent_at,
             'trainingWords' => $wordTraining[$user->id] ?? [],
             'paragraphTrainingWords' => $paraTraining[$user->id] ?? [],
         ]);
@@ -374,6 +375,8 @@ class TeacherController extends Controller
                 'paragraphTrainingWords' => $paraTraining[$user->id] ?? [],
                 'reported_at' => $deadlineTs->format('F j, Y \a\t g:i A'),
             ]));
+
+            $user->student->update(['report_sent_at' => now()]);
 
             $sent++;
         }
