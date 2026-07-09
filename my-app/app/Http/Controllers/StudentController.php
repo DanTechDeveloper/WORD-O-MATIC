@@ -173,7 +173,7 @@ class StudentController extends Controller
     public function gameplayReadMode($id)
     {
         // Fetch module with words and calculate student progress
-        $module = WordModule::with(['words' => fn ($q) => $q->reorder()->inRandomOrder()])
+        $module = WordModule::with('words')
             ->select(['id', 'level', 'title'])
             ->findOrFail($id);
 

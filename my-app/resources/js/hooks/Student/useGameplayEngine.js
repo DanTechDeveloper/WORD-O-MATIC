@@ -42,10 +42,10 @@ export function useGameplayEngine({
     const mispronounceTimerRef = useRef(null);
     const mispronounceGuardRef = useRef(false);
     const wordRecognizedTimerRef = useRef(null);
-    const processedIdsRef = useRef(new Set());
     const onWordRecognizedRef = useRef(onWordRecognized);
     const onMispronounceRef = useRef(onMispronounce);
     const onMispronounceFnRef = useRef(null);
+    const wordsRef = useRef(words);
 
     onWordRecognizedRef.current = onWordRecognized;
     onMispronounceRef.current = onMispronounce;
@@ -93,13 +93,13 @@ export function useGameplayEngine({
     }, [totalWords]);
 
     const targetWord = useMemo(() => {
-        const allWords = words.map((w) => w.word);
+        const allWords = wordsRef.current.map((w) => w.word);
         return (
             allWords[currentWordIndex]
                 ?.replace(/[^\w\s]/g, "")
                 .toLowerCase() || ""
         );
-    }, [words, currentWordIndex]);
+    }, [currentWordIndex]);
 
     const persistProgress = useCallback(() => {
         if (!hasSaved.current) {
@@ -141,9 +141,8 @@ export function useGameplayEngine({
 
     const handleWordRecognized = useCallback(() => {
         playSuccessSound()
-        const wordObj = words[currentWordIndexRef.current];
-        if (!wordObj || processedIdsRef.current.has(wordObj.id)) return;
-        processedIdsRef.current.add(wordObj.id);
+        const wordObj = wordsRef.current[currentWordIndexRef.current];
+        if (!wordObj) return;
         onWordRecognizedRef.current?.(wordObj);
 
         const points = typeof getPoints === "function" ? getPoints(wordObj) : wordObj?.points || 0;
@@ -193,19 +192,18 @@ export function useGameplayEngine({
         wordRecognizedTimerRef.current = setTimeout(() => {
             setIsExploding(false);
         }, 500);
-    }, [words, moveToNextWord]);
+    }, [moveToNextWord]);
 
     const handleMispronounce = useCallback(() => {
         if (mispronounceGuardRef.current) return
         mispronounceGuardRef.current = true
 
         clearTimeout(wordTimeoutRef.current);
-        const wordObj = words[currentWordIndexRef.current];
-        if (!wordObj || processedIdsRef.current.has(wordObj.id)) {
+        const wordObj = wordsRef.current[currentWordIndexRef.current];
+        if (!wordObj) {
             mispronounceGuardRef.current = false;
             return;
         }
-        processedIdsRef.current.add(wordObj.id);
         onMispronounceRef.current?.(wordObj);
 
         currentStreakRef.current = 0;
@@ -228,7 +226,7 @@ export function useGameplayEngine({
             setIsMispronounced(false);
             mispronounceGuardRef.current = false;
         }, 800);
-    }, [words, moveToNextWord]);
+    }, [moveToNextWord]);
 
     onMispronounceFnRef.current = handleMispronounce;
 
