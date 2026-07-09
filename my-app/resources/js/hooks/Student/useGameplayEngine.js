@@ -35,17 +35,19 @@ export function useGameplayEngine({
     const feedbackTimerRef = useRef(null);
     const isMountedRef = useRef(true);
     const currentWordIndexRef = useRef(0);
-    const completionTimerRef = useRef(null);
     const wordEntryTimerRef = useRef(null);
     const streakShakeTimerRef = useRef(null);
     const wordsSmashedRef = useRef(0);
     const mispronounceTimerRef = useRef(null);
     const mispronounceGuardRef = useRef(false);
     const wordRecognizedTimerRef = useRef(null);
+    const pointsFeedbackTimerRef = useRef(null);
+    const scoreEmphasizeTimerRef = useRef(null);
     const onWordRecognizedRef = useRef(onWordRecognized);
     const onMispronounceRef = useRef(onMispronounce);
     const onMispronounceFnRef = useRef(null);
     const wordsRef = useRef(words);
+    const wordRecognizedGuardRef = useRef(false);
 
     onWordRecognizedRef.current = onWordRecognized;
     onMispronounceRef.current = onMispronounce;
@@ -57,6 +59,10 @@ export function useGameplayEngine({
     useEffect(() => {
         wordsSmashedRef.current = wordsSmashed;
     }, [wordsSmashed]);
+
+    useEffect(() => {
+        wordsRef.current = words;
+    }, [words]);
 
     useEffect(() => {
         if (gameState === "ACTIVE") {
@@ -79,27 +85,23 @@ export function useGameplayEngine({
             clearTimeout(feedbackTimerRef.current);
             clearTimeout(streakShakeTimerRef.current);
             clearTimeout(wordTimeoutRef.current);
-            if (completionTimerRef.current)
-                clearTimeout(completionTimerRef.current);
+            clearTimeout(pointsFeedbackTimerRef.current);
+            clearTimeout(scoreEmphasizeTimerRef.current);
         };
     }, []);
 
     const moveToNextWord = useCallback(() => {
-        setCurrentWordIndex((prev) => {
-            const next = Math.min(prev + 1, totalWords);
-            currentWordIndexRef.current = next;
-            return next;
-        });
+        setCurrentWordIndex((prev) => Math.min(prev + 1, totalWords));
     }, [totalWords]);
 
     const targetWord = useMemo(() => {
-        const allWords = wordsRef.current.map((w) => w.word);
+        const allWords = words.map((w) => w.word);
         return (
             allWords[currentWordIndex]
                 ?.replace(/[^\w\s]/g, "")
                 .toLowerCase() || ""
         );
-    }, [currentWordIndex]);
+    }, [currentWordIndex, words]);
 
     const persistProgress = useCallback(() => {
         if (!hasSaved.current) {
@@ -130,30 +132,28 @@ export function useGameplayEngine({
                 return;
             }
             persistProgressRef.current();
-            setGameState(wordsSmashedRef.current > 0 ? "COMPLETED" : "GAMEOVER");
+            setGameState("COMPLETED");
         }
     }, [currentWordIndex, totalWords, gameState, onComplete]);
 
     const handleWordRecognized = useCallback(() => {
+        if (wordRecognizedGuardRef.current) return;
+        wordRecognizedGuardRef.current = true;
         playSuccessSound()
         const wordObj = wordsRef.current[currentWordIndexRef.current];
         if (!wordObj) return;
         onWordRecognizedRef.current?.(wordObj);
 
         const points = typeof getPoints === "function" ? getPoints(wordObj) : 1;
-        setWordsSmashed((prev) => {
-            const next = prev + points;
-            wordsSmashedRef.current = next;
-            return next;
-        });
+        setWordsSmashed((prev) => prev + points);
         currentStreakRef.current += 1;
         setCurrentStreak(currentStreakRef.current);
         setMaxStreak((m) => Math.max(m, currentStreakRef.current));
         setPointsFeedbackValue(points);
         setShowPointsFeedback(true);
-        setTimeout(() => setShowPointsFeedback(false), 500);
+        pointsFeedbackTimerRef.current = setTimeout(() => setShowPointsFeedback(false), 500);
         setScoreEmphasize(true);
-        setTimeout(() => setScoreEmphasize(false), 500);
+        scoreEmphasizeTimerRef.current = setTimeout(() => setScoreEmphasize(false), 500);
 
         const streak = currentStreakRef.current;
         let fbMsg;
@@ -186,6 +186,7 @@ export function useGameplayEngine({
         wordRecognizedTimerRef.current = setTimeout(() => {
             setIsExploding(false);
             moveToNextWord();
+            wordRecognizedGuardRef.current = false;
         }, 500);
     }, [moveToNextWord]);
 
@@ -246,7 +247,7 @@ export function useGameplayEngine({
             return;
         }
         persistProgress();
-        if (wordsSmashedRef.current >= totalWords) {
+        if (currentWordIndexRef.current >= totalWords) {
             setGameState("COMPLETED");
         } else {
             setGameState("GAMEOVER");
