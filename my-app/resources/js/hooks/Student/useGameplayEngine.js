@@ -64,7 +64,7 @@ export function useGameplayEngine({
             clearTimeout(wordEntryTimerRef.current);
             wordEntryTimerRef.current = setTimeout(() => {
                 setIsWordReady(true);
-            }, 1000);
+            }, 500);
         }
         return () => {
             clearTimeout(wordEntryTimerRef.current);
@@ -111,13 +111,6 @@ export function useGameplayEngine({
                     words_smashed: wordsSmashedRef.current,
                     words_processed: currentWordIndexRef.current,
                     streak: currentStreakRef.current,
-                },
-                {
-                    preserveScroll: true,
-                    preserveState: true,
-                    replace: true,
-                    onSuccess: () =>
-                        console.log("Progress saved successfully!"),
                 },
             );
         }
@@ -190,9 +183,9 @@ export function useGameplayEngine({
 
         clearTimeout(wordRecognizedTimerRef.current);
         setIsExploding(true);
-        moveToNextWord();
         wordRecognizedTimerRef.current = setTimeout(() => {
             setIsExploding(false);
+            moveToNextWord();
         }, 500);
     }, [moveToNextWord]);
 
@@ -222,11 +215,11 @@ export function useGameplayEngine({
         }, 700);
 
         setIsMispronounced(true);
-        moveToNextWord();
         clearTimeout(mispronounceTimerRef.current);
         mispronounceTimerRef.current = setTimeout(() => {
             setIsMispronounced(false);
             mispronounceGuardRef.current = false;
+            moveToNextWord();
         }, 800);
     }, [moveToNextWord]);
 
