@@ -151,7 +151,7 @@ export function useGameplayEngine({
 
         const points = typeof getPoints === "function" ? getPoints(wordObj) : wordObj?.points || 0;
         setWordsSmashed((prev) => {
-            const next = prev + 1;
+            const next = prev + points;
             wordsSmashedRef.current = next;
             return next;
         });
@@ -262,26 +262,6 @@ export function useGameplayEngine({
         setGameState("ACTIVE"),
     );
 
-    const handlePlayAgain = useCallback(() => {
-        hasSaved.current = false;
-        clearTimeout(mispronounceTimerRef.current);
-        clearTimeout(wordRecognizedTimerRef.current);
-        clearTimeout(wordTimeoutRef.current);
-        if (completionTimerRef.current) {
-            clearTimeout(completionTimerRef.current);
-        }
-        currentWordIndexRef.current = 0;
-        setCurrentWordIndex(0);
-        setWordsSmashed(0);
-        currentStreakRef.current = 0;
-        setMaxStreak(0);
-        setIsMispronounced(false);
-        setIsExploding(false);
-        setFeedbackType(null);
-        setFeedbackMessage("");
-        setStreakShake(null);
-        setGameState("COUNTDOWN");
-    }, []);
 
     const startGame = useCallback(() => {
         setGameState((prev) => (prev === "IDLE" ? "COUNTDOWN" : prev));
@@ -307,7 +287,6 @@ export function useGameplayEngine({
         countdownValue,
         targetWord,
         handleTimeUp,
-        handlePlayAgain,
         startGame,
         handleWordRecognized,
         handleMispronounce,
