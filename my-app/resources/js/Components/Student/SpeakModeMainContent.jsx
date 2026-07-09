@@ -99,8 +99,8 @@ const SpeakModeMainContent = memo(function SpeakModeMainContent({
                                     <span
                                         className={`font-black italic whitespace-nowrap ${
                                             feedbackType === "correct"
-                                                ? "text-xl sm:text-2xl md:text-3xl text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-amber-400 to-orange-500"
-                                                : "text-lg sm:text-xl md:text-2xl text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-sky-400 to-blue-500"
+                                                ? "text-3xl sm:text-4xl md:text-5xl text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-amber-400 to-orange-500"
+                                                : "text-2xl sm:text-3xl md:text-4xl text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-sky-400 to-blue-500"
                                         }`}
                                         style={{
                                             filter:
@@ -144,7 +144,7 @@ const SpeakModeMainContent = memo(function SpeakModeMainContent({
                                 {words.map((word, index) => (
                                     <span
                                         key={index}
-                                        className={`transition-all duration-300 ${
+                                        className={`transition-all duration-300 whitespace-nowrap ${
                                             index < currentIndex
                                                 ? "opacity-20 text-on-background"
                                                 : index === currentIndex

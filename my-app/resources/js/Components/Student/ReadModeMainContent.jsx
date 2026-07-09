@@ -155,10 +155,10 @@ const ReadModeMainContent = memo(function ReadModeMainContent({
                             <div className="flex items-center justify-center gap-4 mb-2">
                                 {feedbackType && (
                                     <span
-                                        className={`font-black ${
+                                        className={`font-black whitespace-nowrap ${
                                             feedbackType === "correct"
-                                                ? "text-xl sm:text-2xl md:text-3xl text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-emerald-300 to-lime-400"
-                                                : "text-lg sm:text-xl md:text-2xl text-transparent bg-clip-text bg-gradient-to-r from-fuchsia-300 via-pink-400 to-rose-500"
+                                                ? "text-3xl sm:text-4xl md:text-5xl text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-emerald-300 to-lime-400"
+                                                : "text-2xl sm:text-3xl md:text-4xl text-transparent bg-clip-text bg-gradient-to-r from-fuchsia-300 via-pink-400 to-rose-500"
                                         }`}
                                         style={{
                                             filter:
