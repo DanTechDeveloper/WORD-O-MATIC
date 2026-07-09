@@ -76,8 +76,6 @@ export function useSpeechRecognition({
 
             recognition.onresult = (event) => {
                 if (!propsRef.current.isActive) return;
-                clearTimeout(mispronounceTimeoutRef.current);
-                mispronounceTimeoutRef.current = null;
 
                 const target = propsRef.current.targetWord.toLowerCase().trim();
                 if (!target) return;
@@ -104,9 +102,10 @@ export function useSpeechRecognition({
 
                     latestTranscript = transcript;
 
-                    const isMatch = propsRef.current.isWordMode
-                        ? transcript.split(/\s+/).some((w) => isFuzzyMatch(w, target))
-                        : isFuzzyMatch(transcript, target) || transcript.includes(target);
+                    const wordsInTranscript = transcript.split(/\s+/);
+                    const isMatch = wordsInTranscript.some(
+                        (w) => isFuzzyMatch(w, target),
+                    );
 
                     if (isMatch && !hasMatchedCurrentRef.current) {
                         hasMatchedCurrentRef.current = true;
