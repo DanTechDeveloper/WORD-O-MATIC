@@ -114,6 +114,8 @@ export function useGameplayEngine({
                 },
                 {
                     preserveScroll: true,
+                    preserveState: true,
+                    replace: true,
                     onSuccess: () =>
                         console.log("Progress saved successfully!"),
                 },

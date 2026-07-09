@@ -18,11 +18,11 @@ class CurriculumSeeder extends Seeder
             3 => ['star', 'drum', 'frog', 'milk', 'nest', 'sand', 'belt', 'fist', 'golf', 'hand'],
             4 => ['grass', 'train', 'plate', 'broom', 'snake', 'grape', 'trail', 'flame', 'clamp', 'brick'],
             5 => ['rabbit', 'window', 'pencil', 'basket', 'kitten', 'napkin', 'picnic', 'helmet', 'muffin', 'lantern'],
-            6 => ['replay', 'prefix', 'unseen', 'redo', 'undo', 'preview', 'unhappy', 'reload', 'rewrite', 'subway', 'midair', 'midday', 'outrun', 'outside', 'overact'],
-            7 => ['slowly', 'joyful', 'fearless', 'quickly', 'useful', 'careful', 'loudly', 'kindly', 'sadly', 'painful', 'weakly', 'lovely', 'helpless', 'powerful', 'gladly'],
-            8 => ['rainbow', 'sunset', 'popcorn', 'bedroom', 'toothbrush', 'football', 'pancake', 'firefly', 'starfish', 'cupcake', 'airplane', 'snowman', 'bookshelf', 'earring', 'moonlight'],
-            9 => ['explore', 'beautiful', 'adventure', 'dinosaur', 'enormous', 'fantastic', 'astronaut', 'discover', 'important', 'vegetable', 'volcano', 'tropical', 'magnificent', 'mysterious', 'extraordinary', 'courageous', 'legendary', 'remarkable', 'spectacular', 'unbelievable'],
-            10 => ['perseverance', 'accomplishment', 'extraordinary', 'responsibility', 'determination', 'communication', 'collaboration', 'environment', 'celebration', 'imagination', 'investigation', 'organization', 'transformation', 'appreciation', 'multiplication', 'transportation', 'pronunciation', 'experimentation', 'interpretation', 'representation'],
+            6 => ['replay', 'prefix', 'unseen', 'redo', 'undo', 'preview', 'unhappy', 'reload', 'rewrite', 'subway'],
+            7 => ['slowly', 'joyful', 'fearless', 'quickly', 'useful', 'careful', 'loudly', 'kindly', 'sadly', 'painful'],
+            8 => ['rainbow', 'sunset', 'popcorn', 'bedroom', 'toothbrush', 'football', 'pancake', 'firefly', 'starfish', 'cupcake'],
+            9 => ['explore', 'beautiful', 'adventure', 'dinosaur', 'enormous', 'fantastic', 'astronaut', 'discover', 'important', 'vegetable'],
+            10 => ['perseverance', 'accomplishment', 'extraordinary', 'responsibility', 'determination', 'communication', 'collaboration', 'environment', 'celebration', 'imagination'],
         ];
 
         $titles = [
