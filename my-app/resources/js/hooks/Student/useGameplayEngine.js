@@ -145,7 +145,7 @@ export function useGameplayEngine({
         if (!wordObj) return;
         onWordRecognizedRef.current?.(wordObj);
 
-        const points = typeof getPoints === "function" ? getPoints(wordObj) : wordObj?.points || 0;
+        const points = typeof getPoints === "function" ? getPoints(wordObj) : 1;
         setWordsSmashed((prev) => {
             const next = prev + points;
             wordsSmashedRef.current = next;

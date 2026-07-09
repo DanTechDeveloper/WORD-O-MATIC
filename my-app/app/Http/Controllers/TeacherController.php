@@ -316,7 +316,6 @@ class TeacherController extends Controller
                     return [
                         'id' => $word->id,
                         'word' => $word->word,
-                        'points' => $word->points,
                         'position' => $word->position,
                     ];
                 }),
@@ -335,7 +334,6 @@ class TeacherController extends Controller
             'title' => 'required|string|max:255',
             'words' => 'required|array|size:10',
             'words.*.word' => 'nullable|string',
-            'words.*.points' => 'nullable|numeric|min:0',
             'totalScore' => 'nullable|numeric',
         ]);
 

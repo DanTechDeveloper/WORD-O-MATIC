@@ -25,7 +25,7 @@ class WordModule extends Model
 
     public function getTotalPointsAttribute(): int
     {
-        return $this->relationLoaded('words') ? $this->words->sum('points') : ($this->words_sum_points ?? $this->words()->sum('points'));
+        return $this->relationLoaded('words') ? $this->words->count() : $this->words()->count();
     }
 
     public static function trainingWordsForUser(int $userId): array
@@ -107,11 +107,8 @@ class WordModule extends Model
             $wordText = trim($wordData['word'] ?? '');
 
             if ($wordText !== '') {
-                $points = (isset($wordData['points']) && $wordData['points'] !== '') ? (int) $wordData['points'] : 1;
-
                 $module->words()->create([
                     'word' => strtoupper($wordText),
-                    'points' => $points,
                     'position' => $index + 1,
                 ]);
             }

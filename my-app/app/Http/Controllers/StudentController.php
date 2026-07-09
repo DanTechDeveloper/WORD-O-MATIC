@@ -42,7 +42,7 @@ class StudentController extends Controller
     {
         $user = auth()->user();
 
-        $totalReadPoints = (int) Word::sum('points');
+        $totalReadPoints = (int) Word::count();
         $totalSpeakPoints = (int) ParagraphWord::count();
 
         $earnedReadPoints = StudentWordProgress::where('user_id', $user->id)->sum('words_smashed');
@@ -196,7 +196,7 @@ class StudentController extends Controller
         $user = auth()->user();
         $module = WordModule::findOrFail($request->module_id);
 
-        $totalPossible = $module->words()->sum('points');
+        $totalPossible = $module->words()->count();
         $accuracy = $totalPossible > 0
             ? round(min(($request->words_smashed / $totalPossible) * 100, 100), 2)
             : 0;

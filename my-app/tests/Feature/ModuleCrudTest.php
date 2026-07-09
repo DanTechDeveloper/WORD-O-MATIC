@@ -27,8 +27,8 @@ class ModuleCrudTest extends TestCase
             'level' => 1,
             'title' => 'Module Alpha',
             'words' => [
-                ['word' => 'apple', 'points' => 2],
-                ['word' => 'banana', 'points' => 1],
+                ['word' => 'apple'],
+                ['word' => 'banana'],
             ],
         ]);
 
@@ -37,7 +37,7 @@ class ModuleCrudTest extends TestCase
         $this->assertEquals('Module Alpha', $module->title);
         $this->assertCount(2, $module->words);
         $this->assertEquals('APPLE', $module->words[0]->word);
-        $this->assertEquals(2, $module->words[0]->points);
+        $this->assertEquals('BANANA', $module->words[1]->word);
     }
 
     public function test_save_word_module_overwrites_existing_module(): void
@@ -45,13 +45,13 @@ class ModuleCrudTest extends TestCase
         WordModule::saveWithWords([
             'level' => 1,
             'title' => 'Original',
-            'words' => [['word' => 'old', 'points' => 1]],
+            'words' => [['word' => 'old']],
         ]);
 
         WordModule::saveWithWords([
             'level' => 1,
             'title' => 'Updated',
-            'words' => [['word' => 'new', 'points' => 2]],
+            'words' => [['word' => 'new']],
         ]);
 
         $module = WordModule::where('level', 1)->first();
@@ -94,7 +94,7 @@ class ModuleCrudTest extends TestCase
         WordModule::saveWithWords([
             'level' => 1,
             'title' => 'Test Module',
-            'words' => [['word' => 'test', 'points' => 1]],
+            'words' => [['word' => 'test']],
         ]);
 
         $response = $this->actingAs($this->teacher)->get('/teacher/wordModules');
@@ -111,12 +111,12 @@ class ModuleCrudTest extends TestCase
         WordModule::saveWithWords([
             'level' => 1,
             'title' => 'Old Title',
-            'words' => [['word' => 'old', 'points' => 1]],
+            'words' => [['word' => 'old']],
         ]);
 
         $words = array_merge(
-            [['word' => 'updated', 'points' => 3]],
-            array_fill(0, 9, ['word' => '', 'points' => 1])
+            [['word' => 'updated']],
+            array_fill(0, 9, ['word' => ''])
         );
 
         $response = $this->actingAs($this->teacher)->put('/teacher/wordModules', [
