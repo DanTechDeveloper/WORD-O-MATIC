@@ -40,13 +40,13 @@ class LevelService
 
         return $modules->map(function ($module) use ($progressRecords, &$foundCurrent) {
             $progress = $progressRecords->get($module->id);
-            $wordsSmashed = $progress ? $progress->words_smashed : 0;
             $totalWords = $module->words_count ?? 0;
 
-            if ($totalWords > 0 && $wordsSmashed >= $totalWords) {
-                $status = 'completed';
-            } elseif ($wordsSmashed > 0) {
-                $status = 'in_progress';
+            if ($progress) {
+                $status = $progress->status === 'completed' ? 'completed' : 'in_progress';
+                if ($status !== 'completed') {
+                    $foundCurrent = true;
+                }
             } elseif (! $foundCurrent) {
                 $status = 'current';
                 $foundCurrent = true;
@@ -60,8 +60,8 @@ class LevelService
                 'title' => $module->title,
                 'total_points' => $totalWords,
                 'status' => $status,
-                'words_smashed' => $wordsSmashed,
-                'score' => $wordsSmashed,
+                'words_smashed' => $progress ? $progress->words_smashed : 0,
+                'score' => $progress ? $progress->words_smashed : 0,
             ];
         });
     }

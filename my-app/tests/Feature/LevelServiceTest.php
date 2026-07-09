@@ -58,7 +58,7 @@ class LevelServiceTest extends TestCase
         $this->assertEquals('locked', $statuses[2]['status']);
     }
 
-    public function test_partial_progress_shows_in_progress_and_unlocks_next(): void
+    public function test_partial_progress_shows_in_progress_and_locks_next(): void
     {
         $this->createWordModules(3);
         $module1 = WordModule::where('level', 1)->first();
@@ -73,7 +73,7 @@ class LevelServiceTest extends TestCase
         $statuses = $this->levelService->getWordModuleStatuses($this->student->id);
 
         $this->assertEquals('in_progress', $statuses[0]['status']);
-        $this->assertEquals('current', $statuses[1]['status']);
+        $this->assertEquals('locked', $statuses[1]['status']);
         $this->assertEquals('locked', $statuses[2]['status']);
     }
 
@@ -117,7 +117,7 @@ class LevelServiceTest extends TestCase
         $this->assertEquals('current', $statuses[2]['status']);
     }
 
-    public function test_speak_module_status_matches_word_module_behavior(): void
+    public function test_speak_module_in_progress_locks_next(): void
     {
         $this->createParagraphModules(3);
 
@@ -132,7 +132,7 @@ class LevelServiceTest extends TestCase
         $statuses = $this->levelService->getSpeakModuleStatuses($this->student->id);
 
         $this->assertEquals('in_progress', $statuses[0]['status']);
-        $this->assertEquals('current', $statuses[1]['status']);
+        $this->assertEquals('locked', $statuses[1]['status']);
         $this->assertEquals('locked', $statuses[2]['status']);
     }
 

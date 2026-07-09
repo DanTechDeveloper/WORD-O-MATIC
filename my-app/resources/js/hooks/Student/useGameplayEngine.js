@@ -108,6 +108,7 @@ export function useGameplayEngine({
                 {
                     module_id: moduleId,
                     words_smashed: wordsSmashedRef.current,
+                    words_processed: currentWordIndexRef.current,
                     streak: currentStreakRef.current,
                 },
                 {
