@@ -15,8 +15,7 @@ export default function WordInputModal({
         words:
             words?.map((w) => ({
                 word: w.word || "",
-                points: w.points || 1,
-            })) || Array.from({ length: 10 }, () => ({ word: "", points: 1 })),
+            })) || Array.from({ length: 10 }, () => ({ word: "" })),
     });
 
     useEffect(() => {
@@ -25,7 +24,6 @@ export default function WordInputModal({
                 const existing = words?.[i];
                 return {
                     word: existing?.word || "",
-                    points: existing?.points ?? 1,
                 };
             });
 
@@ -37,17 +35,10 @@ export default function WordInputModal({
         }
     }, [level, words, title, isOpen]);
 
-    const handleChange = (index, key, value) => {
+    const handleChange = (index, value) => {
         const newWords = [...data.words];
-        newWords[index] = {
-            ...newWords[index],
-            [key]: key === "word" ? value.toUpperCase() : value,
-        };
+        newWords[index] = { word: value.toUpperCase() };
         setData("words", newWords);
-    };
-
-    const handleTitleChange = (e) => {
-        setData("title", e.target.value);
     };
 
     const handleSave = () => {
@@ -57,10 +48,11 @@ export default function WordInputModal({
     };
 
     const calculateTotalPoints = () => {
-        return data.words.reduce(
-            (sum, w) => sum + (parseInt(w.points) || 0),
-            0,
-        );
+        return data.words.filter((w) => w.word.trim()).length;
+    };
+
+    const handleTitleChange = (e) => {
+        setData("title", e.target.value);
     };
 
     if (!isOpen) return null;
@@ -103,53 +95,23 @@ export default function WordInputModal({
                 <div className="space-y-4 flex-grow overflow-y-auto pr-2">
                     {Array.from({ length: 10 }).map((_, index) => (
                         <div key={index} className="space-y-1">
-                            <div className="flex gap-3">
-                                <div className="flex-grow relative group">
-                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-600 uppercase">
-                                        W-{index + 1}
-                                    </span>
-                                    <input
-                                        type="text"
-                                        className="w-full bg-slate-950 border-2 border-slate-800 rounded-xl pl-12 pr-4 py-4 text-white font-bold focus:outline-none focus:border-lime-500 transition-all uppercase"
-                                        placeholder="Enter word..."
-                                        value={data.words[index]?.word || ""}
-                                        onChange={(e) =>
-                                            handleChange(
-                                                index,
-                                                "word",
-                                                e.target.value,
-                                            )
-                                        }
-                                    />
-                                </div>
-                                <div className="w-24 relative group">
-                                    <input
-                                        type="number"
-                                        min="1"
-                                        className="w-full bg-slate-950 border-2 border-slate-800 rounded-xl px-4 py-4 text-white font-bold focus:outline-none focus:border-lime-500 transition-all text-center"
-                                        placeholder="Pts"
-                                        value={data.words[index]?.points ?? 1}
-                                        onChange={(e) =>
-                                            handleChange(
-                                                index,
-                                                "points",
-                                                e.target.value,
-                                            )
-                                        }
-                                    />
-                                    <span className="absolute -top-2 left-3 bg-slate-900 px-1 text-[8px] font-black text-slate-500 uppercase">
-                                        Pts
-                                    </span>
-                                </div>
+                            <div className="relative group">
+                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-600 uppercase">
+                                    W-{index + 1}
+                                </span>
+                                <input
+                                    type="text"
+                                    className="w-full bg-slate-950 border-2 border-slate-800 rounded-xl pl-12 pr-4 py-4 text-white font-bold focus:outline-none focus:border-lime-500 transition-all uppercase"
+                                    placeholder="Enter word..."
+                                    value={data.words[index]?.word || ""}
+                                    onChange={(e) =>
+                                        handleChange(index, e.target.value)
+                                    }
+                                />
                             </div>
                             {errors[`words.${index}.word`] && (
                                 <p className="text-rose-500 text-[9px] font-black uppercase ml-12">
                                     {errors[`words.${index}.word`]}
-                                </p>
-                            )}
-                            {errors[`words.${index}.points`] && (
-                                <p className="text-rose-500 text-[9px] font-black uppercase ml-12">
-                                    {errors[`words.${index}.points`]}
                                 </p>
                             )}
                         </div>
