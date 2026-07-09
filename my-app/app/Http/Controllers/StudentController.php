@@ -189,7 +189,7 @@ class StudentController extends Controller
         $request->validate([
             'module_id' => 'required|exists:word_modules,id',
             'words_smashed' => 'required|integer|min:0',
-            'words_count' => 'required|integer|min:0',
+            'words_processed' => 'required|integer|min:0',
             'streak' => 'nullable|integer|min:0',
         ]);
 
@@ -203,7 +203,7 @@ class StudentController extends Controller
         $session = GameSession::logSession(
             $user->id, $module->id, 'word', $request->words_smashed, $accuracy, $request->streak ?? 0,
         );
-        $this->progressService->updateWordProgress($user->student, $module, $request->words_smashed, $request->words_count, $accuracy);
+        $this->progressService->updateWordProgress($user->student, $module, $request->words_smashed, $request->words_processed, $accuracy);
 
         $redirect = redirect()->route('student.results', ['id' => $session->id]);
         $newBadges = $this->badgeService->checkGameplayBadges($user, $session->id, $accuracy);
@@ -284,7 +284,7 @@ class StudentController extends Controller
         $request->validate([
             'module_id' => 'required|exists:paragraph_modules,id',
             'words_smashed' => 'required|integer|min:0',
-            'words_count' => 'required|integer|min:0',
+            'words_processed' => 'required|integer|min:0',
             'streak' => 'nullable|integer|min:0',
         ]);
 
@@ -298,7 +298,7 @@ class StudentController extends Controller
         $session = GameSession::logSession(
             $user->id, $module->id, 'paragraph', $request->words_smashed, $accuracy, $request->streak ?? 0,
         );
-        $this->progressService->updateParagraphProgress($user->student, $module, $request->words_smashed, $request->words_count, $accuracy);
+        $this->progressService->updateParagraphProgress($user->student, $module, $request->words_smashed, $request->words_processed, $accuracy);
 
         $redirect = redirect()->route('student.results', ['id' => $session->id]);
         $newBadges = $this->badgeService->checkGameplayBadges($user, $session->id, $accuracy);

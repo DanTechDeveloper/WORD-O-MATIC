@@ -12,18 +12,18 @@ use App\Models\WordModule;
 
 class ProgressService
 {
-    public function updateWordProgress(?StudentProfile $student, WordModule $module, int $wordsSmashed, int $wordsCount, float $accuracy): void
+    public function updateWordProgress(?StudentProfile $student, WordModule $module, int $wordsSmashed, int $wordsProcessed, float $accuracy): void
     {
-        $this->updateModuleProgress($student, $module, $wordsSmashed, $wordsCount, $accuracy,
+        $this->updateModuleProgress($student, $module, $wordsSmashed, $wordsProcessed, $accuracy,
             StudentWordProgress::class, 'word_module_id',
             StudentWordMastery::class, 'word_id',
             'wordBlastAcc', 'read_level', 'read_progress',
         );
     }
 
-    public function updateParagraphProgress(?StudentProfile $student, ParagraphModule $module, int $wordsSmashed, int $wordsCount, float $accuracy): void
+    public function updateParagraphProgress(?StudentProfile $student, ParagraphModule $module, int $wordsSmashed, int $wordsProcessed, float $accuracy): void
     {
-        $this->updateModuleProgress($student, $module, $wordsSmashed, $wordsCount, $accuracy,
+        $this->updateModuleProgress($student, $module, $wordsSmashed, $wordsProcessed, $accuracy,
             StudentParagraphProgress::class, 'paragraph_module_id',
             StudentParagraphMastery::class, 'paragraph_word_id',
             'storyQuestAcc', 'speak_level', 'speak_progress',
@@ -34,7 +34,7 @@ class ProgressService
         ?StudentProfile $student,
         WordModule|ParagraphModule $module,
         int $wordsSmashed,
-        int $wordsCount,
+        int $wordsProcessed,
         float $accuracy,
         string $progressClass,
         string $moduleKey,
@@ -64,7 +64,7 @@ class ProgressService
         }
 
         $totalWords = $module->words()->count();
-        $progress->status = $wordsCount >= $totalWords ? 'completed' : 'in_progress';
+        $progress->status = $wordsProcessed >= $totalWords ? 'completed' : 'in_progress';
         $progress->save();
 
         if ($progress->status === 'completed') {
