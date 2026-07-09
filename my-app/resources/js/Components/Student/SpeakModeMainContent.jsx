@@ -73,7 +73,9 @@ const SpeakModeMainContent = memo(function SpeakModeMainContent({
                 `}
             </style>
 
-            {gameState === "COUNTDOWN" ? (
+            {gameState === "IDLE" ? (
+                <div className="flex-1 flex" />
+            ) : gameState === "COUNTDOWN" ? (
                 <div className="absolute inset-0 flex items-center justify-center">
                     <span className="text-6xl sm:text-8xl md:text-[12rem] font-black text-lime-400 italic animate-bounce drop-shadow-[0_0_50px_rgba(163,230,53,0.8)]">
                         {countdownValue}
@@ -93,11 +95,11 @@ const SpeakModeMainContent = memo(function SpeakModeMainContent({
                             />
                         )}
 
-                        <div className="relative w-full max-w-5xl">
-                            <div className="flex items-center justify-center gap-4 mb-4">
+                        <div className="relative w-full max-w-7xl">
+                            <div className="flex items-center justify-center gap-4 mb-4 min-h-[3.5rem]">
                                 {feedbackType && (
                                     <span
-                                        className={`font-black italic whitespace-nowrap ${
+                                        className={`font-black italic whitespace-nowrap animate-feedback-pop ${
                                             feedbackType === "correct"
                                                 ? "text-3xl sm:text-4xl md:text-5xl text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-amber-400 to-orange-500"
                                                 : "text-2xl sm:text-3xl md:text-4xl text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-sky-400 to-blue-500"
@@ -140,7 +142,7 @@ const SpeakModeMainContent = memo(function SpeakModeMainContent({
                                 )}
                             </div>
 
-                            <div className={`font-headline-xl text-left leading-relaxed tracking-tight select-none text-4xl md:text-5xl lg:text-6xl flex flex-wrap gap-x-4 gap-y-3 ${isMispronounced ? "animate-shake" : ""} ${streakShake ? `animate-streak-shake-${streakShake}` : ""}`}>
+                            <div className={`font-headline-xl text-left leading-relaxed tracking-tight select-none text-4xl md:text-5xl lg:text-7xl flex flex-wrap gap-x-4 gap-y-3 ${streakShake ? `animate-streak-shake-${streakShake}` : ""}`}>
                                 {words.map((word, index) => (
                                     <span
                                         key={index}
@@ -148,7 +150,9 @@ const SpeakModeMainContent = memo(function SpeakModeMainContent({
                                             index < currentIndex
                                                 ? "opacity-20 text-on-background"
                                                 : index === currentIndex
-                                                  ? "text-lime-400 opacity-100 scale-110 drop-shadow-[0_0_10px_rgba(163,230,53,0.5)]"
+                                                  ? (isMispronounced
+                                                      ? "text-rose-400 opacity-100 scale-110 border-2 border-rose-500 rounded-xl px-3 py-1 bg-slate-900/80 drop-shadow-[0_0_12px_rgba(244,63,94,0.6)] animate-shake"
+                                                      : "text-lime-400 opacity-100 scale-110 border-2 border-lime-400/80 rounded-xl px-3 py-1 bg-slate-900/80 drop-shadow-[0_0_10px_rgba(163,230,53,0.5)]")
                                                   : "opacity-60 text-on-background/50"
                                         }`}
                                     >

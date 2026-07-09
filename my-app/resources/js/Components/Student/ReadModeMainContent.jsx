@@ -131,14 +131,14 @@ const ReadModeMainContent = memo(function ReadModeMainContent({
                                 animation: word-lock-in 0.4s ease-out forwards;
                             }
 
-                            @keyframes feedback-from-word {
+                            @keyframes feedback-pop {
                                 0% { transform: translateY(0) scale(0.5); opacity: 0; }
                                 20% { transform: translateY(-8px) scale(1.15); opacity: 1; }
                                 40% { transform: translateY(-16px) scale(1); opacity: 1; }
-                                100% { transform: translateY(-70px) scale(0.9); opacity: 0; }
+                                100% { transform: translateY(-60px) scale(0.9); opacity: 0; }
                             }
-                            .animate-feedback-from-word {
-                                animation: feedback-from-word 0.7s ease-out forwards;
+                            .animate-feedback-pop {
+                                animation: feedback-pop 0.7s ease-out forwards;
                             }
                         `}
                     </style>
@@ -155,20 +155,20 @@ const ReadModeMainContent = memo(function ReadModeMainContent({
                             <div className="flex items-center justify-center gap-4 mb-2">
                                 {feedbackType && (
                                     <span
-                                        className={`font-black whitespace-nowrap ${
+                                        className={`font-black whitespace-nowrap animate-feedback-pop ${
                                             feedbackType === "correct"
-                                                ? "text-3xl sm:text-4xl md:text-5xl text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-emerald-300 to-lime-400"
-                                                : "text-2xl sm:text-3xl md:text-4xl text-transparent bg-clip-text bg-gradient-to-r from-fuchsia-300 via-pink-400 to-rose-500"
+                                                ? "text-3xl sm:text-4xl md:text-5xl text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-amber-400 to-orange-500"
+                                                : "text-2xl sm:text-3xl md:text-4xl text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-sky-400 to-blue-500"
                                         }`}
                                         style={{
                                             filter:
                                                 feedbackType === "correct"
-                                                    ? "drop-shadow(0 0 20px rgba(0,240,255,0.5)) drop-shadow(0 2px 2px rgba(0,0,0,0.3))"
-                                                    : "drop-shadow(0 0 16px rgba(255,0,255,0.4)) drop-shadow(0 2px 2px rgba(0,0,0,0.3))",
+                                                    ? "drop-shadow(0 0 20px rgba(255,200,0,0.5)) drop-shadow(0 2px 2px rgba(0,0,0,0.3))"
+                                                    : "drop-shadow(0 0 16px rgba(34,211,238,0.4)) drop-shadow(0 2px 2px rgba(0,0,0,0.3))",
                                             WebkitTextStroke:
                                                 feedbackType === "correct"
-                                                    ? "1px #065f46"
-                                                    : "1px #4a044e",
+                                                    ? "1.5px #92400e"
+                                                    : "1.5px #075985",
                                         }}
                                     >
                                         {feedbackMessage}
