@@ -10,7 +10,7 @@ const GameplayHeader = memo(function GameplayHeader({
     pointsFeedbackValue,
     streakShake,
 }) {
-    const [timeLeft, setTimeLeft] = useState(5);
+    const [timeLeft, setTimeLeft] = useState(60);
 
     useEffect(() => {
         if (!isActive) return;
