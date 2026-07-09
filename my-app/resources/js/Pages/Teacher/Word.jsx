@@ -11,7 +11,7 @@ export default function Word({ modules }) {
                 words: moduleData
                     ? moduleData.words
                           .sort((a, b) => a.position - b.position)
-                          .map((w) => ({ word: w.word, points: w.points }))
+                          .map((w) => ({ word: w.word }))
                     : [],
                 title: moduleData ? moduleData.title : `Module ${level}`,
                 totalPoints: moduleData ? moduleData.total_points : 0,

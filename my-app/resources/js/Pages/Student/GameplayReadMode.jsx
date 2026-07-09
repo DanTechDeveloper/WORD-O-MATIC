@@ -1,11 +1,10 @@
 import ReadModeMainContent from "@/Components/Student/ReadModeMainContent";
-import { router } from "@inertiajs/react";
 import GameplayHeader from "@/Components/Student/GameplayHeader";
 import Microphone from "@/Components/Student/Microphone";
 import DeniedModal from "@/Components/Student/DeniedModal";
 import TapToStartOverlay from "@/Components/Student/TapToStartOverlay";
 import { useEffect, useCallback } from "react";
-
+import { router } from "@inertiajs/react";
 import { useGameplayEngine } from "@/hooks/Student/useGameplayEngine";
 import { useSpeechRecognition } from "@/hooks/Student/useSpeechRecognition";
 import { useMicrophonePermission } from "@/hooks/Student/useMicrophonePermission";
@@ -40,7 +39,6 @@ export default function GameplayReadMode({ module }) {
         saveEndpoint: "/student/saveWordProgress",
         onWordRecognized: (wordObj) => {
             if (wordObj) {
- 
                 router.post(
                     "/student/updateWordMastery",
                     { word_id: wordObj.id, status: "mastered" },
@@ -103,7 +101,10 @@ export default function GameplayReadMode({ module }) {
             <GameplayHeader {...headerProps} />
             <ReadModeMainContent
                 words={module?.words}
-                currentIndex={Math.max(0, Math.min(currentWordIndex, totalWords - 1))}
+                currentIndex={Math.max(
+                    0,
+                    Math.min(currentWordIndex, totalWords - 1),
+                )}
                 gameState={gameState}
                 countdownValue={countdownValue}
                 isExploding={isExploding}
@@ -117,7 +118,10 @@ export default function GameplayReadMode({ module }) {
                 streakShake={streakShake}
             />
             {gameState === "IDLE" && (
-                <TapToStartOverlay color="lime" permissionState={permissionState} />
+                <TapToStartOverlay
+                    color="lime"
+                    permissionState={permissionState}
+                />
             )}
             <div className="flex-shrink-0 relative z-50">
                 <Microphone
