@@ -2,21 +2,6 @@ import { Link, usePage } from "@inertiajs/react";
 import { useState } from "react";
 import BadgeUnlockModal from "@/Components/Student/BadgeUnlockModal";
 
-function Stars({ filled, total }) {
-    return (
-        <div className="flex justify-center gap-2">
-            {Array.from({ length: total }, (_, i) => (
-                <span
-                    key={i}
-                    className={`text-4xl sm:text-5xl ${i < filled ? "opacity-100" : "opacity-20"}`}
-                >
-                    ⭐
-                </span>
-            ))}
-        </div>
-    );
-}
-
 function NextBadge({ badge }) {
     const pct = badge.threshold > 0 ? Math.min((badge.current_value / badge.threshold) * 100, 100) : 0;
     const nearComplete = pct >= 80;
@@ -54,7 +39,6 @@ export default function GameResults({
 }) {
     const displayScore = parseInt(session.score) || 0;
     const accuracyPct = parseFloat(session.accuracy) || 0;
-    const starScore = Math.round((accuracyPct / 100) * totalItems);
     const isPerfect = accuracyPct >= 100;
     const { flash } = usePage().props;
     const newBadgeSlugs = flash?.new_badges?.map(b => b.slug) ?? [];
@@ -104,8 +88,6 @@ export default function GameResults({
                             {moduleTitle}
                         </p>
                     </div>
-
-                    <Stars filled={starScore} total={totalItems} />
 
                     <div className="flex gap-4">
                         <div className="flex-1 bg-surface-container rounded-2xl py-6 px-4 text-center border border-surface-variant/20">
