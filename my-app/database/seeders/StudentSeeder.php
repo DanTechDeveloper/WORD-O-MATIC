@@ -126,6 +126,7 @@ class StudentSeeder extends Seeder
                 'status' => $status, 'wordBlastAcc' => $wAcc, 'storyQuestAcc' => $sAcc,
                 'section' => $section,
                 'parent_email' => $hasEmail ? "parent.stu{$num}@email.com" : null,
+                'tutorial_completed_at' => now(),
             ]);
         }
     }
