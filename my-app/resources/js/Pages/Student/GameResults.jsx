@@ -143,6 +143,9 @@ export default function GameResults({
                 <BadgeUnlockModal
                     badge={newBadges[badgeIndex]}
                     show={true}
+                    current={badgeIndex + 1}
+                    total={newBadges.length}
+                    buttonText={badgeIndex + 1 < newBadges.length ? "TAP FOR NEXT BADGE" : "TAP TO CONTINUE"}
                     onContinue={() => setBadgeIndex(i => i + 1)}
                 />
             </div>

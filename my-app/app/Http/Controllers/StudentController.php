@@ -197,13 +197,14 @@ class StudentController extends Controller
         $module = WordModule::findOrFail($request->module_id);
 
         $totalPossible = $module->words()->count();
+        $wordsSmashed = min($request->words_smashed, $totalPossible);
         $accuracy = $totalPossible > 0
-            ? round(min(($request->words_smashed / $totalPossible) * 100, 100), 2)
+            ? round(min(($wordsSmashed / $totalPossible) * 100, 100), 2)
             : 0;
         $session = GameSession::logSession(
-            $user->id, $module->id, 'word', $request->words_smashed, $accuracy, $request->streak ?? 0,
+            $user->id, $module->id, 'word', $wordsSmashed, $accuracy, $request->streak ?? 0,
         );
-        $this->progressService->updateWordProgress($user->student, $module, $request->words_smashed, $request->words_processed, $accuracy);
+        $this->progressService->updateWordProgress($user->student, $module, $wordsSmashed, $request->words_processed, $accuracy);
 
         $redirect = redirect()->route('student.results', ['id' => $session->id]);
         $newBadges = $this->badgeService->checkGameplayBadges($user, $session->id, $accuracy);
@@ -292,13 +293,14 @@ class StudentController extends Controller
         $module = ParagraphModule::findOrFail($request->module_id);
 
         $totalPoints = $module->words()->count();
+        $wordsSmashed = min($request->words_smashed, $totalPoints);
         $accuracy = $totalPoints > 0
-            ? round(min(($request->words_smashed / $totalPoints) * 100, 100), 2)
+            ? round(min(($wordsSmashed / $totalPoints) * 100, 100), 2)
             : 0;
         $session = GameSession::logSession(
-            $user->id, $module->id, 'paragraph', $request->words_smashed, $accuracy, $request->streak ?? 0,
+            $user->id, $module->id, 'paragraph', $wordsSmashed, $accuracy, $request->streak ?? 0,
         );
-        $this->progressService->updateParagraphProgress($user->student, $module, $request->words_smashed, $request->words_processed, $accuracy);
+        $this->progressService->updateParagraphProgress($user->student, $module, $wordsSmashed, $request->words_processed, $accuracy);
 
         $redirect = redirect()->route('student.results', ['id' => $session->id]);
         $newBadges = $this->badgeService->checkGameplayBadges($user, $session->id, $accuracy);

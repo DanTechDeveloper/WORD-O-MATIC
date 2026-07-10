@@ -6,6 +6,8 @@ export default function BadgeUnlockModal({
     show,
     onContinue,
     buttonText = "TAP TO CONTINUE",
+    current,
+    total,
 }) {
     useEffect(() => {
         if (show && badge) {
@@ -20,6 +22,24 @@ export default function BadgeUnlockModal({
             <div className="absolute inset-0 bg-lime-400/10 blur-[150px] rounded-full animate-pulse" />
 
             <div className="relative z-10 flex flex-col items-center text-center px-6 max-w-2xl mx-auto">
+                {total > 1 && (
+                    <div className="mb-4 flex flex-col items-center gap-2">
+                        <div className="flex gap-2">
+                            {Array.from({ length: total }).map((_, i) => (
+                                <span
+                                    key={i}
+                                    className={`text-3xl ${i < current ? "" : "opacity-30 grayscale"}`}
+                                >
+                                    🏅
+                                </span>
+                            ))}
+                        </div>
+                        <span className="text-lime-400 font-black text-xl uppercase tracking-widest">
+                            Badge {current} of {total}
+                        </span>
+                    </div>
+                )}
+
                 <div className="relative mb-8">
                     <div className="absolute inset-0 bg-lime-400/30 blur-3xl rounded-full scale-150 animate-pulse" />
                     <span className="text-[10rem] leading-none animate-bounce block relative">

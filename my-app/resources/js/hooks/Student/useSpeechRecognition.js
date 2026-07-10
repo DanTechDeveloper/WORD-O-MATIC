@@ -80,6 +80,46 @@ export function useSpeechRecognition({
                 const target = propsRef.current.targetWord.toLowerCase().trim();
                 if (!target) return;
 
+                if (!propsRef.current.isWordMode) {
+                    let full = "";
+                    for (let i = 0; i < event.results.length; i++) {
+                        const r = event.results[i];
+                        if (r && r[0]) full += r[0].transcript + " ";
+                    }
+                    full = full.toLowerCase().replace(/[^\w\s]/g, "").trim();
+                    const wordsInFull = full.length ? full.split(/\s+/) : [];
+                    let matchedThisEvent = false;
+                    if (
+                        !hasMatchedCurrentRef.current &&
+                        wordsInFull.some((w) => isFuzzyMatch(w, target))
+                    ) {
+                        hasMatchedCurrentRef.current = true;
+                        matchedThisEvent = true;
+                        propsRef.current.onWordRecognized?.();
+                    }
+                    lastProcessedIndexRef.current = event.results.length - 1;
+                    if (matchedThisEvent) {
+                        if (mispronounceTimeoutRef.current) {
+                            clearTimeout(mispronounceTimeoutRef.current);
+                            mispronounceTimeoutRef.current = null;
+                        }
+                        return;
+                    }
+                    if (hasMatchedCurrentRef.current) return;
+                    if (!full) return;
+                    clearTimeout(mispronounceTimeoutRef.current);
+                    mispronounceTimeoutRef.current = setTimeout(() => {
+                        if (
+                            isMountedRef.current &&
+                            propsRef.current.isActive &&
+                            !hasMatchedCurrentRef.current
+                        ) {
+                            propsRef.current.onMispronounced?.(full);
+                        }
+                    }, 900);
+                    return;
+                }
+
                 let matchedThisEvent = false;
                 let latestTranscript = "";
                 let innerPathHandled = false;
@@ -260,7 +300,7 @@ export function useSpeechRecognition({
         if (isWordMode) {
             gracePeriodEndRef.current = Date.now() + 900;
         }
-        if (wasMatched && recognitionRef.current && propsRef.current.isActive) {
+        if (wasMatched && recognitionRef.current && propsRef.current.isActive && propsRef.current.isWordMode) {
             try { recognitionRef.current.stop(); } catch {}
         }
     }, [targetWord]);
