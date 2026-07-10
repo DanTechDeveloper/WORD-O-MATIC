@@ -15,23 +15,37 @@ class CheckStudentOnboarding
     {
         $user = $request->user();
 
-        if ($user && $user->role === 'student') {
-            $avatar = $user->student?->avatar;
-            $defaults = ['/images/boy.svg', '/images/girl.svg'];
-            $hasAvatar = $avatar && ! in_array($avatar, $defaults);
+        if (! $user || $user->role !== 'student') {
+            return $next($request);
         }
 
-        // Scenario: New student or student without an avatar
+        $student = $user->student;
+        $avatar = $student?->avatar;
+        $defaults = ['/images/boy.svg', '/images/girl.svg'];
+        $hasAvatar = $avatar && ! in_array($avatar, $defaults);
+        $tutorialDone = (bool) $student?->tutorial_completed_at;
+
+        // Step 1: No avatar yet → avatar selection flow
         if (! $hasAvatar) {
             if (! $request->routeIs(['student.splashScreen', 'student.avatarSelection', 'student.updateAvatar'])) {
                 return redirect()->route('student.splashScreen');
             }
+
+            return $next($request);
         }
-        // Scenario: Student already has an avatar - prevent returning to splash/selection
-        else {
-            if ($request->routeIs(['student.splashScreen', 'student.avatarSelection'])) {
+
+        // Step 2: Has avatar but tutorial not finished → greetings/tutorial flow
+        if (! $tutorialDone) {
+            if (! $request->routeIs(['student.greetings', 'student.tutorial', 'student.tutorial.complete', 'student.updateAvatar'])) {
                 return redirect()->route('student.greetings');
             }
+
+            return $next($request);
+        }
+
+        // Step 3: Fully onboarded → prevent re-entering onboarding entry screens
+        if ($request->routeIs(['student.splashScreen', 'student.avatarSelection', 'student.greetings'])) {
+            return redirect()->route('student.dashboard');
         }
 
         return $next($request);
