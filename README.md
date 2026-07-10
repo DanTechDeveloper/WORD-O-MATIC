@@ -1,29 +1,55 @@
-# Word-O-Matic
+<div align="center">
 
-A gamified literacy platform designed to improve students' reading and speaking skills through interactive mini-games.
+# 🚀 Word-O-Matic
 
-Students learn through:
+### A gamified literacy platform that boosts students' **reading** and **speaking** skills through interactive mini-games.
 
-- **Word Blast** – Reading-focused word recognition game
-- **Story Quest** – Speaking-focused storytelling activity
+<br>
 
-The platform uses a sci-fi themed interface to increase engagement while giving teachers tools to monitor student progress, assign learning modules, and analyze performance.
+<img src="https://img.shields.io/badge/PHP-8.3-777BB4?style=for-the-badge&logo=php&logoColor=white" alt="PHP" />
+<img src="https://img.shields.io/badge/Laravel-13-FF2D20?style=for-the-badge&logo=laravel&logoColor=white" alt="Laravel" />
+<img src="https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React" />
+<img src="https://img.shields.io/badge/Inertia.js-2-9553E9?style=for-the-badge&logo=inertia&logoColor=white" alt="Inertia" />
+<img src="https://img.shields.io/badge/Tailwind_CSS-3-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white" alt="Tailwind" />
+
+<br><br>
+
+<table>
+<tr>
+<td align="center" width="50%">
+<h3>⚡ Word Blast</h3>
+Reading-focused word recognition game
+</td>
+<td align="center" width="50%">
+<h3>📖 Story Quest</h3>
+Speaking-focused storytelling activity
+</td>
+</tr>
+</table>
+
+<sub>A sci-fi themed interface increases engagement, while teachers get tools to monitor progress, assign modules, and analyze performance.</sub>
+
+</div>
 
 ---
 
-# Tech Stack
+## 🛠️ Tech Stack
+
+<div align="center">
 
 | Layer | Technology |
-|--------|------------|
-| Backend | PHP 8.3, Laravel 13, Laravel Sanctum |
-| Frontend | React 18, Inertia.js v2, Tailwind CSS v3 |
-| Database | MySQL (Production), SQLite `:memory:` (Testing) |
-| Charts | Recharts (PieChart, BarChart) |
-| Icons | Material Symbols |
+|:------|:-----------|
+| **Backend** | PHP 8.3, Laravel 13, Laravel Sanctum |
+| **Frontend** | React 18, Inertia.js v2, Tailwind CSS v3 |
+| **Database** | MySQL (Production), SQLite `:memory:` (Testing) |
+| **Charts** | Recharts (PieChart, BarChart) |
+| **Icons** | Material Symbols |
+
+</div>
 
 ---
 
-# Setup
+## ⚙️ Setup
 
 Install all dependencies and prepare the application:
 
@@ -31,7 +57,10 @@ Install all dependencies and prepare the application:
 composer run setup
 ```
 
-This command performs the following:
+<details>
+<summary><b>What this command does</b></summary>
+
+<br>
 
 1. Installs Composer dependencies
 2. Creates the `.env` file
@@ -40,9 +69,11 @@ This command performs the following:
 5. Installs NPM packages
 6. Builds frontend assets
 
+</details>
+
 ---
 
-# Development
+## 💻 Development
 
 Run the complete local development environment:
 
@@ -50,36 +81,33 @@ Run the complete local development environment:
 composer run dev
 ```
 
-This starts:
+<details>
+<summary><b>Services started (all run concurrently)</b></summary>
+
+<br>
 
 - Laravel development server
 - Queue worker
 - Log watcher
 - Vite development server
 
-All services run concurrently.
+</details>
 
 ---
 
-# Testing
+## 🧪 Testing
 
 Run the automated test suite:
 
 ```bash
-composer run test
+composer run test   # or: php artisan test
 ```
 
-or
-
-```bash
-php artisan test
-```
-
-Tests use an in-memory SQLite database, so no external database configuration is required.
+> Tests use an in-memory SQLite database — no external database configuration required.
 
 ---
 
-# Seed Database
+## 🌱 Seed Database
 
 Populate the application with demo data:
 
@@ -87,186 +115,128 @@ Populate the application with demo data:
 php artisan migrate:fresh --seed
 ```
 
-This creates:
+<div align="center">
 
-- **1 Teacher Account**
-  - Username: `admin`
-  - Password: `password`
+| Account | Details |
+|:--------|:--------|
+| 👩‍🏫 **1 Teacher** | Username `admin` · Password `password` |
+| 🎓 **100 Students** | 3 sectors · randomized progress · varied statuses · sample gameplay history |
 
-- **100 Student Accounts**
-  - Distributed across three sectors
-  - Randomized progress
-  - Various completion statuses
-  - Sample gameplay history
+</div>
 
 ---
 
-# Architecture
+## 🏗️ Architecture
 
-## Models
+### Models
 
 The application contains **16 Eloquent models**, including:
 
-- User
-- StudentProfile
-- WordModule
-- ParagraphModule
-- Word
-- ParagraphWord
-- Progress models
-- Mastery models
-- Badge
-- GameSession
-- Setting
+`User` · `StudentProfile` · `WordModule` · `ParagraphModule` · `Word` · `ParagraphWord` · Progress models · Mastery models · `Badges` · `GameSession` · `Setting`
 
----
+### Core Services
 
-## Core Services
+<table>
+<tr>
+<td width="33%" valign="top">
 
-### ProgressService
-
-Responsible for:
+**🎯 ProgressService**
 
 - Saving gameplay results
-- Recording only the student's **highest score**
+- Recording the **highest score** only
 - Updating progress
-- Maintaining denormalized statistics
-- Computing accuracy and level information
+- Denormalized statistics
+- Accuracy & level computation
 
-### BadgeService
+</td>
+<td width="33%" valign="top">
 
-Handles:
+**🏅 BadgeService**
 
 - Badge eligibility
 - Badge assignment
 - Achievement progression
 
-### LevelService
+</td>
+<td width="33%" valign="top">
 
-Responsible for:
+**📈 LevelService**
 
 - Student progression
 - Module unlocking
 - Level gating
 
-### DashboardService
-
-Provides teacher dashboard analytics including:
-
-- Student statistics
-- Progress summaries
-- Chart data
-- Performance metrics
+</td>
+</tr>
+</table>
 
 ---
 
-# Routing
+## 🗺️ Routing
 
-### Guest
+<div align="center">
 
-- `/`
-- `/teacher/login`
+| Role | Prefix | Includes |
+|:-----|:-------|:---------|
+| **Guest** | `/`, `/teacher/login` | Landing, login |
+| **Teacher** | `/teacher/*` | Dashboard · Student Management · Reports · Module Management |
+| **Student** | `/student/*` | Onboarding · Dashboard · Gameplay · Leaderboards · Progress Tracking |
 
-### Teacher
-
-All teacher functionality is available under:
-
-```
-/teacher/*
-```
-
-Including:
-
-- Dashboard
-- Student Management
-- Reports
-- Module Management
-
-### Student
-
-All student functionality is available under:
-
-```
-/student/*
-```
-
-Including:
-
-- Onboarding
-- Dashboard
-- Gameplay
-- Leaderboards
-- Progress Tracking
+</div>
 
 ---
 
-# Student Onboarding
+## 🔒 Key Behaviors
 
-Students are required to complete avatar selection before accessing the platform.
+<details>
+<summary><b>Student Onboarding</b></summary>
 
-This is enforced through the:
+<br>
 
-```
-CheckStudentOnboarding
-```
+Students must complete avatar selection before accessing the platform. Enforced via the `CheckStudentOnboarding` middleware.
 
-middleware.
+</details>
 
----
+<details>
+<summary><b>Global Data Sharing</b></summary>
 
-# Global Data Sharing
+<br>
 
-The application uses:
+`HandleInertiaRequests::share()` exposes global frontend data: authenticated user, flash messages, and teacher context.
 
-```
-HandleInertiaRequests::share()
-```
+</details>
 
-to expose global frontend data, including:
+<details>
+<summary><b>Database Design</b></summary>
 
-- Authenticated user
-- Flash messages
-- Teacher context
+<br>
 
----
+Foreign keys use **cascading deletes**. Deleting a user automatically removes student profiles, game sessions, progress, mastery, and badges.
 
-# Database Design
-
-Foreign key relationships use cascading deletes.
-
-Deleting a user automatically removes related records, including:
-
-- Student profiles
-- Game sessions
-- Progress
-- Mastery
-- Badges
+</details>
 
 ---
 
-# Project Structure
+## 📁 Project Structure
 
 ```text
 app/
 ├── Http/
-│   └── Controllers/
-│       ├── TeacherController.php
-│       ├── StudentController.php
-│       └── UserController.php
+│   ├── Controllers/
+│   │   ├── TeacherController.php
+│   │   ├── StudentController.php
+│   │   └── UserController.php
+│   └── Middleware/
+│       ├── HandleInertiaRequests.php
+│       ├── EnsureUserRole.php
+│       └── CheckStudentOnboarding.php
 │
 ├── Services/
 │   ├── ProgressService.php
-│   ├── DashboardService.php
 │   ├── BadgeService.php
 │   └── LevelService.php
 │
-├── Middleware/
-│   ├── HandleInertiaRequests.php
-│   ├── EnsureUserRole.php
-│   └── CheckStudentOnboarding.php
-│
-└── Models/
-    └── 16 Eloquent models
+└── Models/            # 16 Eloquent models
 
 database/
 ├── migrations/
@@ -275,32 +245,35 @@ database/
 
 resources/
 └── js/
-    ├── Pages/
-    │   ├── Teacher/
-    │   └── Student/
-    │
+    ├── Pages/         # Teacher/ · Student/
     ├── Layouts/
     ├── Components/
     └── hooks/
-        └── Student/
 ```
 
 ---
 
-# Key Features
+## ✨ Key Features
 
-## Teacher
+<table>
+<tr>
+<td width="50%" valign="top">
+
+### 👩‍🏫 Teacher
 
 - Student management
 - Module assignment
 - Progress monitoring
 - Performance reports
-- Parent Report emails — send performance overviews to parents via Gmail SMTP with deadline-based gating
+- Parent report emails (Gmail SMTP + deadline gating)
 - Dashboard analytics
 - Leaderboards
 - Student detail pages
 
-## Student
+</td>
+<td width="50%" valign="top">
+
+### 🎓 Student
 
 - Avatar onboarding
 - Word Blast gameplay
@@ -309,18 +282,20 @@ resources/
 - Leaderboards
 - Achievement badges
 
+</td>
+</tr>
+</table>
+
 ---
 
-# Highlights
+<div align="center">
 
-- Laravel 13 + React 18 + Inertia.js architecture
-- Best-score-only progress tracking
-- Gamified literacy activities
-- Teacher analytics dashboard
-- Achievement and badge system
-- Level progression system
-- Parent report email delivery with sent-student tracking
-- Responsive Tailwind CSS interface
-- SQLite in-memory testing
-- Seeded demo environment
-- Cascading database relationships
+### 🌟 Highlights
+
+Laravel 13 + React 18 + Inertia.js &nbsp;•&nbsp; Best-score-only tracking &nbsp;•&nbsp; Gamified literacy &nbsp;•&nbsp; Teacher analytics &nbsp;•&nbsp; Badge & level system &nbsp;•&nbsp; Parent report emails &nbsp;•&nbsp; Responsive Tailwind UI &nbsp;•&nbsp; In-memory SQLite testing &nbsp;•&nbsp; Seeded demo environment
+
+<br>
+
+<sub>Built with ❤️ as a capstone project</sub>
+
+</div>
