@@ -57,8 +57,6 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/splashScreen', [StudentController::class, 'splashScreen'])->name('splashScreen');
             Route::get('/avatarSelection', [StudentController::class, 'avatarSelection'])->name('avatarSelection');
             Route::post('/avatar', [StudentController::class, 'updateAvatar'])->name('updateAvatar');
-            Route::get('/greetings', [StudentController::class, 'greetings'])->name('greetings');
-
             // Main Application Routes
             Route::get('/dashboard', [StudentController::class, 'dashboard'])->name('dashboard');
             Route::get('/tutorial', [StudentController::class, 'tutorial'])->name('tutorial');

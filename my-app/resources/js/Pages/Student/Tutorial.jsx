@@ -9,21 +9,21 @@ const BEFORE_STEPS = [
         title: "Hi there!",
         message: "I'm your Word Buddy! I'll help you learn new words!",
         emoji: "🤖",
-        color: "primary",
+        color: "lime",
     },
     {
         target: '[data-purpose="read-mode-selection"]',
         title: "WORD BLAST MODE!",
-        message: "Tap the purple card to launch Word Blast!",
+        message: "Tap the lime card to launch Word Blast!",
         emoji: "⚡",
-        color: "primary",
+        color: "lime",
     },
     {
         target: '[data-purpose="story-mode-locked"]',
         title: "STORY QUEST",
         message: "Locked for now — finish Word Blast to unlock me!",
         emoji: "🔒",
-        color: "secondary",
+        color: "sky",
     },
 ];
 
@@ -35,7 +35,7 @@ const AFTER_STEPS = (allDone) => [
             ? "You completed both practices! You're ready!"
             : "You did it! Story Quest is waiting for you!",
         emoji: "🎉",
-        color: "secondary",
+        color: "sky",
     },
     ...(allDone ? [] : [
         {
@@ -43,7 +43,7 @@ const AFTER_STEPS = (allDone) => [
             title: "STORY QUEST",
             message: "Tap here to start your speaking adventure!",
             emoji: "📖",
-            color: "secondary",
+            color: "sky",
         },
     ]),
 
@@ -95,33 +95,36 @@ export default function Tutorial() {
     const ringClass = (purpose) => {
         if (!isTarget(purpose)) return "";
         const c =
-            step.color === "primary"
-                ? "ring-4 ring-primary ring-offset-4 ring-offset-background scale-[1.03]"
-                : "ring-4 ring-secondary ring-offset-4 ring-offset-background scale-[1.03]";
+            step.color === "sky"
+                ? "ring-4 ring-sky-400 ring-offset-4 ring-offset-zinc-950 scale-[1.03]"
+                : "ring-4 ring-lime-400 ring-offset-4 ring-offset-zinc-950 scale-[1.03]";
         return `${c} z-10 rounded-2xl transition-all duration-500 animate-pulse`;
     };
 
     return (
-        <div className="m-0 p-0 overflow-hidden select-none min-h-screen w-full relative bg-background">
+        <div className="m-0 p-0 overflow-hidden select-none min-h-screen w-full relative bg-zinc-950">
             {/* PROGRESS DOTS */}
             {!guideDone && (
                 <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[60] flex gap-3">
-                    {steps.map((_, i) => (
-                        <div
-                            key={i}
-                            className={`w-3 h-3 rounded-full transition-all duration-500 ${
-                                i === stepIndex
-                                    ? "bg-secondary scale-125"
-                                    : i < stepIndex
-                                      ? "bg-secondary/50"
-                                      : "bg-on-surface/20"
-                            }`}
-                        />
-                    ))}
+                    {steps.map((s, i) => {
+                        const dot = s.color === "sky" ? "bg-sky-400" : "bg-lime-400";
+                        return (
+                            <div
+                                key={i}
+                                className={`w-3 h-3 rounded-full transition-all duration-500 ${
+                                    i === stepIndex
+                                        ? `${dot} scale-125`
+                                        : i < stepIndex
+                                          ? `${dot}/50`
+                                          : "bg-on-surface/20"
+                                }`}
+                            />
+                        );
+                    })}
                 </div>
             )}
 
-            <main className="min-h-screen w-full flex flex-col md:flex-row relative overflow-hidden bg-background">
+            <main className="min-h-screen w-full flex flex-col md:flex-row relative overflow-hidden bg-zinc-950">
                 {/* WORD BLAST MODE */}
                 <div className="flex-1 flex relative overflow-hidden">
                     <Link
@@ -131,7 +134,7 @@ export default function Tutorial() {
                                 : undefined
                         }
                         as={wordBlastUnlocked ? "a" : "div"}
-                        className={`group flex-1 flex flex-col items-center justify-center p-8 transition-all duration-500 border-b-4 md:border-b-0 md:border-r-4 border-surface-variant relative overflow-hidden bg-gradient-to-br from-primary-container/40 to-background ${wordBlastUnlocked && !practiceDone ? "" : "cursor-not-allowed"} ${ringClass(practiceDone ? "read-mode-locked" : "read-mode-selection")}`}
+                        className={`group flex-1 flex flex-col items-center justify-center p-8 transition-all duration-500 border-b-4 md:border-b-0 md:border-r-4 border-surface-variant relative overflow-hidden bg-gradient-to-br from-lime-400/20 to-zinc-950 ${wordBlastUnlocked && !practiceDone ? "" : "cursor-not-allowed"} ${ringClass(practiceDone ? "read-mode-locked" : "read-mode-selection")}`}
                         data-purpose={
                             practiceDone
                                 ? "read-mode-locked"
@@ -155,7 +158,7 @@ export default function Tutorial() {
 
                             <h2 className="text-on-surface text-5xl md:text-7xl lg:text-8xl font-black italic uppercase tracking-tighter mb-4">
                                 WORD BLAST{" "}
-                                <span className="text-primary">MODE</span>
+                                <span className="text-lime-400">MODE</span>
                             </h2>
                             <p className="text-on-surface-variant text-lg md:text-2xl font-bold uppercase tracking-[0.2em] max-w-sm">
                                 {practiceDone
@@ -166,7 +169,7 @@ export default function Tutorial() {
 
                         <div className="absolute bottom-0 left-0 right-0 h-2 bg-surface-container-high/80">
                             <div
-                                className={`h-full bg-primary-container transition-all duration-1000 ease-out ${practiceDone ? "w-full" : "w-[65%] group-hover:w-full"}`}
+                                className={`h-full bg-lime-400 transition-all duration-1000 ease-out ${practiceDone ? "w-full" : "w-[65%] group-hover:w-full"}`}
                                 data-purpose="read-mode-progress"
                             />
                         </div>
@@ -174,7 +177,7 @@ export default function Tutorial() {
 
                     {practiceDone && (
                         <div
-                            className="absolute inset-0 z-30 bg-background/80 backdrop-blur-[6px] flex flex-col items-center justify-center pointer-events-auto"
+                            className="absolute inset-0 z-30 bg-zinc-950/80 backdrop-blur-[6px] flex flex-col items-center justify-center pointer-events-auto"
                             data-purpose="read-mode-locked"
                         >
                             <span className="text-on-surface text-xs font-black tracking-widest uppercase bg-surface-container-high px-4 py-2 rounded-full border border-outline-variant">
@@ -184,7 +187,7 @@ export default function Tutorial() {
                     )}
 
                     {guideLocked && (
-                        <div className="absolute inset-0 z-30 bg-background/70 backdrop-blur-[4px] flex flex-col items-center justify-center pointer-events-auto transition-all duration-500">
+                        <div className="absolute inset-0 z-30 bg-zinc-950/70 backdrop-blur-[4px] flex flex-col items-center justify-center pointer-events-auto transition-all duration-500">
                             <span className="text-on-surface-variant/60 text-xs font-black tracking-widest uppercase bg-surface-container-high/80 px-4 py-2 rounded-full border border-outline-variant">
                                 Wait for the guide 👀
                             </span>
@@ -201,7 +204,7 @@ export default function Tutorial() {
                                 : undefined
                         }
                         as={storyQuestUnlocked ? "a" : "div"}
-                        className={`group flex-1 flex flex-col items-center justify-center p-8 transition-all duration-500 bg-gradient-to-br from-secondary-container/20 to-background ${storyQuestUnlocked ? "" : "cursor-not-allowed"} ${ringClass(storyQuestUnlocked ? "story-mode-unlocked" : "story-mode-locked")}`}
+                        className={`group flex-1 flex flex-col items-center justify-center p-8 transition-all duration-500 bg-gradient-to-br from-sky-400/15 to-zinc-950 ${storyQuestUnlocked ? "" : "cursor-not-allowed"} ${ringClass(storyQuestUnlocked ? "story-mode-unlocked" : "story-mode-locked")}`}
                         data-purpose={
                             storyQuestUnlocked
                                 ? "story-mode-unlocked"
@@ -227,7 +230,7 @@ export default function Tutorial() {
 
                             <h2 className="text-on-surface text-5xl md:text-7xl lg:text-8xl font-black italic uppercase tracking-tighter mb-4">
                                 STORY QUEST{" "}
-                                <span className="text-secondary">MODE</span>
+                                <span className="text-sky-400">MODE</span>
                             </h2>
                             <p className="text-on-surface-variant text-lg md:text-2xl font-bold uppercase tracking-[0.2em] max-w-sm">
                                 {practiceDone
@@ -238,14 +241,14 @@ export default function Tutorial() {
 
                         <div className="absolute bottom-0 left-0 right-0 h-2 bg-surface-container-high/80">
                             <div
-                                className={`h-full bg-secondary-container transition-all duration-1000 ease-out ${practiceDone ? "w-full" : "w-[40%] group-hover:w-full"}`}
+                                className={`h-full bg-sky-400 transition-all duration-1000 ease-out ${practiceDone ? "w-full" : "w-[40%] group-hover:w-full"}`}
                             />
                         </div>
                     </Link>
 
                     {practiceSpeakDone ? (
                         <div
-                            className="absolute inset-0 z-30 bg-background/80 backdrop-blur-[6px] flex flex-col items-center justify-center pointer-events-auto"
+                            className="absolute inset-0 z-30 bg-zinc-950/80 backdrop-blur-[6px] flex flex-col items-center justify-center pointer-events-auto"
                             data-purpose="story-mode-done"
                         >
                             <span className="text-on-surface text-xs font-black tracking-widest uppercase bg-surface-container-high px-4 py-2 rounded-full border border-outline-variant">
@@ -254,7 +257,7 @@ export default function Tutorial() {
                         </div>
                     ) : !practiceDone ? (
                         <div
-                            className="absolute inset-0 z-30 bg-background/80 backdrop-blur-[6px] flex flex-col items-center justify-center pointer-events-auto"
+                            className="absolute inset-0 z-30 bg-zinc-950/80 backdrop-blur-[6px] flex flex-col items-center justify-center pointer-events-auto"
                             data-purpose="story-mode-locked"
                         >
                             <span className="text-on-surface text-xs font-black tracking-widest uppercase bg-surface-container-high px-4 py-2 rounded-full border border-outline-variant">
@@ -262,7 +265,7 @@ export default function Tutorial() {
                             </span>
                         </div>
                     ) : !storyQuestUnlocked ? (
-                        <div className="absolute inset-0 z-30 bg-background/70 backdrop-blur-[4px] flex flex-col items-center justify-center pointer-events-auto transition-all duration-500">
+                        <div className="absolute inset-0 z-30 bg-zinc-950/70 backdrop-blur-[4px] flex flex-col items-center justify-center pointer-events-auto transition-all duration-500">
                             <span className="text-on-surface-variant/60 text-xs font-black tracking-widest uppercase bg-surface-container-high/80 px-4 py-2 rounded-full border border-outline-variant">
                                 Wait for the guide 👀
                             </span>
@@ -308,8 +311,12 @@ export default function Tutorial() {
 
                 <div className={`fixed bottom-8 left-0 right-0 z-40 flex justify-center transition-all duration-500 ${guideDone && allPracticeDone && !showBadgeModal ? "" : "opacity-0 pointer-events-none"}`}>
                     <button
-                        onClick={() => router.post("/student/tutorial/complete")}
-                        className="bg-secondary hover:bg-secondary-container text-on-secondary px-10 py-4 rounded-2xl font-black text-lg tracking-widest uppercase transition-all hover:scale-105 active:scale-95 flex items-center gap-3 shadow-2xl shadow-secondary/25 cursor-pointer"
+                        onClick={() => {
+                            sessionStorage.removeItem("practiceDone");
+                            sessionStorage.removeItem("practiceSpeakDone");
+                            router.post("/student/tutorial/complete");
+                        }}
+                        className="bg-sky-400 hover:bg-sky-500 text-slate-950 px-10 py-4 rounded-2xl font-black text-lg tracking-widest uppercase transition-all hover:scale-105 active:scale-95 flex items-center gap-3 shadow-2xl shadow-sky-400/25 cursor-pointer"
                     >
                         Continue to Dashboard
                         <span className="text-2xl">🏠</span>

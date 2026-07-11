@@ -56,16 +56,6 @@ class StudentController extends Controller
         ]);
     }
 
-    public function greetings()
-    {
-        $user = auth()->user();
-        if ($user) {
-            $user->load('student');
-        }
-
-        return Inertia::render('Student/Greetings');
-    }
-
     public function tutorial()
     {
         return Inertia::render('Student/Tutorial');
@@ -111,10 +101,10 @@ class StudentController extends Controller
             $badgeData = $this->badgeService->awardOnboardingBadge($user, 'profile-pioneer');
 
             if ($badgeData) {
-                return redirect()->route('student.greetings')->with('new_badge', $badgeData);
+                return redirect()->route('student.avatarSelection')->with('new_badge', $badgeData);
             }
 
-            return redirect()->route('student.greetings')->with('success', 'Avatar updated successfully!');
+            return redirect()->route('student.avatarSelection')->with('success', 'Avatar updated successfully!');
         }
 
         return redirect()->back()->with('error', 'Student profile not found.');

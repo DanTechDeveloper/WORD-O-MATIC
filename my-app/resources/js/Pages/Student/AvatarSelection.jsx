@@ -1,5 +1,6 @@
-import { router } from "@inertiajs/react";
+import { router, usePage } from "@inertiajs/react";
 import { useState } from "react";
+import BadgeUnlockModal from "@/Components/Student/BadgeUnlockModal";
 
 const AVATARS = [
     { id: "juan", url: "/images/avatars/juan/head.png", alt: "Champion Juan robot avatar" },
@@ -11,9 +12,12 @@ const AVATARS = [
 ];
 
 export default function AvatarSelection() {
+    const { flash } = usePage().props;
     const [isUpdating, setIsUpdating] = useState(false);
     const [hasSubmitted, setHasSubmitted] = useState(false);
     const [error, setError] = useState(null);
+    const [showBadge, setShowBadge] = useState(!!flash?.new_badge);
+    const badgeData = flash?.new_badge;
 
     const handleAvatarClick = (avatar) => {
         if (isUpdating || hasSubmitted) return;
@@ -35,7 +39,17 @@ export default function AvatarSelection() {
         );
     };
     return (
-        <div className="fixed inset-0 z-[90] bg-zinc-950 flex flex-col items-center justify-center p-6">
+        <>
+            <BadgeUnlockModal
+                badge={badgeData}
+                show={showBadge}
+                onContinue={() => {
+                    setShowBadge(false);
+                    router.visit("/student/tutorial");
+                }}
+                buttonText="START ADVENTURE!"
+            />
+            <div className="fixed inset-0 z-[90] bg-zinc-950 flex flex-col items-center justify-center p-6">
             {isUpdating && (
                 <div className="absolute inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center">
                     <div className="text-lime-400 animate-spin">
@@ -51,7 +65,7 @@ export default function AvatarSelection() {
             )}
             <div className="max-w-2xl w-full text-center">
                 <h2 className="text-white text-4xl md:text-6xl font-black uppercase italic tracking-tight mb-12">
-                    SELECT YOUR <span className="text-purple-500">HERO</span>
+                    SELECT YOUR <span className="text-lime-400">HERO</span>
                 </h2>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-8 max-w-lg mx-auto">
                     {AVATARS.map((avatar) => (
@@ -73,5 +87,6 @@ export default function AvatarSelection() {
                 </p>
             </div>
         </div>
+        </>
     );
 }

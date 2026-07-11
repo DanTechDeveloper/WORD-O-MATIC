@@ -9,18 +9,29 @@ export default function AvatarSpeechBubble({
     color = "primary",
     className = "",
 }) {
-    const accent =
-        color === "secondary"
-            ? {
-                  border: "border-secondary",
-                  text: "text-secondary",
-                  glow: "drop-shadow-[0_0_80px_rgba(255,59,192,0.35)]",
-              }
-            : {
-                  border: "border-primary",
-                  text: "text-primary",
-                  glow: "drop-shadow-[0_0_80px_rgba(112,0,255,0.35)]",
-              };
+    const accentMap = {
+        primary: {
+            border: "border-primary",
+            text: "text-primary",
+            glow: "drop-shadow-[0_0_80px_rgba(112,0,255,0.35)]",
+        },
+        secondary: {
+            border: "border-secondary",
+            text: "text-secondary",
+            glow: "drop-shadow-[0_0_80px_rgba(255,59,192,0.35)]",
+        },
+        lime: {
+            border: "border-lime-400",
+            text: "text-lime-400",
+            glow: "drop-shadow-[0_0_80px_rgba(163,230,53,0.35)]",
+        },
+        sky: {
+            border: "border-sky-400",
+            text: "text-sky-400",
+            glow: "drop-shadow-[0_0_80px_rgba(56,189,248,0.35)]",
+        },
+    };
+    const accent = accentMap[color] || accentMap.primary;
 
     const positionClass =
         position === "center"

@@ -1,99 +1,128 @@
 import { router } from "@inertiajs/react";
+import { useEffect, useState } from "react";
+
+const BG_WORDS = ["BLAST", "READ", "SPEAK", "QUEST", "LEARN", "HERO", "STAR", "LEVEL", "PLAY", "WIN"];
+const BG_GLOWS = ["#00f0ff", "#00ff88", "#8844ff", "#ff2266", "#44ff44"];
+const BG_LEFT = ["20%", "80%", "50%"];
+
+function FallingWordBg() {
+    const [index, setIndex] = useState(0);
+    const [exploding, setExploding] = useState(false);
+
+    useEffect(() => {
+        const explodeAt = setTimeout(() => setExploding(true), 2200);
+        const nextAt = setTimeout(() => {
+            setExploding(false);
+            setIndex((i) => (i + 1) % BG_WORDS.length);
+        }, 3000);
+        return () => {
+            clearTimeout(explodeAt);
+            clearTimeout(nextAt);
+        };
+    }, [index]);
+
+    const word = BG_WORDS[index];
+    const glow = BG_GLOWS[index % BG_GLOWS.length];
+    const left = BG_LEFT[index % BG_LEFT.length];
+
+    return (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none z-0" aria-hidden="true">
+            <style>
+                {`
+                    @keyframes splash-fall {
+                        0% { top: -10%; opacity: 0; }
+                        15% { opacity: 0.4; }
+                        100% { top: 75%; opacity: 0.4; }
+                    }
+                    @keyframes splash-shard {
+                        0% { transform: translate(0,0) rotate(0deg) scale(1); opacity: 0.4; }
+                        100% { transform: translate(var(--sx),var(--sy)) rotate(var(--sr)) scale(2); opacity: 0; }
+                    }
+                `}
+            </style>
+            <div
+                key={index}
+                className="absolute -translate-x-1/2 font-black uppercase tracking-tight text-4xl md:text-6xl whitespace-nowrap"
+                style={{
+                    left,
+                    top: "-10%",
+                    color: "#ffffff",
+                    fontFamily: '"Courier New", "Consolas", "Monaco", monospace',
+                    textShadow: `0 0 10px ${glow}, 0 0 30px ${glow}, 0 0 60px ${glow}66`,
+                    animation: "splash-fall 2.2s ease-in forwards",
+                }}
+            >
+                {word.split("").map((char, i) => {
+                    const angle = (i / Math.max(word.length, 1)) * 360;
+                    const dist = 60 + (i % 3) * 30;
+                    const sx = Math.cos((angle * Math.PI) / 180) * dist;
+                    const sy = Math.sin((angle * Math.PI) / 180) * dist - 40;
+                    const sr = (i % 2 === 0 ? 1 : -1) * (20 + (i % 5) * 15);
+                    return (
+                        <span
+                            key={i}
+                            className="inline-block"
+                            style={
+                                exploding
+                                    ? {
+                                          animation: "splash-shard 0.6s ease-out forwards",
+                                          animationDelay: `${i * 30}ms`,
+                                          "--sx": `${sx}px`,
+                                          "--sy": `${sy}px`,
+                                          "--sr": `${sr}deg`,
+                                      }
+                                    : undefined
+                            }
+                        >
+                            {char}
+                        </span>
+                    );
+                })}
+            </div>
+        </div>
+    );
+}
 
 export default function SplashScreen() {
+    useEffect(() => {
+        sessionStorage.removeItem("practiceDone");
+        sessionStorage.removeItem("practiceSpeakDone");
+    }, []);
+
     const handleStart = () => {
         router.visit(route("student.avatarSelection"));
     };
 
     return (
         <div
-            className="fixed inset-0 z-[100] bg-background flex flex-col items-center justify-center cursor-pointer select-none overflow-hidden"
+            className="fixed inset-0 z-[100] bg-zinc-950 flex flex-col items-center justify-center gap-10 cursor-pointer select-none overflow-hidden px-6"
             onClick={handleStart}
         >
-            <style>
-                {`
-                    @keyframes scan {
-                        0% { top: -10%; }
-                        100% { top: 110%; }
-                    }
-                    @keyframes pulse-slow {
-                        0%, 100% { opacity: 0.2; }
-                        50% { opacity: 0.4; }
-                    }
-                    .animate-scan {
-                        animation: scan 4s linear infinite;
-                    }
-                    .animate-pulse-slow {
-                        animation: pulse-slow 3s ease-in-out infinite;
-                    }
-                `}
-            </style>
+            <FallingWordBg />
 
-            {/* Sci-Fi Grid Background */}
-            <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(209,188,255,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(209,188,255,0.04)_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none"></div>
+            <div
+                className="absolute inset-0 z-[5] pointer-events-none"
+                style={{
+                    background:
+                        "radial-gradient(circle at center, rgba(9,9,11,0.7) 0%, rgba(9,9,11,0.3) 30%, transparent 50%)",
+                }}
+            />
 
-            {/* Glowing Tech Ring/Circle in Center */}
-            <div className="absolute w-[400px] h-[400px] md:w-[600px] md:h-[600px] rounded-full border border-primary/10 animate-pulse-slow pointer-events-none flex items-center justify-center">
-                <div className="w-[80%] h-[80%] rounded-full border border-dashed border-primary/5"></div>
-            </div>
+            <h1 className="relative z-10 text-lime-400 text-6xl md:text-8xl font-black italic uppercase tracking-tighter text-center">
+                WORD-O-MATIC
+            </h1>
 
-            {/* Laser Scanning Line */}
-            <div className="absolute inset-0 pointer-events-none">
-                <div className="w-full h-[2px] bg-primary/40 absolute animate-scan shadow-[0_0_20px_rgba(112,0,255,0.5)]"></div>
-            </div>
+            <button
+                type="button"
+                className="relative z-10 flex items-center gap-3 bg-lime-400 text-slate-950 font-black text-2xl md:text-3xl uppercase tracking-wider px-12 py-5 rounded-full animate-bounce hover:scale-105 active:scale-95 transition-transform"
+            >
+                <span className="material-symbols-outlined text-4xl">play_arrow</span>
+                Play
+            </button>
 
-            {/* Corner Bracket HUD Elements */}
-            <div className="absolute top-8 left-8 w-12 h-12 border-t-2 border-l-2 border-primary/40 pointer-events-none"></div>
-            <div className="absolute top-8 right-8 w-12 h-12 border-t-2 border-r-2 border-primary/40 pointer-events-none"></div>
-            <div className="absolute bottom-8 left-8 w-12 h-12 border-b-2 border-l-2 border-primary/40 pointer-events-none"></div>
-            <div className="absolute bottom-8 right-8 w-12 h-12 border-b-2 border-r-2 border-primary/40 pointer-events-none"></div>
-
-            {/* Tech Telemetry Data (Sci-Fi Info Indicators) */}
-            <div className="absolute top-8 left-24 font-mono text-[9px] text-primary/30 hidden md:block pointer-events-none tracking-widest uppercase">
-                SYS.LOC // SECTOR_09 // GRID_ACTIVE
-            </div>
-            <div className="absolute top-8 right-24 font-mono text-[9px] text-primary/30 hidden md:block pointer-events-none tracking-widest uppercase text-right">
-                SIGNAL_STRENGTH: 100% // ONLINE
-            </div>
-
-            {/* Main Interactive HUD Box */}
-            <div className="relative z-10 text-center max-w-lg px-8 py-12 rounded-lg border border-primary/10 bg-background/80 backdrop-blur-md shadow-[0_0_50px_rgba(112,0,255,0.03)]">
-                {/* Accent bracket indicators */}
-                <div className="absolute -top-1 -left-1 w-3 h-3 border-t-2 border-l-2 border-primary"></div>
-                <div className="absolute -top-1 -right-1 w-3 h-3 border-t-2 border-r-2 border-primary"></div>
-                <div className="absolute -bottom-1 -left-1 w-3 h-3 border-b-2 border-l-2 border-primary"></div>
-                <div className="absolute -bottom-1 -right-1 w-3 h-3 border-b-2 border-r-2 border-primary"></div>
-
-                <div className="mb-2 font-mono text-xs text-primary/50 tracking-[0.4em] uppercase">
-                    [ word processor system ]
-                </div>
-
-                <h1 className="text-primary text-5xl md:text-7xl font-black tracking-widest uppercase mb-4 drop-shadow-[0_0_12px_rgba(112,0,255,0.5)]">
-                    WORD-O-MATIC
-                </h1>
-
-                <div className="h-[1px] w-1/2 bg-gradient-to-r from-transparent via-primary/30 to-transparent mx-auto mb-8"></div>
-
-                <p className="text-on-surface-variant font-mono text-xs md:text-sm tracking-[0.25em] uppercase mb-12">
-                    System Core: <span className="text-primary animate-pulse">Ready</span>
-                </p>
-
-                <div className="mt-6">
-                    <span className="inline-block relative group">
-                        {/* Pulse Ring */}
-                        <span className="absolute -inset-1 rounded border border-primary/30 animate-ping opacity-75"></span>
-
-                        <span className="relative text-primary text-base md:text-lg font-black uppercase tracking-[0.2em] border border-primary/50 bg-primary-container/20 px-8 py-4 rounded shadow-[0_0_15px_rgba(112,0,255,0.2)] group-hover:bg-primary group-hover:text-on-primary transition-all duration-300">
-                            Tap To Start
-                        </span>
-                    </span>
-                </div>
-            </div>
-
-            {/* Bottom Telemetry */}
-            <div className="absolute bottom-8 left-24 font-mono text-[9px] text-primary/20 hidden md:block pointer-events-none tracking-widest uppercase">
-                LATENCY // 0.00ms // BOOT_VER_2.6
-            </div>
+            <p className="relative z-10 text-on-surface-variant font-bold uppercase tracking-[0.3em] text-xs animate-pulse">
+                Tap anywhere to start
+            </p>
         </div>
     );
 }
