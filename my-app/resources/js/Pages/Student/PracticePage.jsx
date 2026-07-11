@@ -1,5 +1,6 @@
 import ReadModeMainContent from "@/Components/Student/ReadModeMainContent";
 import SpeakModeMainContent from "@/Components/Student/SpeakModeMainContent";
+import AvatarSpeechBubble from "@/Components/Student/AvatarSpeechBubble";
 import { router, usePage } from "@inertiajs/react";
 import GameplayHeader from "@/Components/Student/GameplayHeader";
 import Microphone from "@/Components/Student/Microphone";
@@ -15,25 +16,25 @@ const GUIDE_STEPS = {
             title: "READ THE WORD",
             message: "Say each word aloud into the mic. Read it right to BLAST it!",
             emoji: "📢",
-            color: "lime",
+            color: "primary",
         },
         {
             title: "BLAST & SCORE",
             message: "Blast words fast! Watch your score grow and your streak build!",
             emoji: "⚡",
-            color: "lime",
+            color: "primary",
         },
         {
             title: "KEEP MOVING",
             message: "Words auto-advance after 5 seconds. Try to read them before they go!",
             emoji: "⏱️",
-            color: "lime",
+            color: "primary",
         },
         {
             title: "TAP TO PLAY!",
             message: "Tap the mic below when you're ready. 3-2-1 countdown, then go!",
             emoji: "🎤",
-            color: "lime",
+            color: "primary",
         },
     ],
     speak: [
@@ -41,25 +42,25 @@ const GUIDE_STEPS = {
             title: "READ THE SENTENCE",
             message: "Say the whole sentence clearly, not just one word!",
             emoji: "📖",
-            color: "lime",
+            color: "secondary",
         },
         {
             title: "WATCH IT LIGHT UP",
             message: "Each word highlights as it's recognized. Follow along!",
             emoji: "✨",
-            color: "lime",
+            color: "secondary",
         },
         {
             title: "NO PRESSURE",
             message: "Take your time — there's no timer here!",
             emoji: "😊",
-            color: "lime",
+            color: "secondary",
         },
         {
             title: "TAP TO PLAY!",
             message: "Tap the mic below when you're ready. 3-2-1 countdown, then go!",
             emoji: "🎤",
-            color: "lime",
+            color: "secondary",
         },
     ],
 };
@@ -186,13 +187,13 @@ export default function PracticePage({ module, mode = "read" }) {
                     {steps.map((_, i) => (
                         <div
                             key={i}
-                            className={`w-3 h-3 rounded-full transition-all duration-500 ${
-                                i === stepIndex
-                                    ? "bg-lime-400 scale-125"
-                                    : i < stepIndex
-                                      ? "bg-lime-400/50"
-                                      : "bg-white/20"
-                            }`}
+                        className={`w-3 h-3 rounded-full transition-all duration-500 ${
+                            i === stepIndex
+                                ? (isReadMode ? "bg-primary scale-125" : "bg-secondary scale-125")
+                                : i < stepIndex
+                                  ? (isReadMode ? "bg-primary/50" : "bg-secondary/50")
+                                  : "bg-on-surface/20"
+                        }`}
                         />
                     ))}
                 </div>
@@ -224,7 +225,7 @@ export default function PracticePage({ module, mode = "read" }) {
             {gameState === "IDLE" && guideDone && (
                 <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-40 pointer-events-none flex flex-col items-center justify-end pb-[110px] sm:pb-[140px] md:pb-[160px]">
                     <div className="flex flex-col items-center justify-center animate-bounce scale-90 sm:scale-100">
-                        <div className="bg-lime-400 text-slate-950 font-black px-6 sm:px-8 py-3 sm:py-4 rounded-3xl sm:rounded-[2rem] shadow-[0_0_30px_rgba(163,230,53,0.4)] sm:shadow-[0_0_40px_rgba(163,230,53,0.4)] border-4 border-white flex flex-col items-center gap-1 text-center italic uppercase tracking-tighter">
+                        <div className={`font-black px-6 sm:px-8 py-3 sm:py-4 rounded-3xl sm:rounded-[2rem] border-4 border-white flex flex-col items-center gap-1 text-center italic uppercase tracking-tighter ${isReadMode ? "bg-primary text-on-primary shadow-[0_0_30px_rgba(112,0,255,0.4)] sm:shadow-[0_0_40px_rgba(112,0,255,0.4)]" : "bg-secondary text-on-secondary shadow-[0_0_30px_rgba(255,59,192,0.4)] sm:shadow-[0_0_40px_rgba(255,59,192,0.4)]"}`}>
                             <span className="material-symbols-outlined text-3xl sm:text-4xl mb-0 sm:mb-1">
                                 touch_app
                             </span>
@@ -241,31 +242,20 @@ export default function PracticePage({ module, mode = "read" }) {
             )}
 
             {bodyUrl && !guideDone && step && (
-                <div
-                    className="fixed z-50 bottom-8 right-6 flex flex-col items-center gap-4"
-                    data-purpose="avatar-speech"
-                >
-                    <button
+                <div data-purpose="avatar-speech">
+                    <AvatarSpeechBubble
+                        emoji={step.emoji}
+                        title={step.title}
+                        message={step.message}
+                        bodyUrl={bodyUrl}
+                        color={step.color}
                         onClick={advanceGuide}
-                        className="bg-white/95 backdrop-blur-sm rounded-3xl px-8 py-5 shadow-2xl border-2 border-lime-400 min-w-[260px] max-w-[360px] cursor-pointer hover:scale-105 active:scale-95 transition-all duration-200 text-center animate-fade-in"
-                    >
-                        <p className="text-2xl font-black uppercase tracking-tight text-zinc-900 flex items-center justify-center gap-2">
-                            <span className="text-3xl">{step.emoji}</span>
-                            {step.title}
-                        </p>
-                        <p className="text-base font-bold text-zinc-600 mt-2 leading-snug">
-                            {step.message}
-                        </p>
-                        <p className="text-xs font-black uppercase tracking-wider text-lime-600 mt-4">
-                            {stepIndex < steps.length - 1
+                        position="bottom-right"
+                        footerText={
+                            stepIndex < steps.length - 1
                                 ? "Tap here to continue →"
-                                : "Tap to finish! ✨"}
-                        </p>
-                    </button>
-                    <img
-                        src={bodyUrl}
-                        alt="Your Avatar"
-                        className="w-48 h-auto md:w-64 lg:w-80 object-contain drop-shadow-[0_0_80px_rgba(163,230,53,0.35)] animate-bounce-slow"
+                                : "Tap to finish! ✨"
+                        }
                     />
                 </div>
             )}
