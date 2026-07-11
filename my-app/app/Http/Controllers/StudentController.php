@@ -198,11 +198,12 @@ class StudentController extends Controller
 
         $totalPossible = $module->words()->count();
         $wordsSmashed = min($request->words_smashed, $totalPossible);
+        $streak = min($request->streak ?? 0, $wordsSmashed + 1);
         $accuracy = $totalPossible > 0
             ? round(min(($wordsSmashed / $totalPossible) * 100, 100), 2)
             : 0;
         $session = GameSession::logSession(
-            $user->id, $module->id, 'word', $wordsSmashed, $accuracy, $request->streak ?? 0,
+            $user->id, $module->id, 'word', $wordsSmashed, $accuracy, $streak,
         );
         $this->progressService->updateWordProgress($user->student, $module, $wordsSmashed, $request->words_processed, $accuracy);
 
@@ -294,11 +295,12 @@ class StudentController extends Controller
 
         $totalPoints = $module->words()->count();
         $wordsSmashed = min($request->words_smashed, $totalPoints);
+        $streak = min($request->streak ?? 0, $wordsSmashed + 1);
         $accuracy = $totalPoints > 0
             ? round(min(($wordsSmashed / $totalPoints) * 100, 100), 2)
             : 0;
         $session = GameSession::logSession(
-            $user->id, $module->id, 'paragraph', $wordsSmashed, $accuracy, $request->streak ?? 0,
+            $user->id, $module->id, 'paragraph', $wordsSmashed, $accuracy, $streak,
         );
         $this->progressService->updateParagraphProgress($user->student, $module, $wordsSmashed, $request->words_processed, $accuracy);
 
