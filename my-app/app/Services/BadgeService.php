@@ -64,7 +64,7 @@ class BadgeService
         foreach ($badgesToCheck as $badge) {
             $currentValue = match ($badge->metric) {
                 'total_points' => $student->points,
-                'streak' => GameSession::where('user_id', $user->id)->max('streak') ?? 0,
+                'streak' => (int) GameSession::where('id', $sessionId)->value('streak') ?? 0,
                 'accuracy' => $accuracy,
                 default => 0,
             };
