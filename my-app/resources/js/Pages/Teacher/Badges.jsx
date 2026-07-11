@@ -44,7 +44,7 @@ const BADGE_DATA = [
     {
         id: 5,
         name: "Tutorial Master",
-        slug: "tutorial-completion",
+        slug: "tutorial-complete",
         icon: "🚀",
         description: "Completed both tutorial modes.",
         requirement: "Finish Read and Speak mode tutorials.",

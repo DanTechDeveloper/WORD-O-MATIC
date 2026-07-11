@@ -54,15 +54,15 @@ const BADGE_UI_CONFIG = {
             title: "text-secondary",
         },
     },
-    "tutorial-completion": {
+    "tutorial-complete": {
         icon: "🚀",
         statusLabel: "COMPLETED",
         colors: {
-            bg: "bg-primary-container",
-            text: "text-white",
-            shadow: "shadow-[#7000ff]",
-            border: "border-slate-950",
-            title: "text-primary",
+            bg: "bg-[#a3e635]",
+            text: "text-[#064e3b]",
+            shadow: "shadow-[#14532d]",
+            border: "border-[#064e3b]",
+            title: "text-[#a3e635]",
         },
     },
     "on-fire": {

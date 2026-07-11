@@ -36,7 +36,7 @@ class CheckStudentOnboarding
 
         // Step 2: Has avatar but tutorial not finished → greetings/tutorial flow
         if (! $tutorialDone) {
-            if (! $request->routeIs(['student.greetings', 'student.tutorial', 'student.tutorial.complete', 'student.updateAvatar'])) {
+            if (! $request->routeIs(['student.greetings', 'student.tutorial', 'student.tutorial.complete', 'student.updateAvatar', 'student.practice'])) {
                 return redirect()->route('student.greetings');
             }
 
