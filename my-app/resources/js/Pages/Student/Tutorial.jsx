@@ -154,7 +154,7 @@ export default function Tutorial() {
                             </div>
 
                             <h2 className="text-white text-5xl md:text-7xl lg:text-8xl font-black italic uppercase tracking-tighter mb-4">
-                                WORD BLA ST{" "}
+                                WORD BLAST{" "}
                                 <span className="text-purple-500">MODE</span>
                             </h2>
                             <p className="text-zinc-400 text-lg md:text-2xl font-bold uppercase tracking-[0.2em] max-w-sm">

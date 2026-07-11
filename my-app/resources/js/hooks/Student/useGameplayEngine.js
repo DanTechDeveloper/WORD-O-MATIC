@@ -48,6 +48,7 @@ export function useGameplayEngine({
     const onMispronounceFnRef = useRef(null);
     const wordsRef = useRef(words);
     const wordRecognizedGuardRef = useRef(false);
+    const maxStreakRef = useRef(0);
 
     onWordRecognizedRef.current = onWordRecognized;
     onMispronounceRef.current = onMispronounce;
@@ -59,6 +60,10 @@ export function useGameplayEngine({
     useEffect(() => {
         wordsSmashedRef.current = wordsSmashed;
     }, [wordsSmashed]);
+
+    useEffect(() => {
+        maxStreakRef.current = maxStreak;
+    }, [maxStreak]);
 
     useEffect(() => {
         wordsRef.current = words;
@@ -112,7 +117,7 @@ export function useGameplayEngine({
                     module_id: moduleId,
                     words_smashed: wordsSmashedRef.current,
                     words_processed: currentWordIndexRef.current,
-                    streak: currentStreakRef.current,
+                    streak: maxStreakRef.current,
                 },
             );
         }
