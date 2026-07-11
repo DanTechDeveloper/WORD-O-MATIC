@@ -23,19 +23,9 @@ export default function BadgeUnlockModal({
 
             <div className="relative z-10 flex flex-col items-center text-center px-6 max-w-2xl mx-auto">
                 {total > 1 && (
-                    <div className="mb-4 flex flex-col items-center gap-2">
-                        <div className="flex gap-2">
-                            {Array.from({ length: total }).map((_, i) => (
-                                <span
-                                    key={i}
-                                    className={`text-3xl ${i < current ? "" : "opacity-30 grayscale"}`}
-                                >
-                                    🏅
-                                </span>
-                            ))}
-                        </div>
+                    <div className="relative z-10 mb-12 flex flex-col items-center gap-2">
                         <span className="text-lime-400 font-black text-xl uppercase tracking-widest">
-                            Badge {current} of {total}
+                            🎉 You unlocked {total} new badges!
                         </span>
                     </div>
                 )}
