@@ -34,17 +34,17 @@ class CheckStudentOnboarding
             return $next($request);
         }
 
-        // Step 2: Has avatar but tutorial not finished → greetings/tutorial flow
+        // Step 2: Has avatar but tutorial not finished → tutorial flow
         if (! $tutorialDone) {
-            if (! $request->routeIs(['student.greetings', 'student.tutorial', 'student.tutorial.complete', 'student.updateAvatar', 'student.practice'])) {
-                return redirect()->route('student.greetings');
+            if (! $request->routeIs(['student.avatarSelection', 'student.tutorial', 'student.tutorial.complete', 'student.updateAvatar', 'student.practice'])) {
+                return redirect()->route('student.tutorial');
             }
 
             return $next($request);
         }
 
         // Step 3: Fully onboarded → prevent re-entering onboarding entry screens
-        if ($request->routeIs(['student.splashScreen', 'student.avatarSelection', 'student.greetings'])) {
+        if ($request->routeIs(['student.splashScreen', 'student.avatarSelection'])) {
             return redirect()->route('student.dashboard');
         }
 

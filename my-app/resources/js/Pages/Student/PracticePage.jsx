@@ -5,10 +5,12 @@ import { router, usePage } from "@inertiajs/react";
 import GameplayHeader from "@/Components/Student/GameplayHeader";
 import Microphone from "@/Components/Student/Microphone";
 import DeniedModal from "@/Components/Student/DeniedModal";
-import { useState, useCallback, useMemo } from "react";
+import TapToStartOverlay from "@/Components/Student/TapToStartOverlay";
+import { useState, useCallback, useMemo, useEffect } from "react";
 
 import { useGameplayEngine } from "@/hooks/Student/useGameplayEngine";
 import { useSpeechRecognition } from "@/hooks/Student/useSpeechRecognition";
+import { useMicrophonePermission } from "@/hooks/Student/useMicrophonePermission";
 
 const GUIDE_STEPS = {
     read: [
@@ -16,25 +18,25 @@ const GUIDE_STEPS = {
             title: "READ THE WORD",
             message: "Say each word aloud into the mic. Read it right to BLAST it!",
             emoji: "📢",
-            color: "primary",
+            color: "lime",
         },
         {
             title: "BLAST & SCORE",
             message: "Blast words fast! Watch your score grow and your streak build!",
             emoji: "⚡",
-            color: "primary",
+            color: "lime",
         },
         {
             title: "KEEP MOVING",
             message: "Words auto-advance after 5 seconds. Try to read them before they go!",
             emoji: "⏱️",
-            color: "primary",
+            color: "lime",
         },
         {
             title: "TAP TO PLAY!",
             message: "Tap the mic below when you're ready. 3-2-1 countdown, then go!",
             emoji: "🎤",
-            color: "primary",
+            color: "lime",
         },
     ],
     speak: [
@@ -42,25 +44,25 @@ const GUIDE_STEPS = {
             title: "READ THE SENTENCE",
             message: "Say the whole sentence clearly, not just one word!",
             emoji: "📖",
-            color: "secondary",
+            color: "sky",
         },
         {
             title: "WATCH IT LIGHT UP",
             message: "Each word highlights as it's recognized. Follow along!",
             emoji: "✨",
-            color: "secondary",
+            color: "sky",
         },
         {
             title: "NO PRESSURE",
             message: "Take your time — there's no timer here!",
             emoji: "😊",
-            color: "secondary",
+            color: "sky",
         },
         {
             title: "TAP TO PLAY!",
             message: "Tap the mic below when you're ready. 3-2-1 countdown, then go!",
             emoji: "🎤",
-            color: "secondary",
+            color: "sky",
         },
     ],
 };
@@ -68,17 +70,6 @@ const GUIDE_STEPS = {
 const CONTENT_COMPONENT = {
     read: ReadModeMainContent,
     speak: SpeakModeMainContent,
-};
-
-const OVERLAY_TEXT = {
-    read: {
-        title: "Tap to Practice",
-        subtitle: "Tap the mic & read the words aloud!",
-    },
-    speak: {
-        title: "Tap to Practice",
-        subtitle: "Tap the mic & read the sentence aloud!",
-    },
 };
 
 export default function PracticePage({ module, mode = "read" }) {
@@ -92,7 +83,6 @@ export default function PracticePage({ module, mode = "read" }) {
     const steps = GUIDE_STEPS[mode];
     const step = guideDone ? null : steps[stepIndex];
     const ContentComponent = CONTENT_COMPONENT[mode];
-    const overlay = OVERLAY_TEXT[mode];
     const isReadMode = mode === "read";
 
     const wordsForContent = useMemo(() => {
@@ -147,19 +137,29 @@ export default function PracticePage({ module, mode = "read" }) {
         onTimeUp: navigateAway,
     });
 
-    const handlePermissionDenied = useCallback(() => {
-        setGameState("DENIED");
-    }, [setGameState]);
+    const { permissionState, requestPermission } = useMicrophonePermission();
 
-    const handleMicrophoneClick = useCallback(() => {
-        if (gameState === "IDLE") startGame();
-    }, [gameState, startGame]);
+    useEffect(() => {
+        if (permissionState === "denied") {
+            setGameState("DENIED");
+        }
+    }, [permissionState, setGameState]);
+
+    const handleMicrophoneClick = useCallback(async () => {
+        if (gameState === "IDLE") {
+            if (permissionState === "prompt") {
+                const granted = await requestPermission();
+                if (!granted) return;
+            }
+            startGame();
+        }
+    }, [gameState, permissionState, requestPermission, startGame]);
 
     useSpeechRecognition({
         isActive: gameState === "ACTIVE",
         targetWord: targetWord,
         onWordRecognized: handleWordRecognized,
-        onPermissionDenied: handlePermissionDenied,
+        onPermissionDenied: () => setGameState("DENIED"),
         onMispronounced: handleMispronounce,
         onRecognitionError: undefined,
         matchMode: isReadMode ? "word" : "sentence",
@@ -189,9 +189,9 @@ export default function PracticePage({ module, mode = "read" }) {
                             key={i}
                         className={`w-3 h-3 rounded-full transition-all duration-500 ${
                             i === stepIndex
-                                ? (isReadMode ? "bg-primary scale-125" : "bg-secondary scale-125")
+                                ? (isReadMode ? "bg-lime-400 scale-125" : "bg-sky-400 scale-125")
                                 : i < stepIndex
-                                  ? (isReadMode ? "bg-primary/50" : "bg-secondary/50")
+                                  ? (isReadMode ? "bg-lime-400/50" : "bg-sky-400/50")
                                   : "bg-on-surface/20"
                         }`}
                         />
@@ -223,22 +223,10 @@ export default function PracticePage({ module, mode = "read" }) {
             </div>
 
             {gameState === "IDLE" && guideDone && (
-                <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-40 pointer-events-none flex flex-col items-center justify-end pb-[110px] sm:pb-[140px] md:pb-[160px]">
-                    <div className="flex flex-col items-center justify-center animate-bounce scale-90 sm:scale-100">
-                        <div className={`font-black px-6 sm:px-8 py-3 sm:py-4 rounded-3xl sm:rounded-[2rem] border-4 border-white flex flex-col items-center gap-1 text-center italic uppercase tracking-tighter ${isReadMode ? "bg-primary text-on-primary shadow-[0_0_30px_rgba(112,0,255,0.4)] sm:shadow-[0_0_40px_rgba(112,0,255,0.4)]" : "bg-secondary text-on-secondary shadow-[0_0_30px_rgba(255,59,192,0.4)] sm:shadow-[0_0_40px_rgba(255,59,192,0.4)]"}`}>
-                            <span className="material-symbols-outlined text-3xl sm:text-4xl mb-0 sm:mb-1">
-                                touch_app
-                            </span>
-                            <span className="text-lg sm:text-xl leading-none">
-                                {overlay.title}
-                            </span>
-                            <span className="text-[9px] sm:text-[10px] md:text-xs tracking-[0.2em] opacity-70 mt-1">
-                                {overlay.subtitle}
-                            </span>
-                        </div>
-                        <div className="w-0 h-0 border-l-[15px] sm:border-l-[20px] border-r-[15px] sm:border-r-[20px] border-t-[20px] sm:border-t-[25px] border-l-transparent border-r-transparent border-t-white -mt-1 drop-shadow-2xl"></div>
-                    </div>
-                </div>
+                <TapToStartOverlay
+                    color={isReadMode ? "lime" : "sky"}
+                    permissionState={permissionState}
+                />
             )}
 
             {bodyUrl && !guideDone && step && (

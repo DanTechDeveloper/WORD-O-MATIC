@@ -7,7 +7,7 @@ function BottomNav() {
     const hasNewBadge = typeof window !== 'undefined' && localStorage.getItem('hasNewBadge') === '1';
 
     return (
-        <nav className="fixed bottom-0 left-0 right-0 h-20 bg-slate-950/95 backdrop-blur-sm border-t-2 border-purple-900/60 z-40 flex items-center justify-around px-4">
+        <nav className="fixed bottom-0 left-0 right-0 h-20 bg-slate-950/95 backdrop-blur-sm border-t-2 border-lime-900/60 z-40 flex items-center justify-around px-4">
             <Link
                 href="/student/dashboard"
                 className={`flex flex-col items-center gap-0.5 px-6 py-2 rounded-lg transition-colors ${
@@ -65,7 +65,7 @@ export default function DashboardLayout({ children }) {
                     backgroundSize: '32px 32px',
                 }}
             />
-            <div className="fixed inset-0 pointer-events-none bg-gradient-to-b from-purple-900/5 via-transparent to-transparent" />
+            <div className="fixed inset-0 pointer-events-none bg-gradient-to-b from-lime-900/5 via-transparent to-transparent" />
             <StudentProfile />
             <main className="w-[92%] mx-auto pt-[72px] lg:pt-[88px] pb-24">
                 {children}
