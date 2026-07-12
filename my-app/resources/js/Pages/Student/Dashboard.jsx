@@ -1,177 +1,135 @@
 import { Link } from "@inertiajs/react";
-import { useState, useEffect, useCallback } from "react";
 import DashboardLayout from "../../Layouts/Student/DashboardLayout";
 
-const SLIDES = [
+const MODE_STYLES = {
+    read: {
+        icon: "menu_book",
+        iconColor: "text-accent",
+        border: "border-accent/40",
+        barFill: "bg-accent",
+        pointsColor: "text-accent",
+        playBg: "bg-accent text-background",
+    },
+    speak: {
+        icon: "mic",
+        iconColor: "text-quest",
+        border: "border-quest/40",
+        barFill: "bg-quest",
+        pointsColor: "text-quest",
+        playBg: "bg-quest text-background",
+    },
+};
+
+const MODES = [
     {
         mode: "read",
-        emoji: "📖",
         title: "Word Blast",
+        sub: "Explore Galaxies",
         desc: "Smash words and build your vocabulary in this galactic adventure!",
-        tag: "Featured Game",
         href: "/student/readModeLevels",
-        gradient: "from-lime-600/30 via-lime-900/20 to-slate-950",
-        border: "border-lime-500/20",
-        iconBg: "from-lime-500/30 to-lime-400/20",
     },
     {
         mode: "speak",
-        emoji: "🎤",
         title: "Story Quest",
+        sub: "Speak Stories",
         desc: "Read aloud and bring stories to life in your own voice!",
-        tag: "New Adventure",
         href: "/student/speakModeLevels",
-        gradient: "from-quest-deep/30 via-quest/20 to-background",
-        border: "border-quest/20",
-        iconBg: "from-quest/30 to-quest-hover/20",
     },
 ];
 
-export default function Dashboard({totalReadPoints, totalSpeakPoints, earnedReadPoints, earnedSpeakPoints }) {
-    const [slide, setSlide] = useState(0);
-    const [paused, setPaused] = useState(false);
-
-    const next = useCallback(() => {
-        setSlide((s) => (s + 1) % SLIDES.length);
-    }, []);
-
-    useEffect(() => {
-        if (paused) return;
-        const id = setInterval(next, 4000);
-        return () => clearInterval(id);
-    }, [paused, next]);
-
-    const s = SLIDES[slide];
+export default function Dashboard({
+    totalReadPoints,
+    totalSpeakPoints,
+    earnedReadPoints,
+    earnedSpeakPoints,
+}) {
+    const points = {
+        read: { earned: earnedReadPoints || 0, total: totalReadPoints || 0 },
+        speak: { earned: earnedSpeakPoints || 0, total: totalSpeakPoints || 0 },
+    };
 
     return (
         <DashboardLayout>
-            <div className="flex flex-col justify-center min-h-[calc(100dvh-168px)] space-y-6">
+            <div className="flex flex-col justify-center py-10 lg:py-14 space-y-8">
+                <header className="text-center lg:text-left">
+                    <h1 className="text-4xl lg:text-5xl font-black uppercase italic tracking-[-0.04em] text-on-surface">
+                        Pick Your Game
+                    </h1>
+                    <p className="mt-2 text-on-surface-variant text-base lg:text-lg">
+                        Two ways to play. Choose the adventure that fits your mood.
+                    </p>
+                </header>
 
-                    {/* Carousel */}
-                    <section
-                        className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${s.gradient} border ${s.border} p-6 lg:p-8 transition-all duration-500`}
-                        onMouseEnter={() => setPaused(true)}
-                        onMouseLeave={() => setPaused(false)}
-                        onClick={next}
-                    >
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-lime-400/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-                        <div className="absolute bottom-0 left-0 w-48 h-48 bg-quest-deep/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
+                <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {MODES.map((m) => {
+                        const s = MODE_STYLES[m.mode];
+                        const p = points[m.mode];
+                        const pct = p.total > 0 ? Math.min((p.earned / p.total) * 100, 100) : 0;
+                        return (
+                            <Link
+                                key={m.mode}
+                                href={m.href}
+                                aria-label={`Play ${m.title}`}
+                                className={`group relative flex flex-col rounded-2xl bg-surface ${s.border} border-2 p-6 lg:p-8 tactile-card transition-transform duration-150 hover:-translate-y-1 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-secondary-container motion-reduce:transition-none motion-reduce:hover:translate-y-0`}
+                            >
+                                <div className="flex items-center gap-5">
+                                    <div className={`w-20 h-20 lg:w-24 lg:h-24 shrink-0 rounded-2xl bg-background/40 border-2 ${s.border} flex items-center justify-center`}>
+                                        <span
+                                            className={`material-symbols-outlined text-4xl lg:text-5xl ${s.iconColor}`}
+                                            style={{ fontVariationSettings: "'FILL' 1" }}
+                                        >
+                                            {s.icon}
+                                        </span>
+                                    </div>
+                                    <div className="flex-1">
+                                        <h2 className="text-2xl lg:text-3xl font-black uppercase text-on-surface">
+                                            {m.title}
+                                        </h2>
+                                        <p className="text-on-surface-variant text-sm font-bold mt-1">
+                                            {m.sub}
+                                        </p>
+                                    </div>
+                                </div>
 
-                        <div className="relative z-10 flex flex-col lg:flex-row items-center gap-6">
-                            <div className="flex-1 text-center lg:text-left">
-                                <span className="inline-block bg-lime-400/20 text-lime-400 text-sm font-black px-4 py-1.5 rounded-full border border-lime-400/30 mb-3 uppercase tracking-wider">
-                                    {s.tag}
-                                </span>
-                                <h2 className="text-4xl lg:text-5xl font-black text-white uppercase tracking-tight mb-2">
-                                    {s.title}
-                                </h2>
-                                <p className="text-on-surface-variant text-base lg:text-lg mb-6 max-w-md">
-                                    {s.desc}
+                                <p className="mt-4 text-on-surface-variant text-sm lg:text-base">
+                                    {m.desc}
                                 </p>
-                                <Link
-                                    href={s.href}
-                                    onClick={(e) => e.stopPropagation()}
-                                    className="inline-flex items-center gap-2 bg-lime-400 text-slate-950 font-black text-lg px-8 py-4 rounded-xl border-b-2 border-lime-700 hover:border-b-[3px] transition-all shadow-lg shadow-lime-400/20 hover:scale-105 active:scale-95"
-                                >
-                                    <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>play_arrow</span>
-                                    PLAY NOW
-                                </Link>
-                            </div>
-                            <div className={`w-36 h-36 lg:w-44 lg:h-44 rounded-2xl bg-gradient-to-br ${s.iconBg} border border-white/10 flex items-center justify-center backdrop-blur-sm`}>
-                                <span className="text-7xl lg:text-8xl">{s.emoji}</span>
-                            </div>
-                        </div>
 
-                        {/* Dots */}
-                        <div className="relative z-10 flex justify-center gap-2 mt-4">
-                            {SLIDES.map((_, i) => (
-                                <button
-                                    key={i}
-                                    onClick={(e) => { e.stopPropagation(); setSlide(i); }}
-                                    className={`w-2.5 h-2.5 rounded-full transition-all ${
-                                        i === slide ? "bg-lime-400 scale-125" : "bg-white/30"
-                                    }`}
-                                />
-                            ))}
-                        </div>
-                    </section>
+                                <div className="mt-6">
+                                    <span
+                                        className={`inline-flex items-center gap-2 rounded-xl px-6 py-3 lg:px-8 lg:py-4 font-black text-base lg:text-lg uppercase tracking-wider shadow-[0_6px_0_0_#4c1d95] group-active:shadow-[0_2px_0_0_#4c1d95] group-active:translate-y-1 transition-all duration-150 motion-reduce:transition-none motion-reduce:group-active:translate-y-0 ${s.playBg}`}
+                                    >
+                                        <span
+                                            className="material-symbols-outlined text-2xl"
+                                            style={{ fontVariationSettings: "'FILL' 1" }}
+                                        >
+                                            play_arrow
+                                        </span>
+                                        Play
+                                    </span>
+                                </div>
 
-                    {/* Game Modes */}
-                    <section>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <Link
-                                href="/student/readModeLevels"
-                                className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-lime-600/20 to-lime-900/20 border-2 border-lime-500/20 p-6 hover:scale-[1.02] hover:-translate-y-1 transition-all duration-200"
-                            >
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-lime-500/10 rounded-full blur-2xl" />
-                                <div className="relative z-10 flex items-center gap-5">
-                                    <div className="w-20 h-20 rounded-xl bg-lime-500/20 border-2 border-lime-400/30 flex items-center justify-center shrink-0">
-                                        <span className="text-4xl">📖</span>
+                                <div className="mt-6">
+                                    <div className="flex items-center justify-between text-sm mb-1">
+                                        <span className="text-on-surface-variant font-bold uppercase tracking-wider">
+                                            Stars Earned
+                                        </span>
+                                        <span className={`font-black text-base ${s.pointsColor}`}>
+                                            {p.total > 0 ? `${p.earned}/${p.total}` : "Not started"}
+                                        </span>
                                     </div>
-                                    <div className="flex-1">
-                                        <h4 className="text-2xl font-black text-white uppercase">Word Blast</h4>
-                                        <p className="text-on-surface-variant text-sm font-bold">Explore Galaxies</p>
-                                        <div className="mt-3 flex items-center gap-3">
-                                            <span className="inline-flex items-center gap-1.5 bg-lime-400 text-slate-950 font-black text-base px-5 py-2.5 rounded-xl border-b-2 border-lime-700 group-hover:border-b-[3px] transition-all">
-                                                <span className="material-symbols-outlined text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>play_arrow</span>
-                                                PLAY
-                                            </span>
-                                          
-                                        </div>
-                                        <div className="mt-3">
-                                            <div className="flex items-center justify-between text-sm mb-1">
-                                                <span className="text-on-surface-variant/60 font-bold">Points</span>
-                                                <span className="text-lime-400 font-black text-base">{earnedReadPoints || 0}/{totalReadPoints || 0}</span>
-                                            </div>
-                                            <div className="h-3 w-full bg-slate-950/40 rounded-full overflow-hidden">
-                                                <div
-                                                    className="h-full bg-gradient-to-r from-lime-500 to-lime-400 rounded-full transition-all duration-700"
-                                                    style={{ width: `${totalReadPoints ? (earnedReadPoints || 0) / totalReadPoints * 100 : 0}%` }}
-                                                />
-                                            </div>
-                                        </div>
+                                    <div className="h-3 w-full bg-background/60 rounded-full overflow-hidden border border-outline/30">
+                                        <div
+                                            className={`h-full rounded-full transition-all duration-700 ease-out ${s.barFill}`}
+                                            style={{ width: `${pct}%` }}
+                                        />
                                     </div>
                                 </div>
                             </Link>
-
-                            <Link
-                                href="/student/speakModeLevels"
-                                className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-quest-deep/20 to-quest/20 border-2 border-quest/20 p-6 hover:scale-[1.02] hover:-translate-y-1 transition-all duration-200"
-                            >
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-quest/10 rounded-full blur-2xl" />
-                                <div className="relative z-10 flex items-center gap-5">
-                                    <div className="w-20 h-20 rounded-xl bg-quest/20 border-2 border-quest/30 flex items-center justify-center shrink-0">
-                                        <span className="text-4xl">🎤</span>
-                                    </div>
-                                    <div className="flex-1">
-                                        <h4 className="text-2xl font-black text-white uppercase">Story Quest</h4>
-                                        <p className="text-on-surface-variant text-sm font-bold">Embark on a narrative journey</p>
-                                        <div className="mt-3 flex items-center gap-3">
-                                            <span className="inline-flex items-center gap-1.5 bg-quest text-surface-container-lowest font-black text-base px-5 py-2.5 rounded-xl border-b-2 border-quest-deep group-hover:border-b-[3px] transition-all">
-                                                <span className="material-symbols-outlined text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>play_arrow</span>
-                                                PLAY
-                                            </span>
-                                           
-                                        </div>
-                                        <div className="mt-3">
-                                            <div className="flex items-center justify-between text-sm mb-1">
-                                                <span className="text-on-surface-variant/60 font-bold">Points</span>
-                                                <span className="text-quest font-black text-base">{earnedSpeakPoints || 0}/{totalSpeakPoints || 0}</span>
-                                            </div>
-                                            <div className="h-3 w-full bg-slate-950/40 rounded-full overflow-hidden">
-                                                <div
-                                                    className="h-full bg-gradient-to-r from-quest to-quest-hover rounded-full transition-all duration-700"
-                                                    style={{ width: `${totalSpeakPoints ? (earnedSpeakPoints || 0) / totalSpeakPoints * 100 : 0}%` }}
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </Link>
-                        </div>
-                    </section>
-
-                </div>
-            </DashboardLayout>
+                        );
+                    })}
+                </section>
+            </div>
+        </DashboardLayout>
     );
 }
