@@ -2,7 +2,7 @@
 name: Word-O-Matic
 description: A gamified vocabulary-learning platform for students and teachers — tactile arcade energy on a Material 3 dark base.
 colors:
-  background: "#111125"
+  background: "#0c0c1f"
   surface: "#1e1e32"
   surface-high: "#28283d"
   primary: "#d1bcff"
@@ -13,6 +13,9 @@ colors:
   on-surface-variant: "#ccc3da"
   outline: "#958da3"
   accent: "#a3e635"
+  quest: "#38bdf8"
+  quest-deep: "#0284c7"
+  quest-hover: "#7dd3fc"
 typography:
   display:
     fontFamily: "Lexend Variable, Lexend, sans-serif"
@@ -66,7 +69,7 @@ components:
 **Creative North Star: "The Tactile Arcade"**
 
 Word-O-Matic is a vocabulary playground disguised as a game console. The
-base is a deep indigo-black "stage" (`#111125`) lifted straight from a
+base is a deep indigo-black "stage" (`#0c0c1f`) lifted straight from a
 Material 3 dark theme, but the personality comes from **hard, offset,
 no-blur shadows** — the "tactile" language in `app.css` — that make every
 card and button feel like a physical game piece you can press. Bright
@@ -84,10 +87,12 @@ don't honor). The app and the marketing surface must speak the same
 language.
 
 **Key Characteristics:**
-- Deep indigo-black canvas (`#111125`) with layered surfaces for depth.
+- Deep indigo-black canvas (`#0c0c1f`) with layered surfaces for depth.
 - One hard offset shadow per raised surface — never soft blur, never a
   different shadow color per component.
-- A single action/highlight accent: arcade lime.
+- Two game-mode accents: arcade lime (`#a3e635`, `accent`) marks **Word
+  Blast** (read mode); electric blue (`#38bdf8`, `quest`) marks **Story
+  Quest** (speak mode). Each mode owns exactly one pop color.
 - Lexend (geometric, heavy) for display + UI; Plus Jakarta Sans for body.
 - Material Symbols Outlined for iconography (filled `1` when active).
 
@@ -112,7 +117,7 @@ promoted to a first-class token (captured here as `accent`).
   highlights and tertiary fixed tints.
 
 ### Neutral
-- **Indigo Void** (`#111125`): `background` and `surface-dim`. The page
+- **Indigo Void** (`#0c0c1f`): `background` and `surface-dim`. The page
   canvas. The single most important color; everything sits on it.
 - **Elevated Indigo** (`#28283d`): `surface-container-highest`. Raised
   cards, panels, modals.
@@ -129,11 +134,22 @@ promoted to a first-class token (captured here as `accent`).
   "EARNED" sheen. Currently untokenized — every usage reaches for the
   Tailwind default. Codify it as `accent` so it cannot drift.
 
+### Quest (Story Quest / Speak mode)
+- **Electric Blue** (`#38bdf8`, `quest`): the pop color for **Story Quest**
+  (speak) surfaces — word displays, active word borders, mic aura, speak-mode
+  badges, and the Tutorial/Practice "STORY QUEST" steps. `quest-deep`
+  (`#0284c7`) for deeps/gradients, `quest-hover` (`#7dd3fc`) for hover/lift.
+  Story Quest is blue everywhere; it must never drift to lime or magenta.
+- **Signal Rose** (`#f43f5e`, Tailwind `rose-400`/`rose-500`): used *only*
+  for incorrect-answer feedback (SpeakModeMainContent) so it reads "wrong"
+  distinct from the blue target word. Not a pop or mode color.
+
 ### Named Rules
-**The One Pop Color Rule.** Arcade lime is the *only* action/highlight
-color on any screen. Violet, magenta, and peach are chrome, not calls to
-action. If two elements are both lime and both shout "click me," one of
-them is wrong.
+**The One Pop Color Rule (per mode).** Each game mode has exactly one pop
+color: **Word Blast (read) = arcade lime**, **Story Quest (speak) = electric
+blue (`quest`)**. Violet, magenta, and peach are chrome, not calls to action;
+rose is reserved for "wrong" feedback only. Within a mode, if two elements
+are both the pop color and both shout "click me," one of them is wrong.
 
 **The Token-Only Rule.** Build every surface with the named Material 3
 tokens (`background`, `surface-*`, `primary-*`, `secondary-container`,

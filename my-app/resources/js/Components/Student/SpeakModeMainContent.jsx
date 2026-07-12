@@ -72,7 +72,7 @@ const SpeakModeMainContent = memo(function SpeakModeMainContent({
                 <div className="flex-1 flex" />
             ) : gameState === "COUNTDOWN" ? (
                 <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-6xl sm:text-8xl md:text-[12rem] font-black text-lime-400 italic animate-bounce drop-shadow-[0_0_50px_rgba(163,230,53,0.8)]">
+                        <span className="text-6xl sm:text-8xl md:text-[12rem] font-black text-quest italic animate-bounce drop-shadow-[0_0_50px_rgba(56,189,248,0.8)]">
                         {countdownValue}
                     </span>
                 </div>
@@ -93,7 +93,7 @@ const SpeakModeMainContent = memo(function SpeakModeMainContent({
                                                 : index === currentIndex
                                                   ? (isMispronounced
                                                         ? "text-rose-400 opacity-100 relative z-10 border-2 border-rose-500 rounded-xl px-3 py-2 bg-slate-900/80 drop-shadow-[0_0_12px_rgba(244,63,94,0.6)] animate-shake"
-                                                        : "text-lime-400 opacity-100 relative z-10 border-2 border-lime-400/80 rounded-xl px-3 py-2 bg-slate-900/80 drop-shadow-[0_0_10px_rgba(163,230,53,0.5)]")
+                                                         : "text-quest opacity-100 relative z-10 border-2 border-quest/80 rounded-xl px-3 py-2 bg-slate-900/80 drop-shadow-[0_0_10px_rgba(56,189,248,0.5)]")
                                                   : "opacity-60 text-on-background/50"
                                         }`}
                                     >
@@ -102,13 +102,13 @@ const SpeakModeMainContent = memo(function SpeakModeMainContent({
                                                 className={`absolute left-1/2 -translate-x-1/2 -top-10 sm:-top-12 z-30 flex items-center gap-2 font-black italic whitespace-nowrap text-xl sm:text-2xl md:text-3xl rounded-full px-3 py-1 border bg-slate-900/85 animate-feedback-pop ${
                                                     feedbackType === "correct"
                                                         ? "text-yellow-300 border-amber-400/60"
-                                                        : "text-cyan-300 border-sky-400/60"
+                                                        : "text-rose-400 border-rose-500/60"
                                                 }`}
                                                 style={{
                                                     filter:
                                                         feedbackType === "correct"
                                                             ? "drop-shadow(0 0 14px rgba(255,200,0,0.7))"
-                                                            : "drop-shadow(0 0 12px rgba(34,211,238,0.6))",
+                                                            : "drop-shadow(0 0 12px rgba(244,63,94,0.6))",
                                                 }}
                                             >
                                                 {feedbackMessage}

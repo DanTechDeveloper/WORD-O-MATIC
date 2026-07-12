@@ -13,7 +13,7 @@ const Microphone = memo(function Microphone({ isListening, disabled, onClick }) 
                 >
                     {/* <!-- Glowing Aura --> */}
                     <div
-                        className={`absolute inset-0 rounded-full bg-gradient-to-tr from-primary via-fuchsia-500 to-lime-400 blur-[30px] sm:blur-[40px] md:blur-[45px] shadow-[0_0_50px_rgba(var(--primary-rgb),0.3),0_0_50px_rgba(163,230,53,0.3)] transition-opacity duration-500 ${isListening ? "opacity-80 animate-pulse" : "opacity-40 group-hover:opacity-60"}`}
+                        className={`absolute inset-0 rounded-full bg-gradient-to-tr from-primary via-fuchsia-500 to-quest blur-[30px] sm:blur-[40px] md:blur-[45px] shadow-[0_0_50px_rgba(var(--primary-rgb),0.3),0_0_50px_rgba(56,189,248,0.3)] transition-opacity duration-500 ${isListening ? "opacity-80 animate-pulse" : "opacity-40 group-hover:opacity-60"}`}
                     ></div>
 
                     {/* <!-- Main Mic Housing --> */}
@@ -25,7 +25,7 @@ const Microphone = memo(function Microphone({ isListening, disabled, onClick }) 
 
                         {/* <!-- Core Mic Icon --> */}
                         <div
-                            className={`w-16 h-16 sm:w-18 sm:h-18 md:w-20 md:h-20 rounded-full bg-gradient-to-tr from-primary to-lime-400 flex items-center justify-center shadow-inner ring-4 ring-white/10 transition-transform duration-300 ${isListening ? "scale-110 ring-lime-400/50" : "group-hover:scale-110"}`}
+                            className={`w-16 h-16 sm:w-18 sm:h-18 md:w-20 md:h-20 rounded-full bg-gradient-to-tr from-primary to-quest flex items-center justify-center shadow-inner ring-4 ring-white/10 transition-transform duration-300 ${isListening ? "scale-110 ring-quest/50" : "group-hover:scale-110"}`}
                         >
                             <span
                                 className={`material-symbols-outlined text-white text-4xl sm:text-5xl transition-all ${isListening ? "scale-125" : ""}`}
@@ -37,7 +37,7 @@ const Microphone = memo(function Microphone({ isListening, disabled, onClick }) 
 
                     {/* <!-- Floating Tech Bits --> */}
                     <div
-                        className={`absolute -top-4 -right-2 bg-lime-400 text-slate-950 p-1 rounded-full border-2 border-white shadow-lg ${isListening ? "animate-spin" : "animate-bounce"}`}
+                        className={`absolute -top-4 -right-2 bg-quest text-surface-container-lowest p-1 rounded-full border-2 border-white shadow-lg ${isListening ? "animate-spin" : "animate-bounce"}`}
                     >
                         <span className="material-symbols-outlined text-[10px] sm:text-sm font-black">
                             graphic_eq
@@ -52,7 +52,7 @@ const Microphone = memo(function Microphone({ isListening, disabled, onClick }) 
 
                 {/* <!-- Action Prompt --> */}
                 <div
-                    className={`bg-on-background/10 backdrop-blur-md px-4 sm:px-6 md:px-8 py-2 sm:py-3 rounded-full border border-white/10 flex items-center gap-2 sm:gap-3 shadow-xl transition-all duration-300 ${isListening ? "border-lime-400/50 scale-105" : ""}`}
+                    className={`bg-on-background/10 backdrop-blur-md px-4 sm:px-6 md:px-8 py-2 sm:py-3 rounded-full border border-white/10 flex items-center gap-2 sm:gap-3 shadow-xl transition-all duration-300 ${isListening ? "border-quest/50 scale-105" : ""}`}
                 >
                     <span className="text-on-background font-black italic tracking-widest uppercase text-sm sm:text-base md:text-lg whitespace-nowrap">
                         {isListening

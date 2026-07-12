@@ -25,6 +25,11 @@ export default function AvatarSpeechBubble({
             text: "text-accent",
             glow: "drop-shadow-[0_0_80px_rgba(163,230,53,0.35)]",
         },
+        quest: {
+            border: "border-quest",
+            text: "text-quest",
+            glow: "drop-shadow-[0_0_80px_rgba(56,189,248,0.35)]",
+        },
     };
     const accent = accentMap[color] || accentMap.primary;
 

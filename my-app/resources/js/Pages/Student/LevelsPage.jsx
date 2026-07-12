@@ -39,7 +39,7 @@ export default function LevelsPage({ modules, mode }) {
                         Select a level to play
                     </p>
                 </div>
-                <div className="bg-lime-400 text-slate-950 px-3 md:px-4 py-1.5 md:py-2 rounded-lg font-black text-sm md:text-base border-b-2 border-lime-700 flex items-center gap-1.5 flex-shrink-0">
+                <div className={`${isRead ? "bg-lime-400 text-surface-container-lowest border-b-2 border-lime-700" : "bg-quest text-surface-container-lowest border-b-2 border-quest-deep"} px-3 md:px-4 py-1.5 md:py-2 rounded-lg font-black text-sm md:text-base flex items-center gap-1.5 flex-shrink-0`}>
                     <span className="material-symbols-outlined text-base md:text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
                     {totalStars}
                 </div>

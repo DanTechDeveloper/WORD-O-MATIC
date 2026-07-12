@@ -23,7 +23,7 @@ const BEFORE_STEPS = [
         title: "STORY QUEST",
         message: "Locked for now — finish Word Blast to unlock me!",
         emoji: "lock",
-        color: "secondary",
+        color: "quest",
     },
 ];
 
@@ -35,15 +35,15 @@ const AFTER_STEPS = (allDone) => [
             ? "You completed both practices! You're ready!"
             : "You did it! Story Quest is waiting for you!",
         emoji: "celebration",
-        color: "secondary",
+        color: "quest",
     },
     ...(allDone ? [] : [
         {
             target: '[data-purpose="story-mode-unlocked"]',
             title: "STORY QUEST",
             message: "Tap here to start your speaking adventure!",
-            emoji: "auto_stories",
-            color: "secondary",
+        emoji: "auto_stories",
+        color: "quest",
         },
     ]),
 ];
@@ -94,7 +94,9 @@ export default function Tutorial() {
     const ringClass = (purpose) => {
         if (!isTarget(purpose)) return "";
         const c =
-            step.color === "secondary"
+            step.color === "quest"
+                ? "ring-4 ring-quest ring-offset-4 ring-offset-background scale-[1.03]"
+                : step.color === "secondary"
                 ? "ring-4 ring-secondary-container ring-offset-4 ring-offset-background scale-[1.03]"
                 : "ring-4 ring-accent ring-offset-4 ring-offset-background scale-[1.03]";
         return `${c} z-10 rounded-2xl transition-all duration-500 animate-pulse motion-reduce:animate-none`;
@@ -105,7 +107,7 @@ export default function Tutorial() {
             {!guideDone && (
                 <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[60] flex gap-3">
                     {steps.map((s, i) => {
-                        const dot = s.color === "secondary" ? "bg-secondary-container" : "bg-accent";
+                        const dot = s.color === "quest" ? "bg-quest" : s.color === "secondary" ? "bg-secondary-container" : "bg-accent";
                         return (
                             <div
                                 key={i}
@@ -195,7 +197,7 @@ export default function Tutorial() {
                                 : undefined
                         }
                         as={storyQuestUnlocked ? "a" : "div"}
-                        className={`group flex-1 flex flex-col items-center justify-center p-8 transition-all duration-500 bg-gradient-to-br from-secondary-container/15 to-background ${storyQuestUnlocked ? "" : "cursor-not-allowed"} ${ringClass(storyQuestUnlocked ? "story-mode-unlocked" : "story-mode-locked")}`}
+                        className={`group flex-1 flex flex-col items-center justify-center p-8 transition-all duration-500 bg-gradient-to-br from-quest/15 to-background ${storyQuestUnlocked ? "" : "cursor-not-allowed"} ${ringClass(storyQuestUnlocked ? "story-mode-unlocked" : "story-mode-locked")}`}
                         data-purpose={
                             storyQuestUnlocked
                                 ? "story-mode-unlocked"
@@ -212,7 +214,7 @@ export default function Tutorial() {
 
                             <h2 className="text-on-surface text-5xl md:text-7xl lg:text-8xl font-black italic uppercase tracking-tighter mb-4">
                                 STORY QUEST{" "}
-                                <span className="text-secondary-container">MODE</span>
+                                <span className="text-quest">MODE</span>
                             </h2>
                             <p className="text-on-surface-variant text-lg md:text-2xl font-bold uppercase tracking-[0.2em] max-w-sm">
                                 {practiceDone
@@ -223,7 +225,7 @@ export default function Tutorial() {
 
                         <div className="absolute bottom-0 left-0 right-0 h-2 bg-surface-container-high/80">
                             <div
-                                className={`h-full bg-secondary-container transition-all duration-1000 ease-out ${practiceDone ? "w-full" : "w-[40%] group-hover:w-full"}`}
+                                className={`h-full bg-quest transition-all duration-1000 ease-out ${practiceDone ? "w-full" : "w-[40%] group-hover:w-full"}`}
                             />
                         </div>
                     </Link>

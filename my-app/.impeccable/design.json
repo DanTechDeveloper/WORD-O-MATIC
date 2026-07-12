@@ -4,7 +4,7 @@
   "title": "Design System: Word-O-Matic",
   "extensions": {
     "colorMeta": {
-      "background":        { "role": "background", "displayName": "Indigo Void",  "canonical": "#111125", "tonalRamp": ["#0c0c1f", "#111125", "#16162c", "#1b1b33", "#222240", "#2b2b50", "#3a3a66", "#4d4d82"] },
+      "background":        { "role": "background", "displayName": "Indigo Void",  "canonical": "#0c0c1f", "tonalRamp": ["#0c0c1f", "#0c0c1f", "#16162c", "#1b1b33", "#222240", "#2b2b50", "#3a3a66", "#4d4d82"] },
       "surface-high":     { "role": "surface",    "displayName": "Elevated Indigo", "canonical": "#28283d", "tonalRamp": ["#1a1a2e", "#1e1e32", "#222238", "#262640", "#28283d", "#33334a", "#3d3d58", "#55557a"] },
       "primary":          { "role": "primary",    "displayName": "Lavender Mist", "canonical": "#d1bcff", "tonalRamp": ["#5700c9", "#7000ff", "#8a3bff", "#a06bff", "#b894ff", "#d1bcff", "#e9ddff", "#f3ecff"] },
       "primary-container":{ "role": "primary",    "displayName": "Electric Violet", "canonical": "#7000ff", "tonalRamp": ["#23005b", "#3b009c", "#5700c9", "#7000ff", "#8a3bff", "#a06bff", "#c4a6ff", "#e9ddff"] },
@@ -13,7 +13,8 @@
       "on-surface":       { "role": "on-surface", "displayName": "Lavender White", "canonical": "#e2e0fc", "tonalRamp": ["#2f2e43", "#ccc3da", "#d8d2ea", "#e2e0fc", "#ecebff", "#f4f3ff", "#fafaff", "#ffffff"] },
       "on-surface-variant": { "role": "on-surface", "displayName": "Muted Lavender", "canonical": "#ccc3da", "tonalRamp": ["#4a4457", "#958da3", "#b3acc0", "#ccc3da", "#dad4e8", "#e7e3f4", "#f3f1fb", "#ffffff"] },
       "outline":          { "role": "outline",    "displayName": "Slate Outline", "canonical": "#958da3", "tonalRamp": ["#333348", "#4a4457", "#6a6478", "#958da3", "#b0a9bc", "#cbc6d8", "#e4e1ee", "#ffffff"] },
-      "accent":           { "role": "accent",     "displayName": "Arcade Lime",  "canonical": "#a3e635", "tonalRamp": ["#3f6212", "#65a30d", "#84cc16", "#a3e635", "#bef264", "#d9f99d", "#ecfccb", "#f7fee7"] }
+      "accent":           { "role": "accent",     "displayName": "Arcade Lime",  "canonical": "#a3e635", "tonalRamp": ["#3f6212", "#65a30d", "#84cc16", "#a3e635", "#bef264", "#d9f99d", "#ecfccb", "#f7fee7"] },
+      "quest":            { "role": "quest",      "displayName": "Electric Blue", "canonical": "#38bdf8", "tonalRamp": ["#0c4a6e", "#075985", "#0369a1", "#0284c7", "#0ea5e9", "#38bdf8", "#7dd3fc", "#bae6fd"] }
     },
     "typographyMeta": {
       "display": { "displayName": "Lexend Black", "purpose": "Hero + section headlines. Uppercase, italic, tracking -0.04em." },
@@ -82,21 +83,21 @@
     "northStar": "The Tactile Arcade",
     "overview": "Word-O-Matic is a vocabulary playground disguised as a game console. The base is a deep indigo-black stage lifted from a Material 3 dark theme, but the personality comes from hard, offset, no-blur 'tactile' shadows that make every card and button feel like a physical game piece. Bright arcade lime is the single player-highlight color; lavender, electric violet, and hot magenta are the system chrome. The system rejects soft SaaS minimalism, gradient text, glassmorphism, and the muted-cream AI default — and rejects the ad-hoc neobrutalist drift currently on the public landing page.",
     "keyCharacteristics": [
-      "Deep indigo-black canvas (#111125) with layered surfaces for depth.",
+      "Deep indigo-black canvas (#0c0c1f) with layered surfaces for depth.",
       "One hard offset shadow per raised surface — never soft blur, never a different shadow color per component.",
-      "A single action/highlight accent: arcade lime.",
+      "Two game-mode accents: arcade lime (Word Blast / read), electric blue quest (Story Quest / speak).",
       "Lexend (geometric, heavy) for display + UI; Plus Jakarta Sans for body.",
       "Material Symbols Outlined for iconography (filled when active)."
     ],
     "rules": [
-      { "name": "The One Pop Color Rule", "body": "Arcade lime is the only action/highlight color on any screen. Violet, magenta, peach are chrome, not calls to action.", "section": "colors" },
+      { "name": "The One Pop Color Rule (per mode)", "body": "Each game mode has exactly one pop color: Word Blast (read) = arcade lime, Story Quest (speak) = electric blue quest. Violet, magenta, peach are chrome; rose is wrong-feedback only.", "section": "colors" },
       { "name": "The Token-Only Rule", "body": "Build every surface with the named Material 3 tokens. Never reach for raw zinc/slate/purple defaults. The public landing page violates this and must be brought on-system.", "section": "colors" },
       { "name": "The Black-Uppercase Rule", "body": "Small UI text is Lexend 900, uppercase, tracked — the game HUD voice for nav, buttons, labels, kickers.", "section": "typography" },
       { "name": "The One Tactile Shadow Rule", "body": "Every raised surface uses the same hard offset shadow color. Never mix #4c1d95/#1a1a2e/#1e1b4b/#020617 across files.", "section": "elevation" }
     ],
     "dos": [
       "Do build every surface from the named Material 3 tokens.",
-      "Do use arcade lime as the single action/highlight color.",
+      "Do use arcade lime (Word Blast) and electric blue quest (Story Quest) as the per-mode pop colors.",
       "Do give every raised surface one hard, zero-blur offset shadow in the single tactile-shadow color.",
       "Do write small UI text as Lexend 900 uppercase, tracked.",
       "Do drive card/chip appearance from explicit state (locked/current/complete)."

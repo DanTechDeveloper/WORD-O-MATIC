@@ -7,7 +7,7 @@ function BottomNav() {
     const hasNewBadge = typeof window !== 'undefined' && localStorage.getItem('hasNewBadge') === '1';
 
     return (
-        <nav className="fixed bottom-0 left-0 right-0 h-20 bg-slate-950/95 backdrop-blur-sm border-t-2 border-lime-900/60 z-40 flex items-center justify-around px-4">
+        <nav className="fixed bottom-0 left-0 right-0 h-20 bg-background border-t-2 border-outline z-40 flex items-center justify-around px-4">
             <Link
                 href="/student/dashboard"
                 className={`flex flex-col items-center gap-0.5 px-6 py-2 rounded-lg transition-colors ${
@@ -47,7 +47,7 @@ function BottomNav() {
                         military_tech
                     </span>
                     {hasNewBadge && (
-                        <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-red-500 rounded-full border-2 border-slate-950 shadow-[0_0_6px_rgba(239,68,68,0.6)]" />
+                        <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-red-500 rounded-full border-2 border-surface-container-lowest shadow-[0_0_6px_rgba(239,68,68,0.6)]" />
                     )}
                 </span>
                 <span className="text-xs font-black uppercase tracking-wider">Badges</span>
