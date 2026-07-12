@@ -2,7 +2,7 @@ import { router } from "@inertiajs/react";
 import { useEffect, useState } from "react";
 
 const BG_WORDS = ["BLAST", "READ", "SPEAK", "QUEST", "LEARN", "HERO", "STAR", "LEVEL", "PLAY", "WIN"];
-const BG_GLOWS = ["#00f0ff", "#00ff88", "#8844ff", "#ff2266", "#44ff44"];
+const BG_COLORS = ["#d1bcff", "#7000ff", "#ff3bc0"];
 const BG_LEFT = ["20%", "80%", "50%"];
 
 function FallingWordBg() {
@@ -22,7 +22,7 @@ function FallingWordBg() {
     }, [index]);
 
     const word = BG_WORDS[index];
-    const glow = BG_GLOWS[index % BG_GLOWS.length];
+    const color = BG_COLORS[index % BG_COLORS.length];
     const left = BG_LEFT[index % BG_LEFT.length];
 
     return (
@@ -31,24 +31,27 @@ function FallingWordBg() {
                 {`
                     @keyframes splash-fall {
                         0% { top: -10%; opacity: 0; }
-                        15% { opacity: 0.4; }
-                        100% { top: 75%; opacity: 0.4; }
+                        15% { opacity: 0.5; }
+                        100% { top: 75%; opacity: 0.5; }
                     }
                     @keyframes splash-shard {
-                        0% { transform: translate(0,0) rotate(0deg) scale(1); opacity: 0.4; }
+                        0% { transform: translate(0,0) rotate(0deg) scale(1); opacity: 0.5; }
                         100% { transform: translate(var(--sx),var(--sy)) rotate(var(--sr)) scale(2); opacity: 0; }
+                    }
+                    @media (prefers-reduced-motion: reduce) {
+                        .splash-word, .splash-shard { animation: none !important; opacity: 0.4 !important; }
                     }
                 `}
             </style>
             <div
                 key={index}
-                className="absolute -translate-x-1/2 font-black uppercase tracking-tight text-4xl md:text-6xl whitespace-nowrap"
+                className="splash-word absolute -translate-x-1/2 font-black uppercase tracking-tight text-4xl md:text-6xl whitespace-nowrap"
                 style={{
                     left,
                     top: "-10%",
-                    color: "#ffffff",
-                    fontFamily: '"Courier New", "Consolas", "Monaco", monospace',
-                    textShadow: `0 0 10px ${glow}, 0 0 30px ${glow}, 0 0 60px ${glow}66`,
+                    color,
+                    fontFamily: '"Lexend Variable", "Lexend", sans-serif',
+                    textShadow: `0 0 12px ${color}66`,
                     animation: "splash-fall 2.2s ease-in forwards",
                 }}
             >
@@ -84,44 +87,50 @@ function FallingWordBg() {
 }
 
 export default function SplashScreen() {
+    const [starting, setStarting] = useState(false);
+
     useEffect(() => {
         sessionStorage.removeItem("practiceDone");
         sessionStorage.removeItem("practiceSpeakDone");
     }, []);
 
     const handleStart = () => {
+        if (starting) return;
+        setStarting(true);
         router.visit(route("student.avatarSelection"));
     };
 
     return (
-        <div
-            className="fixed inset-0 z-[100] bg-zinc-950 flex flex-col items-center justify-center gap-10 cursor-pointer select-none overflow-hidden px-6"
-            onClick={handleStart}
-        >
+        <div className="fixed inset-0 z-50 bg-background flex flex-col items-center justify-center gap-10 select-none overflow-hidden px-6">
             <FallingWordBg />
 
             <div
-                className="absolute inset-0 z-[5] pointer-events-none"
+                className="absolute inset-0 z-[1] pointer-events-none"
                 style={{
                     background:
-                        "radial-gradient(circle at center, rgba(9,9,11,0.7) 0%, rgba(9,9,11,0.3) 30%, transparent 50%)",
+                        "radial-gradient(circle at center, rgba(17,17,37,0.7) 0%, rgba(17,17,37,0.3) 30%, transparent 50%)",
                 }}
             />
 
-            <h1 className="relative z-10 text-lime-400 text-6xl md:text-8xl font-black italic uppercase tracking-tighter text-center">
+            <h1 className="relative z-10 text-primary text-6xl md:text-8xl font-black italic uppercase tracking-tighter text-center">
                 WORD-O-MATIC
             </h1>
 
             <button
                 type="button"
-                className="relative z-10 flex items-center gap-3 bg-lime-400 text-slate-950 font-black text-2xl md:text-3xl uppercase tracking-wider px-12 py-5 rounded-full animate-bounce hover:scale-105 active:scale-95 transition-transform"
+                onClick={handleStart}
+                disabled={starting}
+                aria-busy={starting}
+                className="relative z-10 flex items-center gap-3 bg-accent text-surface-container-lowest font-black text-2xl md:text-3xl uppercase tracking-wider px-12 py-5 rounded-full hover:scale-105 active:scale-95 active:translate-y-1 transition-transform shadow-[0_6px_0_0_#4c1d95] outline-none focus-visible:ring-4 focus-visible:ring-secondary-container focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-80 disabled:cursor-wait"
             >
-                <span className="material-symbols-outlined text-4xl">play_arrow</span>
-                Play
+                <span className="material-symbols-outlined text-4xl" aria-hidden="true">
+                    play_arrow
+                </span>
+                {starting ? "Starting…" : "Play"}
             </button>
 
-            <p className="relative z-10 text-on-surface-variant font-bold uppercase tracking-[0.3em] text-xs animate-pulse">
-                Tap anywhere to start
+            <p className="relative z-10 text-on-surface-variant font-bold uppercase tracking-[0.3em] text-xs animate-pulse motion-reduce:animate-none">
+                Press play to begin
             </p>
         </div>
     );

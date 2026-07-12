@@ -17,52 +17,52 @@ const GUIDE_STEPS = {
         {
             title: "READ THE WORD",
             message: "Say each word aloud into the mic. Read it right to BLAST it!",
-            emoji: "📢",
-            color: "lime",
+            emoji: "campaign",
+            color: "accent",
         },
         {
             title: "BLAST & SCORE",
             message: "Blast words fast! Watch your score grow and your streak build!",
-            emoji: "⚡",
-            color: "lime",
+            emoji: "bolt",
+            color: "accent",
         },
         {
             title: "KEEP MOVING",
             message: "Words auto-advance after 5 seconds. Try to read them before they go!",
-            emoji: "⏱️",
-            color: "lime",
+            emoji: "timer",
+            color: "accent",
         },
         {
             title: "TAP TO PLAY!",
             message: "Tap the mic below when you're ready. 3-2-1 countdown, then go!",
-            emoji: "🎤",
-            color: "lime",
+            emoji: "mic",
+            color: "accent",
         },
     ],
     speak: [
         {
             title: "READ THE SENTENCE",
             message: "Say the whole sentence clearly, not just one word!",
-            emoji: "📖",
-            color: "sky",
+            emoji: "menu_book",
+            color: "secondary",
         },
         {
             title: "WATCH IT LIGHT UP",
             message: "Each word highlights as it's recognized. Follow along!",
-            emoji: "✨",
-            color: "sky",
+            emoji: "auto_awesome",
+            color: "secondary",
         },
         {
             title: "NO PRESSURE",
             message: "Take your time — there's no timer here!",
-            emoji: "😊",
-            color: "sky",
+            emoji: "mood",
+            color: "secondary",
         },
         {
             title: "TAP TO PLAY!",
             message: "Tap the mic below when you're ready. 3-2-1 countdown, then go!",
-            emoji: "🎤",
-            color: "sky",
+            emoji: "mic",
+            color: "secondary",
         },
     ],
 };
@@ -189,9 +189,9 @@ export default function PracticePage({ module, mode = "read" }) {
                             key={i}
                         className={`w-3 h-3 rounded-full transition-all duration-500 ${
                             i === stepIndex
-                                ? (isReadMode ? "bg-lime-400 scale-125" : "bg-sky-400 scale-125")
+                                ? (isReadMode ? "bg-accent scale-125" : "bg-secondary-container scale-125")
                                 : i < stepIndex
-                                  ? (isReadMode ? "bg-lime-400/50" : "bg-sky-400/50")
+                                  ? (isReadMode ? "bg-accent/50" : "bg-secondary-container/50")
                                   : "bg-on-surface/20"
                         }`}
                         />
@@ -224,7 +224,7 @@ export default function PracticePage({ module, mode = "read" }) {
 
             {gameState === "IDLE" && guideDone && (
                 <TapToStartOverlay
-                    color={isReadMode ? "lime" : "sky"}
+                    color={isReadMode ? "accent" : "secondary"}
                     permissionState={permissionState}
                 />
             )}
@@ -242,7 +242,7 @@ export default function PracticePage({ module, mode = "read" }) {
                         footerText={
                             stepIndex < steps.length - 1
                                 ? "Tap here to continue →"
-                                : "Tap to finish! ✨"
+                                : "Tap to finish!"
                         }
                     />
                 </div>

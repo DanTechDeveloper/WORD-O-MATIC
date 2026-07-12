@@ -1,15 +1,15 @@
 const COLOR_MAP = {
-    lime: {
-        bg: "bg-lime-400",
+    accent: {
+        bg: "bg-accent",
         shadow: "rgba(163,230,53,0.4)",
     },
-    sky: {
-        bg: "bg-sky-400",
-        shadow: "rgba(56,189,248,0.4)",
+    secondary: {
+        bg: "bg-secondary-container",
+        shadow: "rgba(255,59,192,0.4)",
     },
 };
 
-export default function TapToStartOverlay({ color = "lime", permissionState }) {
+export default function TapToStartOverlay({ color = "accent", permissionState }) {
     const colors = COLOR_MAP[color] || COLOR_MAP.lime;
 
     const subtitle =
@@ -22,7 +22,7 @@ export default function TapToStartOverlay({ color = "lime", permissionState }) {
             : "To grant access & play";
 
     return (
-        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-40 pointer-events-none flex flex-col items-center justify-end pb-[110px] sm:pb-[140px] md:pb-[160px]">
+        <div className="fixed inset-0 bg-background/60 z-40 pointer-events-none flex flex-col items-center justify-end pb-[110px] sm:pb-[140px] md:pb-[160px]">
             <div className="flex flex-col items-center justify-center animate-bounce scale-90 sm:scale-100">
                 <div
                     className={`${colors.bg} text-slate-950 font-black px-6 sm:px-8 py-3 sm:py-4 rounded-3xl sm:rounded-[2rem] border-4 border-white flex flex-col items-center gap-1 text-center italic uppercase tracking-tighter`}

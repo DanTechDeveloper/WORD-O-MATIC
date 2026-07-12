@@ -1,0 +1,113 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-13T00:00:00Z",
+  "title": "Design System: Word-O-Matic",
+  "extensions": {
+    "colorMeta": {
+      "background":        { "role": "background", "displayName": "Indigo Void",  "canonical": "#111125", "tonalRamp": ["#0c0c1f", "#111125", "#16162c", "#1b1b33", "#222240", "#2b2b50", "#3a3a66", "#4d4d82"] },
+      "surface-high":     { "role": "surface",    "displayName": "Elevated Indigo", "canonical": "#28283d", "tonalRamp": ["#1a1a2e", "#1e1e32", "#222238", "#262640", "#28283d", "#33334a", "#3d3d58", "#55557a"] },
+      "primary":          { "role": "primary",    "displayName": "Lavender Mist", "canonical": "#d1bcff", "tonalRamp": ["#5700c9", "#7000ff", "#8a3bff", "#a06bff", "#b894ff", "#d1bcff", "#e9ddff", "#f3ecff"] },
+      "primary-container":{ "role": "primary",    "displayName": "Electric Violet", "canonical": "#7000ff", "tonalRamp": ["#23005b", "#3b009c", "#5700c9", "#7000ff", "#8a3bff", "#a06bff", "#c4a6ff", "#e9ddff"] },
+      "secondary-container": { "role": "secondary", "displayName": "Hot Magenta", "canonical": "#ff3bc0", "tonalRamp": ["#3c002a", "#6f0063", "#890064", "#ff3bc0", "#ff6fd0", "#ffaed9", "#ffd8ea", "#ffeaf4"] },
+      "tertiary":         { "role": "tertiary",   "displayName": "Peach Glow",   "canonical": "#ffb77f", "tonalRamp": ["#2f1500", "#6f3900", "#ffb77f", "#ffcaa3", "#ffdcc4", "#ffe9d8", "#fff4ec", "#fffaf4"] },
+      "on-surface":       { "role": "on-surface", "displayName": "Lavender White", "canonical": "#e2e0fc", "tonalRamp": ["#2f2e43", "#ccc3da", "#d8d2ea", "#e2e0fc", "#ecebff", "#f4f3ff", "#fafaff", "#ffffff"] },
+      "on-surface-variant": { "role": "on-surface", "displayName": "Muted Lavender", "canonical": "#ccc3da", "tonalRamp": ["#4a4457", "#958da3", "#b3acc0", "#ccc3da", "#dad4e8", "#e7e3f4", "#f3f1fb", "#ffffff"] },
+      "outline":          { "role": "outline",    "displayName": "Slate Outline", "canonical": "#958da3", "tonalRamp": ["#333348", "#4a4457", "#6a6478", "#958da3", "#b0a9bc", "#cbc6d8", "#e4e1ee", "#ffffff"] },
+      "accent":           { "role": "accent",     "displayName": "Arcade Lime",  "canonical": "#a3e635", "tonalRamp": ["#3f6212", "#65a30d", "#84cc16", "#a3e635", "#bef264", "#d9f99d", "#ecfccb", "#f7fee7"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Lexend Black", "purpose": "Hero + section headlines. Uppercase, italic, tracking -0.04em." },
+      "headline": { "displayName": "Lexend Black", "purpose": "Card titles, modal headers." },
+      "body": { "displayName": "Plus Jakarta Sans", "purpose": "Body copy, descriptions, metadata." },
+      "label": { "displayName": "Lexend Black Label", "purpose": "Nav, buttons, form labels, kickers — uppercase tracked." }
+    },
+    "shadows": [
+      { "name": "tactile-card", "value": "8px 8px 0 0 #1a1a2e", "purpose": "Single hard offset shadow for all raised panels. Collapse the current #4c1d95/#1e1b4b/#020617 drift into this." },
+      { "name": "tactile-button", "value": "0 6px 0 0 #1a1a2e", "purpose": "Pressable button depth; shrinks to 2px + translateY(4px) on active." },
+      { "name": "tactile-input", "value": "inset 0 2px 4px rgba(0,0,0,0.3)", "purpose": "Inset recess for form fields." }
+    ],
+    "motion": [
+      { "name": "ease-out-quart", "value": "cubic-bezier(0.25, 1, 0.5, 1)", "purpose": "Default entrance + state transition easing." },
+      { "name": "shimmer", "value": "shimmer 2.5s ease-in-out infinite", "purpose": "Current-level sweep on cards." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The single action color. Lime fill, near-black uppercase label, bottom depth border that compresses on press.",
+      "html": "<button class=\"ds-btn-primary\">PLAY</button>",
+      "css": ".ds-btn-primary { background: #a3e635; color: #0c0c1f; font-family: 'Lexend Variable', Lexend, sans-serif; font-weight: 900; text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.875rem; padding: 16px 40px; border: none; border-radius: 1rem; border-bottom: 6px solid #4d7c0f; transition: transform 0.12s cubic-bezier(0.25,1,0.5,1), background 0.12s; } .ds-btn-primary:hover { background: #bef264; } .ds-btn-primary:active { transform: translateY(4px); border-bottom-width: 2px; } .ds-btn-primary:focus-visible { outline: 3px solid #ff3bc0; outline-offset: 2px; }"
+    },
+    {
+      "name": "Tactile Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Raised panel with one hard offset shadow and a state-colored border.",
+      "html": "<div class=\"ds-card\"><h3 class=\"ds-card-title\">Level 3</h3></div>",
+      "css": ".ds-card { background: #28283d; border: 2px solid #958da3; border-radius: 1rem; padding: 24px; box-shadow: 8px 8px 0 0 #1a1a2e; transition: transform 0.2s cubic-bezier(0.25,1,0.5,1); } .ds-card:hover { transform: translateY(-4px); } .ds-card-title { color: #e2e0fc; font-family: 'Lexend Variable', Lexend, sans-serif; font-weight: 900; font-size: 1.125rem; }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Dark recessed field; border lights to lime on focus.",
+      "html": "<input class=\"ds-input\" placeholder=\"Identification Name...\" />",
+      "css": ".ds-input { width: 100%; background: #0c0c1f; border: 2px solid #958da3; border-radius: 1rem; padding: 16px 20px; color: #e2e0fc; font-family: 'Plus Jakarta Sans Variable', sans-serif; font-weight: 700; outline: none; box-shadow: inset 0 2px 4px rgba(0,0,0,0.3); transition: border-color 0.15s; } .ds-input::placeholder { color: #6a6478; } .ds-input:focus { border-color: #a3e635; }"
+    },
+    {
+      "name": "State Pill",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "Level-card status pill. Colors encode state: complete=lime, current=magenta, locked=muted.",
+      "html": "<span class=\"ds-pill ds-pill-current\">LEVEL 3</span>",
+      "css": ".ds-pill { display: inline-flex; align-items: center; font-family: 'Lexend Variable', Lexend, sans-serif; font-weight: 900; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; padding: 4px 10px; border-radius: 9999px; border: 1px solid; } .ds-pill-current { background: rgba(255,59,192,0.2); color: #ff3bc0; border-color: rgba(255,59,192,0.3); }"
+    },
+    {
+      "name": "Bottom Nav Item",
+      "kind": "nav",
+      "refersTo": "nav",
+      "description": "Student bottom-nav link. Active = lime; idle = muted lavender.",
+      "html": "<a href=\"#\" class=\"ds-navitem ds-navitem-active\"><span class=\"ds-navicon\">home</span><span>Home</span></a>",
+      "css": ".ds-navitem { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 24px; border-radius: 0.5rem; color: rgba(204,195,218,0.6); font-family: 'Lexend Variable', Lexend, sans-serif; font-weight: 900; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; transition: color 0.15s; } .ds-navitem:hover { color: #ccc3da; } .ds-navitem-active { color: #a3e635; } .ds-navicon { font-family: 'Material Symbols Outlined'; font-size: 1.875rem; font-variation-settings: \"FILL\" 1; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Tactile Arcade",
+    "overview": "Word-O-Matic is a vocabulary playground disguised as a game console. The base is a deep indigo-black stage lifted from a Material 3 dark theme, but the personality comes from hard, offset, no-blur 'tactile' shadows that make every card and button feel like a physical game piece. Bright arcade lime is the single player-highlight color; lavender, electric violet, and hot magenta are the system chrome. The system rejects soft SaaS minimalism, gradient text, glassmorphism, and the muted-cream AI default — and rejects the ad-hoc neobrutalist drift currently on the public landing page.",
+    "keyCharacteristics": [
+      "Deep indigo-black canvas (#111125) with layered surfaces for depth.",
+      "One hard offset shadow per raised surface — never soft blur, never a different shadow color per component.",
+      "A single action/highlight accent: arcade lime.",
+      "Lexend (geometric, heavy) for display + UI; Plus Jakarta Sans for body.",
+      "Material Symbols Outlined for iconography (filled when active)."
+    ],
+    "rules": [
+      { "name": "The One Pop Color Rule", "body": "Arcade lime is the only action/highlight color on any screen. Violet, magenta, peach are chrome, not calls to action.", "section": "colors" },
+      { "name": "The Token-Only Rule", "body": "Build every surface with the named Material 3 tokens. Never reach for raw zinc/slate/purple defaults. The public landing page violates this and must be brought on-system.", "section": "colors" },
+      { "name": "The Black-Uppercase Rule", "body": "Small UI text is Lexend 900, uppercase, tracked — the game HUD voice for nav, buttons, labels, kickers.", "section": "typography" },
+      { "name": "The One Tactile Shadow Rule", "body": "Every raised surface uses the same hard offset shadow color. Never mix #4c1d95/#1a1a2e/#1e1b4b/#020617 across files.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do build every surface from the named Material 3 tokens.",
+      "Do use arcade lime as the single action/highlight color.",
+      "Do give every raised surface one hard, zero-blur offset shadow in the single tactile-shadow color.",
+      "Do write small UI text as Lexend 900 uppercase, tracked.",
+      "Do drive card/chip appearance from explicit state (locked/current/complete)."
+    ],
+    "donts": [
+      "Don't build the landing page with raw zinc/slate/purple/green Tailwind defaults — Auth/Homepage.jsx is off-system.",
+      "Don't drift the tactile shadow color across #4c1d95/#1a1a2e/#1e1b4b/#020617.",
+      "Don't mix radii arbitrarily — standardize on the token scale.",
+      "Don't use soft blurred shadows, gradient text, side-stripe borders, or glassmorphism.",
+      "Don't label a surface 'Terminal' without a terminal visual language.",
+      "Don't leave lime untokenized — promote lime-400 to the accent token."
+    ]
+  }
+}
