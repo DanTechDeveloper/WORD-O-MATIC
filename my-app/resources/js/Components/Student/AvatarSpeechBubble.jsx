@@ -16,19 +16,14 @@ export default function AvatarSpeechBubble({
             glow: "drop-shadow-[0_0_80px_rgba(112,0,255,0.35)]",
         },
         secondary: {
-            border: "border-secondary",
-            text: "text-secondary",
+            border: "border-secondary-container",
+            text: "text-secondary-container",
             glow: "drop-shadow-[0_0_80px_rgba(255,59,192,0.35)]",
         },
-        lime: {
-            border: "border-lime-400",
-            text: "text-lime-400",
+        accent: {
+            border: "border-accent",
+            text: "text-accent",
             glow: "drop-shadow-[0_0_80px_rgba(163,230,53,0.35)]",
-        },
-        sky: {
-            border: "border-sky-400",
-            text: "text-sky-400",
-            glow: "drop-shadow-[0_0_80px_rgba(56,189,248,0.35)]",
         },
     };
     const accent = accentMap[color] || accentMap.primary;
@@ -44,10 +39,10 @@ export default function AvatarSpeechBubble({
         <div className={`${positionClass} ${className}`}>
             <button
                 onClick={onClick}
-                className={`bg-surface-container-high backdrop-blur-sm rounded-3xl px-10 py-6 shadow-2xl border-2 ${accent.border} min-w-[300px] max-w-[440px] cursor-pointer hover:scale-105 active:scale-95 transition-all duration-200 text-center animate-fade-in`}
+                className={`bg-surface-container-high rounded-3xl px-10 py-6 shadow-2xl border-2 ${accent.border} min-w-[300px] max-w-[440px] cursor-pointer hover:scale-105 active:scale-95 transition-all duration-200 text-center animate-fade-in`}
             >
                 <p className="text-3xl font-black uppercase tracking-tight text-on-surface flex items-center justify-center gap-2">
-                    <span className="text-4xl">{emoji}</span>
+                    <span className="material-symbols-outlined text-4xl">{emoji}</span>
                     {title}
                 </p>
                 <p className="text-lg font-bold text-on-surface-variant mt-2 leading-snug">

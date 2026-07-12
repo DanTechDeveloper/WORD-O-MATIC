@@ -1,0 +1,7 @@
+{
+  "files": ["resources/views/app.blade.php"],
+  "exclude": ["resources/views/emails/**"],
+  "insertBefore": "</body>",
+  "commentSyntax": "html",
+  "cspChecked": true
+}

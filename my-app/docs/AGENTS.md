@@ -2,6 +2,20 @@
 
 > Version 1.2 — Developer Guide
 
+## Design Context
+
+Word-O-Matic has a committed design system. Read these before any UI work so
+surfaces stay on-system:
+
+- `PRODUCT.md` — register (product), platform (web), primary users (K-5
+  students; teachers secondary), positioning, brand personality (Playful,
+  electric, bold), anti-references, and strategic design principles.
+- `DESIGN.md` — the "Tactile Arcade" Material 3 dark visual system: indigo-
+  black canvas (`#111125`), arcade-lime as the single action color, violet /
+  magenta / peach as chrome, hard offset tactile shadows, Lexend + Plus Jakarta
+  Sans, Material Symbols Outlined. Build every surface from the named tokens in
+  `tailwind.config.js` — never raw `zinc-*` / `slate-*` / `purple-*` defaults.
+
 Run commands from `my-app/`.
 
 ## Stack

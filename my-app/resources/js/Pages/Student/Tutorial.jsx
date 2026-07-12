@@ -8,22 +8,22 @@ const BEFORE_STEPS = [
         target: '[data-purpose="avatar-speech"]',
         title: "Hi there!",
         message: "I'm your Word Buddy! I'll help you learn new words!",
-        emoji: "🤖",
-        color: "lime",
+        emoji: "smart_toy",
+        color: "accent",
     },
     {
         target: '[data-purpose="read-mode-selection"]',
         title: "WORD BLAST MODE!",
         message: "Tap the lime card to launch Word Blast!",
-        emoji: "⚡",
-        color: "lime",
+        emoji: "bolt",
+        color: "accent",
     },
     {
         target: '[data-purpose="story-mode-locked"]',
         title: "STORY QUEST",
         message: "Locked for now — finish Word Blast to unlock me!",
-        emoji: "🔒",
-        color: "sky",
+        emoji: "lock",
+        color: "secondary",
     },
 ];
 
@@ -34,19 +34,18 @@ const AFTER_STEPS = (allDone) => [
         message: allDone
             ? "You completed both practices! You're ready!"
             : "You did it! Story Quest is waiting for you!",
-        emoji: "🎉",
-        color: "sky",
+        emoji: "celebration",
+        color: "secondary",
     },
     ...(allDone ? [] : [
         {
             target: '[data-purpose="story-mode-unlocked"]',
             title: "STORY QUEST",
             message: "Tap here to start your speaking adventure!",
-            emoji: "📖",
-            color: "sky",
+            emoji: "auto_stories",
+            color: "secondary",
         },
     ]),
-
 ];
 
 export default function Tutorial() {
@@ -95,19 +94,18 @@ export default function Tutorial() {
     const ringClass = (purpose) => {
         if (!isTarget(purpose)) return "";
         const c =
-            step.color === "sky"
-                ? "ring-4 ring-sky-400 ring-offset-4 ring-offset-zinc-950 scale-[1.03]"
-                : "ring-4 ring-lime-400 ring-offset-4 ring-offset-zinc-950 scale-[1.03]";
-        return `${c} z-10 rounded-2xl transition-all duration-500 animate-pulse`;
+            step.color === "secondary"
+                ? "ring-4 ring-secondary-container ring-offset-4 ring-offset-background scale-[1.03]"
+                : "ring-4 ring-accent ring-offset-4 ring-offset-background scale-[1.03]";
+        return `${c} z-10 rounded-2xl transition-all duration-500 animate-pulse motion-reduce:animate-none`;
     };
 
     return (
-        <div className="m-0 p-0 overflow-hidden select-none min-h-screen w-full relative bg-zinc-950">
-            {/* PROGRESS DOTS */}
+        <div className="m-0 p-0 overflow-hidden select-none min-h-screen w-full relative bg-background">
             {!guideDone && (
                 <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[60] flex gap-3">
                     {steps.map((s, i) => {
-                        const dot = s.color === "sky" ? "bg-sky-400" : "bg-lime-400";
+                        const dot = s.color === "secondary" ? "bg-secondary-container" : "bg-accent";
                         return (
                             <div
                                 key={i}
@@ -124,7 +122,7 @@ export default function Tutorial() {
                 </div>
             )}
 
-            <main className="min-h-screen w-full flex flex-col md:flex-row relative overflow-hidden bg-zinc-950">
+            <main className="min-h-screen w-full flex flex-col md:flex-row relative overflow-hidden bg-background">
                 {/* WORD BLAST MODE */}
                 <div className="flex-1 flex relative overflow-hidden">
                     <Link
@@ -134,31 +132,22 @@ export default function Tutorial() {
                                 : undefined
                         }
                         as={wordBlastUnlocked ? "a" : "div"}
-                        className={`group flex-1 flex flex-col items-center justify-center p-8 transition-all duration-500 border-b-4 md:border-b-0 md:border-r-4 border-surface-variant relative overflow-hidden bg-gradient-to-br from-lime-400/20 to-zinc-950 ${wordBlastUnlocked && !practiceDone ? "" : "cursor-not-allowed"} ${ringClass(practiceDone ? "read-mode-locked" : "read-mode-selection")}`}
+                        className={`group flex-1 flex flex-col items-center justify-center p-8 transition-all duration-500 border-b-4 md:border-b-0 border-surface-variant relative overflow-hidden bg-gradient-to-br from-accent/20 to-background ${wordBlastUnlocked && !practiceDone ? "" : "cursor-not-allowed"} ${ringClass(practiceDone ? "read-mode-locked" : "read-mode-selection")}`}
                         data-purpose={
                             practiceDone
                                 ? "read-mode-locked"
                                 : "read-mode-selection"
                         }
                     >
-                        <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]" />
-
                         <div className="z-20 text-center flex flex-col items-center">
-                            <div className="mb-8 w-28 h-28 md:w-40 md:h-40 rounded-full bg-surface-container-high backdrop-blur-md border-2 border-outline-variant flex items-center justify-center transition-all duration-500 relative">
-                                <span className="absolute -top-4 -right-4 text-4xl">
-                                    📖
-                                </span>
-                                <svg
-                                    className="w-12 h-12 md:w-16 md:h-16 text-on-surface fill-current ml-2"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path d="M8 5v14l11-7z" />
-                                </svg>
+                            <div className="mb-8 w-28 h-28 md:w-40 md:h-40 rounded-full bg-surface-container-high border-2 border-outline-variant flex items-center justify-center transition-all duration-500 relative">
+                                <span className="absolute -top-4 -right-4 material-symbols-outlined text-4xl text-on-surface">menu_book</span>
+                                <span className="material-symbols-outlined text-5xl md:text-6xl text-on-surface">play_arrow</span>
                             </div>
 
                             <h2 className="text-on-surface text-5xl md:text-7xl lg:text-8xl font-black italic uppercase tracking-tighter mb-4">
                                 WORD BLAST{" "}
-                                <span className="text-lime-400">MODE</span>
+                                <span className="text-accent">MODE</span>
                             </h2>
                             <p className="text-on-surface-variant text-lg md:text-2xl font-bold uppercase tracking-[0.2em] max-w-sm">
                                 {practiceDone
@@ -169,7 +158,7 @@ export default function Tutorial() {
 
                         <div className="absolute bottom-0 left-0 right-0 h-2 bg-surface-container-high/80">
                             <div
-                                className={`h-full bg-lime-400 transition-all duration-1000 ease-out ${practiceDone ? "w-full" : "w-[65%] group-hover:w-full"}`}
+                                className={`h-full bg-accent transition-all duration-1000 ease-out ${practiceDone ? "w-full" : "w-[65%] group-hover:w-full"}`}
                                 data-purpose="read-mode-progress"
                             />
                         </div>
@@ -177,19 +166,21 @@ export default function Tutorial() {
 
                     {practiceDone && (
                         <div
-                            className="absolute inset-0 z-30 bg-zinc-950/80 backdrop-blur-[6px] flex flex-col items-center justify-center pointer-events-auto"
+                            className="absolute inset-0 z-30 bg-background/80 flex flex-col items-center justify-center pointer-events-auto"
                             data-purpose="read-mode-locked"
                         >
-                            <span className="text-on-surface text-xs font-black tracking-widest uppercase bg-surface-container-high px-4 py-2 rounded-full border border-outline-variant">
-                                Complete ✅
+                            <span className="inline-flex items-center gap-1 text-on-surface text-xs font-black tracking-widest uppercase bg-surface-container-high px-4 py-2 rounded-full border border-outline-variant">
+                                <span className="material-symbols-outlined text-sm">check_circle</span>
+                                Complete
                             </span>
                         </div>
                     )}
 
                     {guideLocked && (
-                        <div className="absolute inset-0 z-30 bg-zinc-950/70 backdrop-blur-[4px] flex flex-col items-center justify-center pointer-events-auto transition-all duration-500">
-                            <span className="text-on-surface-variant/60 text-xs font-black tracking-widest uppercase bg-surface-container-high/80 px-4 py-2 rounded-full border border-outline-variant">
-                                Wait for the guide 👀
+                        <div className="absolute inset-0 z-30 bg-background/70 flex flex-col items-center justify-center pointer-events-auto transition-all duration-500">
+                            <span className="inline-flex items-center gap-1 text-on-surface-variant/60 text-xs font-black tracking-widest uppercase bg-surface-container-high/80 px-4 py-2 rounded-full border border-outline-variant">
+                                <span className="material-symbols-outlined text-sm">visibility</span>
+                                Wait for the guide
                             </span>
                         </div>
                     )}
@@ -204,33 +195,24 @@ export default function Tutorial() {
                                 : undefined
                         }
                         as={storyQuestUnlocked ? "a" : "div"}
-                        className={`group flex-1 flex flex-col items-center justify-center p-8 transition-all duration-500 bg-gradient-to-br from-sky-400/15 to-zinc-950 ${storyQuestUnlocked ? "" : "cursor-not-allowed"} ${ringClass(storyQuestUnlocked ? "story-mode-unlocked" : "story-mode-locked")}`}
+                        className={`group flex-1 flex flex-col items-center justify-center p-8 transition-all duration-500 bg-gradient-to-br from-secondary-container/15 to-background ${storyQuestUnlocked ? "" : "cursor-not-allowed"} ${ringClass(storyQuestUnlocked ? "story-mode-unlocked" : "story-mode-locked")}`}
                         data-purpose={
                             storyQuestUnlocked
                                 ? "story-mode-unlocked"
                                 : "story-mode-locked"
                         }
                     >
-                        <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]" />
-
                         <div className="z-20 text-center flex flex-col items-center">
                             <div
-                                className={`mb-8 w-28 h-28 md:w-40 md:h-40 rounded-full bg-surface-container-high backdrop-blur-md border-2 border-outline-variant flex items-center justify-center transition-all duration-500 relative ${practiceDone ? "group-hover:scale-110" : ""}`}
+                                className={`mb-8 w-28 h-28 md:w-40 md:h-40 rounded-full bg-surface-container-high border-2 border-outline-variant flex items-center justify-center transition-all duration-500 relative ${practiceDone ? "group-hover:scale-110" : ""}`}
                             >
-                                <span className="absolute -top-4 -right-4 text-4xl">
-                                    🎭
-                                </span>
-                                <svg
-                                    className="w-12 h-12 md:w-16 md:h-16 text-on-surface fill-current ml-2"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path d="M8 5v14l11-7z" />
-                                </svg>
+                                <span className="absolute -top-4 -right-4 material-symbols-outlined text-4xl text-on-surface">auto_stories</span>
+                                <span className="material-symbols-outlined text-5xl md:text-6xl text-on-surface">play_arrow</span>
                             </div>
 
                             <h2 className="text-on-surface text-5xl md:text-7xl lg:text-8xl font-black italic uppercase tracking-tighter mb-4">
                                 STORY QUEST{" "}
-                                <span className="text-sky-400">MODE</span>
+                                <span className="text-secondary-container">MODE</span>
                             </h2>
                             <p className="text-on-surface-variant text-lg md:text-2xl font-bold uppercase tracking-[0.2em] max-w-sm">
                                 {practiceDone
@@ -241,33 +223,36 @@ export default function Tutorial() {
 
                         <div className="absolute bottom-0 left-0 right-0 h-2 bg-surface-container-high/80">
                             <div
-                                className={`h-full bg-sky-400 transition-all duration-1000 ease-out ${practiceDone ? "w-full" : "w-[40%] group-hover:w-full"}`}
+                                className={`h-full bg-secondary-container transition-all duration-1000 ease-out ${practiceDone ? "w-full" : "w-[40%] group-hover:w-full"}`}
                             />
                         </div>
                     </Link>
 
                     {practiceSpeakDone ? (
                         <div
-                            className="absolute inset-0 z-30 bg-zinc-950/80 backdrop-blur-[6px] flex flex-col items-center justify-center pointer-events-auto"
+                            className="absolute inset-0 z-30 bg-background/80 flex flex-col items-center justify-center pointer-events-auto"
                             data-purpose="story-mode-done"
                         >
-                            <span className="text-on-surface text-xs font-black tracking-widest uppercase bg-surface-container-high px-4 py-2 rounded-full border border-outline-variant">
-                                Complete ✅
+                            <span className="inline-flex items-center gap-1 text-on-surface text-xs font-black tracking-widest uppercase bg-surface-container-high px-4 py-2 rounded-full border border-outline-variant">
+                                <span className="material-symbols-outlined text-sm">check_circle</span>
+                                Complete
                             </span>
                         </div>
                     ) : !practiceDone ? (
                         <div
-                            className="absolute inset-0 z-30 bg-zinc-950/80 backdrop-blur-[6px] flex flex-col items-center justify-center pointer-events-auto"
+                            className="absolute inset-0 z-30 bg-background/80 flex flex-col items-center justify-center pointer-events-auto"
                             data-purpose="story-mode-locked"
                         >
-                            <span className="text-on-surface text-xs font-black tracking-widest uppercase bg-surface-container-high px-4 py-2 rounded-full border border-outline-variant">
-                                Locked During Tutorial 🔒
+                            <span className="inline-flex items-center gap-1 text-on-surface text-xs font-black tracking-widest uppercase bg-surface-container-high px-4 py-2 rounded-full border border-outline-variant">
+                                <span className="material-symbols-outlined text-sm">lock</span>
+                                Locked During Tutorial
                             </span>
                         </div>
                     ) : !storyQuestUnlocked ? (
-                        <div className="absolute inset-0 z-30 bg-zinc-950/70 backdrop-blur-[4px] flex flex-col items-center justify-center pointer-events-auto transition-all duration-500">
-                            <span className="text-on-surface-variant/60 text-xs font-black tracking-widest uppercase bg-surface-container-high/80 px-4 py-2 rounded-full border border-outline-variant">
-                                Wait for the guide 👀
+                        <div className="absolute inset-0 z-30 bg-background/70 flex flex-col items-center justify-center pointer-events-auto transition-all duration-500">
+                            <span className="inline-flex items-center gap-1 text-on-surface-variant/60 text-xs font-black tracking-widest uppercase bg-surface-container-high/80 px-4 py-2 rounded-full border border-outline-variant">
+                                <span className="material-symbols-outlined text-sm">visibility</span>
+                                Wait for the guide
                             </span>
                         </div>
                     ) : null}
@@ -286,7 +271,7 @@ export default function Tutorial() {
                             footerText={
                                 stepIndex < steps.length - 1
                                     ? "Tap here to continue →"
-                                    : "Tap to finish! ✨"
+                                    : "Tap to finish!"
                             }
                             position="bottom"
                         />
@@ -298,7 +283,7 @@ export default function Tutorial() {
                         badge={{
                             name: 'Tutorial Complete',
                             description: 'Welcome aboard! Awarded for successfully completing the introductory guide.',
-                            icon: '🚀',
+                            icon: 'rocket_launch',
                             slug: 'tutorial-complete',
                         }}
                         show={true}
@@ -316,10 +301,10 @@ export default function Tutorial() {
                             sessionStorage.removeItem("practiceSpeakDone");
                             router.post("/student/tutorial/complete");
                         }}
-                        className="bg-sky-400 hover:bg-sky-500 text-slate-950 px-10 py-4 rounded-2xl font-black text-lg tracking-widest uppercase transition-all hover:scale-105 active:scale-95 flex items-center gap-3 shadow-2xl shadow-sky-400/25 cursor-pointer"
+                        className="bg-secondary-container hover:bg-secondary-container/80 text-slate-950 px-10 py-4 rounded-2xl font-black text-lg tracking-widest uppercase transition-all hover:scale-105 active:scale-95 flex items-center gap-3 shadow-[0_6px_0_0_#4c1d95] cursor-pointer"
                     >
                         Continue to Dashboard
-                        <span className="text-2xl">🏠</span>
+                        <span className="material-symbols-outlined text-2xl">home</span>
                     </button>
                 </div>
             </main>
