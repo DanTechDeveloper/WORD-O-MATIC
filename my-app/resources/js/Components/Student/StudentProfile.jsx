@@ -4,7 +4,7 @@ export default function StudentProfile() {
     const { auth } = usePage().props;
     const avatar  = auth.user.student.avatar;
     return (
-        <header className="fixed top-0 left-0 right-0 h-16 lg:h-20 flex items-center justify-between px-4 lg:px-8 z-40 bg-slate-950/95 backdrop-blur-sm border-b-2 border-purple-900/60 shadow-lg shadow-purple-900/10">
+        <header className="fixed top-0 left-0 right-0 h-16 lg:h-20 flex items-center justify-between px-4 lg:px-8 z-40 bg-background border-b-2 border-outline">
             <div className="flex items-center gap-2 lg:gap-4 min-w-0">
                 <div className="w-10 h-10 lg:w-12 lg:h-12 shrink-0 rounded-full border-2 border-lime-400 overflow-hidden shadow-[2px_2px_0px_0px_rgba(163,230,53,1)]">
                     <img

@@ -44,25 +44,25 @@ const GUIDE_STEPS = {
             title: "READ THE SENTENCE",
             message: "Say the whole sentence clearly, not just one word!",
             emoji: "menu_book",
-            color: "secondary",
+            color: "quest",
         },
         {
             title: "WATCH IT LIGHT UP",
             message: "Each word highlights as it's recognized. Follow along!",
             emoji: "auto_awesome",
-            color: "secondary",
+            color: "quest",
         },
         {
             title: "NO PRESSURE",
             message: "Take your time — there's no timer here!",
             emoji: "mood",
-            color: "secondary",
+            color: "quest",
         },
         {
             title: "TAP TO PLAY!",
             message: "Tap the mic below when you're ready. 3-2-1 countdown, then go!",
             emoji: "mic",
-            color: "secondary",
+            color: "quest",
         },
     ],
 };
@@ -189,9 +189,9 @@ export default function PracticePage({ module, mode = "read" }) {
                             key={i}
                         className={`w-3 h-3 rounded-full transition-all duration-500 ${
                             i === stepIndex
-                                ? (isReadMode ? "bg-accent scale-125" : "bg-secondary-container scale-125")
+                                ? (isReadMode ? "bg-accent scale-125" : "bg-quest scale-125")
                                 : i < stepIndex
-                                  ? (isReadMode ? "bg-accent/50" : "bg-secondary-container/50")
+                                  ? (isReadMode ? "bg-accent/50" : "bg-quest/50")
                                   : "bg-on-surface/20"
                         }`}
                         />
@@ -224,7 +224,7 @@ export default function PracticePage({ module, mode = "read" }) {
 
             {gameState === "IDLE" && guideDone && (
                 <TapToStartOverlay
-                    color={isReadMode ? "accent" : "secondary"}
+                    color={isReadMode ? "accent" : "quest"}
                     permissionState={permissionState}
                 />
             )}

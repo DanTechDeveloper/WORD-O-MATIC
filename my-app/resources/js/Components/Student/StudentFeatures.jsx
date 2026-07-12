@@ -4,9 +4,9 @@ export default function StudentFeatures() {
     const { url } = usePage();
 
     const activeClass =
-        "bg-lime-400 text-slate-950 border-2 border-slate-950 shadow-[6px_6px_0_0_#3f6212] flex items-center gap-3 p-4 rounded-lg font-black font-lexend text-xs uppercase tracking-wider translate-x-[-2px] translate-y-[-2px]";
+        "bg-lime-400 text-surface-container-lowest border-2 border-surface-container-lowest shadow-[6px_6px_0_0_#3f6212] flex items-center gap-3 p-4 rounded-lg font-black font-lexend text-xs uppercase tracking-wider translate-x-[-2px] translate-y-[-2px]";
     const inactiveClass =
-        "text-slate-400 p-4 flex items-center gap-3 hover:text-purple-400 hover:translate-x-1 hover:bg-slate-900/50 transition-all font-black font-lexend text-xs uppercase tracking-wider";
+        "text-slate-400 p-4 flex items-center gap-3 hover:text-purple-400 hover:translate-x-1 hover:bg-surface-container-high/60 transition-all font-black font-lexend text-xs uppercase tracking-wider";
 
     const navItems = [
         {
@@ -29,7 +29,7 @@ export default function StudentFeatures() {
 
     return (
         <>
-            <aside className="hidden lg:flex lg:flex-col fixed left-0 top-0 h-full w-64 p-4 border-r-4 border-slate-900 bg-slate-950 z-50 shadow-[4px_0_0_0_#1e1b4b]">
+            <aside className="hidden lg:flex lg:flex-col fixed left-0 top-0 h-full w-64 p-4 border-r-4 border-outline bg-background z-50">
                   <div className="mb-8">
                     <h1 className="text-2xl font-black text-purple-500 uppercase italic tracking-tighter">
                         WORD-O-MATIC
@@ -60,7 +60,7 @@ export default function StudentFeatures() {
             </aside>
 
             {/* Mobile Bottom Nav */}
-            <nav className="fixed bottom-0 left-0 right-0 flex lg:hidden items-center justify-around bg-slate-950 border-t-4 border-slate-900 z-50 px-2 py-2 shadow-[0_-4px_0_0_#1e1b4b]">
+            <nav className="fixed bottom-0 left-0 right-0 flex lg:hidden items-center justify-around bg-background border-t-4 border-outline z-50 px-2 py-2">
                 {navItems.map((item) => {
                     const isActive = url === item.href;
                     return (

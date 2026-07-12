@@ -2,7 +2,7 @@ export default function DeniedModal({ gameState }) {
     return (
         <>
             {gameState === "DENIED" && (
-                <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/80 backdrop-blur-xl p-6">
+                <div className="fixed inset-0 z-[110] flex items-center justify-center bg-background/80 p-6">
                     {/* Dynamic Background Aura */}
                     <div className="absolute w-96 h-96 bg-gradient-to-tr from-primary via-fuchsia-500 to-lime-400 blur-[120px] opacity-30 animate-pulse"></div>
 
