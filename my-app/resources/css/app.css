@@ -101,3 +101,20 @@ h1, h2, h3, button, label {
         scroll-behavior: auto !important;
     }
 }
+
+#nprogress .bar {
+    height: 5px !important;
+    background: #a3e635 !important;
+    box-shadow: 0 0 12px #a3e635, 0 0 6px #a3e635;
+}
+
+#nprogress .peg {
+    box-shadow: 0 0 12px #a3e635, 0 0 8px #a3e635 !important;
+}
+
+#nprogress .spinner-icon {
+    width: 22px !important;
+    height: 22px !important;
+    border-top-color: #a3e635 !important;
+    border-left-color: #a3e635 !important;
+}
