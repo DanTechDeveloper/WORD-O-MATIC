@@ -9,6 +9,7 @@ const GameplayHeader = memo(function GameplayHeader({
     showPointsFeedback,
     pointsFeedbackValue,
     streakShake,
+    mode = "read",
 }) {
     const [timeLeft, setTimeLeft] = useState(60);
 
@@ -58,7 +59,7 @@ const GameplayHeader = memo(function GameplayHeader({
                         timer
                     </span>
                     <p
-                        className={`text-xl font-black leading-none italic ${isLowTime ? "text-red-500 animate-pulse" : "text-lime-400"}`}
+                        className={`text-xl font-black leading-none italic ${isLowTime ? "text-red-500 animate-pulse" : mode === "read" ? "text-accent" : "text-quest"}`}
                     >
                         {timeLeft}s
                     </p>
@@ -121,12 +122,12 @@ const GameplayHeader = memo(function GameplayHeader({
                         </p>
                         <div className="flex flex-col items-end">
                             <p
-                                className={`text-3xl sm:text-4xl font-black leading-none italic ${isLowTime ? "text-red-500 animate-pulse" : "text-lime-400"}`}
+                                className={`text-3xl sm:text-4xl font-black leading-none italic ${isLowTime ? "text-red-500 animate-pulse" : mode === "read" ? "text-accent" : "text-quest"}`}
                             >
                                 {timeLeft}s
                             </p>
                             <p
-                                className={`text-[10px] font-black uppercase tracking-tighter ${isLowTime ? "text-red-400" : "text-lime-400/50"}`}
+                                className={`text-[10px] font-black uppercase tracking-tighter ${isLowTime ? "text-red-400" : mode === "read" ? "text-accent/50" : "text-quest/50"}`}
                             >
                                 {isLowTime && timeLeft > 0
                                     ? "⚠️ Critical Time!"
@@ -139,7 +140,9 @@ const GameplayHeader = memo(function GameplayHeader({
                             className={`h-full rounded-full transition-all duration-1000 ease-linear ${
                                 isLowTime
                                     ? "bg-red-500 shadow-[0_0_20px_rgba(239,68,68,0.6)]"
-                                    : "bg-gradient-to-r from-primary via-fuchsia-500 to-lime-400 shadow-[0_0_15px_rgba(132,204,22,0.4)]"
+                                    : mode === "read"
+                                    ? "bg-accent shadow-[0_0_15px_rgba(163,230,53,0.4)]"
+                                    : "bg-quest shadow-[0_0_15px_rgba(56,189,248,0.4)]"
                             }`}
                             style={{ width: `${percentage}%` }}
                         ></div>

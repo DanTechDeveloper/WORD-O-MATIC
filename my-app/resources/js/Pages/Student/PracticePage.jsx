@@ -178,6 +178,7 @@ export default function PracticePage({ module, mode = "read" }) {
         showPointsFeedback,
         pointsFeedbackValue,
         streakShake,
+        mode: isReadMode ? "read" : "speak",
     };
 
     return (
