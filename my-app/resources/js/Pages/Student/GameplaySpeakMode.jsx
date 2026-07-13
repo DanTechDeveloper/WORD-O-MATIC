@@ -108,7 +108,7 @@ export default function GameplaySpeakMode({ module }) {
             <DeniedModal gameState={gameState} />
             <GameplayHeader {...headerProps} />
             {gameState === "IDLE" && (
-                <TapToStartOverlay color="secondary" permissionState={permissionState} />
+                <TapToStartOverlay color="quest" permissionState={permissionState} />
             )}
             <SpeakModeMainContent
                 words={speechRecognitionWords}
@@ -129,6 +129,7 @@ export default function GameplaySpeakMode({ module }) {
                     isListening={gameState === "ACTIVE"}
                     disabled={gameState === "COUNTDOWN"}
                     onClick={handleMicrophoneClick}
+                    color="quest"
                 />
             </div>
         </div>

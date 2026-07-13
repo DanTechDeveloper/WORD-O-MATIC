@@ -3,13 +3,9 @@ const COLOR_MAP = {
         bg: "bg-accent",
         shadow: "rgba(163,230,53,0.4)",
     },
-    secondary: {
-        bg: "bg-secondary-container",
-        shadow: "rgba(255,59,192,0.4)",
-    },
     quest: {
         bg: "bg-quest",
-        shadow: "rgba(255,59,192,0.4)",
+        shadow: "rgba(56,189,248,0.4)",
     },
 };
 

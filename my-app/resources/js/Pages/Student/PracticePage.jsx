@@ -253,6 +253,7 @@ export default function PracticePage({ module, mode = "read" }) {
                     isListening={gameState === "ACTIVE"}
                     disabled={gameState === "COUNTDOWN"}
                     onClick={handleMicrophoneClick}
+                    color={isReadMode ? "accent" : "quest"}
                 />
             </div>
         </div>
