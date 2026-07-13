@@ -78,7 +78,8 @@ export default function Badges({ badges }) {
 
             <div className="mb-8 text-center">
                 <h2 className="text-4xl lg:text-6xl font-black text-on-surface uppercase tracking-tight mb-2 flex items-center justify-center gap-3">
-                    <span>🏆</span> Achievements
+                    <span className="material-symbols-outlined text-5xl lg:text-7xl text-tertiary" style={{ fontVariationSettings: "'FILL' 1" }}>emoji_events</span>
+                    Achievements
                 </h2>
                 <p className="text-on-surface-variant text-base font-bold max-w-lg mx-auto">
                     Collect them all by completing challenges
@@ -89,7 +90,7 @@ export default function Badges({ badges }) {
             {earnedAchievements.length > 0 && (
                 <div className="mb-10">
                     <h3 className="text-xl font-black text-on-surface uppercase tracking-wider mb-4 flex items-center gap-2">
-                        <span className="text-lime-400 text-2xl">✦</span>
+                        <span className="material-symbols-outlined text-accent text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>auto_awesome</span>
                         Unlocked
                     </h3>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -123,7 +124,7 @@ export default function Badges({ badges }) {
             {lockedAchievements.length > 0 && (
                 <div>
                     <h3 className="text-xl font-black text-on-surface uppercase tracking-wider mb-4 flex items-center gap-2">
-                        <span className="text-on-surface-variant/50 text-2xl">✦</span>
+                        <span className="material-symbols-outlined text-on-surface-variant/50 text-2xl">lock</span>
                         To Unlock
                     </h3>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">

@@ -9,10 +9,10 @@ const COVER_GRADIENTS = [
     "from-violet-500/40 to-indigo-600/20",
 ]
 
-const LEVEL_EMOJIS = [
-    "📖", "🎨", "🚀", "🌊", "🔥", "⭐",
-    "🌈", "🎯", "🎪", "🏰", "🦋", "🌻",
-    "🍕", "🎸", "⚽", "🐉", "🦄", "🍀",
+const LEVEL_ICONS = [
+    "menu_book", "palette", "rocket_launch", "waves", "local_fire_department", "star",
+    "wb_sunny", "sports_esports", "celebration", "castle", "emoji_nature", "local_florist",
+    "local_pizza", "music_note", "sports_soccer", "pets", "auto_awesome", "eco",
 ]
 
 export default function LevelCard({ module, emoji, gameUrl, index }) {
@@ -23,7 +23,7 @@ export default function LevelCard({ module, emoji, gameUrl, index }) {
     const isPlayable =
         module.status === "in_progress" || module.status === "current"
     const gradient = COVER_GRADIENTS[(module.level - 1) % COVER_GRADIENTS.length]
-    const displayEmoji = emoji || LEVEL_EMOJIS[(module.level - 1) % LEVEL_EMOJIS.length]
+    const displayIcon = emoji || LEVEL_ICONS[(module.level - 1) % LEVEL_ICONS.length]
 
     if (module.status === "locked") {
         return (
@@ -33,7 +33,7 @@ export default function LevelCard({ module, emoji, gameUrl, index }) {
             >
                 <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-30`} />
                 <div className="relative z-10 p-5 flex flex-col items-center text-center gap-3">
-                    <span className="text-5xl grayscale">🔒</span>
+                    <span className="material-symbols-outlined text-5xl text-on-surface-variant">lock</span>
                     <div>
                         <p className="text-on-surface-variant font-black uppercase text-lg">
                             Level {module.level}
@@ -86,7 +86,7 @@ export default function LevelCard({ module, emoji, gameUrl, index }) {
                 `}>
                     {isCompleted ? "COMPLETE" : `LEVEL ${module.level}`}
                 </span>
-                <span className="text-3xl">{displayEmoji}</span>
+                <span className="material-symbols-outlined text-3xl">{displayIcon}</span>
             </div>
 
             {/* Title */}

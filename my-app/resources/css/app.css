@@ -27,18 +27,20 @@ h1, h2, h3, button, label {
     box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
 }
 
-.material-symbols-outlined {
-    font-family: 'Material Symbols Outlined Variable';
-    font-weight: normal;
-    font-style: normal;
-    font-size: 24px;
-    display: inline-block;
-    line-height: 1;
-    text-transform: none;
-    letter-spacing: normal;
-    word-wrap: normal;
-    white-space: nowrap;
-    direction: ltr;
+@layer base {
+    .material-symbols-outlined {
+        font-family: 'Material Symbols Outlined Variable';
+        font-weight: normal;
+        font-style: normal;
+        font-size: 24px;
+        display: inline-block;
+        line-height: 1;
+        text-transform: none;
+        letter-spacing: normal;
+        word-wrap: normal;
+        white-space: nowrap;
+        direction: ltr;
+    }
 }
 
 @keyframes streak-shake-subtle {

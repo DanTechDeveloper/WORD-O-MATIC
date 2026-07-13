@@ -21,7 +21,8 @@ export default function Leaderboards({ leaderboard, totalStudents }) {
 
                 <div className="text-center mb-8">
                     <h1 className="text-4xl lg:text-6xl font-black text-on-surface uppercase tracking-tight flex items-center justify-center gap-3">
-                        <span>🏆</span> Leaderboard
+                        <span className="material-symbols-outlined text-5xl lg:text-7xl text-tertiary" style={{ fontVariationSettings: "'FILL' 1" }}>emoji_events</span>
+                        Leaderboard
                     </h1>
                 </div>
 
@@ -35,7 +36,7 @@ export default function Leaderboards({ leaderboard, totalStudents }) {
                                 {currentEntry.avatar ? (
                                     <img src={currentEntry.avatar} alt="" className="w-full h-full object-cover" />
                                 ) : (
-                                    <span className="text-3xl">😊</span>
+                                    <span className="material-symbols-outlined text-3xl text-on-surface-variant">person</span>
                                 )}
                             </div>
                             <div>
@@ -52,7 +53,7 @@ export default function Leaderboards({ leaderboard, totalStudents }) {
 
                 {totalStudents === 0 && (
                     <div className="text-center py-20">
-                        <p className="text-4xl mb-4">🚀</p>
+                        <span className="material-symbols-outlined text-6xl text-on-surface-variant mb-4 block">rocket_launch</span>
                         <p className="font-black uppercase tracking-widest text-base text-on-surface-variant">No explorers yet</p>
                         <p className="text-sm text-on-surface-variant/60 mt-2">Complete your first exercise to appear on the board!</p>
                     </div>
@@ -64,7 +65,7 @@ export default function Leaderboards({ leaderboard, totalStudents }) {
                             const rank = i + 1;
                             const isCurrentUser = entry.user_id === currentUserId;
                             const isTop3 = rank <= 3;
-                            const medals = ["🥇", "🥈", "🥉"];
+                            const medalColors = ["text-tertiary", "text-slate-300", "text-amber-700"];
 
                             return (
                                 <div
@@ -76,14 +77,18 @@ export default function Leaderboards({ leaderboard, totalStudents }) {
                                     }`}
                                 >
                                     <div className="flex items-center gap-8">
-                                        <span className="text-4xl font-black w-14 text-center">
-                                            {isTop3 ? medals[i] : `#${rank}`}
+                                        <span className="w-14 flex items-center justify-center">
+                                            {isTop3 ? (
+                                                <span className={`material-symbols-outlined text-4xl ${medalColors[i]}`} style={{ fontVariationSettings: "'FILL' 1" }}>emoji_events</span>
+                                            ) : (
+                                                <span className="text-4xl font-black">{`#${rank}`}</span>
+                                            )}
                                         </span>
                                         <div className="w-12 h-12 rounded-xl overflow-hidden flex items-center justify-center bg-surface-container-high">
                                             {entry.avatar ? (
                                                 <img src={entry.avatar} alt="" className="w-full h-full object-cover" />
                                             ) : (
-                                                <span className="text-2xl">😊</span>
+                                                <span className="material-symbols-outlined text-2xl text-on-surface-variant">person</span>
                                             )}
                                         </div>
                                         <div>
@@ -109,7 +114,7 @@ export default function Leaderboards({ leaderboard, totalStudents }) {
                         href="/student/dashboard"
                         className="inline-flex items-center gap-2 bg-lime-400 text-slate-950 font-black px-8 py-4 rounded-xl text-base border-b-2 border-lime-700 hover:border-b-[3px] transition-all shadow-lg shadow-lime-400/20 uppercase tracking-wider"
                     >
-                        <span className="text-xl">🚀</span>
+                        <span className="material-symbols-outlined text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>sports_esports</span>
                         Back to Games
                     </Link>
                 </div>
