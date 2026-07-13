@@ -7,10 +7,14 @@ const COLOR_MAP = {
         bg: "bg-secondary-container",
         shadow: "rgba(255,59,192,0.4)",
     },
+    quest: {
+        bg: "bg-quest",
+        shadow: "rgba(255,59,192,0.4)",
+    },
 };
 
 export default function TapToStartOverlay({ color = "accent", permissionState }) {
-    const colors = COLOR_MAP[color] || COLOR_MAP.lime;
+    const colors = COLOR_MAP[color] || COLOR_MAP.accent;
 
     const subtitle =
         permissionState != null

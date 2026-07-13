@@ -1,5 +1,5 @@
 import { router, usePage } from "@inertiajs/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import BadgeUnlockModal from "@/Components/Student/BadgeUnlockModal";
 
 const AVATARS = [
@@ -18,6 +18,10 @@ export default function AvatarSelection() {
     const [error, setError] = useState(null);
     const [showBadge, setShowBadge] = useState(!!flash?.new_badge);
     const badgeData = flash?.new_badge;
+
+    useEffect(() => {
+        if (badgeData) setShowBadge(true);
+    }, [badgeData]);
 
     const handleConfirm = () => {
         if (!selected || isUpdating) return;
