@@ -9,84 +9,27 @@ const METRIC_LABELS = {
     action: "Action",
 };
 
+const PALETTE = {
+    accent: { bg: "bg-accent", text: "text-slate-950", border: "border-accent", title: "text-accent" },
+    quest: { bg: "bg-quest", text: "text-slate-950", border: "border-quest", title: "text-quest" },
+    primary: { bg: "bg-primary", text: "text-slate-950", border: "border-primary", title: "text-primary" },
+    secondary: { bg: "bg-secondary", text: "text-slate-950", border: "border-secondary", title: "text-secondary" },
+    tertiary: { bg: "bg-tertiary", text: "text-slate-950", border: "border-tertiary", title: "text-tertiary" },
+    error: { bg: "bg-error", text: "text-slate-950", border: "border-error", title: "text-error" },
+};
+
 const BADGE_UI_CONFIG = {
-    "profile-pioneer": {
-        icon: "👤",
-        statusLabel: "UNLOCKED",
-        colors: {
-            bg: "bg-[#a3e635]",
-            text: "text-[#064e3b]",
-            shadow: "shadow-[#14532d]",
-            border: "border-[#064e3b]",
-            title: "text-[#a3e635]",
-        },
-    },
-    "story-finisher": {
-        icon: "📚",
-        statusLabel: "FINISHED",
-        colors: {
-            bg: "bg-[#a3e635]",
-            text: "text-[#064e3b]",
-            shadow: "shadow-[#14532d]",
-            border: "border-[#064e3b]",
-            title: "text-[#a3e635]",
-        },
-    },
-    "word-master": {
-        icon: "🥇",
-        statusLabel: "MASTERED",
-        colors: {
-            bg: "bg-primary-container",
-            text: "text-white",
-            shadow: "shadow-[#7000ff]",
-            border: "border-slate-950",
-            title: "text-primary",
-        },
-    },
-    "clear-speaker": {
-        icon: "🥈",
-        statusLabel: "EXPERT",
-        colors: {
-            bg: "bg-secondary-container",
-            text: "text-white",
-            shadow: "shadow-[#890064]",
-            border: "border-slate-950",
-            title: "text-secondary",
-        },
-    },
-    "tutorial-complete": {
-        icon: "🚀",
-        statusLabel: "COMPLETED",
-        colors: {
-            bg: "bg-[#a3e635]",
-            text: "text-[#064e3b]",
-            shadow: "shadow-[#14532d]",
-            border: "border-[#064e3b]",
-            title: "text-[#a3e635]",
-        },
-    },
-    "on-fire": {
-        icon: "🔥",
-        statusLabel: "STREAK",
-        colors: {
-            bg: "bg-primary-container",
-            text: "text-white",
-            shadow: "shadow-[#7000ff]",
-            border: "border-slate-950",
-            title: "text-primary",
-        },
-    },
-    default: {
-        icon: "⭐",
-        statusLabel: "LOCKED",
-        colors: {
-            bg: "bg-slate-700",
-            text: "text-white",
-            shadow: "shadow-slate-900",
-            border: "border-slate-950",
-            title: "text-slate-400",
-        },
-    },
+    "first-steps": { statusLabel: "STARTED", colors: PALETTE.accent },
+    "word-master": { statusLabel: "MASTERED", colors: PALETTE.tertiary },
+    "story-finisher": { statusLabel: "FINISHED", colors: PALETTE.quest },
+    "on-fire": { statusLabel: "STREAK", colors: PALETTE.error },
+    "blazing-streak": { statusLabel: "STREAK", colors: PALETTE.tertiary },
+    "unstoppable": { statusLabel: "STREAK", colors: PALETTE.primary },
+    "clear-speaker": { statusLabel: "EXPERT", colors: PALETTE.secondary },
+    "perfect-round": { statusLabel: "PERFECT", colors: PALETTE.quest },
+    "tutorial-complete": { statusLabel: "COMPLETED", colors: PALETTE.accent },
+    "profile-pioneer": { statusLabel: "UNLOCKED", colors: PALETTE.quest },
+    default: { statusLabel: "UNLOCKED", colors: PALETTE.primary },
 };
 
 export default function Badges({ badges }) {
@@ -108,7 +51,7 @@ export default function Badges({ badges }) {
             title: badge.name,
             description: badge.description,
             requirement: badge.requirement,
-            icon: ui.icon,
+            icon: badge.icon,
             progress,
             isLocked: !badge.is_earned,
             statusLabel: ui.statusLabel,
@@ -158,8 +101,8 @@ export default function Badges({ badges }) {
                                 <div className={`absolute -top-3 right-2 text-sm font-black px-3 py-1 rounded-md ${badge.colors.bg} ${badge.colors.text} border ${badge.colors.border}`}>
                                     {badge.statusLabel}
                                 </div>
-                                <div className={`w-24 h-24 mx-auto mb-3 rounded-full ${badge.colors.bg} ${badge.colors.border} border-2 flex items-center justify-center text-5xl`}>
-                                    {badge.icon}
+                                <div className="w-24 h-24 mx-auto mb-3 flex items-center justify-center">
+                                    <span className={`material-symbols-outlined text-7xl ${badge.colors.title}`}>{badge.icon}</span>
                                 </div>
                                 <h4 className={`text-lg font-black uppercase tracking-tight ${badge.colors.title}`}>
                                     {badge.title}
@@ -189,8 +132,8 @@ export default function Badges({ badges }) {
                                 key={badge.id}
                                 className="relative bg-surface-container-low rounded-xl border border-dashed border-surface-variant/20 p-6 text-center opacity-70"
                             >
-                                <div className="w-24 h-24 mx-auto mb-3 rounded-full bg-slate-800 border-2 border-slate-700 flex items-center justify-center text-5xl grayscale">
-                                    {badge.icon}
+                                <div className="w-24 h-24 mx-auto mb-3 flex items-center justify-center grayscale opacity-60">
+                                    <span className="material-symbols-outlined text-7xl text-on-surface-variant">{badge.icon}</span>
                                 </div>
                                 <h4 className="text-lg font-black uppercase tracking-tight text-on-surface-variant/60">
                                     {badge.title}
