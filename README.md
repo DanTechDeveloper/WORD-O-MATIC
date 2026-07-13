@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🚀 Word-O-Matic
+# Word-O-Matic
 
 ### A gamified literacy platform that boosts students' **reading** and **speaking** skills through interactive mini-games.
 
@@ -17,17 +17,19 @@
 <table>
 <tr>
 <td align="center" width="50%">
-<h3>⚡ Word Blast</h3>
-Reading-focused word recognition game
+<h3>Word Blast</h3>
+Reading-focused word recognition game<br>
+<span style="display:inline-block;width:10px;height:10px;border-radius:9999px;background:#a3e635;"></span> <b>Arcade Lime</b> mode (read)
 </td>
 <td align="center" width="50%">
-<h3>📖 Story Quest</h3>
-Speaking-focused storytelling activity
+<h3>Story Quest</h3>
+Speaking-focused storytelling activity<br>
+<span style="display:inline-block;width:10px;height:10px;border-radius:9999px;background:#38bdf8;"></span> <b>Electric Blue</b> mode (speak)
 </td>
 </tr>
 </table>
 
-<sub>A sci-fi themed interface increases engagement, while teachers get tools to monitor progress, assign modules, and analyze performance.</sub>
+<sub>Built on the <b>Tactile Arcade</b> design system — a deep indigo-black Material 3 stage with hard, offset shadows and arcade-neon pop colors that make every card and button feel like a physical game piece. While students play, teachers get tools to monitor progress, assign modules, and analyze performance.</sub>
 
 </div>
 
@@ -43,9 +45,24 @@ Speaking-focused storytelling activity
 | **Frontend** | React 18, Inertia.js v2, Tailwind CSS v3 |
 | **Database** | MySQL (Production), SQLite `:memory:` (Testing) |
 | **Charts** | Recharts (PieChart, BarChart) |
-| **Icons** | Material Symbols |
+| **Icons** | Material Symbols Outlined (filled `1` when active) |
 
 </div>
+
+---
+
+## 🎨 Design System — "The Tactile Arcade"
+
+The UI follows a single source of truth: [`DESIGN.md`](./my-app/DESIGN.md). Core principles:
+
+- **Material 3 dark stage** — deep indigo-black canvas (`#0c0c1f`) with layered surfaces; everything sits on the void.
+- **One Pop Color per mode** — **Word Blast (read) = Arcade Lime** `#a3e635`, **Story Quest (speak) = Electric Blue** `#38bdf8`. Violet, magenta, and peach are chrome, never calls to action; rose is reserved for "wrong" feedback only.
+- **Token-Only** — every surface is built from named tokens (`background`, `surface-*`, `primary-*`, `secondary-container`, `on-surface*`, `outline`, `accent`, `quest`). No raw `zinc-*` / `slate-*` / `purple-*` defaults.
+- **Hard, offset, zero-blur shadows** — one tactile shadow color per raised surface (the "physical game piece" feel); no soft blurred shadows or glassmorphism.
+- **Black-Uppercase voice** — small UI text is Lexend 900, uppercase, tracked (the game HUD voice).
+- **Material Symbols** — vector iconography you can color, fill, and scale (no emoji in the UI).
+
+> The public landing page is the known off-system surface and is being brought onto the token palette.
 
 ---
 
