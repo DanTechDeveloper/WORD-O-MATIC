@@ -5,9 +5,9 @@ export default function Sidebar({ isOpen, onClose }) {
     const teacherName = props.auth?.user?.name;
 
     const activeClass =
-        "bg-lime-400 text-slate-950 border-2 border-slate-950 shadow-[6px_6px_0_0_#3f6212] flex items-center gap-3 p-4 rounded-lg font-black font-lexend text-xs uppercase tracking-wider translate-x-[-2px] translate-y-[-2px]";
+        "bg-accent text-background border-2 border-background shadow-[6px_6px_0_0_#3f6212] flex items-center gap-3 p-4 rounded-lg font-black font-headline-md text-xs uppercase tracking-wider translate-x-[-2px] translate-y-[-2px]";
     const inactiveClass =
-        "text-slate-400 p-4 flex items-center gap-3 hover:text-purple-400 hover:translate-x-1 hover:bg-slate-900/50 transition-all font-black font-lexend text-xs uppercase tracking-wider";
+        "text-on-surface-variant/60 p-4 flex items-center gap-3 hover:text-primary hover:translate-x-1 hover:bg-surface-container-low/60 transition-all font-black font-headline-md text-xs uppercase tracking-wider";
 
     const navItems = [
         { label: "Dashboard", href: "/teacher/dashboard", icon: "dashboard" },
@@ -30,15 +30,15 @@ export default function Sidebar({ isOpen, onClose }) {
     return (
         <>
             <aside
-                className={`fixed left-0 top-0 h-full w-64 flex flex-col p-4 border-r-4 border-slate-900 bg-slate-950 z-50 shadow-[4px_0_0_0_#1e1b4b] transition-transform duration-300 ease-in-out md:translate-x-0 ${isOpen ? "translate-x-0" : "-translate-x-full"}`}
+                className={`fixed left-0 top-0 h-full w-64 flex flex-col p-4 border-r-4 border-outline/30 bg-background z-50 shadow-[4px_0_0_0_#1e1b4b] transition-transform duration-300 ease-in-out md:translate-x-0 ${isOpen ? "translate-x-0" : "-translate-x-full"}`}
             >
                 <div className="mb-8 flex items-center justify-between">
-                    <h1 className="text-2xl font-black text-purple-500 uppercase italic tracking-tighter">
+                        <h1 className="text-2xl font-black text-primary uppercase italic tracking-tighter">
                         WORD-O-MATIC
                     </h1>
                     <button
                         onClick={onClose}
-                        className="md:hidden text-slate-500 hover:text-white"
+                        className="md:hidden text-outline hover:text-on-surface"
                     >
                         <span className="material-symbols-outlined">close</span>
                     </button>
@@ -68,10 +68,10 @@ export default function Sidebar({ isOpen, onClose }) {
                         );
                     })}
                 </nav>
-                <div className="mt-auto pt-6 border-t border-slate-900 space-y-4">
-                    <div className="flex items-center gap-3 p-2 bg-surface-container-low rounded-xl border-2 border-slate-900">
-                        <div className="w-10 h-10 rounded-full bg-purple-500/20 border-2 border-purple-500/40 flex items-center justify-center shrink-0">
-                            <span className="material-symbols-outlined text-purple-400 text-xl">
+                <div className="mt-auto pt-6 border-t border-outline/40 space-y-4">
+                    <div className="flex items-center gap-3 p-2 bg-surface-container-low rounded-xl border-2 border-outline/40">
+                            <div className="w-10 h-10 rounded-full bg-primary/20 border-2 border-primary/40 flex items-center justify-center shrink-0">
+                                <span className="material-symbols-outlined text-primary text-xl">
                                 school
                             </span>
                         </div>
@@ -79,7 +79,7 @@ export default function Sidebar({ isOpen, onClose }) {
                             <p className="font-headline-md text-xs text-on-surface truncate">
                                 {teacherName || "Faculty Member"}
                             </p>
-                            <p className="text-[10px] text-slate-500 uppercase font-black">
+                                <p className="text-[10px] text-outline uppercase font-black">
                                 Academic Session
                             </p>
                         </div>
@@ -87,16 +87,13 @@ export default function Sidebar({ isOpen, onClose }) {
 
                     <Link
                         href="/logout"
-                        m
                         as="button"
                         method="POST"
-                        className="w-full flex items-center justify-center gap-2 p-3 bg-rose-500 text-slate-950 rounded-xl border-2 border-slate-950 shadow-[4px_4px_0_0_#4c0519] font-black font-lexend text-xs uppercase tracking-wider hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all"
+                        className="w-full flex items-center justify-center gap-2 bg-surface-container-high text-on-surface px-3 lg:px-4 py-2 rounded-xl border-2 border-outline active:translate-y-0.5 transition-all font-black text-xs uppercase"
                         onClick={() => window.innerWidth < 768 && onClose()}
                     >
-                        <span className="material-symbols-outlined">
-                            logout
-                        </span>
-                        Logout
+                        <span className="material-symbols-outlined text-lg">logout</span>
+                        <span>Logout</span>
                     </Link>
                 </div>
             </aside>
