@@ -119,7 +119,7 @@ export default function GameplayReadMode({ module }) {
             />
             {gameState === "IDLE" && (
                 <TapToStartOverlay
-                    color="lime"
+                    color="accent"
                     permissionState={permissionState}
                 />
             )}
@@ -128,6 +128,7 @@ export default function GameplayReadMode({ module }) {
                     isListening={gameState === "ACTIVE"}
                     disabled={gameState === "COUNTDOWN"}
                     onClick={handleMicrophoneClick}
+                    color="accent"
                 />
             </div>
         </div>
