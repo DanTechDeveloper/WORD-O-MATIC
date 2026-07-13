@@ -40,7 +40,7 @@ export default function StudentProfile() {
                     href="/logout"
                     method="post"
                     as="button"
-                    className="flex items-center gap-2 bg-pink-600 text-white px-3 lg:px-4 py-2 rounded-xl border-b-2 border-pink-900 active:translate-y-0.5 active:border-b-0 transition-all font-black text-xs uppercase"
+                    className="flex items-center gap-2 bg-surface-container-high text-on-surface px-3 lg:px-4 py-2 rounded-xl border-2 border-outline active:translate-y-0.5 transition-all font-black text-xs uppercase"
                 >
                     <span className="material-symbols-outlined text-lg">logout</span>
                     <span className="hidden sm:inline">Exit</span>
