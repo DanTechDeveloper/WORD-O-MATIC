@@ -112,7 +112,7 @@ export default function Dashboard({
                                 <div className="mt-6">
                                     <div className="flex items-center justify-between text-sm mb-1">
                                         <span className="text-on-surface-variant font-bold uppercase tracking-wider">
-                                            Stars Earned
+                                            Points Earned
                                         </span>
                                         <span className={`font-black text-base ${s.pointsColor}`}>
                                             {p.total > 0 ? `${p.earned}/${p.total}` : "Not started"}
