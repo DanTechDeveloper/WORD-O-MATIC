@@ -303,7 +303,7 @@ export default function Tutorial() {
                             sessionStorage.removeItem("practiceSpeakDone");
                             router.post("/student/tutorial/complete");
                         }}
-                        className="bg-secondary-container hover:bg-secondary-container/80 text-slate-950 px-10 py-4 rounded-2xl font-black text-lg tracking-widest uppercase transition-all hover:scale-105 active:scale-95 flex items-center gap-3 shadow-[0_6px_0_0_#4c1d95] cursor-pointer"
+                        className="bg-surface-container-high hover:bg-surface-container-highest text-on-surface px-10 py-4 rounded-2xl font-black text-lg tracking-widest uppercase transition-all hover:scale-105 active:scale-95 flex items-center gap-3 border-2 border-outline shadow-[0_6px_0_0_#4c1d95] cursor-pointer"
                     >
                         Continue to Dashboard
                         <span className="material-symbols-outlined text-2xl">home</span>
