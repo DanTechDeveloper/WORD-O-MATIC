@@ -2,13 +2,23 @@ import { Link, usePage } from "@inertiajs/react";
 import { useState } from "react";
 import BadgeUnlockModal from "@/Components/Student/BadgeUnlockModal";
 
+const CONFETTI = [
+    { icon: "celebration", color: "text-accent" },
+    { icon: "star", color: "text-lime-400" },
+    { icon: "auto_awesome", color: "text-tertiary" },
+    { icon: "local_fire_department", color: "text-orange-400" },
+    { icon: "party_mode", color: "text-quest" },
+    { icon: "emoji_events", color: "text-amber-400" },
+    { icon: "bolt", color: "text-yellow-300" },
+]
+
 function NextBadge({ badge }) {
     const pct = badge.threshold > 0 ? Math.min((badge.current_value / badge.threshold) * 100, 100) : 0;
     const nearComplete = pct >= 80;
     return (
         <div className="bg-surface-container rounded-2xl p-5 border border-surface-variant/20 flex items-center gap-4">
-            <div className="w-16 h-16 bg-primary/10 rounded-xl flex items-center justify-center text-4xl flex-shrink-0 border border-primary/20">
-                {badge.icon}
+            <div className="w-16 h-16 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0 border border-primary/20">
+                <span className="material-symbols-outlined text-4xl text-primary">{badge.icon}</span>
             </div>
             <div className="flex-1 min-w-0">
                 <div className="text-base font-bold text-on-surface mb-2 truncate">
@@ -26,7 +36,7 @@ function NextBadge({ badge }) {
                     />
                 </div>
             </div>
-            {nearComplete && <span className="text-2xl">✨</span>}
+            {nearComplete && <span className="material-symbols-outlined text-2xl text-accent">auto_awesome</span>}
         </div>
     );
 }
@@ -63,18 +73,19 @@ export default function GameResults({
 
                 {isPerfect && (
                     <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
-                        {["🎉","⭐","✨","🌟","🎊","💫","🔥"].map((e, i) => (
+                        {CONFETTI.map((c, i) => (
                             <span
                                 key={i}
-                                className="absolute text-3xl animate-bounce"
+                                className={`material-symbols-outlined absolute text-3xl animate-bounce ${c.color}`}
                                 style={{
                                     left: `${10 + i * 12}%`,
                                     top: `${-10 - i * 5}%`,
                                     animationDelay: `${i * 0.15}s`,
                                     animationDuration: `${1 + (i % 3) * 0.5}s`,
+                                    fontVariationSettings: "'FILL' 1",
                                 }}
                             >
-                                {e}
+                                {c.icon}
                             </span>
                         ))}
                     </div>
@@ -108,8 +119,9 @@ export default function GameResults({
                         </div>
                     </div>
 
-                    <div className="text-center text-xl sm:text-2xl font-bold text-lime-400">
-                        😊 {isPerfect ? "Amazing!" : "You're doing great!"}
+                    <div className="text-center text-xl sm:text-2xl font-bold text-lime-400 flex items-center justify-center gap-2">
+                        <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>sentiment_very_satisfied</span>
+                        {isPerfect ? "Amazing!" : "You're doing great!"}
                     </div>
 
                     {nextBadge && <NextBadge badge={nextBadge} />}
@@ -123,13 +135,13 @@ export default function GameResults({
                             }
                             className="flex-1 bg-surface-container-high text-on-surface font-bold py-5 rounded-2xl border border-surface-variant/20 text-base uppercase tracking-wider active:scale-[0.97] transition-all hover:bg-surface-container-highest"
                         >
-                            🔄 Again
+                            <span className="material-symbols-outlined mr-2">replay</span>Again
                         </button>
                         <Link
                             href="/student/dashboard"
-                            className="flex-1 bg-primary text-on-primary font-bold py-5 rounded-2xl border border-surface-variant/20 text-base uppercase tracking-wider active:scale-[0.97] transition-all hover:brightness-110 text-center"
+                            className="flex-1 bg-primary text-on-primary font-bold py-5 rounded-2xl border border-surface-variant/20 text-base uppercase tracking-wider active:scale-[0.97] transition-all hover:brightness-110 text-center flex items-center justify-center"
                         >
-                            🏠 Home
+                            <span className="material-symbols-outlined mr-2">home</span>Home
                         </Link>
                     </div>
                 </div>
