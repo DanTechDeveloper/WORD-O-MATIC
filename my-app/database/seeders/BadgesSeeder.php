@@ -24,7 +24,7 @@ class BadgesSeeder extends Seeder
                 'metric' => 'total_points',
                 'operator' => '>=',
                 'threshold_score' => 5,
-                'icon' => '🌱'
+                'icon' => 'eco'
             ],
             [
                 'name' => 'Word Master',
@@ -34,7 +34,7 @@ class BadgesSeeder extends Seeder
                 'metric' => 'total_points',
                 'operator' => '>=',
                 'threshold_score' => 30,
-                'icon' => '🏆'
+                'icon' => 'emoji_events'
             ],
             [
                 'name' => 'Story Finisher',
@@ -44,7 +44,7 @@ class BadgesSeeder extends Seeder
                 'metric' => 'total_points',
                 'operator' => '>=',
                 'threshold_score' => 100,
-                'icon' => '📚'
+                'icon' => 'auto_stories'
             ],
 
             // =======================================================
@@ -53,12 +53,32 @@ class BadgesSeeder extends Seeder
             [
                 'name' => 'On Fire',
                 'slug' => 'on-fire',
-                'description' => 'Unstoppable! Got 3 correct in a row.',
+                'description' => 'Nice! Got 3 correct in a row.',
                 'requirement' => 'Get a 3-game streak.',
                 'metric' => 'streak',
                 'operator' => '>=',
                 'threshold_score' => 3,
-                'icon' => '🔥'
+                'icon' => 'local_fire_department'
+            ],
+            [
+                'name' => 'Blazing Streak',
+                'slug' => 'blazing-streak',
+                'description' => 'On a roll! Got 5 correct in a row.',
+                'requirement' => 'Get a 5-game streak.',
+                'metric' => 'streak',
+                'operator' => '>=',
+                'threshold_score' => 5,
+                'icon' => 'whatshot'
+            ],
+            [
+                'name' => 'Unstoppable',
+                'slug' => 'unstoppable',
+                'description' => 'Incredible! Got 10 correct in a row.',
+                'requirement' => 'Get a 10-game streak.',
+                'metric' => 'streak',
+                'operator' => '>=',
+                'threshold_score' => 10,
+                'icon' => 'bolt'
             ],
 
             // =======================================================
@@ -72,7 +92,17 @@ class BadgesSeeder extends Seeder
                 'metric' => 'accuracy',
                 'operator' => '>=',
                 'threshold_score' => 80,
-                'icon' => '🎤'
+                'icon' => 'mic'
+            ],
+            [
+                'name' => 'Perfect Round',
+                'slug' => 'perfect-round',
+                'description' => 'Flawless! Got 100% accuracy in a single game.',
+                'requirement' => 'Get 100% accuracy.',
+                'metric' => 'accuracy',
+                'operator' => '>=',
+                'threshold_score' => 100,
+                'icon' => 'workspace_premium'
             ],
 
             // =======================================================
@@ -86,7 +116,7 @@ class BadgesSeeder extends Seeder
                 'metric' => 'action',
                 'operator' => '=',
                 'threshold_score' => null,
-                'icon' => '🚀'
+                'icon' => 'rocket_launch'
             ],
             [
                 'name' => 'Profile Pioneer',
@@ -96,7 +126,7 @@ class BadgesSeeder extends Seeder
                 'metric' => 'action',
                 'operator' => '=',
                 'threshold_score' => null,
-                'icon' => '👤'
+                'icon' => 'person'
             ],
         ];
 
