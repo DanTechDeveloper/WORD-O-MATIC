@@ -1,0 +1,137 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-13T00:00:00Z",
+  "title": "Design System: Word-O-Matic",
+  "extensions": {
+    "colorMeta": {
+      "canvas": { "role": "neutral", "displayName": "Indigo Void", "canonical": "#0c0c1f", "tonalRamp": ["#050510", "#0c0c1f", "#13132b", "#1a1a2e", "#222240", "#2b2b52", "#363663", "#454574"] },
+      "surface": { "role": "neutral", "displayName": "Surface", "canonical": "#1e1e32", "tonalRamp": ["#0c0c1f", "#141428", "#1e1e32", "#262642", "#2f2f4d", "#3a3a5c", "#47476e", "#565682"] },
+      "surface-high": { "role": "neutral", "displayName": "Surface High", "canonical": "#28283d", "tonalRamp": ["#0c0c1f", "#161630", "#1f1f3a", "#28283d", "#333350", "#3f3f60", "#4d4d74", "#5d5d8c"] },
+      "ink": { "role": "neutral", "displayName": "Ink", "canonical": "#e2e0fc", "tonalRamp": ["#5a5680", "#7571a0", "#918dc0", "#aea9da", "#cbc7ee", "#e2e0fc", "#ecebff", "#f6f5ff"] },
+      "ink-muted": { "role": "neutral", "displayName": "Ink Muted", "canonical": "#ccc3da", "tonalRamp": ["#4d4660", "#67607c", "#857e9c", "#a39bbb", "#ccc3da", "#dad3ea", "#e7e2f3", "#f4f1fb"] },
+      "action": { "role": "primary", "displayName": "Arcade Lime", "canonical": "#a3e635", "tonalRamp": ["#1d2e07", "#365112", "#4d6f1a", "#679324", "#83b22e", "#9fce38", "#a3e635", "#bef264"] },
+      "action-hover": { "role": "primary", "displayName": "Lime Bright", "canonical": "#bef264", "tonalRamp": ["#26380c", "#427018", "#5c9622", "#78b62e", "#93cf3d", "#aee04b", "#bef264", "#d4f88c"] },
+      "action-deep": { "role": "primary", "displayName": "Lime Deep", "canonical": "#3f6212", "tonalRamp": ["#101f04", "#1d3a08", "#2a520c", "#386b10", "#468414", "#549918", "#3f6212", "#6c8a2a"] },
+      "quest": { "role": "secondary", "displayName": "Quest Cyan", "canonical": "#38bdf8", "tonalRamp": ["#062a3f", "#0c4f73", "#1172a3", "#1f97d4", "#2aabe8", "#38bdf8", "#7dd3fc", "#aee9fe"] },
+      "quest-deep": { "role": "secondary", "displayName": "Cyan Deep", "canonical": "#0284c7", "tonalRamp": ["#04243a", "#08527f", "#0c73ab", "#0f93cd", "#13a6e0", "#0284c7", "#4bb6ec", "#8fd4f5"] },
+      "chrome": { "role": "tertiary", "displayName": "Electric Violet", "canonical": "#d1bcff", "tonalRamp": ["#3a2a6e", "#5b46a0", "#7c63cf", "#9b84ec", "#b7a6f7", "#d1bcff", "#e2d4ff", "#f1ebff"] },
+      "chrome-deep": { "role": "tertiary", "displayName": "Violet Deep", "canonical": "#7000ff", "tonalRamp": ["#1f004f", "#3a0097", "#5200d0", "#6a00f0", "#7d1fff", "#7000ff", "#9a5cff", "#c2a6ff"] },
+      "magenta": { "role": "tertiary", "displayName": "Magenta", "canonical": "#ff3bc0", "tonalRamp": ["#5e0f48", "#a81b82", "#e024a8", "#ff3bc0", "#ff6bce", "#ff9bdc", "#ffc4ea", "#ffe6f6"] },
+      "peach": { "role": "tertiary", "displayName": "Peach", "canonical": "#ffb77f", "tonalRamp": ["#5e3414", "#a85f24", "#e08534", "#ffb77f", "#ffca9c", "#ffdcbc", "#ffecd8", "#fff6ef"] },
+      "outline": { "role": "neutral", "displayName": "Outline", "canonical": "#958da3", "tonalRamp": ["#3a3650", "#5c5672", "#7a7494", "#958da3", "#aaa3b8", "#c0bbcd", "#d6d2de", "#eceaf1"] },
+      "error": { "role": "neutral", "displayName": "Error", "canonical": "#ffb4ab", "tonalRamp": ["#5e1f1a", "#a83a32", "#e05a4f", "#ffb4ab", "#ffc6bf", "#ffd8d3", "#ffeaE7", "#fff5f3"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Hero titles, splash screens, big win numbers. Lexend black, uppercase, italic." },
+      "headline": { "displayName": "Headline", "purpose": "Section titles and card headers." },
+      "title": { "displayName": "Title", "purpose": "Sub-headers, badge names, modal titles." },
+      "body": { "displayName": "Body", "purpose": "Instructions and paragraphs. Plus Jakarta Sans." },
+      "label": { "displayName": "Label", "purpose": "Buttons, nav items, chips, stat captions. Uppercase tracked Lexend." }
+    },
+    "shadows": [
+      { "name": "tactile-card", "value": "8px 8px 0 0 #4c1d95", "purpose": "Signature panel lift for cards, panels, avatar tiles." },
+      { "name": "tactile-button", "value": "0 6px 0 0 #4c1d95", "purpose": "Resting lift on primary buttons; collapses to 0 2px on press." },
+      { "name": "surface-offset", "value": "8px 8px 0 0 #1a1a2e", "purpose": "Same-hue offset inside nested surfaces." }
+    ],
+    "motion": [
+      { "name": "ease-out-quart", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Progress fill and reveal transitions." },
+      { "name": "press", "value": "transform 0.12s ease", "purpose": "Button press down on active state." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The single action control. Arcade Lime block with a hard Violet-Deep offset that presses down.",
+      "html": "<button class=\"ds-btn-primary\">PLAY</button>",
+      "css": ".ds-btn-primary { display:inline-flex; align-items:center; justify-content:center; background:#a3e635; color:#0c0c1f; font-family:'Lexend',sans-serif; font-weight:900; text-transform:uppercase; letter-spacing:0.12em; font-size:0.75rem; padding:16px 40px; border:2px solid #0c0c1f; border-radius:0.75rem; box-shadow:0 6px 0 0 #4c1d95; cursor:pointer; transition:transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease; } .ds-btn-primary:hover { background:#bef264; } .ds-btn-primary:active { transform:translateY(4px); box-shadow:0 2px 0 0 #4c1d95; } .ds-btn-primary:focus-visible { outline:4px solid #ff3bc0; outline-offset:2px; }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Secondary / cancel control. Transparent with Ink label and bordered.",
+      "html": "<button class=\"ds-btn-ghost\">BACK</button>",
+      "css": ".ds-btn-ghost { display:inline-flex; align-items:center; justify-content:center; background:transparent; color:#e2e0fc; font-family:'Lexend',sans-serif; font-weight:900; text-transform:uppercase; letter-spacing:0.12em; font-size:0.75rem; padding:16px 40px; border:2px solid #958da3; border-radius:0.75rem; cursor:pointer; transition:background 0.12s ease, border-color 0.12s ease; } .ds-btn-ghost:hover { border-color:#7000ff; background:#1e1e32; } .ds-btn-ghost:focus-visible { outline:4px solid #ff3bc0; outline-offset:2px; }"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Raised panel with the Tactile Card offset and a Violet-Deep border.",
+      "html": "<div class=\"ds-card\"><h3 class=\"ds-card-title\">Level 3</h3><p class=\"ds-card-body\">Read every word aloud.</p></div>",
+      "css": ".ds-card { background:#28283d; color:#e2e0fc; border:2px solid #7000ff; border-radius:0.75rem; padding:24px; box-shadow:8px 8px 0 0 #4c1d95; } .ds-card-title { font-family:'Lexend',sans-serif; font-weight:900; text-transform:uppercase; letter-spacing:0.02em; font-size:1.25rem; margin:0 0 8px; } .ds-card-body { font-family:'Plus Jakarta Sans',sans-serif; font-size:1rem; line-height:1.6; color:#ccc3da; margin:0; }"
+    },
+    {
+      "name": "Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Void well with a Magenta focus ring — never a soft glow.",
+      "html": "<input class=\"ds-input\" placeholder=\"Search students\" />",
+      "css": ".ds-input { background:#0c0c1f; color:#e2e0fc; font-family:'Plus Jakarta Sans',sans-serif; font-size:1rem; padding:8px 16px; border:2px solid #958da3; border-radius:0.5rem; width:100%; box-sizing:border-box; } .ds-input::placeholder { color:#ccc3da; } .ds-input:focus { outline:none; border-color:#7000ff; box-shadow:0 0 0 2px #ff3bc0; }"
+    },
+    {
+      "name": "Chip",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "Pill label in Surface with an Outline hairline.",
+      "html": "<span class=\"ds-chip\">IN PROGRESS</span>",
+      "css": ".ds-chip { display:inline-flex; align-items:center; gap:8px; background:#1e1e32; color:#e2e0fc; font-family:'Lexend',sans-serif; font-weight:900; text-transform:uppercase; letter-spacing:0.12em; font-size:0.75rem; padding:8px 16px; border-radius:9999px; border:1px solid #4a4457; }"
+    },
+    {
+      "name": "Nav Item (Active)",
+      "kind": "nav",
+      "refersTo": "button-primary",
+      "description": "Lit-up cabinet button: solid Arcade Lime block with a hard Lime-Deep offset.",
+      "html": "<a class=\"ds-nav-active\"><span class=\"ds-nav-icon\">dashboard</span>Dashboard</a>",
+      "css": ".ds-nav-active { display:flex; align-items:center; gap:12px; background:#a3e635; color:#0c0c1f; font-family:'Lexend',sans-serif; font-weight:900; text-transform:uppercase; letter-spacing:0.12em; font-size:0.75rem; padding:16px; border:2px solid #0c0c1f; border-radius:0.5rem; box-shadow:6px 6px 0 0 #3f6212; transform:translate(-2px,-2px); text-decoration:none; } .ds-nav-icon { font-family:'Material Symbols Outlined'; font-size:20px; }"
+    },
+    {
+      "name": "Progress Surge",
+      "kind": "custom",
+      "refersTo": "card",
+      "description": "The signature reward bar: Ink-Muted track, Arcade Lime fill with a hard inset shadow, eased to 100%.",
+      "html": "<div class=\"ds-progress\"><span style=\"width:78%\"></span></div>",
+      "css": ".ds-progress { width:100%; height:12px; background:#0c0c1f; border:2px solid #7000ff; border-radius:9999px; overflow:hidden; } .ds-progress > span { display:block; height:100%; background:#a3e635; box-shadow:inset 0 2px 4px rgba(0,0,0,0.3); transition:width 1s cubic-bezier(0.16,1,0.3,1); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Arcade Cabinet",
+    "overview": "Word-O-Matic is a glowing arcade cabinet in a dark room. The indigo-void canvas is the cabinet's shell; every screen is a playable panel lit by one electric action color and framed in hard, physical shadows that read as real depth. The personality is playful, electric, and bold: confident arcade energy without losing clarity, a little mischievous, never childish and never corporate. This system explicitly rejects glassmorphism AI-slop, generic corporate edtech SaaS, and infantilized baby styling, and forbids raw default palette leaks (slate/zinc/purple/lime-400).",
+    "keyCharacteristics": [
+      "Indigo-void canvas; depth from hard offset shadows, not soft blur.",
+      "One action color (Arcade Lime) carries intent; everything else is chrome.",
+      "Lexend black-uppercase headings; Plus Jakarta Sans for reading.",
+      "Chunky 2-4px borders and large forgiving tap targets for small hands.",
+      "Motion is physical: buttons press down, streaks shake, progress surges."
+    ],
+    "rules": [
+      { "name": "The One Action Color Rule", "body": "Arcade Lime is the only 'do this' color on any screen; it appears on ≤10-15% of the surface. Quest Cyan may mark a second, explicitly different action; never a third.", "section": "colors" },
+      { "name": "The Violet-Deep Shadow Rule", "body": "Hard offset shadows use #7000ff (Violet Deep) or the surface's own dark tone — never a soft gray blur.", "section": "colors" },
+      { "name": "The Black-Uppercase Rule", "body": "Every heading and button is font-black, uppercase, and tracked. Lowercase or light weights read as 'app', not 'arcade'.", "section": "typography" },
+      { "name": "The Physical Press Rule", "body": "Shadows appear as a response to state (rest, hover, active), never decoration. A control at rest has its full offset; on press it shrinks and drops.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do use Arcade Lime as the only 'action' color; let its rarity signal intent.",
+      "Do use hard offset Violet-Deep shadows (8px 8px 0 0 #4c1d95) for depth — never soft blur.",
+      "Do set every heading and button in Lexend font-black uppercase with tracking.",
+      "Do keep tap targets large (>=44px) and borders chunky (2-4px).",
+      "Do honor prefers-reduced-motion: keep state changes, drop the translate.",
+      "Do use the named tokens (bg-action, text-ink, border-chrome-deep)."
+    ],
+    "donts": [
+      "Don't use glassmorphism AI-slop: blurred glass cards, backdrop-filter sheen, gradient-clipped text.",
+      "Don't build a generic corporate edtech SaaS look — blue/white dashboards, stock illustrations, flat minimalism.",
+      "Don't infantilize: no baby-cartoon styling, no low-contrast undifferentiated shapes.",
+      "Don't use raw default palette leaks (slate-*, zinc-*, purple-*, lime-400, rose-500).",
+      "Don't add a third action color; lime + cyan is the ceiling.",
+      "Don't use side-stripe borders (>1px colored left/right border) as accents."
+    ]
+  }
+}

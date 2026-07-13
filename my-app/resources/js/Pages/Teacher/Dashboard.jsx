@@ -67,7 +67,6 @@ export default function Dashboard({
     const topBarLabel = "Points";
 
     const RANK_COLORS = ["#fbbf24", "#94a3b8", "#d97706"];
-    const RANK_EMOJIS = ["🥇", "🥈", "🥉"];
 
     const chartData = [
         { name: "Not Started", value: chartCounts?.notStarted ?? 0, color: "#64748b" },
@@ -333,12 +332,26 @@ export default function Dashboard({
                                     dataKey="name"
                                     type="category"
                                     stroke="#94a3b8"
-                                    width={160}
-                                    tick={{ fill: "#e2e8f0", fontWeight: "bold", fontSize: 14 }}
-                                    tickFormatter={(value, index) => {
-                                        const student = filteredTopStudents[index];
-                                        const emoji = student?.rank <= 3 ? `${RANK_EMOJIS[student.rank - 1]} ` : "";
-                                        return `${emoji}${value}`;
+                                    width={210}
+                                    tick={({ x, y, payload, index }) => {
+                                        const s = filteredTopStudents[index];
+                                        const isRank = s && s.rank <= 3;
+                                        return (
+                                            <g transform={`translate(${x},${y})`}>
+                                                <foreignObject x={-210} y={-10} width={210} height={22}>
+                                                    <div className="flex items-center justify-end gap-1.5 w-full h-full pr-3">
+                                                        {isRank && (
+                                                            <span className="material-symbols-outlined text-[15px] leading-none" style={{ color: RANK_COLORS[s.rank - 1] }}>
+                                                                emoji_events
+                                                            </span>
+                                                        )}
+                                                        <span className="text-sm font-bold whitespace-nowrap" style={{ color: '#e2e8f0' }}>
+                                                            {payload.value}
+                                                        </span>
+                                                    </div>
+                                                </foreignObject>
+                                            </g>
+                                        );
                                     }}
                                 />
                                 <Tooltip
@@ -348,8 +361,13 @@ export default function Dashboard({
                                         const s = payload[0].payload;
                                         return (
                                             <div className="bg-slate-950 border-2 border-slate-700 rounded-xl px-4 py-3 shadow-lg">
-                                                <p className="text-white font-black text-sm mb-2">
-                                                    {s.rank <= 3 ? `${RANK_EMOJIS[s.rank - 1]} ` : ""}{s.name}
+                                                <p className="text-white font-black text-sm mb-2 flex items-center gap-1.5">
+                                                    {s.rank <= 3 && (
+                                                        <span className="material-symbols-outlined text-base" style={{ color: RANK_COLORS[s.rank - 1] }}>
+                                                            emoji_events
+                                                        </span>
+                                                    )}
+                                                    <span>{s.name}</span>
                                                 </p>
                                                 <div className="space-y-1 text-xs">
                                                     <p className="font-black text-lime-400">{s.points.toLocaleString()} Points</p>
