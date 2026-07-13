@@ -93,6 +93,7 @@ export default function GameplayReadMode({ module }) {
         showPointsFeedback,
         pointsFeedbackValue,
         streakShake,
+        mode: "read",
     };
 
     return (

@@ -38,7 +38,7 @@ const ReadModeMainContent = memo(function ReadModeMainContent({
         <div className="flex-1 w-full relative overflow-hidden pointer-events-none">
             {gameState === "COUNTDOWN" ? (
                 <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-6xl sm:text-8xl md:text-[12rem] font-black text-cyan-400 italic animate-bounce drop-shadow-[0_0_50px_rgba(0,240,255,0.6)]">
+                    <span className="text-6xl sm:text-8xl md:text-[12rem] font-black text-accent italic animate-bounce drop-shadow-[0_0_50px_rgba(163,230,53,0.6)]">
                         {countdownValue}
                     </span>
                 </div>

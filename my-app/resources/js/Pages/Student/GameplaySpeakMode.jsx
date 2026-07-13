@@ -101,6 +101,7 @@ export default function GameplaySpeakMode({ module }) {
         showPointsFeedback,
         pointsFeedbackValue,
         streakShake,
+        mode: "speak",
     };
 
     return (

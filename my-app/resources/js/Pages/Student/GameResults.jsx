@@ -26,13 +26,8 @@ function NextBadge({ badge }) {
                 </div>
                 <div className="h-4 bg-background rounded-full overflow-hidden border border-surface-variant/10">
                     <div
-                        className="h-full rounded-full transition-all duration-1000"
-                        style={{
-                            width: `${pct}%`,
-                            background: nearComplete
-                                ? "linear-gradient(90deg, #d1bcff, #bcff00)"
-                                : "linear-gradient(90deg, #d1bcff, #7000ff)",
-                        }}
+                        className={`h-full rounded-full transition-all duration-1000 ${nearComplete ? "bg-accent shadow-[0_0_12px_2px_rgba(163,230,53,0.6)]" : "bg-primary"}`}
+                        style={{ width: `${pct}%` }}
                     />
                 </div>
             </div>
