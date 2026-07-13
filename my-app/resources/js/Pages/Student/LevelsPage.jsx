@@ -26,20 +26,21 @@ export default function LevelsPage({ modules, mode }) {
             <div className="flex items-center gap-3 md:gap-4 mb-6 pt-2">
                 <Link
                     href="/student/dashboard"
-                    className="bg-surface-container-high border-2 border-surface-variant/50 p-2 rounded-full text-on-surface flex items-center justify-center hover:bg-surface-variant transition-all aspect-square shadow-lg flex-shrink-0"
+                    aria-label="Back to dashboard"
+                    className="bg-surface-container-high border-2 border-surface-variant/50 p-2.5 rounded-full text-on-surface flex items-center justify-center hover:bg-surface-variant transition-all aspect-square shadow-[4px_4px_0_0_#4c1d95] flex-shrink-0"
                 >
-                    <span className="material-symbols-outlined text-2xl">arrow_back</span>
+                    <span className="material-symbols-outlined text-2xl" aria-hidden="true">arrow_back</span>
                 </Link>
                 <div className="flex-1 min-w-0">
                     <h2 className="text-on-surface text-2xl md:text-3xl font-black uppercase truncate flex items-center gap-2">
                         <span>{isRead ? "📖" : "🎤"}</span>
                         <span>{isRead ? "Word Blast" : "Story Quest"}</span>
                     </h2>
-                    <p className="text-on-surface-variant font-bold text-xs md:text-sm">
+                    <p className="text-on-surface-variant font-black uppercase tracking-wide text-xs md:text-sm">
                         Select a level to play
                     </p>
                 </div>
-                <div className={`${isRead ? "bg-lime-400 text-surface-container-lowest border-b-2 border-lime-700" : "bg-quest text-surface-container-lowest border-b-2 border-quest-deep"} px-3 md:px-4 py-1.5 md:py-2 rounded-lg font-black text-sm md:text-base flex items-center gap-1.5 flex-shrink-0`}>
+                <div className={`${isRead ? "bg-accent text-surface-container-lowest border-b-2 border-accent-deep" : "bg-quest text-surface-container-lowest border-b-2 border-quest-deep"} px-3 md:px-4 py-1.5 md:py-2 rounded-lg font-black text-sm md:text-base flex items-center gap-1.5 flex-shrink-0`}>
                     <span className="material-symbols-outlined text-base md:text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
                     {totalStars}
                 </div>
