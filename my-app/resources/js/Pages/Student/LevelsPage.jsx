@@ -2,10 +2,10 @@ import { Link } from "@inertiajs/react"
 import DashboardLayout from "../../Layouts/Student/DashboardLayout"
 import LevelCard from "../../Components/Student/LevelCard"
 
-const LEVEL_EMOJIS = [
-    "📖", "🎨", "🚀", "🌊", "🔥", "⭐",
-    "🌈", "🎯", "🎪", "🏰", "🦋", "🌻",
-    "🍕", "🎸", "⚽", "🐉", "🦄", "🍀",
+const LEVEL_ICONS = [
+    "menu_book", "palette", "rocket_launch", "waves", "local_fire_department", "star",
+    "wb_sunny", "sports_esports", "celebration", "castle", "emoji_nature", "local_florist",
+    "local_pizza", "music_note", "sports_soccer", "pets", "auto_awesome", "eco",
 ]
 
 export default function LevelsPage({ modules, mode }) {
@@ -33,7 +33,7 @@ export default function LevelsPage({ modules, mode }) {
                 </Link>
                 <div className="flex-1 min-w-0">
                     <h2 className="text-on-surface text-2xl md:text-3xl font-black uppercase truncate flex items-center gap-2">
-                        <span>{isRead ? "📖" : "🎤"}</span>
+                        <span className={`material-symbols-outlined text-3xl ${isRead ? "text-accent" : "text-quest"}`} style={{ fontVariationSettings: "'FILL' 1" }}>{isRead ? "menu_book" : "mic"}</span>
                         <span>{isRead ? "Word Blast" : "Story Quest"}</span>
                     </h2>
                     <p className="text-on-surface-variant font-black uppercase tracking-wide text-xs md:text-sm">
@@ -49,7 +49,7 @@ export default function LevelsPage({ modules, mode }) {
             {/* Level Cards Grid */}
             {(!modules || modules.length === 0) ? (
                 <div className="flex flex-col items-center justify-center py-20 text-center">
-                    <span className="text-6xl mb-4">📭</span>
+                    <span className="material-symbols-outlined text-6xl mb-4 text-on-surface-variant">inbox</span>
                     <p className="text-on-surface-variant font-bold text-lg">No levels available yet</p>
                 </div>
             ) : (
@@ -58,7 +58,7 @@ export default function LevelsPage({ modules, mode }) {
                         <LevelCard
                             key={module.id}
                             module={module}
-                            emoji={LEVEL_EMOJIS[(module.level - 1) % LEVEL_EMOJIS.length]}
+                            emoji={LEVEL_ICONS[(module.level - 1) % LEVEL_ICONS.length]}
                             gameUrl={gameUrl}
                             index={index}
                         />
