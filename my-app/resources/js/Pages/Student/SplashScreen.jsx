@@ -112,7 +112,7 @@ export default function SplashScreen() {
                 }}
             />
 
-            <h1 className="relative z-10 text-primary text-6xl md:text-8xl font-black italic uppercase tracking-tighter text-center">
+            <h1 className="relative z-10 text-primary text-[clamp(2.25rem,11vw,6rem)] leading-[0.95] font-black italic uppercase tracking-[-0.04em] text-center text-balance">
                 WORD-O-MATIC
             </h1>
 
@@ -121,7 +121,7 @@ export default function SplashScreen() {
                 onClick={handleStart}
                 disabled={starting}
                 aria-busy={starting}
-                className="relative z-10 flex items-center gap-3 bg-accent text-surface-container-lowest font-black text-2xl md:text-3xl uppercase tracking-wider px-12 py-5 rounded-full hover:scale-105 active:scale-95 active:translate-y-1 transition-transform shadow-[0_6px_0_0_#4c1d95] outline-none focus-visible:ring-4 focus-visible:ring-secondary-container focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-80 disabled:cursor-wait"
+                className="relative z-10 tactile-button flex items-center gap-3 border-2 border-surface-container-lowest bg-accent text-surface-container-lowest font-black text-2xl md:text-3xl uppercase tracking-wider px-12 py-5 rounded-xl transition-[transform,background-color] hover:bg-accent-hover hover:-translate-y-0.5 outline-none focus-visible:ring-4 focus-visible:ring-secondary-container focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-80 disabled:cursor-wait"
             >
                 <span className="material-symbols-outlined text-4xl" aria-hidden="true">
                     play_arrow
@@ -129,7 +129,7 @@ export default function SplashScreen() {
                 {starting ? "Starting…" : "Play"}
             </button>
 
-            <p className="relative z-10 text-on-surface-variant font-bold uppercase tracking-[0.3em] text-xs animate-pulse motion-reduce:animate-none">
+            <p className="relative z-10 text-on-surface-variant font-black uppercase tracking-[0.2em] text-xs animate-pulse motion-reduce:animate-none">
                 Press play to begin
             </p>
         </div>

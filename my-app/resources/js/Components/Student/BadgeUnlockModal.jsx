@@ -18,38 +18,68 @@ export default function BadgeUnlockModal({
     if (!show || !badge) return null;
 
     return (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-background overflow-hidden">
-            <div className="absolute inset-0 bg-lime-400/10 blur-[150px] rounded-full animate-pulse" />
+        <div
+            className="fixed inset-0 z-[110] flex items-center justify-center bg-background overflow-hidden"
+            role="dialog"
+            aria-modal="true"
+            aria-label={`${badge.name} unlocked`}
+        >
+            <style>{`
+                @keyframes badge-pop {
+                    0% { transform: scale(0.4) rotate(-8deg); opacity: 0; }
+                    60% { transform: scale(1.15) rotate(3deg); opacity: 1; }
+                    100% { transform: scale(1) rotate(0deg); opacity: 1; }
+                }
+                .badge-pop { animation: badge-pop 0.6s cubic-bezier(0.22, 1, 0.36, 1) both; }
+            `}</style>
 
-            <div className="relative z-10 flex flex-col items-center text-center px-6 max-w-2xl mx-auto">
+            <div
+                className="absolute inset-0 pointer-events-none"
+                style={{
+                    background:
+                        "radial-gradient(circle at center, rgba(163,230,53,0.14), transparent 60%)",
+                }}
+            />
+
+            <div className="relative z-10 flex flex-col items-center text-center px-6 max-w-2xl mx-auto animate-fade-in">
                 {total > 1 && (
                     <div className="relative z-10 mb-12 flex flex-col items-center gap-2">
-                        <span className="text-lime-400 font-black text-xl uppercase tracking-widest flex items-center justify-center gap-2">
-                            <span className="material-symbols-outlined text-2xl">celebration</span>
+                        <span className="text-accent font-black text-xl uppercase tracking-[0.12em] flex items-center justify-center gap-2">
+                            <span className="material-symbols-outlined text-2xl" aria-hidden="true">
+                                celebration
+                            </span>
                             You unlocked {total} new badges!
                         </span>
                     </div>
                 )}
 
                 <div className="relative mb-8">
-                    <div className="absolute inset-0 bg-lime-400/30 blur-3xl rounded-full scale-150 animate-pulse" />
-                    <span className="material-symbols-outlined text-[10rem] leading-none animate-bounce block relative">
+                    <div
+                        className="absolute inset-0 rounded-full"
+                        style={{
+                            background:
+                                "radial-gradient(circle, rgba(163,230,53,0.35), transparent 70%)",
+                        }}
+                    />
+                    <span
+                        className="material-symbols-outlined text-[10rem] leading-none block relative badge-pop"
+                        aria-hidden="true"
+                    >
                         {badge.icon}
                     </span>
                 </div>
 
                 <div
-                    className="bg-lime-400 text-lime-950 font-black px-8 py-3 rounded-xl border-2 border-slate-950 text-lg uppercase tracking-widest mb-6"
-                    style={{ boxShadow: "6px 6px 0px 0px rgba(0,0,0,0.5)" }}
+                    className="bg-accent text-surface-container-lowest font-black px-8 py-3 rounded-xl border-2 border-surface-container-lowest text-lg uppercase tracking-[0.12em] mb-6 shadow-[6px_6px_0_0_#4c1d95]"
                 >
                     New Badge Unlocked!
                 </div>
 
-                <h1 className="text-5xl md:text-7xl font-black text-lime-400 uppercase tracking-tight mb-4 drop-shadow-[0_0_30px_rgba(163,230,53,0.5)]">
+                <h1 className="text-5xl md:text-7xl font-black text-accent uppercase tracking-tight mb-4 drop-shadow-[0_0_30px_rgba(163,230,53,0.5)]">
                     {badge.name}
                 </h1>
 
-                <p className="font-headline-sm text-on-surface-variant mb-10 max-w-md">
+                <p className="font-body-md text-on-surface-variant mb-10 max-w-md">
                     {badge.description}
                 </p>
 
@@ -57,13 +87,13 @@ export default function BadgeUnlockModal({
                     <div className="w-full max-w-sm">
                         <div className="flex justify-between text-sm font-bold text-on-surface-variant mb-2 uppercase">
                             <span>Progress</span>
-                            <span className="text-lime-400">
+                            <span className="text-accent">
                                 {badge.current_value}/{badge.threshold}
                             </span>
                         </div>
-                        <div className="w-full bg-slate-950 h-5 rounded-full border-2 border-lime-400/40 overflow-hidden">
+                        <div className="w-full bg-surface-container h-5 rounded-full border-2 border-accent/40 overflow-hidden">
                             <div
-                                className="h-full bg-lime-400 transition-all duration-1000"
+                                className="h-full bg-accent transition-all duration-1000 ease-out"
                                 style={{
                                     width: `${Math.min((badge.current_value / badge.threshold) * 100, 100)}%`,
                                     boxShadow: "inset 0 2px 4px rgba(0,0,0,0.3)",
@@ -74,9 +104,10 @@ export default function BadgeUnlockModal({
                 )}
 
                 <button
+                    type="button"
                     onClick={onContinue}
-                    className="mt-10 bg-lime-400 text-lime-950 font-black px-10 py-4 rounded-xl border-4 border-slate-950 text-xl uppercase tracking-widest active:translate-x-1 active:translate-y-1 active:shadow-none transition-all animate-pulse"
-                    style={{ boxShadow: "6px 6px 0px 0px rgba(0,0,0,0.5)" }}
+                    autoFocus
+                    className="mt-10 tactile-button flex items-center justify-center bg-accent text-surface-container-lowest font-black px-10 py-4 rounded-xl border-2 border-surface-container-lowest text-xl uppercase tracking-[0.12em] transition-[transform,background-color] hover:bg-accent-hover"
                 >
                     {buttonText}
                 </button>
