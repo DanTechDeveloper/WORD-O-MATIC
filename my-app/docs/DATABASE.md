@@ -28,9 +28,9 @@ All migrations in `database/migrations/`. No raw SQL. All foreign keys on `user_
 
 | Table | Key Fields | Notes |
 |---|---|---|
-| `word_modules` | `id, level, title, total_points` | 10 modules, sequential |
-| `words` | `id, word_module_id, word, position, points` | 10 words per module. `position` for teacher ordering, gameplay uses `inRandomOrder()`. |
-| `paragraph_modules` | `id, level, title, content` | 10 modules, sequential |
+| `word_modules` | `id, level, title, is_tutorial, total_points` | 11 modules (10 real + 1 tutorial), sequential |
+| `words` | `id, word_module_id, word, position, points` | 10 words per module (5 for tutorial). `position` for teacher ordering, gameplay uses `inRandomOrder()`. |
+| `paragraph_modules` | `id, level, title, content, is_tutorial` | 11 modules (10 real + 1 tutorial), sequential |
 | `paragraph_words` | `id, paragraph_module_id, word, position` | Words extracted from paragraphs |
 
 ### Game Sessions (Append-Only)
@@ -44,8 +44,6 @@ All migrations in `database/migrations/`. No raw SQL. All foreign keys on `user_
 | Table | Key Fields | Notes |
 |---|---|---|
 | `badges` | `id, name, slug, description, icon, requirement, metric, operator, threshold_score` | Pre-seeded |
-| `practice_sets` | `id, name, slug, type, content, total_items` | Custom practice |
-| `practice_items` | `id, practice_set_id, content, position` | Individual items |
 
 ### Settings
 

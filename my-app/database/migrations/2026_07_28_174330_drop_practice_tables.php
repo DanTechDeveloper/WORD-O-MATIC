@@ -8,6 +8,22 @@ return new class extends Migration
 {
     public function up(): void
     {
+        Schema::dropIfExists('practice_items');
+        Schema::dropIfExists('practice_sets');
+    }
+
+    public function down(): void
+    {
+        Schema::create('practice_sets', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->string('slug')->unique();
+            $table->string('type');
+            $table->text('content')->nullable();
+            $table->integer('total_items')->default(0);
+            $table->timestamps();
+        });
+
         Schema::create('practice_items', function (Blueprint $table) {
             $table->id();
             $table->foreignId('practice_set_id')->constrained()->cascadeOnDelete();
@@ -15,10 +31,5 @@ return new class extends Migration
             $table->integer('position');
             $table->timestamps();
         });
-    }
-
-    public function down(): void
-    {
-        Schema::dropIfExists('practice_items');
     }
 };

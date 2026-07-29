@@ -17,6 +17,15 @@
 
 Sequential — must complete level N for N+1. 10 levels each.
 
+## Tutorial Isolation
+
+Tutorial play (`is_tutorial=true` modules) is isolated from real game tracking:
+- No points awarded — excluded from `StudentProfile.points` sum
+- No accuracy/status recalculation on `students` table
+- No `GameSession` logged
+- No leaderboard impact
+- Only "Tutorial Complete" badge can be earned (not gameplay badges)
+
 ## Badges
 
 | Type | Trigger | Service |

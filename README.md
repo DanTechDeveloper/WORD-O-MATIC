@@ -213,8 +213,8 @@ The application contains **16 Eloquent models**, including:
 A guided, gated 3-step flow enforced by the `CheckStudentOnboarding` middleware. Incomplete students are redirected to the correct step.
 
 1. **Splash → Avatar Selection** — students pick a custom avatar (default avatars are rejected).
-2. **Greetings → Tutorial** — the "Word Buddy" greets the student, then a two-mode tutorial introduces **Word Blast** (read) and **Story Quest** (speak). Each mode launches a short practice session.
-3. **Tutorial Complete → Dashboard** — once both practices are finished and the tutorial is completed, the student proceeds to the dashboard.
+2. **Greetings → Tutorial** — the "Word Buddy" greets the student, then a two-mode tutorial introduces **Word Blast** (read) and **Story Quest** (speak). Each mode uses dedicated practice modules (5 words / 1 paragraph, `is_tutorial=true`).
+3. **Tutorial Complete → Dashboard** — once both practices are finished and the tutorial is completed, the student proceeds to the dashboard. Tutorial plays do not affect points, leaderboards, or gameplay badges.
 
 </details>
 

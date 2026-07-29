@@ -1,6 +1,8 @@
-import { Link } from "@inertiajs/react"
+import { Link, usePage } from "@inertiajs/react"
+import { useState } from "react"
 import DashboardLayout from "../../Layouts/Student/DashboardLayout"
 import LevelCard from "../../Components/Student/LevelCard"
+import AvatarSpeechBubble from "@/Components/Student/AvatarSpeechBubble"
 
 const LEVEL_ICONS = [
     "menu_book", "palette", "rocket_launch", "waves", "local_fire_department", "star",
@@ -8,7 +10,15 @@ const LEVEL_ICONS = [
     "local_pizza", "music_note", "sports_soccer", "pets", "auto_awesome", "eco",
 ]
 
-export default function LevelsPage({ modules, mode }) {
+export default function LevelsPage({ modules, mode, tutorialComplete = true, wordTutorialDone = false, speakTutorialDone = false }) {
+    const { auth } = usePage().props
+    const avatarUrl = auth?.user?.student?.avatar
+    const bodyUrl = avatarUrl?.replace("/head.png", "/body.png")
+    const isTutorial = mode === "read" ? !tutorialComplete && !wordTutorialDone : !tutorialComplete && wordTutorialDone && !speakTutorialDone
+    const tutorialMessage = mode === "read"
+        ? "Tap Level 1 to start! 10 words to learn."
+        : "Read the story aloud. You've got this!"
+
     const totalStars =
         modules?.reduce((sum, m) => {
             if (m.status !== "locked") return sum + (m.words_smashed || 0)
@@ -19,9 +29,10 @@ export default function LevelsPage({ modules, mode }) {
         mode === "read" ? "student/gameplayReadMode" : "student/gameplaySpeakMode"
 
     const isRead = mode === "read"
+    const [guideDone, setGuideDone] = useState(false)
 
     return (
-        <DashboardLayout>
+        <DashboardLayout disableNav={isTutorial}>
             {/* Header */}
             <div className="flex items-center gap-3 md:gap-4 mb-6 pt-2">
                 <Link
@@ -40,7 +51,7 @@ export default function LevelsPage({ modules, mode }) {
                         Select a level to play
                     </p>
                 </div>
-                <div className={`${isRead ? "bg-accent text-surface-container-lowest border-b-2 border-accent-deep" : "bg-quest text-surface-container-lowest border-b-2 border-quest-deep"} px-3 md:px-4 py-1.5 md:py-2 rounded-lg font-black text-sm md:text-base flex items-center gap-1.5 flex-shrink-0`}>
+                <div className={`${isRead ? "bg-accent text-surface-container-lowest border-2 border-accent-deep/50" : "bg-quest text-surface-container-lowest border-2 border-quest-deep/50"} px-3 md:px-4 py-1.5 md:py-2 rounded-lg font-black text-sm md:text-base flex items-center gap-1.5 flex-shrink-0`}>
                     <span className="material-symbols-outlined text-base md:text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
                     {totalStars}
                 </div>
@@ -61,9 +72,22 @@ export default function LevelsPage({ modules, mode }) {
                             emoji={LEVEL_ICONS[(module.level - 1) % LEVEL_ICONS.length]}
                             gameUrl={gameUrl}
                             index={index}
+                            highlightTutorial={isTutorial}
+                            tutorialColor={isRead ? "accent" : "quest"}
                         />
                     ))}
                 </div>
+            )}
+            {isTutorial && bodyUrl && !guideDone && (
+                <AvatarSpeechBubble
+                    emoji={mode === "read" ? "menu_book" : "mic"}
+                    title={mode === "read" ? "Word Blast" : "Story Quest"}
+                    message={tutorialMessage}
+                    bodyUrl={bodyUrl}
+                    color={mode === "read" ? "accent" : "quest"}
+                    position="bottom-right"
+                    onClick={() => setGuideDone(true)}
+                />
             )}
         </DashboardLayout>
     )

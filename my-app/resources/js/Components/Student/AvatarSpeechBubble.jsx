@@ -38,7 +38,9 @@ export default function AvatarSpeechBubble({
             ? "flex flex-col items-center gap-6 animate-fade-in px-4"
             : position === "bottom-right"
               ? "fixed z-50 bottom-8 right-6 flex flex-col items-center gap-4"
-              : "fixed z-50 bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-4";
+              : position === "bottom-left"
+                ? "fixed z-50 bottom-8 left-6 flex flex-col items-center gap-4"
+                : "fixed z-50 bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-4";
 
     return (
         <div className={`${positionClass} ${className}`}>

@@ -15,7 +15,7 @@ const LEVEL_ICONS = [
     "local_pizza", "music_note", "sports_soccer", "pets", "auto_awesome", "eco",
 ]
 
-export default function LevelCard({ module, emoji, gameUrl, index }) {
+export default function LevelCard({ module, emoji, gameUrl, index, highlightTutorial, tutorialColor }) {
     const totalPoints = module.total_points || 0
     const wordsSmashed = module.words_smashed || 0
     const progress =
@@ -113,7 +113,7 @@ export default function LevelCard({ module, emoji, gameUrl, index }) {
             <div className="mt-3">
                 <div className="w-full bg-background/40 rounded-full h-2 overflow-hidden">
                     <div
-                        className={`h-full rounded-full transition-all duration-1000 ease-out ${isCompleted ? "bg-accent" : "bg-gradient-to-r from-accent to-accent-hover"}`}
+                        className={`h-full rounded-full transition-all duration-1000 ease-out bg-accent`}
                         style={{ width: `${progress}%` }}
                     />
                 </div>
@@ -124,11 +124,17 @@ export default function LevelCard({ module, emoji, gameUrl, index }) {
         </div>
     )
 
+    const highlightRing = highlightTutorial
+        ? tutorialColor === "accent"
+            ? "ring-4 ring-accent ring-offset-4 ring-offset-background scale-[1.03] animate-pulse motion-reduce:animate-none"
+            : "ring-4 ring-quest ring-offset-4 ring-offset-background scale-[1.03] animate-pulse motion-reduce:animate-none"
+        : ""
     const wrapperClass = `group relative block rounded-2xl border-2 transition-all duration-200 overflow-hidden animate-fade-in
         ${isCompleted ? "border-accent-deep bg-accent/5" : ""}
         ${isCurrent ? "border-secondary-container ring-2 ring-secondary-container/50" : ""}
         ${isPlayable && !isCurrent && !isCompleted ? "border-surface-variant/30 hover:border-secondary-container/50" : ""}
-        ${isPlayable ? "hover:scale-[1.03] hover:-translate-y-1 active:scale-[1.01] cursor-pointer" : "cursor-default"}`
+        ${isPlayable ? "hover:scale-[1.03] hover:-translate-y-1 active:scale-[1.01] cursor-pointer" : "cursor-default"}
+        ${highlightRing}`
 
     if (isCompleted) {
         return (

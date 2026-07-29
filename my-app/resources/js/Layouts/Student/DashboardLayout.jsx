@@ -1,13 +1,13 @@
 import { Link, usePage } from "@inertiajs/react";
 import StudentProfile from "../../Components/Student/StudentProfile";
 
-function BottomNav() {
+function BottomNav({ disableNav }) {
     const { url } = usePage();
     const isActive = (path) => url.startsWith(path);
     const hasNewBadge = typeof window !== 'undefined' && localStorage.getItem('hasNewBadge') === '1';
 
     return (
-        <nav className="fixed bottom-0 left-0 right-0 h-20 bg-background border-t-2 border-outline z-40 flex items-center justify-around px-4">
+        <nav className={`fixed bottom-0 left-0 right-0 h-20 bg-background border-t-2 border-outline z-40 flex items-center justify-around px-4 ${disableNav ? "pointer-events-none opacity-60" : ""}`}>
             <Link
                 href="/student/dashboard"
                 className={`flex flex-col items-center gap-0.5 px-6 py-2 rounded-lg transition-colors ${
@@ -56,7 +56,7 @@ function BottomNav() {
     );
 }
 
-export default function DashboardLayout({ children }) {
+export default function DashboardLayout({ children, disableNav }) {
     return (
         <div className="bg-background text-on-background font-body-md min-h-screen relative">
             <div className="fixed inset-0 pointer-events-none opacity-[0.03]"
@@ -66,11 +66,11 @@ export default function DashboardLayout({ children }) {
                 }}
             />
             <div className="fixed inset-0 pointer-events-none bg-gradient-to-b from-lime-900/5 via-transparent to-transparent" />
-            <StudentProfile />
+            <StudentProfile disableNav={disableNav} />
             <main className="w-[92%] mx-auto pt-[72px] lg:pt-[88px] pb-24">
                 {children}
             </main>
-            <BottomNav />
+            <BottomNav disableNav={disableNav} />
         </div>
     );
 }

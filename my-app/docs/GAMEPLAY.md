@@ -35,9 +35,15 @@
 - Progress overwritten on new best score only.
 - Mastery toggles per word — mastered words can still appear in retries (spaced repetition).
 
-## Practice Mode
+## Tutorial
 
-Route: `/student/practice/{read|speak}`. Separate from module progression.
+Dedicated tutorial modules (`is_tutorial=true`, `level=0`) seeded in `CurriculumSeeder`:
+- **Word Blast tutorial**: 5 words (a, I, see, my, the) — no timer
+- **Story Quest tutorial**: "I see a cat." — no timer
+
+Tutorial plays bypass GameSession, mastery, points, leaderboard, and gameplay badge tracking.
+Progress is saved but does not affect accuracy/status calculations on `students` table.
+Tutorial Complete badge flashes on Dashboard when both modes finished.
 
 ## Results
 

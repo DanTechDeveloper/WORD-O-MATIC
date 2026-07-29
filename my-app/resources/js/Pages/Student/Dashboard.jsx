@@ -1,4 +1,7 @@
-import { Link } from "@inertiajs/react";
+import { Link, usePage } from "@inertiajs/react";
+import { useState } from "react";
+import AvatarSpeechBubble from "@/Components/Student/AvatarSpeechBubble";
+import BadgeUnlockModal from "@/Components/Student/BadgeUnlockModal";
 import DashboardLayout from "../../Layouts/Student/DashboardLayout";
 
 const MODE_STYLES = {
@@ -42,35 +45,118 @@ export default function Dashboard({
     totalSpeakPoints,
     earnedReadPoints,
     earnedSpeakPoints,
+    wordTutorialDone = false,
+    speakTutorialDone = false,
+    tutorialComplete = false,
 }) {
+    const { auth, flash } = usePage().props;
+    const [guideStep, setGuideStep] = useState(wordTutorialDone ? 1 : 0);
+    const [guideDone, setGuideDone] = useState(tutorialComplete);
+    const avatarUrl = auth?.user?.student?.avatar;
+    const bodyUrl = avatarUrl?.replace("/head.png", "/body.png");
+    const newBadges = flash?.new_badges ?? [];
+    const [badgeIndex, setBadgeIndex] = useState(0);
+
+    const showGuide = !tutorialComplete && bodyUrl;
+    const showGuideBubble = showGuide && !guideDone;
+    const highlightRead = showGuide && !wordTutorialDone;
+    const highlightSpeak = showGuide && wordTutorialDone && !speakTutorialDone;
+
+    const guideSteps = [
+        {
+            title: "Start Here!",
+            message: "Tap Word Blast Level 1 to start!",
+            emoji: "bolt",
+            color: "accent",
+        },
+        {
+            title: "Next Up!",
+            message: "Try Story Quest Level 1! Speak aloud!",
+            emoji: "auto_stories",
+            color: "quest",
+        },
+    ];
+    const maxStep = wordTutorialDone ? 1 : 0;
+    const currentStep = guideSteps[guideStep] || guideSteps[0];
+
+    const advanceGuide = () => {
+        if (guideStep < maxStep) {
+            setGuideStep(guideStep + 1);
+        } else {
+            setGuideDone(true);
+        }
+    };
+
+    const ringMap = {
+        read: "ring-4 ring-accent ring-offset-4 ring-offset-background scale-[1.03] z-10 rounded-2xl transition-all duration-500 animate-pulse motion-reduce:animate-none",
+        speak: "ring-4 ring-quest ring-offset-4 ring-offset-background scale-[1.03] z-10 rounded-2xl transition-all duration-500 animate-pulse motion-reduce:animate-none",
+    };
+    const ringClass = (targetMode) => {
+        const isHighlight = targetMode === "read" ? highlightRead : highlightSpeak;
+        if (!isHighlight) return "";
+        return ringMap[targetMode];
+    };
+
     const points = {
         read: { earned: earnedReadPoints || 0, total: totalReadPoints || 0 },
         speak: { earned: earnedSpeakPoints || 0, total: totalSpeakPoints || 0 },
     };
 
     return (
-        <DashboardLayout>
-            <div className="flex flex-col justify-center py-10 lg:py-14 space-y-8">
+        <>
+            {badgeIndex < newBadges.length && (
+                <BadgeUnlockModal
+                    badge={newBadges[badgeIndex]}
+                    show={true}
+                    current={badgeIndex + 1}
+                    total={newBadges.length}
+                    buttonText={badgeIndex + 1 < newBadges.length ? "TAP FOR NEXT BADGE" : "TAP TO CONTINUE"}
+                    onContinue={() => setBadgeIndex(i => i + 1)}
+                />
+            )}
+            <DashboardLayout disableNav={showGuide}>
+                <div className="flex flex-col justify-center py-10 lg:py-14 space-y-8">
                 <header className="text-center lg:text-left">
                     <h1 className="text-4xl lg:text-5xl font-black uppercase italic tracking-[-0.04em] text-on-surface">
                         Pick Your Game
                     </h1>
                     <p className="mt-2 text-on-surface-variant text-base lg:text-lg">
-                        Two ways to play. Choose the adventure that fits your mood.
+                        {tutorialComplete
+                            ? "Two ways to play. Choose the adventure that fits your mood."
+                            : "Complete the tutorial to unlock the full game!"}
                     </p>
                 </header>
+
+                {showGuide && <div className="fixed inset-0 z-[5] bg-background/80" />}
+                {showGuideBubble && (
+                    <AvatarSpeechBubble
+                        emoji={currentStep.emoji}
+                        title={currentStep.title}
+                        message={currentStep.message}
+                        bodyUrl={bodyUrl}
+                        color={currentStep.color}
+                        onClick={advanceGuide}
+                        position={highlightRead ? "bottom-right" : "bottom-left"}
+                    />
+                )}
 
                 <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {MODES.map((m) => {
                         const s = MODE_STYLES[m.mode];
                         const p = points[m.mode];
                         const pct = p.total > 0 ? Math.min((p.earned / p.total) * 100, 100) : 0;
+                        const isDimmed = showGuide && (
+                            (m.mode === "read" && wordTutorialDone) ||
+                            (m.mode === "speak" && !wordTutorialDone)
+                        );
+                        const highlightClass = ringClass(m.mode);
                         return (
                             <Link
                                 key={m.mode}
-                                href={m.href}
+                                href={isDimmed ? undefined : m.href}
+                                as={isDimmed ? "div" : "a"}
                                 aria-label={`Play ${m.title}`}
-                                className={`group relative flex flex-col rounded-2xl bg-surface ${s.border} border-2 p-6 lg:p-8 tactile-card transition-transform duration-150 hover:-translate-y-1 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-secondary-container motion-reduce:transition-none motion-reduce:hover:translate-y-0`}
+                                className={`group relative flex flex-col rounded-2xl bg-surface ${s.border} border-2 p-6 lg:p-8 ${isDimmed ? "opacity-40 pointer-events-none select-none" : "tactile-card transition-transform duration-150 hover:-translate-y-1 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-secondary-container motion-reduce:transition-none motion-reduce:hover:translate-y-0 z-10"} ${highlightClass}`}
                             >
                                 <div className="flex items-center gap-5">
                                     <div className={`w-20 h-20 lg:w-24 lg:h-24 shrink-0 rounded-2xl bg-background/40 border-2 ${s.border} flex items-center justify-center`}>
@@ -130,6 +216,7 @@ export default function Dashboard({
                     })}
                 </section>
             </div>
-        </DashboardLayout>
+            </DashboardLayout>
+        </>
     );
 }
