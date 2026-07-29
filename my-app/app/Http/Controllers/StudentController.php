@@ -5,8 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Badges;
 use App\Models\GameSession;
 use App\Models\ParagraphModule;
-use App\Models\PracticeSet;
 use App\Models\StudentParagraphMastery;
+use App\Models\User;
 use App\Models\StudentParagraphProgress;
 use App\Models\ParagraphWord;
 use App\Models\StudentProfile;
@@ -42,47 +42,33 @@ class StudentController extends Controller
     {
         $user = auth()->user();
 
+        $tutWord = WordModule::where('is_tutorial', true)->first();
+        $tutPara = ParagraphModule::where('is_tutorial', true)->first();
+
         $totalReadPoints = (int) Word::count();
         $totalSpeakPoints = (int) ParagraphWord::count();
 
-        $earnedReadPoints = StudentWordProgress::where('user_id', $user->id)->sum('words_smashed');
-        $earnedSpeakPoints = StudentParagraphProgress::where('user_id', $user->id)->sum('words_smashed');
+        $earnedReadPoints = StudentWordProgress::where('user_id', $user->id)
+            ->when($tutWord, fn($q) => $q->where('word_module_id', '!=', $tutWord->id))
+            ->sum('words_smashed');
+        $earnedSpeakPoints = StudentParagraphProgress::where('user_id', $user->id)
+            ->when($tutPara, fn($q) => $q->where('paragraph_module_id', '!=', $tutPara->id))
+            ->sum('words_smashed');
+
+        $wordDone = $tutWord && StudentWordProgress::where('user_id', $user->id)
+            ->where('word_module_id', $tutWord->id)->where('status', 'completed')->exists();
+        $paraDone = $tutPara && StudentParagraphProgress::where('user_id', $user->id)
+            ->where('paragraph_module_id', $tutPara->id)->where('status', 'completed')->exists();
 
         return Inertia::render('Student/Dashboard', [
             'totalReadPoints' => $totalReadPoints,
             'totalSpeakPoints' => $totalSpeakPoints,
             'earnedReadPoints' => $earnedReadPoints,
             'earnedSpeakPoints' => $earnedSpeakPoints,
+            'wordTutorialDone' => $wordDone,
+            'speakTutorialDone' => $paraDone,
+            'tutorialComplete' => (bool) ($user->student?->tutorial_completed_at),
         ]);
-    }
-
-    public function tutorial()
-    {
-        return Inertia::render('Student/Tutorial');
-    }
-
-    public function completeTutorial(Request $request)
-    {
-        $user = auth()->user();
-        $student = $user->student;
-
-        if (! $student) {
-            return redirect()->back()->with('error', 'Student profile not found.');
-        }
-
-        if (! $student->tutorial_completed_at) {
-            $student->update([
-                'tutorial_completed_at' => now(),
-            ]);
-
-            $badgeData = $this->badgeService->awardOnboardingBadge($user, 'tutorial-complete');
-
-            if ($badgeData) {
-                return redirect()->route('student.dashboard')->with('new_badge', $badgeData);
-            }
-        }
-
-        return redirect()->route('student.dashboard')->with('success', 'Tutorial completed!');
     }
 
     public function updateAvatar(Request $request)
@@ -101,10 +87,10 @@ class StudentController extends Controller
             $badgeData = $this->badgeService->awardOnboardingBadge($user, 'profile-pioneer');
 
             if ($badgeData) {
-                return redirect()->route('student.avatarSelection')->with('new_badge', $badgeData);
+                return redirect()->route('student.dashboard')->with('new_badge', $badgeData);
             }
 
-            return redirect()->route('student.avatarSelection')->with('success', 'Avatar updated successfully!');
+            return redirect()->route('student.dashboard')->with('success', 'Avatar updated successfully!');
         }
 
         return redirect()->back()->with('error', 'Student profile not found.');
@@ -154,23 +140,53 @@ class StudentController extends Controller
 
     public function readModeLevels()
     {
+        $user = auth()->user();
+
+        $tutWord = WordModule::where('is_tutorial', true)->first();
+        $tutPara = ParagraphModule::where('is_tutorial', true)->first();
+
+        $wordTutorialDone = $tutWord && StudentWordProgress::where('user_id', $user->id)
+            ->where('word_module_id', $tutWord->id)->where('status', 'completed')->exists();
+        $speakTutorialDone = $tutPara && StudentParagraphProgress::where('user_id', $user->id)
+            ->where('paragraph_module_id', $tutPara->id)->where('status', 'completed')->exists();
+
+        if (! $user->student?->tutorial_completed_at && ! $wordTutorialDone) {
+            $progress = StudentWordProgress::where('user_id', $user->id)
+                ->where('word_module_id', $tutWord->id)->first();
+            $modules = collect([[
+                'id' => $tutWord->id,
+                'level' => $tutWord->level,
+                'title' => $tutWord->title,
+                'total_points' => $tutWord->words()->count(),
+                'status' => $progress && $progress->status === 'completed' ? 'completed' : 'current',
+                'words_smashed' => $progress ? $progress->words_smashed : 0,
+                'is_tutorial' => true,
+            ]]);
+        } else {
+            $modules = $this->levelService->getWordModuleStatuses($user->id);
+        }
+
         return Inertia::render('Student/LevelsPage', [
-            'modules' => $this->levelService->getWordModuleStatuses(auth()->id()),
+            'modules' => $modules,
             'mode' => 'read',
+            'tutorialComplete' => (bool) $user->student?->tutorial_completed_at,
+            'wordTutorialDone' => $wordTutorialDone,
+            'speakTutorialDone' => $speakTutorialDone,
         ]);
     }
 
     public function gameplayReadMode($id)
     {
-        // Fetch module with words and calculate student progress
         $module = WordModule::with('words')
-            ->select(['id', 'level', 'title'])
+            ->select(['id', 'level', 'title', 'is_tutorial'])
             ->findOrFail($id);
 
-        $userId = auth()->id();
+        $user = auth()->user();
+        $tutorialComplete = (bool) $user->student?->tutorial_completed_at;
 
         return Inertia::render('Student/GameplayReadMode', [
             'module' => $module,
+            'tutorialComplete' => $tutorialComplete,
         ]);
     }
 
@@ -186,6 +202,14 @@ class StudentController extends Controller
         $user = auth()->user();
         $module = WordModule::findOrFail($request->module_id);
 
+        if ($module->is_tutorial && ! $user->student?->tutorial_completed_at) {
+            $this->progressService->updateWordProgress($user->student, $module, 0, $request->words_processed, 0, isTutorial: true);
+            $badgesData = $this->checkTutorialCompletion($user);
+            $redirect = redirect()->route('student.dashboard');
+            if ($badgesData) $redirect->with('new_badges', [$badgesData]);
+            return $redirect;
+        }
+
         $totalPossible = $module->words()->count();
         $wordsSmashed = min($request->words_smashed, $totalPossible);
         $streak = min($request->streak ?? 0, $wordsSmashed + 1);
@@ -200,16 +224,22 @@ class StudentController extends Controller
         $redirect = redirect()->route('student.results', ['id' => $session->id]);
         $newBadges = $this->badgeService->checkGameplayBadges($user, $session->id, $accuracy);
 
-        if (! empty($newBadges)) {
-            $badgesData = [];
-            foreach ($newBadges as $badge) {
-                $badgesData[] = [
-                    'name' => $badge->name,
-                    'description' => $badge->description,
-                    'slug' => $badge->slug,
-                    'icon' => $badge->icon,
-                ];
-            }
+        $badgesData = [];
+        foreach ($newBadges as $badge) {
+            $badgesData[] = [
+                'name' => $badge->name,
+                'description' => $badge->description,
+                'slug' => $badge->slug,
+                'icon' => $badge->icon,
+            ];
+        }
+
+        $tutorialBadge = $this->checkTutorialCompletion($user);
+        if ($tutorialBadge) {
+            $badgesData[] = $tutorialBadge;
+        }
+
+        if (! empty($badgesData)) {
             $redirect->with('new_badges', $badgesData);
         }
 
@@ -248,26 +278,57 @@ class StudentController extends Controller
 
     public function speakModeLevels()
     {
+        $user = auth()->user();
+
+        $tutWord = WordModule::where('is_tutorial', true)->first();
+        $tutPara = ParagraphModule::where('is_tutorial', true)->first();
+
+        $wordTutorialDone = $tutWord && StudentWordProgress::where('user_id', $user->id)
+            ->where('word_module_id', $tutWord->id)->where('status', 'completed')->exists();
+        $speakTutorialDone = $tutPara && StudentParagraphProgress::where('user_id', $user->id)
+            ->where('paragraph_module_id', $tutPara->id)->where('status', 'completed')->exists();
+
+        if (! $user->student?->tutorial_completed_at && $wordTutorialDone && ! $speakTutorialDone) {
+            $progress = StudentParagraphProgress::where('user_id', $user->id)
+                ->where('paragraph_module_id', $tutPara->id)->first();
+            $modules = collect([[
+                'id' => $tutPara->id,
+                'level' => $tutPara->level,
+                'title' => $tutPara->title,
+                'total_points' => $tutPara->words()->count(),
+                'status' => $progress && $progress->status === 'completed' ? 'completed' : 'current',
+                'words_smashed' => $progress ? $progress->words_smashed : 0,
+                'is_tutorial' => true,
+            ]]);
+        } else {
+            $modules = $this->levelService->getSpeakModuleStatuses($user->id);
+        }
+
         return Inertia::render('Student/LevelsPage', [
-            'modules' => $this->levelService->getSpeakModuleStatuses(auth()->id()),
+            'modules' => $modules,
             'mode' => 'speak',
+            'tutorialComplete' => (bool) $user->student?->tutorial_completed_at,
+            'wordTutorialDone' => $wordTutorialDone,
+            'speakTutorialDone' => $speakTutorialDone,
         ]);
     }
 
     public function gameplaySpeakMode($id)
     {
         $module = ParagraphModule::with('words')
-            ->select(['id', 'level', 'title', 'content'])
+            ->select(['id', 'level', 'title', 'content', 'is_tutorial'])
             ->findOrFail($id);
 
-        $userId = auth()->id();
-        $progress = StudentParagraphProgress::where('user_id', $userId)
+        $user = auth()->user();
+        $progress = StudentParagraphProgress::where('user_id', $user->id)
             ->where('paragraph_module_id', $id)
             ->first();
+        $tutorialComplete = (bool) $user->student?->tutorial_completed_at;
 
         return Inertia::render('Student/GameplaySpeakMode', [
             'module' => $module,
             'userProgress' => $progress ? $progress->words_smashed : 0,
+            'tutorialComplete' => $tutorialComplete,
         ]);
     }
 
@@ -283,6 +344,14 @@ class StudentController extends Controller
         $user = auth()->user();
         $module = ParagraphModule::findOrFail($request->module_id);
 
+        if ($module->is_tutorial && ! $user->student?->tutorial_completed_at) {
+            $this->progressService->updateParagraphProgress($user->student, $module, 0, $request->words_processed, 0, isTutorial: true);
+            $badgesData = $this->checkTutorialCompletion($user);
+            $redirect = redirect()->route('student.dashboard');
+            if ($badgesData) $redirect->with('new_badges', [$badgesData]);
+            return $redirect;
+        }
+
         $totalPoints = $module->words()->count();
         $wordsSmashed = min($request->words_smashed, $totalPoints);
         $streak = min($request->streak ?? 0, $wordsSmashed + 1);
@@ -297,37 +366,26 @@ class StudentController extends Controller
         $redirect = redirect()->route('student.results', ['id' => $session->id]);
         $newBadges = $this->badgeService->checkGameplayBadges($user, $session->id, $accuracy);
 
-        if (! empty($newBadges)) {
-            $badgesData = [];
-            foreach ($newBadges as $badge) {
-                $badgesData[] = [
-                    'name' => $badge->name,
-                    'description' => $badge->description,
-                    'slug' => $badge->slug,
-                    'icon' => $badge->icon,
-                ];
-            }
+        $badgesData = [];
+        foreach ($newBadges as $badge) {
+            $badgesData[] = [
+                'name' => $badge->name,
+                'description' => $badge->description,
+                'slug' => $badge->slug,
+                'icon' => $badge->icon,
+            ];
+        }
+
+        $tutorialBadge = $this->checkTutorialCompletion($user);
+        if ($tutorialBadge) {
+            $badgesData[] = $tutorialBadge;
+        }
+
+        if (! empty($badgesData)) {
             $redirect->with('new_badges', $badgesData);
         }
 
         return $redirect;
-    }
-
-    public function practice($mode)
-    {
-        $practiceSet = PracticeSet::with('items')
-            ->where('slug', "tutorial-practice-{$mode}")
-            ->firstOrFail();
-
-        $module = [
-            'words' => $practiceSet->items->map(fn ($item) => ['word' => $item->content])->toArray(),
-            'content' => $practiceSet->content,
-        ];
-
-        return Inertia::render('Student/PracticePage', [
-            'module' => $module,
-            'mode' => $mode,
-        ]);
     }
 
     public function results($id)
@@ -350,5 +408,26 @@ class StudentController extends Controller
             'totalItems' => $totalItems,
             'badgeProgress' => $badgeProgress,
         ]);
+    }
+
+    private function checkTutorialCompletion(User $user): ?array
+    {
+        $tutWord = WordModule::where('is_tutorial', true)->first();
+        $tutPara = ParagraphModule::where('is_tutorial', true)->first();
+
+        $wordDone = $tutWord && StudentWordProgress::where('user_id', $user->id)
+            ->where('word_module_id', $tutWord->id)->where('status', 'completed')->exists();
+
+        $paraDone = $tutPara && StudentParagraphProgress::where('user_id', $user->id)
+            ->where('paragraph_module_id', $tutPara->id)->where('status', 'completed')->exists();
+
+        if ($wordDone && $paraDone) {
+            if (! $user->student->tutorial_completed_at) {
+                $user->student->update(['tutorial_completed_at' => now()]);
+            }
+            return $this->badgeService->awardOnboardingBadge($user, 'tutorial-complete');
+        }
+
+        return null;
     }
 }

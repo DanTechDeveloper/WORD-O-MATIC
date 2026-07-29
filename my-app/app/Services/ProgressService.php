@@ -12,21 +12,23 @@ use App\Models\WordModule;
 
 class ProgressService
 {
-    public function updateWordProgress(?StudentProfile $student, WordModule $module, int $wordsSmashed, int $wordsProcessed, float $accuracy): void
+    public function updateWordProgress(?StudentProfile $student, WordModule $module, int $wordsSmashed, int $wordsProcessed, float $accuracy, bool $isTutorial = false): void
     {
         $this->updateModuleProgress($student, $module, $wordsSmashed, $wordsProcessed, $accuracy,
             StudentWordProgress::class, 'word_module_id',
             StudentWordMastery::class, 'word_id',
             'wordBlastAcc', 'read_level', 'read_progress',
+            isTutorial: $isTutorial,
         );
     }
 
-    public function updateParagraphProgress(?StudentProfile $student, ParagraphModule $module, int $wordsSmashed, int $wordsProcessed, float $accuracy): void
+    public function updateParagraphProgress(?StudentProfile $student, ParagraphModule $module, int $wordsSmashed, int $wordsProcessed, float $accuracy, bool $isTutorial = false): void
     {
         $this->updateModuleProgress($student, $module, $wordsSmashed, $wordsProcessed, $accuracy,
             StudentParagraphProgress::class, 'paragraph_module_id',
             StudentParagraphMastery::class, 'paragraph_word_id',
             'storyQuestAcc', 'speak_level', 'speak_progress',
+            isTutorial: $isTutorial,
         );
     }
 
@@ -43,6 +45,7 @@ class ProgressService
         string $accColumn,
         string $levelColumn,
         string $progressColumn,
+        bool $isTutorial = false,
     ): void {
         if (! $student) {
             return;
@@ -56,9 +59,8 @@ class ProgressService
         $previousBest = $progress->exists ? $progress->words_smashed : 0;
 
         $isNewBest = ! $progress->exists || $wordsSmashed > $progress->words_smashed;
-        $isBetterAccuracy = $progress->exists && $wordsSmashed == $progress->words_smashed && $accuracy > $progress->accuracy;
 
-        if ($isNewBest || $isBetterAccuracy) {
+        if ($isNewBest) {
             $progress->words_smashed = $wordsSmashed;
             $progress->accuracy = $accuracy;
         }
@@ -66,6 +68,10 @@ class ProgressService
         $totalWords = $module->words()->count();
         $progress->status = $wordsProcessed >= $totalWords ? 'completed' : 'in_progress';
         $progress->save();
+
+        if ($isTutorial) {
+            return;
+        }
 
         if ($progress->status === 'completed') {
             $wordIds = $module->words()->pluck('id');
@@ -75,7 +81,7 @@ class ProgressService
                 ->update(['status' => 'mastered']);
         }
 
-        if ($isNewBest || $isBetterAccuracy) {
+        if ($isNewBest) {
             $avgAccuracy = $progressClass::where('user_id', $student->user_id)->avg('accuracy');
             $student->update([$accColumn => round($avgAccuracy, 2)]);
             $this->recalculateStatus($student);
@@ -88,7 +94,7 @@ class ProgressService
                 'points' => StudentWordProgress::where('user_id', $student->user_id)->sum('words_smashed') +
                             StudentParagraphProgress::where('user_id', $student->user_id)->sum('words_smashed'),
             ]);
-        } elseif ($isNewBest || $isBetterAccuracy) {
+        } elseif ($isNewBest) {
             $delta = max(0, $wordsSmashed - $previousBest);
             if ($delta > 0) {
                 $student->increment('points', $delta);

@@ -13,7 +13,7 @@ class ParagraphModule extends Model
     use HasFactory;
 
     protected $fillable = [
-        'level', 'title', 'content',
+        'level', 'title', 'content', 'is_tutorial',
     ];
 
     protected $appends = ['total_score'];

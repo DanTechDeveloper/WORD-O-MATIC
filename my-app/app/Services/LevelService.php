@@ -22,7 +22,8 @@ class LevelService
 
     private function getModuleStatuses(int $userId, string $moduleClass, string $progressClass, string $fk): Collection
     {
-        $modules = $moduleClass::select(['id', 'level', 'title'])
+        $modules = $moduleClass::select(['id', 'level', 'title', 'is_tutorial'])
+            ->where('is_tutorial', false)
             ->withCount('words')
             ->orderBy('level', 'asc')
             ->get();
@@ -61,7 +62,6 @@ class LevelService
                 'total_points' => $totalWords,
                 'status' => $status,
                 'words_smashed' => $progress ? $progress->words_smashed : 0,
-                'score' => $progress ? $progress->words_smashed : 0,
             ];
         });
     }

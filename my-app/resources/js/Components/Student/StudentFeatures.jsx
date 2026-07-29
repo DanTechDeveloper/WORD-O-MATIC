@@ -1,6 +1,6 @@
 import { Link, usePage } from "@inertiajs/react";
 
-export default function StudentFeatures() {
+export default function StudentFeatures({ disableNav }) {
     const { url } = usePage();
 
     const activeClass =
@@ -27,9 +27,11 @@ export default function StudentFeatures() {
     const bottomInactiveClass =
         "flex flex-col items-center gap-0.5 text-[10px] font-medium text-slate-500";
 
+    const navClass = disableNav ? "pointer-events-none opacity-60" : "";
+
     return (
         <>
-            <aside className="hidden lg:flex lg:flex-col fixed left-0 top-0 h-full w-64 p-4 border-r-4 border-outline bg-background z-50">
+            <aside className={`hidden lg:flex lg:flex-col fixed left-0 top-0 h-full w-64 p-4 border-r-4 border-outline bg-background z-50 ${navClass}`}>
                   <div className="mb-8">
                     <h1 className="text-2xl font-black text-purple-500 uppercase italic tracking-tighter">
                         WORD-O-MATIC
@@ -60,7 +62,7 @@ export default function StudentFeatures() {
             </aside>
 
             {/* Mobile Bottom Nav */}
-            <nav className="fixed bottom-0 left-0 right-0 flex lg:hidden items-center justify-around bg-background border-t-4 border-outline z-50 px-2 py-2">
+            <nav className={`fixed bottom-0 left-0 right-0 flex lg:hidden items-center justify-around bg-background border-t-4 border-outline z-50 px-2 py-2 ${navClass}`}>
                 {navItems.map((item) => {
                     const isActive = url === item.href;
                     return (

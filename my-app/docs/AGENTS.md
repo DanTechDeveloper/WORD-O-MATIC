@@ -48,10 +48,15 @@ PIN stored as bcrypt (`pin`) + plain text (`pin_plain`).
 ## Onboarding
 
 ```
-splashScreen → avatarSelection → greetings → tutorial → completeTutorial → dashboard
+splashScreen → avatarSelection → dashboard
 ```
 
-Enforced by `CheckStudentOnboarding` middleware.
+Tutorial uses dedicated modules (`is_tutorial=true`, `level=0`):
+- Word Blast: 5 practice words (a, I, see, my, the)
+- Story Quest: "I see a cat." paragraph
+Tutorial plays skip GameSession, mastery, points, leaderboard, and gameplay badges.
+Tutorial Complete badge awarded when both modes are done via `BadgeService::awardOnboardingBadge('tutorial-complete')`.
+Guided by AvatarSpeechBubble on Dashboard + guide overlay on first gameplay. Enforced by `CheckStudentOnboarding` middleware.
 
 ## Services
 

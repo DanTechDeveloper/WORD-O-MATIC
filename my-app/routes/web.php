@@ -12,7 +12,6 @@ Route::middleware('guest')->group(function () {
     Route::post('/', [UserController::class, 'login']);
     Route::get('/teacher/login', [UserController::class, 'teacherLogin'])->name('teacher.login');
     Route::post('/teacher/login', [UserController::class, 'teacherLoginPost']);
-    Route::get('/tutorial', [StudentController::class, 'tutorial'])->name('tutorial');
 });
 
 //   Route::inertia("/", "Testing/Microphone");
@@ -59,15 +58,12 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/avatar', [StudentController::class, 'updateAvatar'])->name('updateAvatar');
             // Main Application Routes
             Route::get('/dashboard', [StudentController::class, 'dashboard'])->name('dashboard');
-            Route::get('/tutorial', [StudentController::class, 'tutorial'])->name('tutorial');
-            Route::post('/tutorial/complete', [StudentController::class, 'completeTutorial'])->name('tutorial.complete');
             Route::get('/leaderboards', [StudentController::class, 'leaderboards'])->name('leaderboards');
             Route::get('/badges', [StudentController::class, 'badges'])->name('badges');
             Route::get('/readModeLevels', [StudentController::class, 'readModeLevels'])->name('readModeLevels');
             Route::get('/speakModeLevels', [StudentController::class, 'speakModeLevels'])->name('speakModeLevels');
             Route::get('/gameplaySpeakMode/{id}', [StudentController::class, 'gameplaySpeakMode'])->name('gameplaySpeakMode');
             Route::get('/gameplayReadMode/{id}', [StudentController::class, 'gameplayReadMode'])->name('gameplayReadMode');
-            Route::get('/practice/{mode}', [StudentController::class, 'practice'])->where('mode', 'read|speak')->name('practice');
             Route::post('/saveParagraphProgress', [StudentController::class, 'saveParagraphProgress'])->name('saveParagraphProgress');
             Route::post('/saveWordProgress', [StudentController::class, 'saveWordProgress'])->name('saveWordProgress');
             Route::post('/updateWordMastery', [StudentController::class, 'updateWordMastery'])->name('updateWordMastery');

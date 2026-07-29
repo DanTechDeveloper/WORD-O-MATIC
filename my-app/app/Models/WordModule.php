@@ -14,6 +14,7 @@ class WordModule extends Model
     protected $fillable = [
         'level',
         'title',
+        'is_tutorial',
     ];
 
     protected $appends = ['total_points'];

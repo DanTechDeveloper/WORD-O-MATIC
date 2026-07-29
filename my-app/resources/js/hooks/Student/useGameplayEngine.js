@@ -33,7 +33,6 @@ export function useGameplayEngine({
     const hasSaved = useRef(false);
     const wordTimeoutRef = useRef(null);
     const feedbackTimerRef = useRef(null);
-    const isMountedRef = useRef(true);
     const currentWordIndexRef = useRef(0);
     const wordEntryTimerRef = useRef(null);
     const streakShakeTimerRef = useRef(null);
@@ -84,7 +83,6 @@ export function useGameplayEngine({
 
     useEffect(() => {
         return () => {
-            isMountedRef.current = false;
             clearTimeout(mispronounceTimerRef.current);
             clearTimeout(wordRecognizedTimerRef.current);
             clearTimeout(feedbackTimerRef.current);

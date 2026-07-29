@@ -6,10 +6,10 @@
 
 | Type | Count | Content |
 |---|---|---|
-| Word modules | 10 | 10 words each, progressive difficulty, randomized per gameplay |
-| Paragraph modules | 10 | Paragraph-based, progressive difficulty, fixed order |
+| Word modules | 11 (10 real + 1 tutorial) | 10 words each (5 for tutorial), progressive difficulty, randomized per gameplay |
+| Paragraph modules | 11 (10 real + 1 tutorial) | Paragraph-based, progressive difficulty, fixed order |
 
-Seeded via `DatabaseSeeder`.
+Tutorial modules (`is_tutorial=true`, `level=0`) seeded via `CurriculumSeeder`. Filtered out by `LevelService` (`->where('is_tutorial', false)`) after student completes tutorial.
 
 ## Teacher
 

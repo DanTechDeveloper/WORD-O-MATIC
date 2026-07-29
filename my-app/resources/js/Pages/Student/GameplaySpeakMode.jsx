@@ -1,16 +1,25 @@
 import SpeakModeMainContent from "@/Components/Student/SpeakModeMainContent";
-import { router } from "@inertiajs/react";
+import { router, usePage } from "@inertiajs/react";
 import GameplayHeader from "@/Components/Student/GameplayHeader";
 import Microphone from "@/Components/Student/Microphone";
+import AvatarSpeechBubble from "@/Components/Student/AvatarSpeechBubble";
 import DeniedModal from "@/Components/Student/DeniedModal";
 import TapToStartOverlay from "@/Components/Student/TapToStartOverlay";
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { useGameplayEngine } from "@/hooks/Student/useGameplayEngine";
 import { useSpeechRecognition } from "@/hooks/Student/useSpeechRecognition";
 import { useMicrophonePermission } from "@/hooks/Student/useMicrophonePermission";
 
-export default function GameplaySpeakMode({ module }) {
+const GUIDE_STEPS = [
+    { title: "READ THE SENTENCE", message: "Say the whole sentence clearly, not just one word!", emoji: "menu_book", color: "quest" },
+    { title: "WATCH IT LIGHT UP", message: "Each word highlights as it's recognized. Follow along!", emoji: "auto_awesome", color: "quest" },
+    { title: "TAP TO PLAY!", message: "Tap the mic below when you're ready. 3-2-1 countdown, then go!", emoji: "mic", color: "quest" },
+];
+
+export default function GameplaySpeakMode({ module, tutorialComplete = true }) {
+    const { auth } = usePage().props;
+    const isTutorial = !!module?.is_tutorial && !tutorialComplete;
     const speechRecognitionWords = useMemo(() => module?.words?.map((w) => w.word) ?? [], [module?.words]);
 
     const {
@@ -41,7 +50,7 @@ export default function GameplaySpeakMode({ module }) {
         saveEndpoint: "/student/saveParagraphProgress",
         getPoints: () => 1,
         onWordRecognized: (wordObj) => {
-            if (wordObj) {
+            if (wordObj && !isTutorial) {
                 router.post(
                     "/student/updateParagraphMastery",
                     { paragraph_word_id: wordObj.id, status: "mastered" },
@@ -50,7 +59,7 @@ export default function GameplaySpeakMode({ module }) {
             }
         },
         onMispronounce: (wordObj) => {
-            if (wordObj) {
+            if (wordObj && !isTutorial) {
                 router.post(
                     "/student/updateParagraphMastery",
                     { paragraph_word_id: wordObj.id, status: "training" },
@@ -91,6 +100,18 @@ export default function GameplaySpeakMode({ module }) {
         onRecognitionError: undefined,
         matchMode: "sentence",
     });
+    const [guideStep, setGuideStep] = useState(0);
+    const [guideDone, setGuideDone] = useState(!isTutorial);
+    const avatarUrl = auth?.user?.student?.avatar;
+    const bodyUrl = avatarUrl?.replace("/head.png", "/body.png");
+
+    const advanceGuide = () => {
+        if (guideStep < GUIDE_STEPS.length - 1) {
+            setGuideStep(guideStep + 1);
+        } else {
+            setGuideDone(true);
+        }
+    };
 
     const headerProps = {
         level: module ? `${module.level} - ${module.title}` : "",
@@ -107,9 +128,28 @@ export default function GameplaySpeakMode({ module }) {
     return (
         <div className="bg-background text-on-background font-body-md h-screen flex flex-col overflow-x-hidden">
             <DeniedModal gameState={gameState} />
+            {isTutorial && !guideDone && bodyUrl && (
+                <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[60] flex gap-3">
+                    {GUIDE_STEPS.map((_, i) => (
+                        <div key={i} className={`w-3 h-3 rounded-full transition-all duration-500 ${i === guideStep ? "bg-quest scale-125" : i < guideStep ? "bg-quest/50" : "bg-on-surface/20"}`} />
+                    ))}
+                </div>
+            )}
             <GameplayHeader {...headerProps} />
-            {gameState === "IDLE" && (
+            {gameState === "IDLE" && guideDone && (
                 <TapToStartOverlay color="quest" permissionState={permissionState} />
+            )}
+            {isTutorial && !guideDone && bodyUrl && (
+                <AvatarSpeechBubble
+                    emoji={GUIDE_STEPS[guideStep].emoji}
+                    title={GUIDE_STEPS[guideStep].title}
+                    message={GUIDE_STEPS[guideStep].message}
+                    bodyUrl={bodyUrl}
+                    color="quest"
+                    onClick={advanceGuide}
+                    position="bottom-right"
+                    footerText={guideStep < GUIDE_STEPS.length - 1 ? "Tap here to continue →" : "Tap to finish!"}
+                />
             )}
             <SpeakModeMainContent
                 words={speechRecognitionWords}

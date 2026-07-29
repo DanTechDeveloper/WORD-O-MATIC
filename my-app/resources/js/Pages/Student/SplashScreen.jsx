@@ -89,11 +89,6 @@ function FallingWordBg() {
 export default function SplashScreen() {
     const [starting, setStarting] = useState(false);
 
-    useEffect(() => {
-        sessionStorage.removeItem("practiceDone");
-        sessionStorage.removeItem("practiceSpeakDone");
-    }, []);
-
     const handleStart = () => {
         if (starting) return;
         setStarting(true);

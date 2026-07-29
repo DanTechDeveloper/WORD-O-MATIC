@@ -49,7 +49,7 @@ export default function AvatarSelection() {
                 show={showBadge}
                 onContinue={() => {
                     setShowBadge(false);
-                    router.visit("/student/tutorial");
+                    router.visit("/student/dashboard");
                 }}
                 buttonText="START ADVENTURE!"
             />
