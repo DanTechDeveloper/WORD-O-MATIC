@@ -35,6 +35,16 @@ Tutorial play (`is_tutorial=true` modules) is isolated from real game tracking:
 
 Badges defined in `badges` table (`operator`, `threshold_score`). Unlock once per student via `student_badges` pivot.
 
+### Teacher Badges Page
+
+The `/teacher/badges` page provides class-wide badge analytics. Props passed from `TeacherController::badges()`: `badges` (catalog with `earned_count`), `topEarners` (students with `badge_count` + `last_earned_at`), `totalStudents`, `totalBadges`, `totalEarned`, `mostEarnedBadge`, `sections`.
+
+`mostEarnedBadge` only returns a badge if `earned_count >= 2`. If no badge reaches the 2-student threshold, it is `null` and the summary card displays `"N/A"`.
+
+- **Summary cards**: total badges defined, total earned, most earned badge, students with zero badges (computed client-side from `topEarners`, not a separate controller query)
+- **Badge catalog**: grid of all 11 badges with earn counts and percentage rates
+- **Top earners table**: students ranked by badge count, with section filter and name search
+
 ### Full Badge Catalog
 
 | Badge | Slug | Category | Metric | Threshold | Requirement |
@@ -71,6 +81,16 @@ mastered**, dynamically:
 ## Leaderboards
 
 Available at `/student/leaderboards` and `/teacher/leaderboards`. **Best-score based** — retries don't overwrite higher existing scores.
+
+### Teacher Leaderboards
+
+The `/teacher/leaderboards` page shows class-wide rankings with three switchable metric tabs:
+
+- **Points** — total accumulated student points (`students.points`)
+- **Word Blast** — average word recognition accuracy (`students.wordBlastAcc`)
+- **Story Quest** — average speaking/story accuracy (`students.storyQuestAcc`)
+
+Each tab displays a full ranked list (all students) with section filter dropdown and name search. Top 3 ranked students receive medal indicators (gold/silver/bronze). Data fetched from `students` table joined with `users`, sorted by the selected metric. Props passed from `TeacherController::leaderboards()`: `leaderboard` (3 sorted arrays keyed by metric), `sections`.
 
 ## Status Categories
 

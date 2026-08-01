@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Mail\StudentReportMail;
+use App\Models\Badges;
 use App\Models\ParagraphModule;
 use App\Models\Setting;
 use App\Models\StudentProfile;
@@ -538,14 +539,63 @@ class TeacherController extends Controller
         ]);
     }
 
-    public function createAssignment()
-    {
-        return Inertia::render('Teacher/Classes');
-    }
-
     public function badges()
     {
-        return Inertia::render('Teacher/Badges');
+        $totalStudents = User::where('role', 'student')->count();
+
+        $badges = Badges::withCount('users')->get()->map(fn ($b) => [
+            'id' => $b->id,
+            'name' => $b->name,
+            'slug' => $b->slug,
+            'icon' => $b->icon,
+            'description' => $b->description,
+            'requirement' => $b->requirement,
+            'earned_count' => $b->users_count,
+        ]);
+
+        $students = User::where('role', 'student')
+            ->with([
+                'student',
+                'badges' => fn ($q) => $q
+                    ->wherePivot('status', 'earned')
+                    ->select('badges.id', 'badges.name', 'badges.icon', 'badges.slug', 'student_badges.earned_at')
+                    ->orderByPivot('earned_at', 'desc'),
+            ])
+            ->orderBy('users.name')
+            ->get()
+            ->map(function ($u) {
+                $earnedBadges = $u->badges;
+
+                return [
+                    'id' => $u->id,
+                    'name' => $u->name,
+                    'avatar' => $u->student?->avatar,
+                    'section' => $u->student?->section ?? '',
+                    'badge_count' => $earnedBadges->count(),
+                    'last_earned_at' => $earnedBadges->first()
+                        ? $earnedBadges->first()->pivot->earned_at
+                        : null,
+                ];
+            })
+            ->sortByDesc('badge_count')
+            ->values();
+
+        $totalBadges = $badges->count();
+        $totalEarned = $badges->sum('earned_count');
+        $mostEarnedBadge = $badges->where('earned_count', '>=', 2)->sortByDesc('earned_count')->first();
+        $sections = StudentProfile::whereHas('user', fn ($q) => $q->where('role', 'student'))
+            ->whereNotNull('section')->where('section', '!=', '')
+            ->distinct()->pluck('section')->sort()->values();
+
+        return Inertia::render('Teacher/Badges', [
+            'badges' => $badges,
+            'topEarners' => $students,
+            'totalStudents' => $totalStudents,
+            'totalBadges' => $totalBadges,
+            'totalEarned' => $totalEarned,
+            'mostEarnedBadge' => $mostEarnedBadge,
+            'sections' => $sections,
+        ]);
     }
 
     public function studentPins()
