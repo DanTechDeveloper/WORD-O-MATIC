@@ -35,3 +35,15 @@ Status mapped by `LevelService`: `locked`, `current`, `in_progress`, `completed`
 - Sequential — no skipping.
 - Deadlines set by teacher in Reports.
 - Completed modules not replayable unless conditions met.
+
+## Completion Badges
+
+Two finisher badges track curriculum-wide completion:
+
+| Badge | Slug | Metric | Requirement |
+|---|---|---|---|
+| Story Quest Finisher | `story-finisher` | `paragraph_completion` | Complete 100% of paragraph module words |
+| Word Blast Finisher | `word-blast-finisher` | `word_completion` | Complete 100% of word module words |
+
+Progress shown as a percentage on the Student badges page and Game Results screen.
+Calculated dynamically from `words_smashed` sums — no fixed thresholds.

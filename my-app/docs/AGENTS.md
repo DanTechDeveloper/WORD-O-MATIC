@@ -63,7 +63,7 @@ Guided by AvatarSpeechBubble on Dashboard + guide overlay on first gameplay. Enf
 | Service | Responsibility |
 |---|---|
 | `ProgressService` | Update word/paragraph progress (best score only), recalculate status |
-| `BadgeService` | Award badges, check thresholds |
+| `BadgeService` | Award badges, check thresholds. `calculateModuleCompletion()` computes paragraph/word completion % from `words_smashed`. |
 | `LevelService` | Module lock/current/completed status per student |
 | `TeacherController::dashboardStats()` | Teacher dashboard stats (private method, no service class) |
 

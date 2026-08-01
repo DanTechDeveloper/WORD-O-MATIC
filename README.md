@@ -173,6 +173,7 @@ The application contains **16 Eloquent models**, including:
 - Badge eligibility
 - Badge assignment
 - Achievement progression
+- Module completion tracking (paragraph & word)
 
 </td>
 <td width="33%" valign="top">
