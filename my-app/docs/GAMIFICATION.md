@@ -35,6 +35,39 @@ Tutorial play (`is_tutorial=true` modules) is isolated from real game tracking:
 
 Badges defined in `badges` table (`operator`, `threshold_score`). Unlock once per student via `student_badges` pivot.
 
+### Full Badge Catalog
+
+| Badge | Slug | Category | Metric | Threshold | Requirement |
+|---|---|---|---|---|---|
+| First Steps | `first-steps` | Points | `total_points` | 5 | Reach 5 accumulated player points |
+| Word Master | `word-master` | Points | `total_points` | 30 | Reach 30 accumulated player points |
+| Story Quest Finisher | `story-finisher` | Completion | `paragraph_completion` | 100 (%) | Complete 100% of paragraph module words |
+| Word Blast Finisher | `word-blast-finisher` | Completion | `word_completion` | 100 (%) | Complete 100% of word module words |
+| On Fire | `on-fire` | Streak | `streak` | 3 | Get 3 correct in a row |
+| Blazing Streak | `blazing-streak` | Streak | `streak` | 5 | Get 5 correct in a row |
+| Unstoppable | `unstoppable` | Streak | `streak` | 10 | Get 10 correct in a row |
+| Clear Speaker | `clear-speaker` | Accuracy | `accuracy` | 80 | Get 80% accuracy in a single game |
+| Perfect Round | `perfect-round` | Accuracy | `accuracy` | 100 | Get 100% accuracy in a single game |
+| Tutorial Complete | `tutorial-complete` | Onboarding | `action` | — | Finish both tutorial modes |
+| Profile Pioneer | `profile-pioneer` | Onboarding | `action` | — | Set your profile avatar |
+
+### Module Completion Metrics
+
+Two metrics replace the old single `total_points` approach for finisher badges. Rather than
+checking a fixed point threshold against accumulated player points (which vary by module word count
+and mix read + speak modes), these compute **what percentage of the curriculum the student has
+mastered**, dynamically:
+
+| Metric | Numerator (earned) | Denominator (total) | Method |
+|---|---|---|---|
+| `paragraph_completion` | `student_paragraph_progress.words_smashed` (all records) | Sum of `words_count` across all non-tutorial `paragraph_modules` (`withCount('words')`) | `BadgeService::calculateModuleCompletion($user, 'paragraph')` |
+| `word_completion` | `student_word_progress.words_smashed` (all records) | Sum of `words_count` across all non-tutorial `word_modules` (`withCount('words')`) | `BadgeService::calculateModuleCompletion($user, 'word')` |
+
+- Returns a **percentage** (0–100.00), rounded to 2 decimal places.
+- Badge awards when value `>= 100` (student has smashed all available words).
+- Tutorial modules (`is_tutorial=true`, `level=0`) are **excluded** from both numerator and denominator.
+- No fixed threshold number — adapts automatically when modules are added/removed/reshuffled.
+
 ## Leaderboards
 
 Available at `/student/leaderboards` and `/teacher/leaderboards`. **Best-score based** — retries don't overwrite higher existing scores.

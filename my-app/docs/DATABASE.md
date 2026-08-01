@@ -43,7 +43,7 @@ All migrations in `database/migrations/`. No raw SQL. All foreign keys on `user_
 
 | Table | Key Fields | Notes |
 |---|---|---|
-| `badges` | `id, name, slug, description, icon, requirement, metric, operator, threshold_score` | Pre-seeded |
+| `badges` | `id, name, slug, description, icon, requirement, metric, operator, threshold_score` | Pre-seeded (11 badges). `metric` ∈ {`total_points`, `paragraph_completion`, `word_completion`, `streak`, `accuracy`, `action`}. `paragraph_completion`/`word_completion` award at `threshold_score=100` = 100% curriculum completion. |
 
 ### Settings
 
