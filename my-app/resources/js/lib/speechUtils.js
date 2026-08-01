@@ -18,11 +18,11 @@ function standardLevenshtein(a, b) {
     return dp[m * w + n];
 }
 
-// Hybrid: strict for short words (don't accept a different short word like
-// hat/hot), forgiving for longer ones (tolerate ASR noise). Symmetric via
-// max length so matching doesn't depend on which side is spoken vs target.
+// Hybrid: strict for short words (1 edit tolerance: hat/hot), forgiving for longer ones
+// (tolerate ASR noise). Symmetric via max length so matching doesn't depend on which side
+// is spoken vs target.
 function maxEdits(wordLength) {
-    if (wordLength <= 5) return 0;
+    if (wordLength <= 5) return 1;
     if (wordLength <= 8) return 2;
     return 3;
 }
