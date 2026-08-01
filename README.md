@@ -197,7 +197,7 @@ The application contains **16 Eloquent models**, including:
 | Role | Prefix | Includes |
 |:-----|:-------|:---------|
 | **Guest** | `/`, `/teacher/login` | Landing, login |
-| **Teacher** | `/teacher/*` | Dashboard · Student Management · Reports · Module Management |
+| **Teacher** | `/teacher/*` | Dashboard · Student Management · Leaderboards · Badges · Reports · Module Management |
 | **Student** | `/student/*` | Onboarding · Dashboard · Gameplay · Leaderboards · Progress Tracking |
 
 </div>
@@ -289,8 +289,9 @@ resources/
 - Performance reports
 - Parent report emails (Gmail SMTP + deadline gating)
 - Dashboard analytics
-- Leaderboards
-- Student detail pages
+  - Leaderboards (Points / Word Blast / Story Quest tabs)
+  - Badge analytics
+  - Student detail pages
 
 </td>
 <td width="50%" valign="top">
