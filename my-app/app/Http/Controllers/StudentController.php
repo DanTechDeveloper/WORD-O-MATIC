@@ -5,13 +5,13 @@ namespace App\Http\Controllers;
 use App\Models\Badges;
 use App\Models\GameSession;
 use App\Models\ParagraphModule;
-use App\Models\StudentParagraphMastery;
-use App\Models\User;
-use App\Models\StudentParagraphProgress;
 use App\Models\ParagraphWord;
+use App\Models\StudentParagraphMastery;
+use App\Models\StudentParagraphProgress;
 use App\Models\StudentProfile;
 use App\Models\StudentWordMastery;
 use App\Models\StudentWordProgress;
+use App\Models\User;
 use App\Models\Word;
 use App\Models\WordModule;
 use App\Services\BadgeService;
@@ -49,10 +49,10 @@ class StudentController extends Controller
         $totalSpeakPoints = (int) ParagraphWord::count();
 
         $earnedReadPoints = StudentWordProgress::where('user_id', $user->id)
-            ->when($tutWord, fn($q) => $q->where('word_module_id', '!=', $tutWord->id))
+            ->when($tutWord, fn ($q) => $q->where('word_module_id', '!=', $tutWord->id))
             ->sum('words_smashed');
         $earnedSpeakPoints = StudentParagraphProgress::where('user_id', $user->id)
-            ->when($tutPara, fn($q) => $q->where('paragraph_module_id', '!=', $tutPara->id))
+            ->when($tutPara, fn ($q) => $q->where('paragraph_module_id', '!=', $tutPara->id))
             ->sum('words_smashed');
 
         $wordDone = $tutWord && StudentWordProgress::where('user_id', $user->id)
@@ -124,6 +124,8 @@ class StudentController extends Controller
                     'total_points' => $student ? $student->points : 0,
                     'streak' => GameSession::where('user_id', $user->id)->max('streak') ?? 0,
                     'accuracy' => GameSession::where('user_id', $user->id)->max('accuracy') ?? 0,
+                    'paragraph_completion' => $this->badgeService->calculateModuleCompletion($user, 'paragraph'),
+                    'word_completion' => $this->badgeService->calculateModuleCompletion($user, 'word'),
                     default => 0,
                 };
             } else {
@@ -206,7 +208,10 @@ class StudentController extends Controller
             $this->progressService->updateWordProgress($user->student, $module, 0, $request->words_processed, 0, isTutorial: true);
             $badgesData = $this->checkTutorialCompletion($user);
             $redirect = redirect()->route('student.dashboard');
-            if ($badgesData) $redirect->with('new_badges', [$badgesData]);
+            if ($badgesData) {
+                $redirect->with('new_badges', [$badgesData]);
+            }
+
             return $redirect;
         }
 
@@ -348,7 +353,10 @@ class StudentController extends Controller
             $this->progressService->updateParagraphProgress($user->student, $module, 0, $request->words_processed, 0, isTutorial: true);
             $badgesData = $this->checkTutorialCompletion($user);
             $redirect = redirect()->route('student.dashboard');
-            if ($badgesData) $redirect->with('new_badges', [$badgesData]);
+            if ($badgesData) {
+                $redirect->with('new_badges', [$badgesData]);
+            }
+
             return $redirect;
         }
 
@@ -425,6 +433,7 @@ class StudentController extends Controller
             if (! $user->student->tutorial_completed_at) {
                 $user->student->update(['tutorial_completed_at' => now()]);
             }
+
             return $this->badgeService->awardOnboardingBadge($user, 'tutorial-complete');
         }
 

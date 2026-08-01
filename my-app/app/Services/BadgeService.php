@@ -4,7 +4,11 @@ namespace App\Services;
 
 use App\Models\Badges;
 use App\Models\GameSession;
+use App\Models\ParagraphModule;
+use App\Models\StudentParagraphProgress;
+use App\Models\StudentWordProgress;
 use App\Models\User;
+use App\Models\WordModule;
 
 class BadgeService
 {
@@ -43,7 +47,7 @@ class BadgeService
         $earnedBadgeIds = $user->badges()->pluck('badges.id')->toArray();
 
         $badgesToCheck = Badges::whereNotIn('id', $earnedBadgeIds)
-            ->whereIn('metric', ['total_points', 'streak', 'accuracy'])
+            ->whereIn('metric', ['total_points', 'streak', 'accuracy', 'paragraph_completion', 'word_completion'])
             ->get();
 
         if ($badgesToCheck->isEmpty()) {
@@ -57,6 +61,8 @@ class BadgeService
                 'total_points' => $student->points,
                 'streak' => (int) GameSession::where('user_id', $user->id)->max('streak') ?? 0,
                 'accuracy' => $accuracy,
+                'paragraph_completion' => $this->calculateModuleCompletion($user, 'paragraph'),
+                'word_completion' => $this->calculateModuleCompletion($user, 'word'),
                 default => 0,
             };
 
@@ -79,7 +85,7 @@ class BadgeService
         $student = $user->student;
         $earnedBadgeIds = $user->badges()->pluck('badges.id')->toArray();
 
-        $badges = Badges::whereIn('metric', ['total_points', 'streak', 'accuracy'])->get();
+        $badges = Badges::whereIn('metric', ['total_points', 'streak', 'accuracy', 'paragraph_completion', 'word_completion'])->get();
 
         $progress = [];
 
@@ -88,6 +94,8 @@ class BadgeService
                 'total_points' => $student ? $student->points : 0,
                 'streak' => (int) GameSession::where('user_id', $user->id)->max('streak') ?? 0,
                 'accuracy' => round((float) $session->accuracy, 2),
+                'paragraph_completion' => $this->calculateModuleCompletion($user, 'paragraph'),
+                'word_completion' => $this->calculateModuleCompletion($user, 'word'),
                 default => 0,
             };
 
@@ -104,6 +112,31 @@ class BadgeService
         }
 
         return $progress;
+    }
+
+    public function calculateModuleCompletion(User $user, string $type): float
+    {
+        $isParagraph = $type === 'paragraph';
+        $moduleClass = $isParagraph ? ParagraphModule::class : WordModule::class;
+        $progressClass = $isParagraph ? StudentParagraphProgress::class : StudentWordProgress::class;
+        $moduleKey = $isParagraph ? 'paragraph_module_id' : 'word_module_id';
+
+        $tutorialModule = $moduleClass::where('is_tutorial', true)->first();
+
+        $total = $moduleClass::where('is_tutorial', false)
+            ->withCount('words')
+            ->get()
+            ->sum('words_count');
+
+        if ($total === 0) {
+            return 100;
+        }
+
+        $earned = $progressClass::where('user_id', $user->id)
+            ->when($tutorialModule, fn ($q) => $q->where($moduleKey, '!=', $tutorialModule->id))
+            ->sum('words_smashed');
+
+        return round(($earned / $total) * 100, 2);
     }
 
     private function meetsThreshold($value, string $operator, $threshold): bool

@@ -24,7 +24,7 @@ class BadgesSeeder extends Seeder
                 'metric' => 'total_points',
                 'operator' => '>=',
                 'threshold_score' => 5,
-                'icon' => 'eco'
+                'icon' => 'eco',
             ],
             [
                 'name' => 'Word Master',
@@ -34,31 +34,45 @@ class BadgesSeeder extends Seeder
                 'metric' => 'total_points',
                 'operator' => '>=',
                 'threshold_score' => 30,
-                'icon' => 'emoji_events'
-            ],
-            [
-                'name' => 'Story Finisher',
-                'slug' => 'story-finisher',
-                'description' => 'Awarded for completing multiple paragraph modules and hitting 100 total points.',
-                'requirement' => 'Reach 100 total points.',
-                'metric' => 'total_points',
-                'operator' => '>=',
-                'threshold_score' => 100,
-                'icon' => 'auto_stories'
+                'icon' => 'emoji_events',
             ],
 
             // =======================================================
-            // 2. STREAK-BASED MILESTONES (metric: streak)
+            // 2. MODULE COMPLETION MILESTONES (metric: paragraph_completion / word_completion)
+            // =======================================================
+            [
+                'name' => 'Story Quest Finisher',
+                'slug' => 'story-finisher',
+                'description' => 'Awarded for completing all paragraph modules.',
+                'requirement' => 'Complete 100% of paragraph modules.',
+                'metric' => 'paragraph_completion',
+                'operator' => '>=',
+                'threshold_score' => 100,
+                'icon' => 'auto_stories',
+            ],
+            [
+                'name' => 'Word Blast Finisher',
+                'slug' => 'word-blast-finisher',
+                'description' => 'Awarded for completing all word modules. Every word smashed!',
+                'requirement' => 'Complete 100% of word modules.',
+                'metric' => 'word_completion',
+                'operator' => '>=',
+                'threshold_score' => 100,
+                'icon' => 'sports_esports',
+            ],
+
+            // =======================================================
+            // 3. STREAK-BASED MILESTONES (metric: streak)
             // =======================================================
             [
                 'name' => 'On Fire',
                 'slug' => 'on-fire',
-                'description' => 'Nice! Got 3 correct in a row.',
+            'description' => 'Nice! Got 3 correct in a row.',
                 'requirement' => 'Get a 3-game streak.',
                 'metric' => 'streak',
                 'operator' => '>=',
                 'threshold_score' => 3,
-                'icon' => 'local_fire_department'
+                'icon' => 'local_fire_department',
             ],
             [
                 'name' => 'Blazing Streak',
@@ -68,7 +82,7 @@ class BadgesSeeder extends Seeder
                 'metric' => 'streak',
                 'operator' => '>=',
                 'threshold_score' => 5,
-                'icon' => 'whatshot'
+                'icon' => 'whatshot',
             ],
             [
                 'name' => 'Unstoppable',
@@ -78,11 +92,11 @@ class BadgesSeeder extends Seeder
                 'metric' => 'streak',
                 'operator' => '>=',
                 'threshold_score' => 10,
-                'icon' => 'bolt'
+                'icon' => 'bolt',
             ],
 
             // =======================================================
-            // 3. ACCURACY-BASED MILESTONES (metric: accuracy)
+            // 4. ACCURACY-BASED MILESTONES (metric: accuracy)
             // =======================================================
             [
                 'name' => 'Clear Speaker',
@@ -92,7 +106,7 @@ class BadgesSeeder extends Seeder
                 'metric' => 'accuracy',
                 'operator' => '>=',
                 'threshold_score' => 80,
-                'icon' => 'mic'
+                'icon' => 'mic',
             ],
             [
                 'name' => 'Perfect Round',
@@ -102,11 +116,11 @@ class BadgesSeeder extends Seeder
                 'metric' => 'accuracy',
                 'operator' => '>=',
                 'threshold_score' => 100,
-                'icon' => 'workspace_premium'
+                'icon' => 'workspace_premium',
             ],
 
             // =======================================================
-            // 4. ACTION-BASED BADGES (metric: action / threshold_score: 0)
+            // 5. ACTION-BASED BADGES (metric: action / threshold_score: 0)
             // =======================================================
             [
                 'name' => 'Tutorial Complete',
@@ -116,7 +130,7 @@ class BadgesSeeder extends Seeder
                 'metric' => 'action',
                 'operator' => '=',
                 'threshold_score' => null,
-                'icon' => 'rocket_launch'
+                'icon' => 'rocket_launch',
             ],
             [
                 'name' => 'Profile Pioneer',
@@ -126,7 +140,7 @@ class BadgesSeeder extends Seeder
                 'metric' => 'action',
                 'operator' => '=',
                 'threshold_score' => null,
-                'icon' => 'person'
+                'icon' => 'person',
             ],
         ];
 
