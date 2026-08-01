@@ -7,6 +7,8 @@ const METRIC_LABELS = {
     streak: "Streak",
     accuracy: "Accuracy",
     action: "Action",
+    paragraph_completion: "Completion",
+    word_completion: "Completion",
 };
 
 const PALETTE = {
