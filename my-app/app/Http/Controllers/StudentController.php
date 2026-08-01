@@ -87,7 +87,7 @@ class StudentController extends Controller
             $badgeData = $this->badgeService->awardOnboardingBadge($user, 'profile-pioneer');
 
             if ($badgeData) {
-                return redirect()->route('student.dashboard')->with('new_badge', $badgeData);
+                return redirect()->route('student.dashboard')->with('new_badges', [$badgeData]);
             }
 
             return redirect()->route('student.dashboard')->with('success', 'Avatar updated successfully!');
