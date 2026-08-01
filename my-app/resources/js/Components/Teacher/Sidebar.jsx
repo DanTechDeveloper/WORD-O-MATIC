@@ -24,6 +24,11 @@ export default function Sidebar({ isOpen, onClose }) {
             href: "/teacher/leaderboards",
             icon: "leaderboard",
         },
+        {
+            label: "Badges",
+            href: "/teacher/badges",
+            icon: "Trophy",
+        },
         { label: "Reports", href: "/teacher/reports", icon: "assessment" },
     ];
 
@@ -33,7 +38,7 @@ export default function Sidebar({ isOpen, onClose }) {
                 className={`fixed left-0 top-0 h-full w-64 flex flex-col p-4 border-r-4 border-outline/30 bg-background z-50 shadow-[4px_0_0_0_#1e1b4b] transition-transform duration-300 ease-in-out md:translate-x-0 ${isOpen ? "translate-x-0" : "-translate-x-full"}`}
             >
                 <div className="mb-8 flex items-center justify-between">
-                        <h1 className="text-2xl font-black text-primary uppercase italic tracking-tighter">
+                    <h1 className="text-2xl font-black text-primary uppercase italic tracking-tighter">
                         WORD-O-MATIC
                     </h1>
                     <button
@@ -70,8 +75,8 @@ export default function Sidebar({ isOpen, onClose }) {
                 </nav>
                 <div className="mt-auto pt-6 border-t border-outline/40 space-y-4">
                     <div className="flex items-center gap-3 p-2 bg-surface-container-low rounded-xl border-2 border-outline/40">
-                            <div className="w-10 h-10 rounded-full bg-primary/20 border-2 border-primary/40 flex items-center justify-center shrink-0">
-                                <span className="material-symbols-outlined text-primary text-xl">
+                        <div className="w-10 h-10 rounded-full bg-primary/20 border-2 border-primary/40 flex items-center justify-center shrink-0">
+                            <span className="material-symbols-outlined text-primary text-xl">
                                 school
                             </span>
                         </div>
@@ -79,7 +84,7 @@ export default function Sidebar({ isOpen, onClose }) {
                             <p className="font-headline-md text-xs text-on-surface truncate">
                                 {teacherName || "Faculty Member"}
                             </p>
-                                <p className="text-[10px] text-outline uppercase font-black">
+                            <p className="text-[10px] text-outline uppercase font-black">
                                 Academic Session
                             </p>
                         </div>
@@ -92,7 +97,9 @@ export default function Sidebar({ isOpen, onClose }) {
                         className="w-full flex items-center justify-center gap-2 bg-surface-container-high text-on-surface px-3 lg:px-4 py-2 rounded-xl border-2 border-outline active:translate-y-0.5 transition-all font-black text-xs uppercase"
                         onClick={() => window.innerWidth < 768 && onClose()}
                     >
-                        <span className="material-symbols-outlined text-lg">logout</span>
+                        <span className="material-symbols-outlined text-lg">
+                            logout
+                        </span>
                         <span>Logout</span>
                     </Link>
                 </div>
