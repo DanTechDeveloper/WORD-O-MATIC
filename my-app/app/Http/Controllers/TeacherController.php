@@ -8,11 +8,11 @@ use App\Models\Setting;
 use App\Models\StudentProfile;
 use App\Models\User;
 use App\Models\WordModule;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
-use Carbon\Carbon;
 
 class TeacherController extends Controller
 {
@@ -165,9 +165,9 @@ class TeacherController extends Controller
             $avgRead = $sectionStudents->avg('wordBlastAcc');
             $avgSpeak = $sectionStudents->avg('storyQuestAcc');
 
-            if (!$avgRead && !$avgSpeak) {
+            if (! $avgRead && ! $avgSpeak) {
                 $status = 'Not Started';
-            } elseif (!$avgRead || !$avgSpeak) {
+            } elseif (! $avgRead || ! $avgSpeak) {
                 $status = 'In Progress';
             } else {
                 $overallAvg = (($avgRead ?? 0) + ($avgSpeak ?? 0)) / 2;
@@ -194,13 +194,13 @@ class TeacherController extends Controller
             $wordBlast = (float) $student->wordBlastAcc;
             $storyQuest = (float) $student->storyQuestAcc;
 
-            if (!$wordBlast && !$storyQuest) {
+            if (! $wordBlast && ! $storyQuest) {
                 $notStarted++;
 
                 continue;
             }
 
-            if (!$wordBlast || !$storyQuest) {
+            if (! $wordBlast || ! $storyQuest) {
                 $inProgress++;
 
                 continue;
@@ -494,7 +494,48 @@ class TeacherController extends Controller
 
     public function leaderboards()
     {
-        return Inertia::render('Teacher/Leaderboards');
+        $students = StudentProfile::join('users', 'users.id', '=', 'students.user_id')
+            ->where('users.role', 'student')
+            ->select(
+                'students.user_id',
+                'users.name',
+                'users.student_id',
+                'students.section',
+                'students.points',
+                'students.wordBlastAcc',
+                'students.storyQuestAcc',
+                'students.avatar',
+                'students.read_level',
+                'students.speak_level',
+                'students.status'
+            )
+            ->get()
+            ->map(function ($s) {
+                return [
+                    'id' => $s->user_id,
+                    'name' => $s->name,
+                    'studentID' => $s->student_id,
+                    'section' => $s->section ?? '',
+                    'points' => $s->points ?? 0,
+                    'wordBlastAcc' => $s->wordBlastAcc ?? 0,
+                    'storyQuestAcc' => $s->storyQuestAcc ?? 0,
+                    'avatar' => $s->avatar,
+                    'readLevel' => $s->read_level ?? 1,
+                    'speakLevel' => $s->speak_level ?? 1,
+                    'status' => $s->status ?? 'notStarted',
+                ];
+            });
+
+        $sections = $students->pluck('section')->unique()->filter()->sort()->values();
+
+        return Inertia::render('Teacher/Leaderboards', [
+            'leaderboard' => [
+                'points' => $students->sortByDesc('points')->values(),
+                'wordBlast' => $students->sortByDesc('wordBlastAcc')->values(),
+                'storyQuest' => $students->sortByDesc('storyQuestAcc')->values(),
+            ],
+            'sections' => $sections,
+        ]);
     }
 
     public function createAssignment()
