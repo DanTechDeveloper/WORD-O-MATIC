@@ -1,6 +1,6 @@
 # Architecture
 
-> Version 1.1
+> Version 1.2
 
 ## Backend
 
@@ -9,7 +9,7 @@
 | Controllers | `UserController`, `StudentController`, `TeacherController` — thin, delegate to services |
 | Services | `ProgressService`, `BadgeService`, `LevelService` |
 | Middleware | `HandleInertiaRequests` (global data), `EnsureUserRole` (role gate), `CheckStudentOnboarding` (avatar) |
-| Models | 16 Eloquent models |
+| Models | 14 Eloquent models |
 | Validation | Inline `$request->validate()` in controllers |
 | Auth | Middleware-based (`role:teacher` / `role:student`), no Policy files |
 | Notifications | Laravel Mail queued (`Mail::to()->queue()`) |
@@ -53,7 +53,9 @@ Global props: `auth.user`, `flash.*`, `teacher` flags. Lazy-loaded closures, no 
 
 ## Auth Flow
 
+> The `CheckStudentOnboarding` middleware gates **only** the avatar step (rejects `/images/boy.svg` and `/images/girl.svg`). Tutorial gating is not enforced by middleware.
+
 ```
-Guest → Login → Student: 5-step onboarding → Dashboard
-               → Teacher: Dashboard (no onboarding)
+Guest → Login → Student: 3-step onboarding (Splash → Avatar Selection → Tutorial) → Dashboard
+                → Teacher: Dashboard (no onboarding)
 ```

@@ -41,7 +41,7 @@ Speaking-focused storytelling activity<br>
 
 | Layer | Technology |
 |:------|:-----------|
-| **Backend** | PHP 8.3, Laravel 13, Laravel Sanctum |
+| **Backend** | PHP 8.3, Laravel 13 (session-based auth via `UserController`) |
 | **Frontend** | React 18, Inertia.js v2, Tailwind CSS v3 |
 | **Database** | MySQL (Production), SQLite `:memory:` (Testing) |
 | **Charts** | Recharts (PieChart, BarChart) |
@@ -147,7 +147,7 @@ php artisan migrate:fresh --seed
 
 ### Models
 
-The application contains **16 Eloquent models**, including:
+The application contains **14 Eloquent models**, including:
 
 `User` · `StudentProfile` · `WordModule` · `ParagraphModule` · `Word` · `ParagraphWord` · Progress models · Mastery models · `Badges` · `GameSession` · `Setting`
 
@@ -258,7 +258,7 @@ app/
 │   ├── BadgeService.php
 │   └── LevelService.php
 │
-└── Models/            # 16 Eloquent models
+└── Models/            # 14 Eloquent models
 
 database/
 ├── migrations/

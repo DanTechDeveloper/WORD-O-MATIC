@@ -1,6 +1,6 @@
 # Reports
 
-> Version 1.2
+> Version 1.3
 
 ## Dashboard
 
@@ -33,7 +33,7 @@ Training words filtered by `created_at <= deadline`.
 
 ## Sent Tracking
 
-- `students.report_sent_at` timestamp set after each successful email queue (line 379 of `TeacherController`).
+- `students.report_sent_at` timestamp set after each successful email queue (`TeacherController.php:475`, inside `sendReportEmails()`; the method itself starts at line 424).
 - Students with a non-null `report_sent_at` are hidden from the selection list and moved to a collapsible "Already Sent" section above the student list.
 - Field must be added to `$fillable` in `StudentProfile` model (silent drop otherwise).
 
