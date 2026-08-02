@@ -58,6 +58,11 @@ middleware aliases are registered in `bootstrap/app.php`.
 - **`php artisan migrate` and DB writes require explicit approval** (see
   `opencode.json` permission rules: `php artisan migrate*` and `php artisan db:*`
   are `ask`).
+- **Every file `edit` is `ask`**, not just migrations — `opencode.json` sets
+  `"edit": "ask"`, so any edit prompts for approval. The allow-listed bash
+  commands are `composer *`, `npm *`, `bun *`, `php artisan route:list`,
+  `php artisan test`, and `git status|diff|log`; every other bash command and all
+  `git commit *`, `git push *` are `ask`.
 
 ## Auth & middleware
 
