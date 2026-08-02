@@ -39,6 +39,8 @@ export default function GameplayReadMode({ module, tutorialComplete = true }) {
         streakShake,
         countdownValue,
         targetWord,
+        timeLeft,
+        isResume,
         handleTimeUp,
         startGame,
         handleWordRecognized,
@@ -114,6 +116,7 @@ export default function GameplayReadMode({ module, tutorialComplete = true }) {
         showPointsFeedback,
         pointsFeedbackValue,
         streakShake,
+        timeLeft,
         mode: "read",
     };
 
@@ -158,7 +161,7 @@ export default function GameplayReadMode({ module, tutorialComplete = true }) {
                     footerText={guideStep < GUIDE_STEPS.length - 1 ? "Tap here to continue →" : "Tap to finish!"}
                 />
             )}
-            {gameState === "IDLE" && guideDone && (
+            {gameState === "IDLE" && guideDone && !isResume && (
                 <TapToStartOverlay
                     color="accent"
                     permissionState={permissionState}

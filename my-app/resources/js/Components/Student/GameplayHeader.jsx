@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, memo } from "react";
+import { useRef, memo } from "react";
 
 const GameplayHeader = memo(function GameplayHeader({
     level,
@@ -9,38 +9,14 @@ const GameplayHeader = memo(function GameplayHeader({
     showPointsFeedback,
     pointsFeedbackValue,
     streakShake,
+    timeLeft = 60,
     mode = "read",
 }) {
-    const [timeLeft, setTimeLeft] = useState(60);
-
-    useEffect(() => {
-        if (!isActive) return;
-
-        const timer = setInterval(() => {
-            setTimeLeft((prev) => {
-                if (prev <= 1) {
-                    clearInterval(timer);
-                    if (onTimeUpRef.current) onTimeUpRef.current();
-                    return 0;
-                }
-                return prev - 1;
-            });
-        }, 1000);
-
-        return () => clearInterval(timer);
-    }, [isActive]);
-
-    useEffect(() => {
-        if (!isActive) {
-            setTimeLeft(60);
-        }
-    }, [isActive]);
-
-    const isLowTime = timeLeft <= 10;
     const onTimeUpRef = useRef(onTimeUp);
     onTimeUpRef.current = onTimeUp;
     const totalTime = 60;
     const percentage = (timeLeft / totalTime) * 100;
+    const isLowTime = timeLeft <= 10;
 
     return (
         <>

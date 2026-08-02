@@ -40,6 +40,8 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true }) {
         streakShake,
         countdownValue,
         targetWord,
+        timeLeft,
+        isResume,
         handleTimeUp,
         startGame,
         handleWordRecognized,
@@ -121,6 +123,7 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true }) {
         showPointsFeedback,
         pointsFeedbackValue,
         streakShake,
+        timeLeft,
         mode: "speak",
     };
 
@@ -135,7 +138,7 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true }) {
                 </div>
             )}
             <GameplayHeader {...headerProps} />
-            {gameState === "IDLE" && guideDone && (
+            {gameState === "IDLE" && guideDone && !isResume && (
                 <TapToStartOverlay color="quest" permissionState={permissionState} />
             )}
             {isTutorial && !guideDone && bodyUrl && (
