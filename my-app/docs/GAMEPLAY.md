@@ -1,6 +1,6 @@
 # Gameplay
 
-> Version 1.1
+> Version 1.2
 
 ## Word Blast (Read Mode)
 
@@ -9,7 +9,7 @@
 | Type | Reading with speech recognition |
 | Timer | 60 seconds per session |
 | Presentation | Words randomized per session (`inRandomOrder()`) |
-| Scoring | Levenshtein distance on speech |
+| Scoring | Tolerance-bucketed Levenshtein fuzzy match (`speechUtils.js` `isFuzzyMatch`, wraps `standardLevenshtein`) |
 | Accuracy | `words_smashed / total_words * 100` |
 | Update rule | Only on new best score (retries don't lower existing score) |
 | Mastery | Per-word: `mastered` or `training`, stored in `student_word_mastery` |

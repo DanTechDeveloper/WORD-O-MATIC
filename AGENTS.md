@@ -1,6 +1,12 @@
 # Word-O-Matic — Agent Guide
 
-All source code lives under `my-app/`. Set that as working directory before running any command.
+The runnable app lives in `my-app/`. Set your working directory there before
+every command (`cd my-app`). The repo root holds only `opencode.json` and docs.
+CI, scripts, and the autoload paths all assume `my-app/` is the app root.
+
+For deeper detail (design tokens, data flow, service contracts) see
+`my-app/docs/AGENTS.md` and `my-app/docs/CONVENTIONS.md`; for the visual spec
+see `my-app/DESIGN.md` and `my-app/PRODUCT.md`.
 
 ## RULES
 1. Ask, don't assume. If something is unclear, ask before writing a single line. Never make silent assumptions about intent, architecture, or requirements.
@@ -16,68 +22,92 @@ All source code lives under `my-app/`. Set that as working directory before runn
 11. The following require explicit in-session confirmation, no exceptions: deploying or pushing to any environment, running migrations or schema changes, sending any external API call, executing any command with irreversible side effects. I must say yes in the current message.
 12. After any coding task, end with: Files changed (list every file touched) / What was modified (one line per file) / Files intentionally not touched / Follow-up needed.
 13. Never send, post, publish, share, or schedule anything on my behalf without my explicit confirmation in the current message. This includes emails, calendar invites, document shares, or any action outside this conversation. I must say yes in the current message.
-14. For any task involving architecture decisions, debugging complex issues, or non-trivial features: work through the problem step by step before writing any code. Show your reasoning. Identify where you're uncertain. Then implement.
+14. For any task involving architecture decisions, debugging complex issues, or non-trivial features: work through the problem step by step before writing any code. Show your reasoning. Identify where you're uncertain. Then implement. 
 
 ## Stack
-- **Backend:** PHP 8.3, Laravel 13 (Breeze scaffold), Sanctum auth
-- **Frontend:** React 18 + Inertia.js v2, Tailwind CSS v3 (custom dark theme), Vite 8
-- **Database:** MySQL (local), SQLite `:memory:` (tests)
-- **Session/Cache/Queue:** all use `database` driver
-- **Charts:** recharts (PieChart, BarChart)
-- **Icons:** Material Symbols (`material-symbols-outlined`)
 
-## Key Commands
+Laravel 13 (PHP 8.3) + React 18 + Inertia.js v2 + Vite 8 + Tailwind v3.
+MySQL locally, SQLite `:memory:` for tests. Auth is **session-based** via
+`UserController` (not Sanctum tokens). `role:teacher`/`role:student`
+middleware aliases are registered in `bootstrap/app.php`.
 
-Run from `my-app/`:
+## Commands (run from `my-app/`)
 
 | Command | What it does |
 |---|---|
-| `composer run setup` | Full project setup (composer install, .env, key gen, migrate, npm install, npm build) |
-| `composer run dev` | Starts all dev servers: artisan serve, queue:listen, pail logs, Vite dev |
-| `composer run test` | `config:clear` then `php artisan test` |
-| `php artisan test` | PHPUnit (Unit + Feature) with SQLite `:memory:` |
-| `php artisan migrate:fresh --seed` | Reset DB with all seeders (24 students + badges) |
+| `composer run setup` | composer install → `.env` → key gen → migrate → `npm install` → `npm run build` |
+| `composer run dev` | 4 concurrent procs: `php artisan serve`, `queue:listen --tries=1 --timeout=0`, `pail` (logs), `npm run dev` (Vite) |
+| `composer run test` | `config:clear` then `php artisan test` (PHPUnit Unit + Feature) |
+| `php artisan test --filter=TestName` | Single test class/method |
+| `php artisan migrate:fresh --seed` | Reset DB + seed: 1 teacher (`admin`/`password`) + 100 students across 3 sectors (Sector 7-G, Sector Alpha, Sector Bravo) |
+| `npm run dev` | Vite only |
 | `npm run build` | Vite production build |
-| `npm run dev` | Vite dev server only |
+| `npx vitest run` | JS unit tests (`tests/Unit/speechUtils.test.js`) — **not** run by CI or `composer run test` |
+| `vendor/bin/pint` | PSR-12 format/fix (not wired into a script or CI) |
 
-CI: `migrate --force` → `npm install && npm run build` → `php artisan test` → `migrate --force` against Railway MySQL production.
+## What not to assume
 
-Seeder creates: 1 teacher (`admin`/`password`), 24 students with `wordBlastAcc`/`storyQuestAcc`/`status`/`section` across 3 sectors.
+- **Tests never touch MySQL.** `phpunit.xml` sets `DB_CONNECTION=sqlite`,
+  `DB_DATABASE=:memory:`, `MAIL_MAILER=array`, `QUEUE_CONNECTION=sync`,
+  `CACHE_STORE=array`, `SESSION_DRIVER=array`.
+- **CI only runs PHP tests.** `.github/workflows/ci.yml` runs from `my-app/`,
+  PHP 8.3, SQLite `:memory:`, then `php artisan test`. No JS/vitest, no Pint,
+  no typecheck. On pass it runs `php artisan migrate --force` against Railway
+  MySQL using GitHub secrets. No `setup` step in CI (deps cached/installed directly).
+- **No global lint/typecheck script exists.** `composer.json` has only setup/dev/test.
+- **`php artisan migrate` and DB writes require explicit approval** (see
+  `opencode.json` permission rules: `php artisan migrate*` and `php artisan db:*`
+  are `ask`).
 
-## Architecture
+## Auth & middleware
 
-### Routes (`routes/web.php`)
-- **Guest:** `GET /` (student login), `GET /teacher/login` (teacher login)
-- **Teacher** (`/teacher/*`, middleware `role:teacher`): dashboard, students, word/paragraph modules, reports, leaderboards, assignments, badges
-- **Student** (`/student/*`, middleware `role:student` + `CheckStudentOnboarding`): onboarding (splash → avatar → greetings), gameplay (read/speak modes), leaderboards, badges, results
-- Auth: session-based via `UserController`
+- Teacher login: `GET/POST /teacher/login` → `UserController@teacherLoginPost`
+  validates `username` + `password` (no email).
+- Student login: `GET /` (root) shows the student login form; login uses
+  `name` + 4-digit PIN. PIN is stored as bcrypt (`pin`) **and** plain text
+  (`pin_plain`) — both are in `$fillable`; `pin` is in `$hidden`, `pin_plain` is
+  not.
+- Role guard: `EnsureUserRole` (alias `role`). `CheckStudentOnboarding` gates
+  `/student/*` — a student is blocked until they pick a non-default avatar
+  (not `/images/boy.svg` or `/images/girl.svg`); the middleware redirects to
+  `student.splashScreen`. It does **not** gate the tutorial flow; onboarding
+  past the avatar step is unguarded by middleware.
+- Teacher routes live under `/teacher/*`; student routes under `/student/*`.
+  Teacher pages are wrapped by `resources/js/Layouts/Teacher/DashboardLayout`;
+  the sidebar is `Components/Teacher/Sidebar.jsx`.
 
-### Controllers
-- `TeacherController` — dashboard, student listing, module CRUD, reports
-- `StudentController` — onboarding, gameplay, progress saving, leaderboards, badges
-- `UserController` — login/logout
+## Gotchas
 
-### Data Flow
-- `TeacherController@students()` returns data for `Students.jsx`: reads `user.name`, `user.student_id`, and `student.*` (avatar, section, status, wordBlastAcc, storyQuestAcc) — all denormalized on the `students` table
-- `TeacherController@dashboard()` reads directly from `students` table (not progress tables) for consistency
-- Chart counts classification: both accuracy `null`/`0` → `notStarted`; avg < 60 → `atRisk`; 60-80 → `needsSupport`; ≥ 80 → `onTrack`
-- Student `status` ENUM: `atRisk`, `support`, `onTrack`, `notStarted` (defined in migration)
+- **Mass-assignment silently drops fields.** A new column needs migration →
+  `$fillable` on the model → inclusion in the controller's response array.
+  Missing any step means the value is never set (the `report_sent_at` bug).
+- **No Form Request classes.** Validation is inline `$request->validate()` in
+  controllers. No Policies; authorization is middleware only.
+- **Denormalized student stats live on the `students` table** (`points`,
+  `wordBlastAcc`, `storyQuestAcc`, `status`, `read_level`, `speak_level`).
+  `TeacherController::dashboard()` and `students()` read directly from
+  `students`, not from the progress/mastery tables.
+- **Progress is best-score-only.** `ProgressService` does not overwrite on a
+  worse play.
+- **Frontend pages resolve as `./Pages/{name}.jsx`** under `resources/js/`.
+  `@` alias (`jsconfig.json`) = `resources/js`; `@/` alias (vitest) too.
+- **UI must follow design tokens.** `resources/js/**/*.jsx` classes should come
+  from `tailwind.config.js` tokens (Tactile Arcade: Arcade Lime `#a3e635` action,
+  indigo-void canvas, hard offset shadows). Avoid raw `zinc-*`/`slate-*`/`purple-*`
+  defaults — see `DESIGN.md` §6.
 
-### Key Models
-- `StudentProfile` (table: `students`) — denormalized snapshot: `points`, `wordBlastAcc`, `storyQuestAcc`, `status`, `section`, `read_level`, `speak_level`, `avatar`
-- `GameSession` — logs every play (`logSession()` static method, polymorphic to `WordModule`/`ParagraphModule`)
-- `StudentWordProgress` / `StudentParagraphProgress` — per-module progress (separate from denormalized accuracy on `students`)
+## Workflow conventions
 
-### Student Onboarding
-Enforced by `CheckStudentOnboarding` middleware: `avatar` column on `students` must be non-empty. Flow: splashScreen → avatarSelection (POST `/avatar`) → greetings → dashboard.
+- Reusable logic goes in `app/Services/` (`ProgressService`, `BadgeService`,
+  `LevelService`); controllers stay thin. `GameSession::logSession()` is a
+  static model method, not a service.
+- 3-step "task" convention: list changed files + what changed + untouched +
+  follow-up. Don't touch unrelated code.
+- Comments explain _why_, rarely _what_. 4-space indent (`.editorconfig`),
+  `.md` files keep trailing whitespace.
 
-## Conventions
+## Test layout
 
-- PHP: Laravel Pint (PSR-12)
-- No TypeScript, plain JSX with `jsconfig.json`
-- Spaces, 4-space indent (`.editorconfig`)
-- No code comments unless the original code already has them
-- Inertia pages resolve as `./Pages/{name}.jsx` under `resources/js/`
-- Blade: only `resources/views/app.blade.php` (Inertia root)
-- `DashboardLayout` in `resources/js/Layouts/Teacher/` wraps all teacher pages
-- Teacher sidebar: `resources/js/Components/Teacher/Sidebar.jsx`
+- `tests/Feature/*` – Laravel feature tests, `RefreshDatabase`, DB-less.
+- `tests/Unit/*` (PHP) – model/service unit tests.
+- `tests/Unit/speechUtils.test.js` + `tests/setup.js` – vitest JS unit tests.

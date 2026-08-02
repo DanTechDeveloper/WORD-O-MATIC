@@ -1,6 +1,6 @@
 # Database
 
-> Version 1.2
+> Version 1.3
 
 All migrations in `database/migrations/`. No raw SQL. All foreign keys on `user_id` use `cascadeOnDelete`.
 
@@ -19,7 +19,7 @@ All migrations in `database/migrations/`. No raw SQL. All foreign keys on `user_
 |---|---|---|
 | `students` | `user_id, points, avatar, status, wordBlastAcc, storyQuestAcc, read_level, speak_level, section, gender, parent_email, tutorial_completed_at, report_sent_at` | Denormalized stats, best-score-only updates. `report_sent_at` set when parent report email is queued. Cascade on `user_id`. |
 | `student_word_progress` | `user_id, word_module_id, status, words_smashed, accuracy` | Overwritten on best score. Cascade. |
-| `student_paragraph_progress` | `user_id, paragraph_module_id, status, words_smashed` | Overwritten on best score. Cascade. |
+| `student_paragraph_progress` | `user_id, paragraph_module_id, status, words_smashed, accuracy` | Overwritten on best score. Cascade. |
 | `student_word_mastery` | `user_id, word_id, status` | Per-word mastery toggle. Cascade. |
 | `student_paragraph_mastery` | `user_id, paragraph_word_id, status` | Per-word mastery toggle. Cascade. |
 | `student_badges` | `user_id, badge_id, earned_at, progress, status, unlocked_session_id` | Pivot with progress. Cascade. |
@@ -28,8 +28,8 @@ All migrations in `database/migrations/`. No raw SQL. All foreign keys on `user_
 
 | Table | Key Fields | Notes |
 |---|---|---|
-| `word_modules` | `id, level, title, is_tutorial, total_points` | 11 modules (10 real + 1 tutorial), sequential |
-| `words` | `id, word_module_id, word, position, points` | 10 words per module (5 for tutorial). `position` for teacher ordering, gameplay uses `inRandomOrder()`. |
+| `word_modules` | `id, level, title, is_tutorial` | 11 modules (10 real + 1 tutorial), sequential. (`total_points`/`paragraph_modules.total_score` dropped 2026-06-28) |
+| `words` | `id, word_module_id, word, position` | 10 words per module (5 for tutorial). `position` for teacher ordering, gameplay uses `inRandomOrder()`. (`points` dropped 2026-07-09) |
 | `paragraph_modules` | `id, level, title, content, is_tutorial` | 11 modules (10 real + 1 tutorial), sequential |
 | `paragraph_words` | `id, paragraph_module_id, word, position` | Words extracted from paragraphs |
 
