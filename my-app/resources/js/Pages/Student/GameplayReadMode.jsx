@@ -5,7 +5,8 @@ import AvatarSpeechBubble from "@/Components/Student/AvatarSpeechBubble";
 import DeniedModal from "@/Components/Student/DeniedModal";
 import TapToStartOverlay from "@/Components/Student/TapToStartOverlay";
 import { useEffect, useCallback, useState } from "react";
-import { router, usePage } from "@inertiajs/react";
+import { usePage } from "@inertiajs/react";
+import axios from "axios";
 import { useGameplayEngine } from "@/hooks/Student/useGameplayEngine";
 import { useSpeechRecognition } from "@/hooks/Student/useSpeechRecognition";
 import { useMicrophonePermission } from "@/hooks/Student/useMicrophonePermission";
@@ -49,20 +50,18 @@ export default function GameplayReadMode({ module, tutorialComplete = true }) {
         saveEndpoint: "/student/saveWordProgress",
         onWordRecognized: (wordObj) => {
             if (wordObj && !isTutorial) {
-                router.post(
-                    "/student/updateWordMastery",
-                    { word_id: wordObj.id, status: "mastered" },
-                    { preserveScroll: true, preserveState: true },
-                );
+                axios.post("/student/updateWordMastery", {
+                    word_id: wordObj.id,
+                    status: "mastered",
+                });
             }
         },
         onMispronounce: (wordObj) => {
             if (wordObj && !isTutorial) {
-                router.post(
-                    "/student/updateWordMastery",
-                    { word_id: wordObj.id, status: "training" },
-                    { preserveScroll: true, preserveState: true },
-                );
+                axios.post("/student/updateWordMastery", {
+                    word_id: wordObj.id,
+                    status: "training",
+                });
             }
         },
     });
