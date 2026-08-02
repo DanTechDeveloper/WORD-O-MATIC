@@ -1,5 +1,6 @@
 import SpeakModeMainContent from "@/Components/Student/SpeakModeMainContent";
-import { router, usePage } from "@inertiajs/react";
+import { usePage } from "@inertiajs/react";
+import axios from "axios";
 import GameplayHeader from "@/Components/Student/GameplayHeader";
 import Microphone from "@/Components/Student/Microphone";
 import AvatarSpeechBubble from "@/Components/Student/AvatarSpeechBubble";
@@ -51,20 +52,18 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true }) {
         getPoints: () => 1,
         onWordRecognized: (wordObj) => {
             if (wordObj && !isTutorial) {
-                router.post(
-                    "/student/updateParagraphMastery",
-                    { paragraph_word_id: wordObj.id, status: "mastered" },
-                    { preserveScroll: true, preserveState: true },
-                );
+                axios.post("/student/updateParagraphMastery", {
+                    paragraph_word_id: wordObj.id,
+                    status: "mastered",
+                });
             }
         },
         onMispronounce: (wordObj) => {
             if (wordObj && !isTutorial) {
-                router.post(
-                    "/student/updateParagraphMastery",
-                    { paragraph_word_id: wordObj.id, status: "training" },
-                    { preserveScroll: true, preserveState: true },
-                );
+                axios.post("/student/updateParagraphMastery", {
+                    paragraph_word_id: wordObj.id,
+                    status: "training",
+                });
             }
         },
     });

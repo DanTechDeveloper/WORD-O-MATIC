@@ -263,7 +263,7 @@ class StudentController extends Controller
             ['status' => $request->status]
         );
 
-        return back();
+        return response()->noContent();
     }
 
     public function updateParagraphMastery(Request $request)
@@ -278,7 +278,7 @@ class StudentController extends Controller
             ['status' => $request->status]
         );
 
-        return back();
+        return response()->noContent();
     }
 
     public function speakModeLevels()
