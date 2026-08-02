@@ -304,6 +304,7 @@ resources/
 - Progress tracking
 - Leaderboards
 - Achievement badges
+- Word Blast / Story Quest session persistence (tab-scoped `sessionStorage`, `wordomaticResume:<moduleId>`) — a page-refresh or back-navigation resumes the same word, streak, and continuous timer, and skips the "Tap to Start" overlay on resume. (See `docs/resume-and-timer.md`.)
 
 </td>
 </tr>
