@@ -1,8 +1,9 @@
 import { Link, usePage } from "@inertiajs/react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import DashboardLayout from "../../Layouts/Student/DashboardLayout"
 import LevelCard from "../../Components/Student/LevelCard"
 import AvatarSpeechBubble from "@/Components/Student/AvatarSpeechBubble"
+import { readResumeSession } from "@/utils/resumeStorage"
 
 const LEVEL_ICONS = [
     "menu_book", "palette", "rocket_launch", "waves", "local_fire_department", "star",
@@ -30,6 +31,16 @@ export default function LevelsPage({ modules, mode, tutorialComplete = true, wor
 
     const isRead = mode === "read"
     const [guideDone, setGuideDone] = useState(false)
+    // Detect modules with an in-progress (F5/interrupted) round so the card
+    // can show a CONTINUE affordance instead of PLAY.
+    const [resumeModules, setResumeModules] = useState([]);
+    useEffect(() => {
+        const out = [];
+        modules?.forEach((m) => {
+            if (readResumeSession(m.id)) out.push(m.id);
+        });
+        setResumeModules(out);
+    }, [modules]);
 
     return (
         <DashboardLayout disableNav={isTutorial}>
@@ -74,6 +85,7 @@ export default function LevelsPage({ modules, mode, tutorialComplete = true, wor
                             index={index}
                             highlightTutorial={isTutorial}
                             tutorialColor={isRead ? "accent" : "quest"}
+                            hasResume={resumeModules.includes(module.id)}
                         />
                     ))}
                 </div>

@@ -15,7 +15,7 @@ const LEVEL_ICONS = [
     "local_pizza", "music_note", "sports_soccer", "pets", "auto_awesome", "eco",
 ]
 
-export default function LevelCard({ module, emoji, gameUrl, index, highlightTutorial, tutorialColor }) {
+export default function LevelCard({ module, emoji, gameUrl, index, highlightTutorial, tutorialColor, hasResume }) {
     const totalPoints = module.total_points || 0
     const wordsSmashed = module.words_smashed || 0
     const progress =
@@ -102,9 +102,9 @@ export default function LevelCard({ module, emoji, gameUrl, index, highlightTuto
                         DONE
                     </div>
                 ) : (
-                    <span className="inline-flex items-center gap-1.5 bg-accent text-surface-container-lowest font-black px-4 py-2 rounded-lg text-sm border-b-[6px] border-accent-deep group-active:border-b-[2px] group-active:translate-y-1 transition-all">
+                    <span className={`inline-flex items-center gap-1.5 bg-accent text-surface-container-lowest font-black px-4 py-2 rounded-lg text-sm border-b-[6px] border-accent-deep group-active:border-b-[2px] group-active:translate-y-1 transition-all ${hasResume ? "animate-pulse motion-reduce:animate-none" : ""}`}>
                         <span className="material-symbols-outlined text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>play_arrow</span>
-                        PLAY
+                        {hasResume ? "CONTINUE" : "PLAY"}
                     </span>
                 )}
             </div>
