@@ -37,7 +37,9 @@ Badges defined in `badges` table (`operator`, `threshold_score`). Unlock once pe
 
 ### Teacher Badges Page
 
-The `/teacher/badges` page provides class-wide badge analytics. Props passed from `TeacherController::badges()`: `badges` (catalog with `earned_count`), `topEarners` (students with `badge_count` + `last_earned_at`), `totalStudents`, `totalBadges`, `totalEarned`, `mostEarnedBadge`, `sections`.
+The `/teacher/badges` page provides class-wide badge analytics. It first runs
+`BadgeService::checkAllEligibleBadges()` for every student (idempotent catch-up), so
+badges earned while a student was logged out still count. Props passed from `TeacherController::badges()`: `badges` (catalog with `earned_count`), `topEarners` (students with `badge_count` + `last_earned_at`), `totalStudents`, `totalBadges`, `totalEarned`, `mostEarnedBadge`, `sections`.
 
 `mostEarnedBadge` only returns a badge if `earned_count >= 2`. If no badge reaches the 2-student threshold, it is `null` and the summary card displays `"N/A"`.
 
