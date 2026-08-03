@@ -1,6 +1,6 @@
 # Conventions
 
-> Version 1.1
+> Version 1.2
 
 ## PHP / Laravel
 
@@ -18,7 +18,8 @@
 - Reuse from `resources/js/Components/`.
 - Pages: `resources/js/Pages/{Student,Teacher,Auth}/`.
 - Hooks: `resources/js/hooks/`.
-- Forms: `router.post` / `router.put`.
+- Forms: `router.post` / `router.put` (Inertia), `useForm` for modals.
+- JSON endpoints (`/student/updateWordMastery`, `/student/updateParagraphMastery`): axios + `response()->noContent()`.
 
 ## Files
 
