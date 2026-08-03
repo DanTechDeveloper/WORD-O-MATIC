@@ -45,8 +45,12 @@ class StudentController extends Controller
         $tutWord = WordModule::where('is_tutorial', true)->first();
         $tutPara = ParagraphModule::where('is_tutorial', true)->first();
 
-        $totalReadPoints = (int) Word::count();
-        $totalSpeakPoints = (int) ParagraphWord::count();
+        $totalReadPoints = (int) Word::query()
+            ->when($tutWord, fn ($q) => $q->where('word_module_id', '!=', $tutWord->id))
+            ->count();
+        $totalSpeakPoints = (int) ParagraphWord::query()
+            ->when($tutPara, fn ($q) => $q->where('paragraph_module_id', '!=', $tutPara->id))
+            ->count();
 
         $earnedReadPoints = StudentWordProgress::where('user_id', $user->id)
             ->when($tutWord, fn ($q) => $q->where('word_module_id', '!=', $tutWord->id))
