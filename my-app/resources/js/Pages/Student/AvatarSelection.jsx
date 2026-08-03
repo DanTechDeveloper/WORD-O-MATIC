@@ -1,6 +1,5 @@
-import { router, usePage } from "@inertiajs/react";
-import { useEffect, useState } from "react";
-import BadgeUnlockModal from "@/Components/Student/BadgeUnlockModal";
+import { router } from "@inertiajs/react";
+import { useState } from "react";
 
 const AVATARS = [
     { id: "juan", name: "Juan", url: "/images/avatars/juan/head.png", alt: "Champion Juan robot avatar" },
@@ -12,16 +11,9 @@ const AVATARS = [
 ];
 
 export default function AvatarSelection() {
-    const { flash } = usePage().props;
     const [isUpdating, setIsUpdating] = useState(false);
     const [selected, setSelected] = useState(null);
     const [error, setError] = useState(null);
-    const [showBadge, setShowBadge] = useState(!!flash?.new_badge);
-    const badgeData = flash?.new_badge;
-
-    useEffect(() => {
-        if (badgeData) setShowBadge(true);
-    }, [badgeData]);
 
     const handleConfirm = () => {
         if (!selected || isUpdating) return;
@@ -43,17 +35,7 @@ export default function AvatarSelection() {
     };
 
     return (
-        <>
-            <BadgeUnlockModal
-                badge={badgeData}
-                show={showBadge}
-                onContinue={() => {
-                    setShowBadge(false);
-                    router.visit("/student/dashboard");
-                }}
-                buttonText="START ADVENTURE!"
-            />
-            <div className="fixed inset-0 z-40 bg-background flex flex-col items-center justify-center p-6">
+        <div className="fixed inset-0 z-40 bg-background flex flex-col items-center justify-center p-6">
                 {isUpdating && (
                     <div className="absolute inset-0 z-50 bg-background/90 flex items-center justify-center">
                         <div className="flex flex-col items-center gap-4">
@@ -130,6 +112,5 @@ export default function AvatarSelection() {
                     )}
                 </div>
             </div>
-        </>
     );
 }

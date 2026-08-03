@@ -24,7 +24,6 @@ Route::middleware(['auth'])->group(function () {
         ->middleware('role:teacher')
         ->group(function () {
             Route::post('/addStudent', [TeacherController::class, 'store'])->name('addStudent.store');
-            Route::get('/addStudent', [TeacherController::class, 'addStudent'])->name('addStudent');
 
             Route::get('/wordModules', [TeacherController::class, 'wordModules'])->name('wordModules');
             Route::put('/wordModules', [TeacherController::class, 'updateWordModule'])->name('wordModules.update');
@@ -46,7 +45,6 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/studentPins', [TeacherController::class, 'studentPins'])->name('studentPins');
             Route::put('/students/{student}', [TeacherController::class, 'updateStudent'])->name('students.update');
             Route::delete('/students/{student}', [TeacherController::class, 'destroy'])->name('students.destroy');
-            Route::get("/teacher/badges", [TeacherController::class, 'badges'])->name("badges");
         });
 
     Route::prefix('student')
