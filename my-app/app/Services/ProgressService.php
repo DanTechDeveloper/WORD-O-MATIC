@@ -73,14 +73,6 @@ class ProgressService
             return;
         }
 
-        if ($progress->status === 'completed') {
-            $wordIds = $module->words()->pluck('id');
-            $masteryClass::where('user_id', $student->user_id)
-                ->whereIn($wordKey, $wordIds)
-                ->where('status', 'training')
-                ->update(['status' => 'mastered']);
-        }
-
         if ($isNewBest) {
             $avgAccuracy = $progressClass::where('user_id', $student->user_id)->avg('accuracy');
             $student->update([$accColumn => round($avgAccuracy, 2)]);
