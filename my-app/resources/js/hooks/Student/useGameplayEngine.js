@@ -11,9 +11,6 @@ export function useGameplayEngine({
     saveEndpoint,
     onWordRecognized,
     onMispronounce,
-    getPoints,
-    onComplete,
-    onTimeUp: onTimeUpOverride,
     resumeData,
 }) {
     const resume = resumeData ? resumeData : (moduleId ? readResumeSession(moduleId) : null);
@@ -57,26 +54,11 @@ export function useGameplayEngine({
 
     onWordRecognizedRef.current = onWordRecognized;
     onMispronounceRef.current = onMispronounce;
-
-    useEffect(() => {
-        currentWordIndexRef.current = currentWordIndex;
-    }, [currentWordIndex]);
-
-    useEffect(() => {
-        wordsSmashedRef.current = wordsSmashed;
-    }, [wordsSmashed]);
-
-    useEffect(() => {
-        maxStreakRef.current = maxStreak;
-    }, [maxStreak]);
-
-    useEffect(() => {
-        wordsRef.current = words;
-    }, [words]);
-
-    useEffect(() => {
-        currentStreakRef.current = currentStreak;
-    }, [currentStreak]);
+    currentWordIndexRef.current = currentWordIndex;
+    wordsSmashedRef.current = wordsSmashed;
+    maxStreakRef.current = maxStreak;
+    wordsRef.current = words;
+    currentStreakRef.current = currentStreak;
 
     // Persist resume session only while actively playing (so a fresh
     // IDLE mount never looks like an in-progress round)
@@ -144,9 +126,9 @@ export function useGameplayEngine({
     }, [totalWords]);
 
     const targetWord = useMemo(() => {
-        const allWords = words.map((w) => w.word);
         return (
-            allWords[currentWordIndex]
+            words[currentWordIndex]
+                ?.word
                 ?.replace(/[^\w\s]/g, "")
                 .toLowerCase() || ""
         );
@@ -176,14 +158,10 @@ export function useGameplayEngine({
             currentWordIndex >= totalWords &&
             totalWords > 0
         ) {
-            if (onComplete) {
-                onComplete();
-                return;
-            }
             persistProgressRef.current();
             setGameState("COMPLETED");
         }
-    }, [currentWordIndex, totalWords, gameState, onComplete]);
+    }, [currentWordIndex, totalWords, gameState]);
 
     const handleWordRecognized = useCallback(() => {
         if (wordRecognizedGuardRef.current) return;
@@ -193,8 +171,8 @@ export function useGameplayEngine({
         if (!wordObj) return;
         onWordRecognizedRef.current?.(wordObj);
 
-        const points = typeof getPoints === "function" ? getPoints(wordObj) : 1;
-        setWordsSmashed((prev) => prev + points);
+    const points = 1;
+    setWordsSmashed((prev) => prev + points);
         currentStreakRef.current += 1;
         setCurrentStreak(currentStreakRef.current);
         setMaxStreak((m) => Math.max(m, currentStreakRef.current));
@@ -291,10 +269,6 @@ export function useGameplayEngine({
         clearTimeout(wordRecognizedTimerRef.current);
         clearTimeout(wordTimeoutRef.current);
         setIsExploding(false);
-        if (onTimeUpOverride) {
-            onTimeUpOverride();
-            return;
-        }
         persistProgress();
         clearResume();
         if (currentWordIndexRef.current >= totalWords) {
@@ -302,7 +276,7 @@ export function useGameplayEngine({
         } else {
             setGameState("GAMEOVER");
         }
-    }, [persistProgress, totalWords, onTimeUpOverride]);
+    }, [persistProgress, totalWords]);
 
     // Countdown tick owned by the engine so time survives a refresh.
     useEffect(() => {

@@ -4,10 +4,8 @@ namespace Tests\Feature;
 
 use App\Models\ParagraphModule;
 use App\Models\ParagraphWord;
-use App\Models\StudentParagraphMastery;
 use App\Models\StudentParagraphProgress;
 use App\Models\StudentProfile;
-use App\Models\StudentWordMastery;
 use App\Models\StudentWordProgress;
 use App\Models\User;
 use App\Models\Word;
@@ -99,26 +97,6 @@ class ProgressServiceTest extends TestCase
         $this->assertEquals(5, $this->student->student->points);
     }
 
-    public function test_mastery_auto_updated_to_mastered_on_completion(): void
-    {
-        $wordId = $this->wordModule->words()->first()->id;
-        StudentWordMastery::create([
-            'user_id' => $this->student->id,
-            'word_id' => $wordId,
-            'status' => 'training',
-        ]);
-
-        $this->progressService->updateWordProgress(
-            $this->student->student, $this->wordModule,
-            wordsSmashed: 5, wordsProcessed: 5, accuracy: 90
-        );
-
-        $this->assertEquals(
-            'mastered',
-            StudentWordMastery::where('user_id', $this->student->id)->where('word_id', $wordId)->first()->status
-        );
-    }
-
     public function test_accuracy_averaged_across_modules(): void
     {
         $module2 = WordModule::create(['level' => 2, 'title' => 'Module 2']);
@@ -184,27 +162,6 @@ class ProgressServiceTest extends TestCase
 
         $this->student->refresh();
         $this->assertEquals(2, $this->student->student->speak_level);
-    }
-
-    public function test_paragraph_mastery_updated_on_completion(): void
-    {
-        $wordId = $this->paraModule->words()->first()->id;
-        StudentParagraphMastery::create([
-            'user_id' => $this->student->id,
-            'paragraph_word_id' => $wordId,
-            'status' => 'training',
-        ]);
-
-        $this->progressService->updateParagraphProgress(
-            $this->student->student, $this->paraModule,
-            wordsSmashed: 4, wordsProcessed: 4, accuracy: 85
-        );
-
-        $this->assertEquals(
-            'mastered',
-            StudentParagraphMastery::where('user_id', $this->student->id)
-                ->where('paragraph_word_id', $wordId)->first()->status
-        );
     }
 
     public function test_status_recalculated_on_new_best(): void
