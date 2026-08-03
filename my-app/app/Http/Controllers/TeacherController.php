@@ -9,6 +9,7 @@ use App\Models\Setting;
 use App\Models\StudentProfile;
 use App\Models\User;
 use App\Models\WordModule;
+use App\Services\BadgeService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -17,6 +18,10 @@ use Inertia\Inertia;
 
 class TeacherController extends Controller
 {
+    public function __construct(
+        protected BadgeService $badgeService,
+    ) {}
+
     public function dashboard()
     {
         return Inertia::render('Teacher/Dashboard',
@@ -536,6 +541,9 @@ class TeacherController extends Controller
 
     public function badges()
     {
+        User::where('role', 'student')->get()
+            ->each(fn ($u) => $this->badgeService->checkAllEligibleBadges($u));
+
         $totalStudents = User::where('role', 'student')->count();
 
         $badges = Badges::withCount('users')->get()->map(fn ($b) => [
