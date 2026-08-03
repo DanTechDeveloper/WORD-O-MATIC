@@ -4,7 +4,8 @@ import ParagraphInputModal from "../../Components/Teacher/ParagraphInputModal";
 import { router } from "@inertiajs/react";
 
 export default function Paragraph({ modules }) {
-    const levels = Array.from({ length: 10 }, (_, i) => i + 1);
+    const levels = modules?.map((m) => m.level).filter((l) => l > 0).sort((a, b) => a - b) ?? [];
+    const nextLevel = levels.length > 0 ? Math.max(...levels) + 1 : 1;
     const transformModules = (modulesData) => {
         const data = {};
         levels.forEach((level) => {
@@ -102,8 +103,27 @@ export default function Paragraph({ modules }) {
                                 Manage
                             </button>
                         </div>
-                    ))}
-                </div>
+                ))}
+                {levels.length < 10 && (
+                    <div
+                        key="add-module"
+                        className="bg-slate-900 rounded-[2.5rem] border-4 border-slate-800 p-6 md:p-8 flex flex-col items-center justify-center text-center shadow-[10px_10px_0_0_#020617] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all cursor-pointer group"
+                        onClick={() => openModal(nextLevel)}
+                    >
+                        <div className="w-16 h-16 rounded-2xl bg-slate-950 border-2 border-sky-400 flex items-center justify-center mb-4 transition-transform shadow-[4px_4px_0_0_#075985]">
+                            <span className="material-symbols-outlined text-2xl text-sky-400">
+                                add_box
+                            </span>
+                        </div>
+                        <p className="text-lg font-black text-white uppercase italic tracking-tighter mb-1">
+                            Add Module
+                        </p>
+                        <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest">
+                            Level {nextLevel}
+                        </p>
+                    </div>
+                )}
+            </div>
 
                 <ParagraphInputModal
                     isOpen={isModalOpen}
