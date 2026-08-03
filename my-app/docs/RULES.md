@@ -1,6 +1,6 @@
 # Rules
 
-> Version 1.1
+> Version 1.2
 
 ## Code
 
@@ -37,7 +37,7 @@
 ## Inertia
 
 - Pages: `resources/js/Pages/{Student,Teacher}/`. Hooks: `resources/js/hooks/`. Components: `resources/js/Components/`.
-- Form submissions: `router.post` / `router.put`.
+- Form submissions: `router.post` / `router.put`. JSON endpoints (mastery): axios + `noContent()`.
 
 ## Reporting
 

@@ -1,6 +1,6 @@
 # Word-O-Matic
 
-> Version 1.2 — Developer Guide
+> Version 1.3 — Developer Guide
 
 ## Design Context
 
@@ -33,7 +33,8 @@ Laravel 13 + React 18 + Inertia v2 + Tailwind v3 + MySQL (SQLite in-memory for t
 | Build frontend | `npm run build` |
 | Frontend dev | `npm run dev` |
 
-No lint, typecheck, or CI.
+No lint or typecheck. CI (`.github/workflows/ci.yml`) runs PHP tests only;
+JS/vitest/pint are not wired into it.
 
 ## Auth
 
@@ -44,6 +45,8 @@ No lint, typecheck, or CI.
 
 Teacher login: `UserController@teacherLoginPost` — validates `username` + `password`, no email.
 PIN stored as bcrypt (`pin`) + plain text (`pin_plain`).
+Student login runs `BadgeService::checkAllEligibleBadges($user)` (constructor-injected
+into `UserController`) when the student has a custom avatar.
 
 ## Onboarding
 
@@ -63,7 +66,7 @@ Guided by AvatarSpeechBubble on Dashboard + guide overlay on first gameplay. Enf
 | Service | Responsibility |
 |---|---|
 | `ProgressService` | Update word/paragraph progress (best score only), recalculate status |
-| `BadgeService` | Award badges, check thresholds. `calculateModuleCompletion()` computes paragraph/word completion % from `words_smashed`. |
+| `BadgeService` | Award badges, check thresholds. `calculateModuleCompletion()` computes paragraph/word completion % from `words_smashed`. `checkAllEligibleBadges()` also runs at student login (avatar set). |
 | `LevelService` | Module lock/current/completed status per student |
 | `TeacherController::dashboardStats()` | Teacher dashboard stats (private method, no service class) |
 
@@ -76,6 +79,9 @@ Session logging done via `GameSession::logSession()` static method on the model 
 - After each task: list changed files + what changed + intentionally untouched + follow-up.
 - Frontend pages: `resources/js/Pages/{Student,Teacher}/`. Hooks: `hooks/`. Components: `Components/`.
 - Inertia forms: `router.post` / `router.put`.
+- JSON endpoints (`/student/updateWordMastery`, `/student/updateParagraphMastery`)
+  go through axios and return `response()->noContent()`; page forms/transitions
+  stay Inertia `router.*`.
 - New DB field: migration → `$fillable` → controller response array. (Fields missing from `$fillable` are silently dropped by mass-assignment, e.g., `report_sent_at` bug.)
 - Validation: inline `$request->validate()` in controllers (no Form Request pattern).
 - Auth: middleware-based (`EnsureUserRole`), no Policy files.

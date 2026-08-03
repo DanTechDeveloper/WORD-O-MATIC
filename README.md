@@ -45,6 +45,7 @@ Speaking-focused storytelling activity<br>
 | **Frontend** | React 18, Inertia.js v2, Tailwind CSS v3 |
 | **Database** | MySQL (Production), SQLite `:memory:` (Testing) |
 | **Charts** | Recharts (PieChart, BarChart) |
+| **HTTP** | Inertia router/useForm for pages · axios for JSON mastery endpoints |
 | **Icons** | Material Symbols Outlined (filled `1` when active) |
 
 </div>
@@ -198,7 +199,7 @@ The application contains **14 Eloquent models**, including:
 |:-----|:-------|:---------|
 | **Guest** | `/`, `/teacher/login` | Landing, login |
 | **Teacher** | `/teacher/*` | Dashboard · Student Management · Leaderboards · Badges · Reports · Module Management |
-| **Student** | `/student/*` | Onboarding · Dashboard · Gameplay · Leaderboards · Progress Tracking |
+| **Student** | `/student/*` | Onboarding · Dashboard · Gameplay · Leaderboards · Badges · Progress Tracking |
 
 </div>
 
@@ -284,13 +285,13 @@ resources/
 ### 👩‍🏫 Teacher
 
 - Student management
-- Module assignment
+- Module assignment & editing (word / paragraph modules)
 - Progress monitoring
 - Performance reports
 - Parent report emails (Gmail SMTP + deadline gating)
 - Dashboard analytics
   - Leaderboards (Points / Word Blast / Story Quest tabs)
-  - Badge analytics
+  - Badge analytics (catalog, top earners)
   - Student detail pages
 
 </td>

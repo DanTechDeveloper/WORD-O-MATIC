@@ -1,6 +1,6 @@
 # Architecture
 
-> Version 1.2
+> Version 1.3
 
 ## Backend
 
@@ -22,6 +22,7 @@
 | Build | Vite 8 (`@vitejs/plugin-react`, `laravel-vite-plugin`) |
 | CSS | Tailwind 3 (`@tailwindcss/forms`) |
 | Charts | Recharts 3.8 |
+| HTTP | Inertia `router`/`useForm` for pages; axios for the 2 JSON mastery endpoints (`response()->noContent()`) |
 | Pages | `resources/js/Pages/{Auth,Student,Teacher,Testing}/` |
 | Components | `resources/js/Components/` |
 | Hooks | `resources/js/hooks/` |
@@ -37,6 +38,7 @@ HandleInertiaRequests::share() ← session flash + auth
 ```
 
 Global props: `auth.user`, `flash.*`, `teacher` flags. Lazy-loaded closures, no extra queries unless accessed.
+Axios JSON endpoints (mastery toggles) bypass Inertia and return `noContent()`.
 
 ## Key Decisions
 
@@ -49,6 +51,7 @@ Global props: `auth.user`, `flash.*`, `teacher` flags. Lazy-loaded closures, no 
 | Queued email | Don't block response waiting for mail |
 | Cascade deletes | All child tables cascade on `user_id` — delete user = clean slate |
 | Random word order | `inRandomOrder()` per session in Read mode, prevents memorization |
+| Mastery = explicit per-word toggle | Auto-mastery removed; `updateWordMastery`/`updateParagraphMastery` via axios |
 | PIN with plain+hash | Hash for auth, plain for teacher display (thesis-acceptable) |
 
 ## Auth Flow
