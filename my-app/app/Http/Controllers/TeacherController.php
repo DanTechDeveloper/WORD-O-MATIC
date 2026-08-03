@@ -483,11 +483,6 @@ class TeacherController extends Controller
             ->with('reported_at', $deadlineTs->format('F j, Y \a\t g:i A'));
     }
 
-    public function studentDetails()
-    {
-        return Inertia::render('Teacher/StudentDetails');
-    }
-
     public function assignments()
     {
         return Inertia::render('Teacher/Assignments');

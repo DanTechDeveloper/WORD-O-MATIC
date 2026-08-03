@@ -103,7 +103,7 @@ HandleInertiaRequests::share() ← session flash + auth
               Inertia Response → React $page.props
 ```
 
-Global data shared via `HandleInertiaRequests`: `auth.user`, `flash` (success, error, new_badge, sent, failed, reported_at), `teacher` flags.
+Global data shared via `HandleInertiaRequests`: `auth.user`, `flash` (success, error, new_badges, sent, failed, reported_at), `teacher` flags.
 
 ## Gameplay Resume (client-side) — See `docs/resume-and-timer.md`
 - Do not re-add a private timer to `GameplayHeader`; use the `timeLeft` prop from `useGameplayEngine`.
