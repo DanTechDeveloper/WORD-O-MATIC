@@ -51,7 +51,6 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true }) {
         totalWords: module?.words?.length ?? 0,
         moduleId: module?.id,
         saveEndpoint: "/student/saveParagraphProgress",
-        getPoints: () => 1,
         onWordRecognized: (wordObj) => {
             if (wordObj && !isTutorial) {
                 axios.post("/student/updateParagraphMastery", {

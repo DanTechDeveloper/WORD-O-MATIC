@@ -36,6 +36,80 @@ class BadgeService
         ];
     }
 
+    public function checkAllEligibleBadges(User $user): array
+    {
+        $student = $user->student;
+
+        if (! $student) {
+            return [];
+        }
+
+        $awarded = [];
+        $earnedBadgeIds = $user->badges()->pluck('badges.id')->toArray();
+
+        $actionBadges = [
+            'profile-pioneer' => $student->avatar && ! in_array($student->avatar, ['/images/boy.svg', '/images/girl.svg']),
+            'tutorial-complete' => ! is_null($student->tutorial_completed_at),
+        ];
+
+        foreach ($actionBadges as $slug => $satisfied) {
+            if (! $satisfied) {
+                continue;
+            }
+
+            $badge = Badges::where('slug', $slug)->whereNotIn('id', $earnedBadgeIds)->first();
+
+            if (! $badge) {
+                continue;
+            }
+
+            $user->badges()->syncWithoutDetaching([
+                $badge->id => ['earned_at' => now()],
+            ]);
+
+            $awarded[] = [
+                'name' => $badge->name,
+                'description' => $badge->description,
+                'slug' => $badge->slug,
+                'icon' => $badge->icon,
+            ];
+        }
+
+        $earnedBadgeIds = $user->badges()->pluck('badges.id')->toArray();
+
+        $badgesToCheck = Badges::whereNotIn('id', $earnedBadgeIds)
+            ->whereIn('metric', ['total_points', 'streak', 'accuracy', 'paragraph_completion', 'word_completion'])
+            ->get();
+
+        foreach ($badgesToCheck as $badge) {
+            $currentValue = match ($badge->metric) {
+                'total_points' => $student->points,
+                'streak' => (int) GameSession::where('user_id', $user->id)->max('streak') ?? 0,
+                'accuracy' => max((float) $student->wordBlastAcc, (float) $student->storyQuestAcc),
+                'paragraph_completion' => $this->calculateModuleCompletion($user, 'paragraph'),
+                'word_completion' => $this->calculateModuleCompletion($user, 'word'),
+                default => 0,
+            };
+
+            if ($this->meetsThreshold($currentValue, $badge->operator, $badge->threshold_score)) {
+                $user->badges()->attach($badge->id, [
+                    'earned_at' => now(),
+                    'progress' => $currentValue,
+                    'status' => 'earned',
+                    'unlocked_session_id' => null,
+                ]);
+                $awarded[] = [
+                    'name' => $badge->name,
+                    'description' => $badge->description,
+                    'slug' => $badge->slug,
+                    'icon' => $badge->icon,
+                ];
+            }
+        }
+
+        return $awarded;
+    }
+
     public function checkGameplayBadges(User $user, int $sessionId, float $accuracy): array
     {
         $student = $user->student;

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Http\Request;
+use App\Services\BadgeService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
@@ -11,6 +12,10 @@ use Inertia\Response;
 
 class UserController extends Controller
 {
+    public function __construct(
+        protected BadgeService $badgeService,
+    ) {}
+
     public function logout(Request $request)
     {
         Auth::logout();
@@ -73,7 +78,12 @@ class UserController extends Controller
         Auth::login($user);
         $request->session()->regenerate();
 
-        $hasAvatar = $user->student && ! empty($user->student->avatar);
+        $avatar = $user->student?->avatar;
+        $hasAvatar = $avatar && ! in_array($avatar, ['/images/boy.svg', '/images/girl.svg']);
+
+        if ($hasAvatar) {
+            $this->badgeService->checkAllEligibleBadges($user);
+        }
 
         return $hasAvatar
             ? redirect()->route('student.dashboard')
