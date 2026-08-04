@@ -24,9 +24,13 @@
         "vitest": "^4.1.10"
     },
     "dependencies": {
+        "@dietrichgebert/ponytail": "^4.8.4",
         "@fontsource-variable/lexend": "^5.2.11",
         "@fontsource-variable/material-symbols-outlined": "^5.2.45",
         "@fontsource-variable/plus-jakarta-sans": "^5.2.8",
+        "@kilocode/plugin": "^7.4.17",
+        "@kilocode/shell-security": "^0.2.4",
+        "@maikokan/kilo-hindsight": "^0.1.1",
         "axios": "^1.13.5",
         "react-is": "^19.2.7",
         "recharts": "^3.8.1"
