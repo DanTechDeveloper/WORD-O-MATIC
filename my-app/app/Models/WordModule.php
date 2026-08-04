@@ -36,12 +36,12 @@ class WordModule extends Model
             ->get()
             ->keyBy('word_id');
 
-        return self::buildTrainingWords(self::with('words')->orderBy('level')->get(), $mastery);
+        return self::buildTrainingWords(self::with('words')->where('is_tutorial', false)->orderBy('level')->get(), $mastery);
     }
 
     public static function trainingWordsForUsers(array $userIds, ?string $cutoff = null): Collection
     {
-        $modules = self::with('words')->orderBy('level')->get();
+        $modules = self::with('words')->where('is_tutorial', false)->orderBy('level')->get();
 
         $query = DB::table('student_word_mastery')
             ->whereIn('user_id', $userIds);
@@ -73,7 +73,7 @@ class WordModule extends Model
 
     public static function curriculumForUser(int $userId): array
     {
-        $modules = self::with('words')->orderBy('level', 'asc')->get();
+        $modules = self::with('words')->where('is_tutorial', false)->orderBy('level', 'asc')->get();
 
         $masteryProgress = DB::table('student_word_mastery')
             ->where('user_id', $userId)
