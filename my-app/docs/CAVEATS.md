@@ -22,10 +22,10 @@ fix" column names the event that should prompt the fix — not before (YAGNI).
 | # | Area | Caveat | Consequence | Trigger to fix |
 |---|---|---|---|---|
 | H1 | Emails | `StudentReportMail` is sent via `Mail::to()->queue()` (StudentReportMail.php:33) — a queue worker must run in prod (DEPLOYMENT.md:34). Kung walang worker, ang emails ay tumutumpok sa `jobs` table pero ang UI ay nagsasabing "sent" at `report_sent_at` ay nase-set (TeacherController.php:480). No failure detection. | Parents never receive reports while teacher believes they were sent | First production email run |
-| H2 | Gameplay trust | `saveWordProgress` / `saveParagraphProgress` accept client-provided `words_processed` with only `min:0` validation. A student can POST `words_processed: 999` → `status='completed'` (ProgressService.php:69) → level up + unlock all later modules (LevelService `foundCurrent`). `words_smashed` is clamped but completion status is not. | Progress/levels/leaderboard can be gamed without playing | If cheating becomes a real concern |
+| H2 | Gameplay trust | `saveWordProgress` / `saveParagraphProgress` validate `words_processed` with only `min:0` (StudentController.php:186), so a student can POST `words_processed: 999` → `ProgressService` sets `status='completed'` (ProgressService.php:74). `words_smashed` is clamped but completion status is not. | Progress/levels/leaderboard can be gamed without playing | If cheating becomes a real concern |
 | H3 | Authz | `results($id)` uses `GameSession::findOrFail($id)` with no `user_id` check — any authenticated student can view another student's session by guessing ids. `gameplayReadMode/{id}` / `gameplaySpeakMode/{id}` accept any module id with no per-student gating. | Cross-student data exposure | Pre-launch security pass |
 | H4 | Reports (product) | Retries erase the struggle signal: 25 retries → perfect → `onTrack` → no warning email. `game_sessions` holds every attempt but reports only use best scores. | Warning-only reports miss the students who needed the most attempts | Prof feedback says parents need attempt counts |
-| H5 | Reports (data) | Emailed accuracy (`wordBlastAcc`/`storyQuestAcc`) is the current live denormalized value; training words are computed as-of-deadline (TeacherController.php:452). Post-deadline retries shift the accuracy vs. the frozen snapshot. | Emailed report can contradict the as-of-deadline training list | Strict "as of" reporting required |
+| H5 | Reports (data) | Emailed accuracy (`wordBlastAcc`/`storyQuestAcc`) is the current live denormalized value; training words are computed as-of-deadline (TeacherController.php:452). There is no frozen accuracy snapshot — accuracy is stale-at-send-time, so post-deadline retries shift the emailed value vs. the deadline cutoff used for training words. | Emailed report can contradict the as-of-deadline training list | Strict "as of" reporting required |
 | H6 | Security | Student PINs stored plaintext in `pin_plain` (intentional — teacher PIN management reads them back). Data-at-rest tradeoff. | Compromised DB exposes student PINs | Security review / auth change |
 
 ## Medium
@@ -33,13 +33,13 @@ fix" column names the event that should prompt the fix — not before (YAGNI).
 | # | Area | Caveat |
 |---|---|---|
 | M1 | Data | Mass-assignment silently drops fields — a new column needs migration → `$fillable` → controller response array (the `report_sent_at` bug pattern). |
-| M2 | Data | Denormalized stats on `students` (`points`, accuracies, `status`, levels) are updated only via `ProgressService`; teacher edits/seeders bypass it. `status` recalculates only on a new best. |
-| M3 | Gameplay | `finishRound` has no locking — two parallel POSTs (double-tap) can create duplicate `GameSession` rows and double points delta. |
+| M2 | Data | Denormalized stats on `students` (`points`, accuracies, `status`, levels) are updated only via `ProgressService`; teacher edits/seeders bypass it. `status` is sticky (a `completed` module cannot regress on replay) and otherwise recalculates only on a new best; `points`/levels/locks still move only on a new best. |
+| M3 | Gameplay | `finishRound` has no locking — two parallel POSTs (double-tap via `saveWordProgress` / `saveParagraphProgress`) can create duplicate `GameSession` rows and double points delta. |
 | M4 | Reports | `Setting('report_deadline')` is a single global deadline — one deadline for all sections/classes. |
 | M5 | Teacher | Teacher Badges page (`badges()`) runs `checkAllEligibleBadges` for ALL students on every GET — writes during a read path, O(students × badges) per page view. |
 | M6 | Data | `GameSession` rows grow unbounded — the replay feature multiplies attempts; no pruning/archival. |
 | M7 | Gameplay | Resume is client-only (`sessionStorage`, see resume-and-timer.md) — switching devices/browser loses mid-round progress; server only knows completed saves. |
-| M8 | Onboarding | `updateAvatar` validates `avatar_url` as free-form string — arbitrary value stored and rendered as `<img src>`. |
+| M8 | Onboarding | `updateAvatar` validates `avatar_url` as free-form string (`StudentController.php:74`, only `required|string`) — arbitrary value stored in `avatar` and rendered as `<img src>` in `StudentDetails`. |
 | M9 | Onboarding | `CheckStudentOnboarding` gates the avatar step only — direct URL to any gameplay module bypasses tutorial ordering; tutorial branches assume `->first()` tutorial module. |
 | M10 | CI | vitest/Pint/typecheck are not wired into CI (PHP tests only) — JS regressions ship invisibly. |
 
@@ -60,6 +60,7 @@ fix" column names the event that should prompt the fix — not before (YAGNI).
 |---|---|---|---|---|
 | BF1 | Accuracy | Tutorial module accuracy was included in the averaged `wordBlastAcc`/`storyQuestAcc` (ProgressService lines 84-87, `avg('accuracy')` with no tutorial filter). | Tutorial (`is_tutorial=true`) rows excluded via `when($tutorialModule, ...)`. | `ProgressServiceTest::test_tutorial_progress_does_not_pollute_accuracy`, `test_tutorial_paragraph_progress_does_not_pollute_accuracy`. |
 | BF2 | Status regression | A worse replay could downgrade a `completed` module back to `in_progress` (ProgressService line 74: `status = wordsProcessed >= totalWords ? completed : in_progress`). | Status is sticky: `completed` stays `completed` on replay (`progress->status === 'completed' || wordsProcessed >= totalWords`). | `ProgressServiceTest::test_status_does_not_regress_to_in_progress_on_worse_replay`, `test_better_replay_cannot_downgrade_accuracy`. |
+| BF3 | Curriculum contamination | `WordModule::curriculumForUser` / `ParagraphModule::curriculumForUser` (and the `trainingWordsForUser` / `trainingWordsForUsers` getters) selected `is_tutorial=true` modules, inflating the teacher `StudentDetails` mastery bars by tutorial words (root cause of the ~105% overage). | Tutorial modules excluded from all curriculum/training queries via `->where('is_tutorial', false)`. Streak integrity was already structural (tutorial plays skip `GameSession::logSession`). | `CurriculumIsolationTest::test_word_curriculum_excludes_tutorial_module`, `test_paragraph_curriculum_excludes_tutorial_module`. |
 
 ## Explicitly accepted for MVP
 

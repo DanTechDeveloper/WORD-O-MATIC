@@ -453,7 +453,7 @@ class TeacherController extends Controller
         $paraTraining = ParagraphModule::trainingWordsForUsers($request->student_ids, $deadline);
 
         $sent = 0;
-        $failed = 0;
+    $failed = 0;
 
         foreach ($students as $user) {
             $parentEmail = $user->student?->parent_email;
