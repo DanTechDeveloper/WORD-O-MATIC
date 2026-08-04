@@ -44,7 +44,7 @@ Speaking-focused storytelling activity<br>
 | **Backend** | PHP 8.3, Laravel 13 (session-based auth via `UserController`) |
 | **Frontend** | React 18, Inertia.js v2, Tailwind CSS v3 |
 | **Database** | MySQL (Production), SQLite `:memory:` (Testing) |
-| **Charts** | Recharts (PieChart, BarChart) |
+| **Charts** | Recharts (BarChart) |
 | **HTTP** | Inertia router/useForm for pages · axios for JSON mastery endpoints |
 | **Icons** | Material Symbols Outlined (filled `1` when active) |
 
@@ -307,6 +307,8 @@ resources/
 - Performance reports
 - Parent report emails (Gmail SMTP + deadline gating)
 - Dashboard analytics
+  - Class Health Distribution bar chart with category legends → drill-down student table (section-filtered)
+  - Top Performing Students chart (switchable: Points / Word Blast / Story Quest)
   - Leaderboards (Points / Word Blast / Story Quest tabs)
   - Badge analytics (catalog, top earners)
   - Student detail pages

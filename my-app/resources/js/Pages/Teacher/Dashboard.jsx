@@ -85,7 +85,7 @@ export default function Dashboard({
         color: cat.color,
     }));
 
-    const [selectedCategory, setSelectedCategory] = useState("");
+    const [selectedCategory, setSelectedCategory] = useState("notStarted");
     const [selectedHealthSection, setSelectedHealthSection] = useState("");
     const tableRef = useRef(null);
 
@@ -199,6 +199,11 @@ export default function Dashboard({
                                     borderRadius: "12px",
                                 }}
                                 itemStyle={{
+                                    color: "#fff",
+                                    fontSize: "12px",
+                                    fontWeight: "bold",
+                                }}
+                                labelStyle={{
                                     color: "#fff",
                                     fontSize: "12px",
                                     fontWeight: "bold",
