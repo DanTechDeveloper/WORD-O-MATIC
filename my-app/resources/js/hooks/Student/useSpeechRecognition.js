@@ -94,11 +94,10 @@ export function useSpeechRecognition({
                         .toLowerCase()
                         .replace(/[^\w\s]/g, "")
                         .trim();
-                    const wordsInFull = full.length ? full.split(/\s+/) : [];
                     let matchedThisEvent = false;
                     if (
                         !hasMatchedCurrentRef.current &&
-                        wordsInFull.some((w) => isFuzzyMatch(w, target))
+                        isFuzzyMatch(full, target)
                     ) {
                         hasMatchedCurrentRef.current = true;
                         matchedThisEvent = true;
