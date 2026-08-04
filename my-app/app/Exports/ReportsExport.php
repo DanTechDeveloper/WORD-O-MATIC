@@ -2,7 +2,7 @@
 
 namespace App\Exports;
 
-use Maatwebsite\Excel\Concern\WithMultipleSheets;
+use Maatwebsite\Excel\Concerns\WithMultipleSheets;
 
 class ReportsExport implements WithMultipleSheets
 {

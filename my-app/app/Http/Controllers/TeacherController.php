@@ -430,7 +430,7 @@ class TeacherController extends Controller
         }
 
         $request->validate([
-            'deadline' => 'required|date|after:now',
+            'deadline' => 'required|date|after_or_equal:today',
         ]);
 
         Setting::setValue('report_deadline', $request->deadline);
@@ -448,13 +448,13 @@ class TeacherController extends Controller
         $deadline = Setting::getValue('report_deadline');
 
         if (empty($deadline)) {
-            return redirect()->back()->withErrors(['No report deadline set. Set a deadline first.']);
+            return redirect()->back()->with('error', 'No report deadline set. Set a deadline first.')->withErrors(['No report deadline set. Set a deadline first.']);
         }
 
         $deadlineTs = Carbon::parse($deadline, config('app.timezone'));
 
         if ($deadlineTs->isFuture()) {
-            return redirect()->back()->withErrors(['Report deadline has not yet been reached.']);
+            return redirect()->back()->with('error', 'Report deadline has not yet been reached.')->withErrors(['Report deadline has not yet been reached.']);
         }
 
         $students = User::with('student')
@@ -465,7 +465,7 @@ class TeacherController extends Controller
         $paraTraining = ParagraphModule::trainingWordsForUsers($request->student_ids, $deadline);
 
         $sent = 0;
-    $failed = 0;
+        $failed = 0;
 
         foreach ($students as $user) {
             $parentEmail = $user->student?->parent_email;
@@ -505,13 +505,13 @@ class TeacherController extends Controller
         $deadline = Setting::getValue('report_deadline');
 
         if (empty($deadline)) {
-            return redirect()->back()->withErrors(['No report deadline set. Set a deadline first.']);
+            return redirect()->back()->with('error', 'No report deadline set. Set a deadline first.')->withErrors(['No report deadline set. Set a deadline first.']);
         }
 
         $deadlineTs = Carbon::parse($deadline, config('app.timezone'));
 
         if ($deadlineTs->isFuture()) {
-            return redirect()->back()->withErrors(['Report deadline has not yet been reached.']);
+            return redirect()->back()->with('error', 'Report deadline has not yet been reached.')->withErrors(['Report deadline has not yet been reached.']);
         }
 
         $students = User::with('student')

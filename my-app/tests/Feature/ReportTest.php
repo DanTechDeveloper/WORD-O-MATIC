@@ -147,4 +147,41 @@ class ReportTest extends TestCase
         $response->assertSessionHas('sent', 1);
         $response->assertSessionHas('failed', 1);
     }
+
+    // ─── EXCEL EXPORT ────────────────────────────────────────────────
+
+    public function test_teacher_can_export_reports_after_deadline(): void
+    {
+        $this->actingAs($this->teacher);
+
+        Setting::setValue('report_deadline', now()->subDay()->format('Y-m-d\TH:i'));
+
+        $response = $this->get(route('teacher.reports.export'));
+
+        $response->assertStatus(200);
+        $response->assertHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        $response->assertHeader('Content-Disposition');
+    }
+
+    public function test_export_reports_requires_deadline(): void
+    {
+        $this->actingAs($this->teacher);
+
+        $response = $this->get(route('teacher.reports.export'));
+
+        $response->assertRedirect();
+        $response->assertSessionHas('error');
+    }
+
+    public function test_export_reports_requires_deadline_to_have_passed(): void
+    {
+        $this->actingAs($this->teacher);
+
+        Setting::setValue('report_deadline', now()->addDays(7)->format('Y-m-d\TH:i'));
+
+        $response = $this->get(route('teacher.reports.export'));
+
+        $response->assertRedirect();
+        $response->assertSessionHas('error');
+    }
 }
