@@ -164,6 +164,36 @@ class ProgressServiceTest extends TestCase
         $this->assertEquals(2, $this->student->student->speak_level);
     }
 
+    public function test_tutorial_progress_does_not_pollute_accuracy(): void
+    {
+        $tutorial = WordModule::create(['level' => 0, 'title' => 'Tutorial', 'is_tutorial' => true]);
+        foreach (['a', 'I', 'see', 'my', 'the'] as $i => $word) {
+            Word::create(['word_module_id' => $tutorial->id, 'word' => $word, 'position' => $i + 1]);
+        }
+
+        $this->progressService->updateWordProgress($this->student->student, $tutorial, 0, 5, 0, isTutorial: true);
+
+        $this->progressService->updateWordProgress($this->student->student, $this->wordModule, 5, 5, 100);
+
+        $this->student->refresh();
+        $this->assertEquals(100, $this->student->student->wordBlastAcc);
+    }
+
+    public function test_tutorial_paragraph_progress_does_not_pollute_accuracy(): void
+    {
+        $tutorial = ParagraphModule::create(['level' => 0, 'title' => 'Tutorial Para', 'is_tutorial' => true]);
+        foreach (['I', 'see', 'a', 'cat'] as $i => $w) {
+            ParagraphWord::create(['paragraph_module_id' => $tutorial->id, 'word' => $w, 'position' => $i + 1]);
+        }
+
+        $this->progressService->updateParagraphProgress($this->student->student, $tutorial, 0, 4, 0, isTutorial: true);
+
+        $this->progressService->updateParagraphProgress($this->student->student, $this->paraModule, 4, 4, 100);
+
+        $this->student->refresh();
+        $this->assertEquals(100, $this->student->student->storyQuestAcc);
+    }
+
     public function test_status_recalculated_on_new_best(): void
     {
         $module2 = WordModule::create(['level' => 2, 'title' => 'Module 2']);
@@ -176,5 +206,47 @@ class ProgressServiceTest extends TestCase
 
         $this->student->refresh();
         $this->assertEquals('in_progress', $this->student->student->status);
+    }
+
+    public function test_status_does_not_regress_to_in_progress_on_worse_replay(): void
+    {
+        $this->progressService->updateWordProgress(
+            $this->student->student, $this->wordModule,
+            wordsSmashed: 5, wordsProcessed: 5, accuracy: 100
+        );
+
+        // replay that is worse (fewer words processed) must not downgrade status
+        $this->progressService->updateWordProgress(
+            $this->student->student, $this->wordModule,
+            wordsSmashed: 3, wordsProcessed: 3, accuracy: 60
+        );
+
+        $record = StudentWordProgress::where('user_id', $this->student->id)
+            ->where('word_module_id', $this->wordModule->id)
+            ->first();
+
+        $this->assertSame('completed', $record->status);
+    }
+
+    public function test_better_replay_cannot_downgrade_accuracy(): void
+    {
+        $this->progressService->updateWordProgress(
+            $this->student->student, $this->wordModule,
+            wordsSmashed: 5, wordsProcessed: 5, accuracy: 100
+        );
+
+        // worse accuracy on replay must not replace the stored best accuracy
+        $this->progressService->updateWordProgress(
+            $this->student->student, $this->wordModule,
+            wordsSmashed: 3, wordsProcessed: 5, accuracy: 60
+        );
+
+        $record = StudentWordProgress::where('user_id', $this->student->id)
+            ->where('word_module_id', $this->wordModule->id)
+            ->first();
+
+        $this->assertSame(100.0, (float) $record->accuracy);
+        $this->student->refresh();
+        $this->assertEquals(100, $this->student->student->wordBlastAcc);
     }
 }

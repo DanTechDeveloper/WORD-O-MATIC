@@ -153,4 +153,66 @@ class LevelServiceTest extends TestCase
         $this->assertEquals(4, $statuses[0]['words_smashed']);
         $this->assertEquals(5, $statuses[0]['total_points']);
     }
+
+    public function test_replaying_completed_module_keeps_status_completed(): void
+    {
+        $this->createWordModules(1);
+        $module1 = WordModule::where('level', 1)->first();
+
+        StudentWordProgress::create([
+            'user_id' => $this->student->id,
+            'word_module_id' => $module1->id,
+            'words_smashed' => 5,
+            'status' => 'completed',
+        ]);
+
+        $statuses = $this->levelService->getWordModuleStatuses($this->student->id);
+
+        $this->assertEquals('completed', $statuses[0]['status']);
+    }
+
+    public function test_only_one_current_module_at_a_time(): void
+    {
+        $this->createWordModules(3);
+
+        // completing level 1 advances the current slot to level 2
+        StudentWordProgress::create([
+            'user_id' => $this->student->id,
+            'word_module_id' => WordModule::where('level', 1)->first()->id,
+            'words_smashed' => 5,
+            'status' => 'completed',
+        ]);
+
+        $statuses = $this->levelService->getWordModuleStatuses($this->student->id);
+        $this->assertEquals('completed', $statuses[0]['status']);
+        $this->assertEquals('current', $statuses[1]['status']);
+        $this->assertEquals('locked', $statuses[2]['status']);
+    }
+
+    public function test_multiple_completed_with_one_in_progress(): void
+    {
+        $this->createWordModules(4);
+
+        StudentWordProgress::create([
+            'user_id' => $this->student->id,
+            'word_module_id' => WordModule::where('level', 1)->first()->id,
+            'words_smashed' => 5, 'status' => 'completed',
+        ]);
+        StudentWordProgress::create([
+            'user_id' => $this->student->id,
+            'word_module_id' => WordModule::where('level', 2)->first()->id,
+            'words_smashed' => 5, 'status' => 'completed',
+        ]);
+        StudentWordProgress::create([
+            'user_id' => $this->student->id,
+            'word_module_id' => WordModule::where('level', 3)->first()->id,
+            'words_smashed' => 2, 'status' => 'in_progress',
+        ]);
+
+        $statuses = $this->levelService->getWordModuleStatuses($this->student->id);
+        $this->assertEquals('completed', $statuses[0]['status']);
+        $this->assertEquals('completed', $statuses[1]['status']);
+        $this->assertEquals('in_progress', $statuses[2]['status']);
+        $this->assertEquals('locked', $statuses[3]['status']);
+    }
 }
