@@ -360,19 +360,31 @@ class StudentController extends Controller
 
         if ($session->module_type === 'word') {
             $module = WordModule::withCount('words')->find($session->module_id);
+            $nextModule = WordModule::where('level', $module->level + 1)
+                ->where('is_tutorial', false)
+                ->first();
+            $maxLevel = WordModule::where('is_tutorial', false)->max('level');
         } else {
             $module = ParagraphModule::withCount('words')->find($session->module_id);
+            $nextModule = ParagraphModule::where('level', $module->level + 1)
+                ->where('is_tutorial', false)
+                ->first();
+            $maxLevel = ParagraphModule::where('is_tutorial', false)->max('level');
         }
         $totalItems = $module->words_count;
 
         $user = auth()->user();
         $badgeProgress = $user ? $this->badgeService->getBadgeProgress($user, $session) : [];
 
+        $isMaxLevel = $maxLevel !== null && $module->level >= $maxLevel;
+
         return Inertia::render('Student/GameResults', [
             'session' => $session,
             'moduleTitle' => $module->title,
             'totalItems' => $totalItems,
             'badgeProgress' => $badgeProgress,
+            'nextModuleId' => $nextModule?->id,
+            'isMaxLevel' => $isMaxLevel,
         ]);
     }
 

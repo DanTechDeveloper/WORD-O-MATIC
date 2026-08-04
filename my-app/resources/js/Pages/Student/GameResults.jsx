@@ -18,6 +18,8 @@ export default function GameResults({
     moduleTitle,
     totalItems,
     badgeProgress,
+    nextModuleId,
+    isMaxLevel,
 }) {
     const displayScore = parseInt(session.score) || 0;
     const accuracyPct = parseFloat(session.accuracy) || 0;
@@ -99,23 +101,48 @@ export default function GameResults({
                     {nextBadge && <NextBadge badge={nextBadge} />}
 
                     <div className="flex gap-4">
-                        <button
-                            onClick={() =>
-                                (window.location.href =
-                                    window.location.origin +
-                                    `/student/gameplay${session.module_type === "word" ? "Read" : "Speak"}Mode/${session.module_id}`)
-                            }
-                            className="flex-1 bg-surface-container-high text-on-surface font-bold py-5 rounded-2xl border border-surface-variant/20 text-base uppercase tracking-wider active:scale-[0.97] transition-all hover:bg-surface-container-highest"
-                        >
-                            <span className="material-symbols-outlined mr-2">replay</span>Again
-                        </button>
-                        <Link
-                            href="/student/dashboard"
-                            className="flex-1 bg-primary text-on-primary font-bold py-5 rounded-2xl border border-surface-variant/20 text-base uppercase tracking-wider active:scale-[0.97] transition-all hover:brightness-110 text-center flex items-center justify-center"
-                        >
-                            <span className="material-symbols-outlined mr-2">home</span>Home
-                        </Link>
-                    </div>
+                            <button
+                                onClick={() =>
+                                    (window.location.href =
+                                        window.location.origin +
+                                        `/student/gameplay${session.module_type === "word" ? "Read" : "Speak"}Mode/${session.module_id}`)
+                                }
+                                className="flex-1 bg-surface-container-high text-on-surface font-bold py-5 rounded-2xl border border-surface-variant/20 text-base uppercase tracking-wider active:scale-[0.97] transition-all hover:bg-surface-container-highest"
+                            >
+                                <span className="material-symbols-outlined mr-2">replay</span>Again
+                            </button>
+                            {isMaxLevel ? (
+                                <button
+                                    disabled
+                                    className="flex-1 bg-surface-container text-on-surface-variant font-bold py-5 rounded-2xl border border-surface-variant/20 text-base uppercase tracking-wider cursor-not-allowed opacity-50"
+                                    onClick={() => alert("Level Complete!")}
+                                >
+                                    <span className="material-symbols-outlined mr-2" style={{ fontVariationSettings: "'FILL' 1" }}>arrow_forward</span>
+                                    Next Level
+                                </button>
+                            ) : nextModuleId ? (
+                                <Link
+                                    href={`/student/gameplay${session.module_type === "word" ? "Read" : "Speak"}Mode/${nextModuleId}`}
+                                    className="flex-1 bg-primary text-on-primary font-bold py-5 rounded-2xl border border-surface-variant/20 text-base uppercase tracking-wider active:scale-[0.97] transition-all hover:brightness-110 text-center flex items-center justify-center"
+                                >
+                                    <span className="material-symbols-outlined mr-2">arrow_forward</span>Next Level
+                                </Link>
+                            ) : (
+                                <Link
+                                    href="/student/readModeLevels"
+                                    className="flex-1 bg-surface-container-high text-on-surface font-bold py-5 rounded-2xl border border-surface-variant/20 text-base uppercase tracking-wider active:scale-[0.97] transition-all hover:bg-surface-container-highest text-center flex items-center justify-center"
+                                >
+                                    <span className="material-symbols-outlined mr-2" style={{ fontVariationSettings: "'FILL' 1" }}>menu_book</span>
+                                    Levels
+                                </Link>
+                            )}
+                            <Link
+                                href="/student/dashboard"
+                                className="flex-1 bg-surface-container-high text-on-surface font-bold py-5 rounded-2xl border border-surface-variant/20 text-base uppercase tracking-wider active:scale-[0.97] transition-all hover:bg-surface-container-highest text-center flex items-center justify-center"
+                            >
+                                <span className="material-symbols-outlined mr-2">home</span>Home
+                            </Link>
+                        </div>
                 </div>
             </div>
         </div>
