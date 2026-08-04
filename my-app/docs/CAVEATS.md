@@ -54,6 +54,15 @@ fix" column names the event that should prompt the fix — not before (YAGNI).
 
 ## Explicitly accepted for MVP
 
+## Bug fixes (verified by tests)
+
+| # | Area | Was | Now | Locked by |
+|---|---|---|---|---|
+| BF1 | Accuracy | Tutorial module accuracy was included in the averaged `wordBlastAcc`/`storyQuestAcc` (ProgressService lines 84-87, `avg('accuracy')` with no tutorial filter). | Tutorial (`is_tutorial=true`) rows excluded via `when($tutorialModule, ...)`. | `ProgressServiceTest::test_tutorial_progress_does_not_pollute_accuracy`, `test_tutorial_paragraph_progress_does_not_pollute_accuracy`. |
+| BF2 | Status regression | A worse replay could downgrade a `completed` module back to `in_progress` (ProgressService line 74: `status = wordsProcessed >= totalWords ? completed : in_progress`). | Status is sticky: `completed` stays `completed` on replay (`progress->status === 'completed' || wordsProcessed >= totalWords`). | `ProgressServiceTest::test_status_does_not_regress_to_in_progress_on_worse_replay`, `test_better_replay_cannot_downgrade_accuracy`. |
+
+## Explicitly accepted for MVP
+
 - **Best-score-only retry** — worse plays never overwrite; replay is practice with zero point farming. Intentional, see ProgressService.
 - **Replayable completed levels** — LevelCard allows "PLAY AGAIN" on completed modules; H4 is the known tradeoff of this decision.
 - **Single global report deadline** — per-class deadlines deferred (M4).

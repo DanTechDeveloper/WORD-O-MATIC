@@ -17,6 +17,7 @@ class ProgressService
         $this->updateModuleProgress($student, $module, $wordsSmashed, $wordsProcessed, $accuracy,
             StudentWordProgress::class, 'word_module_id',
             StudentWordMastery::class, 'word_id',
+            WordModule::class,
             'wordBlastAcc', 'read_level', 'read_progress',
             isTutorial: $isTutorial,
         );
@@ -27,6 +28,7 @@ class ProgressService
         $this->updateModuleProgress($student, $module, $wordsSmashed, $wordsProcessed, $accuracy,
             StudentParagraphProgress::class, 'paragraph_module_id',
             StudentParagraphMastery::class, 'paragraph_word_id',
+            ParagraphModule::class,
             'storyQuestAcc', 'speak_level', 'speak_progress',
             isTutorial: $isTutorial,
         );
@@ -42,6 +44,7 @@ class ProgressService
         string $moduleKey,
         string $masteryClass,
         string $wordKey,
+        string $moduleClass,
         string $accColumn,
         string $levelColumn,
         string $progressColumn,
@@ -66,7 +69,11 @@ class ProgressService
         }
 
         $totalWords = $module->words()->count();
-        $progress->status = $wordsProcessed >= $totalWords ? 'completed' : 'in_progress';
+        // Status is sticky: a worse replay must not regress a completed module,
+        // since LevelsPage now allows replaying completed levels (regression guard).
+        $progress->status = ($progress->status === 'completed' || $wordsProcessed >= $totalWords)
+            ? 'completed'
+            : 'in_progress';
         $progress->save();
 
         if ($isTutorial) {
@@ -74,7 +81,10 @@ class ProgressService
         }
 
         if ($isNewBest) {
-            $avgAccuracy = $progressClass::where('user_id', $student->user_id)->avg('accuracy');
+            $tutorialModule = $moduleClass::where('is_tutorial', true)->first();
+            $avgAccuracy = $progressClass::where('user_id', $student->user_id)
+                ->when($tutorialModule, fn ($q) => $q->where($moduleKey, '!=', $tutorialModule->id))
+                ->avg('accuracy');
             $student->update([$accColumn => round($avgAccuracy, 2)]);
             $this->recalculateStatus($student);
         }
