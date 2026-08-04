@@ -40,7 +40,7 @@ const GameplayHeader = memo(function GameplayHeader({
                         {timeLeft}s
                     </p>
                     {isLowTime && (
-                        <span className="text-red-400 text-[10px] font-black">⚠️</span>
+                        <span className="material-symbols-outlined text-red-400 text-base">warning</span>
                     )}
                 </div>
             </div>
@@ -106,8 +106,8 @@ const GameplayHeader = memo(function GameplayHeader({
                                 className={`text-[10px] font-black uppercase tracking-tighter ${isLowTime ? "text-red-400" : mode === "read" ? "text-accent/50" : "text-quest/50"}`}
                             >
                                 {isLowTime && timeLeft > 0
-                                    ? "⚠️ Critical Time!"
-                                    : "🚀 Hyper-Drive!"}
+                                    ? "Critical Time!"
+                                    : "Hyper-Drive!"}
                             </p>
                         </div>
                     </div>
