@@ -22,7 +22,7 @@ Classification formula: `wordBlastAcc` and `storyQuestAcc` averaged.
 | Before deadline | Checkboxes disabled, Send locked, deadline save locked |
 | After deadline | All enabled |
 
-Training words filtered by `created_at <= deadline`.
+Training words filtered by `created_at <= deadline` (deadline is normalized via `Carbon::parse($cutoff)->format('Y-m-d H:i:s')` to avoid SQL string comparison issues with ISO dates).
 
 ## Email
 
@@ -39,7 +39,11 @@ Training words filtered by `created_at <= deadline`.
 
 ## Exports
 
-PDF and Excel from reports page. Available after deadline passes.
+Excel (`.xlsx`) export via `ReportsExport` is available after deadline passes.
+- **Class Report Sheet**: Contains student details, status breakdown summary, and two embedded native Excel charts:
+  - **Class Health Distribution** (Pie Chart): Visualizes student status distribution.
+  - **Student Accuracy Comparison** (Bar/Column Chart): Compares Word Blast and Story Quest accuracies per student.
+- **Training Words Detail Sheet**: Full list of words in training per student.
 
 ## Student Details
 
