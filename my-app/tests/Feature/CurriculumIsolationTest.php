@@ -78,4 +78,31 @@ class CurriculumIsolationTest extends TestCase
         $this->assertSame(4, count($curriculum[0]['mastered']));
         $this->assertSame(4, $curriculum[0]['words_count']);
     }
+
+    // replays of a completed module must not regress earned mastery —
+    // onMispronounce on a mastered word is intentionally a no-op at the controller boundary.
+    public function test_existing_mastered_word_is_not_downgraded_on_mispronounce(): void
+    {
+        $module = WordModule::create(['level' => 1, 'title' => 'Level 1']);
+        $word = Word::create(['word_module_id' => $module->id, 'word' => 'cat', 'position' => 1]);
+        StudentWordMastery::create(['user_id' => $this->student->id, 'word_id' => $word->id, 'status' => 'mastered']);
+
+        // simulate a mispronounce (training) POST on a mastered word
+        $this->actingAs($this->student, 'web')
+            ->post('/student/updateWordMastery', ['word_id' => $word->id, 'status' => 'training']);
+
+        $this->assertSame('mastered', StudentWordMastery::where('user_id', $this->student->id)->where('word_id', $word->id)->value('status'));
+    }
+
+    public function test_training_word_can_still_be_promoted_to_mastered(): void
+    {
+        $module = WordModule::create(['level' => 1, 'title' => 'Level 1']);
+        $word = Word::create(['word_module_id' => $module->id, 'word' => 'dog', 'position' => 2]);
+        StudentWordMastery::create(['user_id' => $this->student->id, 'word_id' => $word->id, 'status' => 'training']);
+
+        $this->actingAs($this->student, 'web')
+            ->post('/student/updateWordMastery', ['word_id' => $word->id, 'status' => 'mastered']);
+
+        $this->assertSame('mastered', StudentWordMastery::where('user_id', $this->student->id)->where('word_id', $word->id)->value('status'));
+    }
 }

@@ -202,6 +202,15 @@ class StudentController extends Controller
             'status' => 'required|in:mastered,training',
         ]);
 
+        // Mastery is sticky: a mastered word can never regress to training on replay,
+        // matching the best-score-only invariant (see docs/CAVEATS.md BF2/BF4).
+        $existing = StudentWordMastery::where('user_id', auth()->id())
+            ->where('word_id', $request->word_id)
+            ->first();
+        if ($existing && $existing->status === 'mastered' && $request->status === 'training') {
+            return response()->noContent();
+        }
+
         StudentWordMastery::updateOrCreate(
             ['user_id' => auth()->id(), 'word_id' => $request->word_id],
             ['status' => $request->status]
@@ -216,6 +225,14 @@ class StudentController extends Controller
             'paragraph_word_id' => 'required|exists:paragraph_words,id',
             'status' => 'required|in:mastered,training',
         ]);
+
+        // Same sticky-mastery guard: mastered paragraph words cannot regress.
+        $existing = StudentParagraphMastery::where('user_id', auth()->id())
+            ->where('paragraph_word_id', $request->paragraph_word_id)
+            ->first();
+        if ($existing && $existing->status === 'mastered' && $request->status === 'training') {
+            return response()->noContent();
+        }
 
         StudentParagraphMastery::updateOrCreate(
             ['user_id' => auth()->id(), 'paragraph_word_id' => $request->paragraph_word_id],
