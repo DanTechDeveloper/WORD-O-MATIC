@@ -1,16 +1,14 @@
 import DashboardLayout from "../../Layouts/Teacher/DashboardLayout";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
-    PieChart,
-    Pie,
-    Cell,
+    BarChart,
     ResponsiveContainer,
     Tooltip,
-    BarChart,
-    Bar,
     XAxis,
     YAxis,
     CartesianGrid,
+    Bar,
+    Cell
 } from "recharts";
 
 export default function Dashboard({
@@ -21,11 +19,17 @@ export default function Dashboard({
     sectionPerformance = [],
     chartCounts,
     topStudents = [],
+    students = [],
     auth,
 }) {
     const [selectedSection, setSelectedSection] = useState("");
     const [nameFilter, setNameFilter] = useState("");
-    const sectionList = sectionPerformance.map((item) => item.section);
+    const [activeMetric, setActiveMetric] = useState("points");
+    const METRICS = [
+        { key: "points", label: "Points", icon: "military_tech", valueKey: "points" },
+        { key: "wordBlast", label: "Word Blast", icon: "auto_stories", valueKey: "wordBlastAcc" },
+        { key: "storyQuest", label: "Story Quest", icon: "record_voice_over", valueKey: "storyQuestAcc" },
+    ];
     const stats = [
         {
             label: "Total Students",
@@ -53,30 +57,72 @@ export default function Dashboard({
         },
     ];
 
-    const currentList = topStudents.points ?? [];
+    const activeMetricObj = METRICS.find((m) => m.key === activeMetric) ?? METRICS[0];
+    const currentList = topStudents[activeMetricObj.key] ?? [];
     const filteredTopStudents = currentList
         .filter((s) => !nameFilter || s.name.toLowerCase().includes(nameFilter.toLowerCase()))
         .filter((s) => !selectedSection || s.section === selectedSection)
         .slice(0, 10)
         .map((s, i) => ({ ...s, rank: i + 1 }));
 
-    const allStudents = topStudents.points ?? [];
-    const sectionListForFilter = [...new Set(allStudents.map((s) => s.section).filter(Boolean))];
+    const sectionListForFilter = [...new Set(currentList.map((s) => s.section).filter(Boolean))];
 
-    const topBarKey = "points";
-    const topBarLabel = "Points";
+    const topBarKey = activeMetricObj.valueKey;
 
     const RANK_COLORS = ["#fbbf24", "#94a3b8", "#d97706"];
 
-    const chartData = [
-        { name: "Not Started", value: chartCounts?.notStarted ?? 0, color: "#64748b" },
-        { name: "In Progress", value: chartCounts?.in_progress ?? 0, color: "#38bdf8" },
-        { name: "At Risk", value: chartCounts?.atRisk ?? 0, color: "#fb7185" },
-        { name: "Needs Support", value: chartCounts?.needsSupport ?? 0, color: "#fbbf24" },
-        { name: "On Track", value: chartCounts?.onTrack ?? 0, color: "#a3e635" },
+    const STATUS_CATEGORIES = [
+        { key: "notStarted", label: "Not Started", countKey: "notStarted", color: "#64748b", icon: "hourglass_empty" },
+        { key: "in_progress", label: "In Progress", countKey: "in_progress", color: "#38bdf8", icon: "progress_activity" },
+        { key: "atRisk", label: "At Risk", countKey: "atRisk", color: "#fb7185", icon: "error" },
+        { key: "needsSupport", label: "Needs Support", countKey: "needsSupport", color: "#fbbf24", icon: "tips_and_updates" },
+        { key: "onTrack", label: "On Track", countKey: "onTrack", color: "#a3e635", icon: "check_circle" },
     ];
 
-    
+    const chartData = STATUS_CATEGORIES.map((cat) => ({
+        name: cat.label,
+        value: chartCounts?.[cat.countKey] ?? 0,
+        color: cat.color,
+    }));
+
+    const [selectedCategory, setSelectedCategory] = useState("");
+    const [selectedHealthSection, setSelectedHealthSection] = useState("");
+    const tableRef = useRef(null);
+
+    const selectCategory = (key) => {
+        setSelectedCategory(key === selectedCategory ? "" : key);
+        tableRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
+
+    const statusSections = [...new Set(students.map((s) => s.section).filter(Boolean))];
+    const tableStudents = students
+        .filter((s) => !selectedCategory || s.status === selectedCategory)
+        .filter((s) => !selectedHealthSection || s.section === selectedHealthSection);
+
+    const ColoredBar = ({ payload, ...props }) => (
+        <rect {...props} fill={payload?.color ?? "#a3e635"} />
+    );
+
+    const STATUS_BADGE = {
+        onTrack: "bg-green-900/50 text-green-400 border-green-500",
+        needsSupport: "bg-amber-900/50 text-amber-400 border-amber-500",
+        notStarted: "bg-slate-800/50 text-slate-500 border-slate-700",
+        atRisk: "bg-rose-900/50 text-rose-400 border-rose-500",
+        in_progress: "bg-sky-900/50 text-sky-400 border-sky-500",
+    };
+
+    const statusBadge = (status) => {
+        const cfg = STATUS_CATEGORIES.find((c) => c.key === status);
+        return (
+            <span
+                className={`px-3 py-1 rounded-full border-2 text-[10px] font-black uppercase ${
+                    STATUS_BADGE[status] ?? "bg-slate-800/50 text-slate-500 border-slate-700"
+                }`}
+            >
+                {cfg?.label ?? status}
+            </span>
+        );
+    };
 
     return (
         <DashboardLayout>
@@ -89,92 +135,165 @@ export default function Dashboard({
                 </p>
             </div>
 
-            <div className="flex flex-col lg:flex-row gap-6 mb-10">
-                {/* Left: Stats Cards Grid */}
-                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {stats.map((stat, index) => (
-                        <div
-                            key={index}
-                            className="bg-slate-900 border-2 border-slate-800 p-6 rounded-2xl shadow-[4px_4px_0_0_#020617] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all cursor-default"
-                        >
-                            <div className="flex items-start justify-between mb-4">
-                                <span
-                                    className={`material-symbols-outlined text-3xl ${stat.color}`}
-                                >
-                                    {stat.icon}
-                                </span>
-                            </div>
-                            <h3 className="text-slate-500 text-xs font-black uppercase tracking-widest mb-1">
-                                {stat.label}
-                            </h3>
-                            <p className="text-3xl font-black text-white italic tracking-tighter">
-                                {stat.value}
-                            </p>
+            {/* Stats Cards — horizontal */}
+            <div className="flex flex-col sm:flex-row gap-4 mb-10">
+                {stats.map((stat, index) => (
+                    <div
+                        key={index}
+                        className="bg-slate-900 border-2 border-slate-800 p-6 rounded-2xl shadow-[4px_4px_0_0_#020617] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all cursor-default flex-1"
+                    >
+                        <div className="flex items-start justify-between mb-4">
+                            <span
+                                className={`material-symbols-outlined text-3xl ${stat.color}`}
+                            >
+                                {stat.icon}
+                            </span>
                         </div>
+                        <h3 className="text-slate-500 text-xs font-black uppercase tracking-widest mb-1">
+                            {stat.label}
+                        </h3>
+                        <p className="text-3xl font-black text-white italic tracking-tighter">
+                            {stat.value}
+                        </p>
+                    </div>
+                ))}
+            </div>
+
+            {/* Class Health Distribution — bar graph */}
+            <div className="bg-slate-900 border-4 border-slate-800 p-8 rounded-[2.5rem] shadow-[8px_8px_0_0_#020617] mb-10">
+                <h3 className="text-white text-sm font-black uppercase tracking-widest mb-6 flex items-center gap-2">
+                    <span className="material-symbols-outlined text-cyan-400 text-sm">
+                        monitoring
+                    </span>
+                    Class Health Distribution
+                </h3>
+                <div className="h-[220px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <BarChart
+                            data={chartData}
+                            margin={{ top: 10, right: 20, left: 0, bottom: 0 }}
+                        >
+                            <XAxis
+                                dataKey="name"
+                                stroke="#94a3b8"
+                                fontSize={11}
+                                tickLine={false}
+                                axisLine={false}
+                            />
+                            <YAxis
+                                stroke="#94a3b8"
+                                fontSize={11}
+                                tickLine={false}
+                                axisLine={false}
+                                allowDecimals={false}
+                            />
+                            <CartesianGrid
+                                strokeDasharray="3 3"
+                                stroke="#1e293b"
+                                vertical={false}
+                            />
+                            <Tooltip
+                                contentStyle={{
+                                    backgroundColor: "#0f172a",
+                                    border: "2px solid #334155",
+                                    borderRadius: "12px",
+                                }}
+                                itemStyle={{
+                                    color: "#fff",
+                                    fontSize: "12px",
+                                    fontWeight: "bold",
+                                }}
+                                formatter={(value) => [`${value} Students`, "Count"]}
+                            />
+                            <Bar dataKey="value" shape={<ColoredBar />} radius={[6, 6, 0, 0]} />
+                        </BarChart>
+                    </ResponsiveContainer>
+                </div>
+
+                {/* Legend chips — clickable to filter the student table */}
+                <div className="mt-4 flex flex-wrap gap-2">
+                    {STATUS_CATEGORIES.map((cat) => (
+                        <button
+                            key={cat.key}
+                            onClick={() => selectCategory(cat.key)}
+                            className={`flex items-center gap-2 px-3 py-2 rounded-lg font-black uppercase italic text-xs transition-all ${
+                                selectedCategory === cat.key
+                                    ? "bg-lime-400 text-slate-950 shadow-[2px_2px_0_0_#3f6212]"
+                                    : "bg-slate-950 border-2 border-slate-800 text-slate-400 hover:text-lime-300"
+                            }`}
+                        >
+                            <span
+                                className="material-symbols-outlined text-sm"
+                                style={{ color: cat.color }}
+                            >
+                                {cat.icon}
+                            </span>
+                            {cat.label} ({chartCounts?.[cat.countKey] ?? 0})
+                        </button>
                     ))}
                 </div>
 
-                {/* Right: Class Health Sidebar Chart */}
-                <div className="lg:w-1/3 bg-slate-900 border-2 border-slate-800 p-8 rounded-2xl shadow-[4px_4px_0_0_#020617] flex flex-col justify-center">
-                    <h3 className="text-white text-sm font-black uppercase tracking-widest mb-6 flex items-center gap-2">
-                        <span className="material-symbols-outlined text-lime-400 text-sm">
-                            monitoring
-                        </span>
-                        Class Health Distribution
-                    </h3>
-                    <div className="h-[200px] w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                                <Pie
-                                    data={chartData}
-                                    innerRadius={60}
-                                    outerRadius={80}
-                                    paddingAngle={8}
-                                    dataKey="value"
-                                >
-                                    {chartData.map((entry, index) => (
-                                        <Cell
-                                            key={`cell-${index}`}
-                                            fill={entry.color}
-                                            stroke="none"
-                                        />
-                                    ))}
-                                </Pie>
-                                <Tooltip
-                                    contentStyle={{
-                                        backgroundColor: "#0f172a",
-                                        border: "2px solid #334155",
-                                        borderRadius: "12px",
-                                    }}
-                                    itemStyle={{
-                                        color: "#fff",
-                                        fontSize: "12px",
-                                        fontWeight: "bold",
-                                    }}
-                                />
-                            </PieChart>
-                        </ResponsiveContainer>
-                    </div>
-                    <div className="mt-4 space-y-2">
-                        {chartData.map((item) => (
-                            <div
-                                key={item.name}
-                                className="flex justify-between items-center text-xs font-medium uppercase tracking-widest"
+                {/* Student table (filtered by category + section) */}
+                <div ref={tableRef} className="mt-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                        <h4 className="text-white font-black uppercase italic text-sm">
+                            {selectedCategory
+                                ? `Students: ${STATUS_CATEGORIES.find((c) => c.key === selectedCategory)?.label}`
+                                : "All Students"}
+                        </h4>
+                        <div className="relative min-w-[160px]">
+                            <select
+                                className="w-full appearance-none bg-slate-950 border-2 border-slate-800 rounded-xl pl-4 pr-10 py-2 text-white font-bold focus:outline-none focus:border-lime-500 cursor-pointer transition-all text-sm"
+                                value={selectedHealthSection}
+                                onChange={(e) => setSelectedHealthSection(e.target.value)}
                             >
-                                <div className="flex items-center gap-2">
-                                    <div
-                                        className="w-2 h-2 rounded-full"
-                                        style={{ backgroundColor: item.color }}
-                                    ></div>
-                                    <span className="text-slate-400">
-                                        {item.name}
-                                    </span>
-                                </div>
-                                <span className="text-white">
-                                    {item.value} Students
-                                </span>
-                            </div>
-                        ))}
+                                <option value="">All Sections</option>
+                                {statusSections.map((section) => (
+                                    <option key={section} value={section}>{section}</option>
+                                ))}
+                            </select>
+                            <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-lime-400">
+                                filter_list
+                            </span>
+                        </div>
+                    </div>
+                    <div className="border-2 border-slate-800 rounded-xl overflow-hidden">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="border-b-2 border-slate-800 bg-slate-950">
+                                    <th className="px-4 py-2 text-slate-500 font-black uppercase text-xs tracking-widest">Name</th>
+                                    <th className="px-4 py-2 text-slate-500 font-black uppercase text-xs tracking-widest">Section</th>
+                                    <th className="px-4 py-2 text-slate-500 font-black uppercase text-xs tracking-widest text-right">Word Blast</th>
+                                    <th className="px-4 py-2 text-slate-500 font-black uppercase text-xs tracking-widest text-right">Story Quest</th>
+                                    <th className="px-4 py-2 text-slate-500 font-black uppercase text-xs tracking-widest">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-800/50">
+                                {tableStudents.length === 0 ? (
+                                    <tr>
+                                        <td
+                                            colSpan="5"
+                                            className="px-4 py-8 text-center text-slate-600 font-black uppercase tracking-widest text-sm"
+                                        >
+                                            No students match the current filters
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    tableStudents.map((s) => (
+                                        <tr
+                                            key={s.id}
+                                            className="hover:bg-slate-900/50 transition-colors"
+                                        >
+                                            <td className="px-4 py-3 text-white font-bold">{s.name}</td>
+                                            <td className="px-4 py-3 text-white font-bold">{s.section || "N/A"}</td>
+                                            <td className="px-4 py-3 text-purple-400 font-black italic text-right">{s.wordBlastAcc ?? 0}%</td>
+                                            <td className="px-4 py-3 text-cyan-400 font-black italic text-right">{s.storyQuestAcc ?? 0}%</td>
+                                            <td className="px-4 py-3">{statusBadge(s.status)}</td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -266,12 +385,30 @@ export default function Dashboard({
             {/* Top Performing Students */}
             <div className="bg-slate-900 border-4 border-slate-800 p-10 rounded-[2.5rem] shadow-[8px_8px_0_0_#020617] mb-10">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
-                    <h2 className="text-2xl font-black text-white uppercase italic flex items-center gap-3">
-                        <span className="material-symbols-outlined text-yellow-400">
-                            leaderboard
-                        </span>
-                        Top Performing Students
-                    </h2>
+                    <div className="flex items-center gap-4">
+                        <h2 className="text-2xl font-black text-white uppercase italic flex items-center gap-3">
+                            <span className="material-symbols-outlined text-yellow-400">
+                                leaderboard
+                            </span>
+                            Top Performing Students
+                        </h2>
+                        <div className="flex items-center gap-1 bg-slate-950 border-2 border-slate-800 rounded-xl p-1">
+                            {METRICS.map((metric) => (
+                                <button
+                                    key={metric.key}
+                                    onClick={() => setActiveMetric(metric.key)}
+                                    className={`flex items-center gap-1.5 px-4 py-2 rounded-lg font-black uppercase italic text-xs transition-all ${
+                                        activeMetric === metric.key
+                                            ? "bg-lime-400 text-slate-950 shadow-[2px_2px_0_0_#3f6212]"
+                                            : "text-slate-500 hover:text-lime-300"
+                                    }`}
+                                >
+                                    <span className="material-symbols-outlined text-sm">{metric.icon}</span>
+                                    {metric.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
                     <div className="flex flex-col sm:flex-row gap-3">
                         <div className="relative">
                             <input
@@ -369,12 +506,17 @@ export default function Dashboard({
                                                     )}
                                                     <span>{s.name}</span>
                                                 </p>
-                                                <div className="space-y-1 text-xs">
-                                                    <p className="font-black text-lime-400">{s.points.toLocaleString()} Points</p>
-                                                    <p className="text-slate-400 font-semibold">Section: {s.section || 'N/A'}</p>
-                                                    <p className="text-purple-400 font-semibold">Word Blast: {s.wordBlastAcc ?? 0}%</p>
-                                                    <p className="text-cyan-400 font-semibold">Story Quest: {s.storyQuestAcc ?? 0}%</p>
-                                                </div>
+                                                     <div className="space-y-1 text-xs">
+                                                     <p className="font-black text-lime-400">
+                                                         {activeMetricObj.label}:{" "}
+                                                         {activeMetricObj.valueKey === "points"
+                                                             ? `${s.points?.toLocaleString() ?? 0}`
+                                                             : `${s[activeMetricObj.valueKey] ?? 0}%`}
+                                                     </p>
+                                                     <p className="text-slate-400 font-semibold">Section: {s.section || 'N/A'}</p>
+                                                     <p className="text-purple-400 font-semibold">Word Blast: {s.wordBlastAcc ?? 0}%</p>
+                                                     <p className="text-cyan-400 font-semibold">Story Quest: {s.storyQuestAcc ?? 0}%</p>
+                                                 </div>
                                             </div>
                                         );
                                     }}

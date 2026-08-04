@@ -157,7 +157,7 @@ class TeacherController extends Controller
     {
         $allStudents = StudentProfile::join('users', 'users.id', '=', 'students.user_id')
             ->where('users.role', 'student')
-            ->select('students.*')
+            ->select(['students.*', 'users.name'])
             ->get();
 
         $avgReadAccuracy = $allStudents->avg('wordBlastAcc') ?? 0;
@@ -196,31 +196,40 @@ class TeacherController extends Controller
         $notStarted = 0;
         $inProgress = 0;
 
+        $students = [];
         foreach ($allStudents as $student) {
             $wordBlast = (float) $student->wordBlastAcc;
             $storyQuest = (float) $student->storyQuestAcc;
 
             if (! $wordBlast && ! $storyQuest) {
+                $status = 'notStarted';
                 $notStarted++;
-
-                continue;
-            }
-
-            if (! $wordBlast || ! $storyQuest) {
+            } elseif (! $wordBlast || ! $storyQuest) {
+                $status = 'in_progress';
                 $inProgress++;
-
-                continue;
-            }
-
-            $overallAvg = ($wordBlast + $storyQuest) / 2;
-
-            if ($overallAvg >= 80) {
-                $onTrack++;
-            } elseif ($overallAvg >= 60) {
-                $needsSupport++;
             } else {
-                $atRisk++;
+                $overallAvg = ($wordBlast + $storyQuest) / 2;
+
+                if ($overallAvg >= 80) {
+                    $status = 'onTrack';
+                    $onTrack++;
+                } elseif ($overallAvg >= 60) {
+                    $status = 'needsSupport';
+                    $needsSupport++;
+                } else {
+                    $status = 'atRisk';
+                    $atRisk++;
+                }
             }
+
+            $students[] = [
+                'id' => $student->user_id,
+                'name' => $student->name,
+                'section' => $student->section,
+                'wordBlastAcc' => $student->wordBlastAcc,
+                'storyQuestAcc' => $student->storyQuestAcc,
+                'status' => $status,
+            ];
         }
 
         $totalStudents = User::where('role', 'student')->count();
@@ -245,6 +254,7 @@ class TeacherController extends Controller
             'avgSpeakAccuracy' => round($avgSpeakAccuracy, 2),
             'totalClassPoints' => $totalClassPoints,
             'sectionPerformance' => $sectionPerformance,
+            'students' => $students,
             'chartCounts' => [
                 'notStarted' => $notStarted,
                 'in_progress' => $inProgress,
