@@ -457,6 +457,20 @@ export default function Reports({ grouped, flash, deadline }) {
 
             {renderDeadlineBanner()}
 
+            {isPastDeadline && (
+                <div className="mb-8 flex gap-4">
+                    <a
+                        href={route("teacher.reports.export")}
+                        className="px-8 py-4 rounded-xl font-black uppercase italic text-sm transition-all flex items-center gap-2 bg-lime-400 border-4 border-slate-950 text-slate-950 hover:translate-y-1 hover:shadow-[4px_4px_0_0_#3f6212]"
+                    >
+                        <span className="material-symbols-outlined text-lg">
+                            download
+                        </span>
+                        Export to Excel
+                    </a>
+                </div>
+            )}
+
             <div className="bg-slate-900 border-4 border-slate-800 p-8 rounded-[2.5rem] shadow-[8px_8px_0_0_#020617]">
                     <div className="flex items-center justify-between mb-8">
                         <h2 className="text-2xl font-black text-white uppercase italic flex items-center gap-3">

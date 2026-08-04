@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\ReportsExport;
 use App\Mail\StudentReportMail;
 use App\Models\Badges;
 use App\Models\ParagraphModule;
@@ -11,6 +12,7 @@ use App\Models\User;
 use App\Models\WordModule;
 use App\Services\BadgeService;
 use Carbon\Carbon;
+use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
@@ -496,6 +498,46 @@ class TeacherController extends Controller
             ->with('sent', $sent)
             ->with('failed', $failed)
             ->with('reported_at', $deadlineTs->format('F j, Y \a\t g:i A'));
+    }
+
+    public function exportReports(Request $request)
+    {
+        $deadline = Setting::getValue('report_deadline');
+
+        if (empty($deadline)) {
+            return redirect()->back()->withErrors(['No report deadline set. Set a deadline first.']);
+        }
+
+        $deadlineTs = Carbon::parse($deadline, config('app.timezone'));
+
+        if ($deadlineTs->isFuture()) {
+            return redirect()->back()->withErrors(['Report deadline has not yet been reached.']);
+        }
+
+        $students = User::with('student')
+            ->where('role', 'student')
+            ->orderBy('name', 'asc')
+            ->get();
+
+        $studentIds = $students->pluck('id')->all();
+        $wordTraining = WordModule::trainingWordsForUsers($studentIds, $deadline);
+        $paraTraining = ParagraphModule::trainingWordsForUsers($studentIds, $deadline);
+
+        $formattedStudents = $students->map(fn ($user) => [
+            'name' => $user->name,
+            'section' => $user->student?->section ?? '',
+            'status' => $user->student?->status ?? 'notStarted',
+            'wordBlastAcc' => $user->student?->wordBlastAcc ?? 0,
+            'storyQuestAcc' => $user->student?->storyQuestAcc ?? 0,
+            'read_level' => $user->student?->read_level ?? 1,
+            'speak_level' => $user->student?->speak_level ?? 1,
+            'parent_email' => $user->student?->parent_email,
+            'report_sent_at' => $user->student?->report_sent_at,
+            'trainingWords' => $wordTraining[$user->id] ?? [],
+            'paragraphTrainingWords' => $paraTraining[$user->id] ?? [],
+        ])->toArray();
+
+        return Excel::download(new ReportsExport($formattedStudents), 'class-report.xlsx');
     }
 
     public function assignments()
