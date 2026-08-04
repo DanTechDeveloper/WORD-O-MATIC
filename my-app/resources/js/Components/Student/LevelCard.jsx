@@ -97,10 +97,10 @@ export default function LevelCard({ module, emoji, gameUrl, index, highlightTuto
             {/* Play button / Completed indicator */}
             <div className="mt-4">
                 {isCompleted ? (
-                    <div className="flex items-center gap-2 text-accent font-black text-sm">
-                        <span className="material-symbols-outlined text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
-                        DONE
-                    </div>
+                    <span className="inline-flex items-center gap-1.5 bg-accent text-surface-container-lowest font-black px-4 py-2 rounded-lg text-sm border-b-[6px] border-accent-deep group-active:border-b-[2px] group-active:translate-y-1 transition-all">
+                        <span className="material-symbols-outlined text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>replay</span>
+                        PLAY AGAIN
+                    </span>
                 ) : (
                     <span className={`inline-flex items-center gap-1.5 bg-accent text-surface-container-lowest font-black px-4 py-2 rounded-lg text-sm border-b-[6px] border-accent-deep group-active:border-b-[2px] group-active:translate-y-1 transition-all ${hasResume ? "animate-pulse motion-reduce:animate-none" : ""}`}>
                         <span className="material-symbols-outlined text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>play_arrow</span>
@@ -133,18 +133,8 @@ export default function LevelCard({ module, emoji, gameUrl, index, highlightTuto
         ${isCompleted ? "border-accent-deep bg-accent/5" : ""}
         ${isCurrent ? "border-secondary-container ring-2 ring-secondary-container/50" : ""}
         ${isPlayable && !isCurrent && !isCompleted ? "border-surface-variant/30 hover:border-secondary-container/50" : ""}
-        ${isPlayable ? "hover:scale-[1.03] hover:-translate-y-1 active:scale-[1.01] cursor-pointer" : "cursor-default"}
+        ${isPlayable || isCompleted ? "hover:scale-[1.03] hover:-translate-y-1 active:scale-[1.01] cursor-pointer" : "cursor-default"}
         ${highlightRing}`
-
-    if (isCompleted) {
-        return (
-            <div className={wrapperClass} style={{ animationDelay: `${index * 80}ms` }}>
-                {cover}
-                {shimmer}
-                {inner}
-            </div>
-        )
-    }
 
     return (
         <Link
