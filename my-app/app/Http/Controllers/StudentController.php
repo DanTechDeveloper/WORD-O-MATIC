@@ -17,6 +17,7 @@ use App\Models\WordModule;
 use App\Services\BadgeService;
 use App\Services\LevelService;
 use App\Services\ProgressService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -41,9 +42,7 @@ class StudentController extends Controller
     public function dashboard()
     {
         $user = auth()->user();
-
-        $tutWord = WordModule::where('is_tutorial', true)->first();
-        $tutPara = ParagraphModule::where('is_tutorial', true)->first();
+        extract($this->tutorialState($user));
 
         $totalReadPoints = (int) Word::query()
             ->when($tutWord, fn ($q) => $q->where('word_module_id', '!=', $tutWord->id))
@@ -59,18 +58,13 @@ class StudentController extends Controller
             ->when($tutPara, fn ($q) => $q->where('paragraph_module_id', '!=', $tutPara->id))
             ->sum('words_smashed');
 
-        $wordDone = $tutWord && StudentWordProgress::where('user_id', $user->id)
-            ->where('word_module_id', $tutWord->id)->where('status', 'completed')->exists();
-        $paraDone = $tutPara && StudentParagraphProgress::where('user_id', $user->id)
-            ->where('paragraph_module_id', $tutPara->id)->where('status', 'completed')->exists();
-
         return Inertia::render('Student/Dashboard', [
             'totalReadPoints' => $totalReadPoints,
             'totalSpeakPoints' => $totalSpeakPoints,
             'earnedReadPoints' => $earnedReadPoints,
             'earnedSpeakPoints' => $earnedSpeakPoints,
-            'wordTutorialDone' => $wordDone,
-            'speakTutorialDone' => $paraDone,
+            'wordTutorialDone' => $wordTutorialDone,
+            'speakTutorialDone' => $speakTutorialDone,
             'tutorialComplete' => (bool) ($user->student?->tutorial_completed_at),
         ]);
     }
@@ -147,14 +141,7 @@ class StudentController extends Controller
     public function readModeLevels()
     {
         $user = auth()->user();
-
-        $tutWord = WordModule::where('is_tutorial', true)->first();
-        $tutPara = ParagraphModule::where('is_tutorial', true)->first();
-
-        $wordTutorialDone = $tutWord && StudentWordProgress::where('user_id', $user->id)
-            ->where('word_module_id', $tutWord->id)->where('status', 'completed')->exists();
-        $speakTutorialDone = $tutPara && StudentParagraphProgress::where('user_id', $user->id)
-            ->where('paragraph_module_id', $tutPara->id)->where('status', 'completed')->exists();
+        extract($this->tutorialState($user));
 
         if (! $user->student?->tutorial_completed_at && ! $wordTutorialDone) {
             $progress = StudentWordProgress::where('user_id', $user->id)
@@ -205,54 +192,7 @@ class StudentController extends Controller
             'streak' => 'nullable|integer|min:0',
         ]);
 
-        $user = auth()->user();
-        $module = WordModule::findOrFail($request->module_id);
-
-        if ($module->is_tutorial && ! $user->student?->tutorial_completed_at) {
-            $this->progressService->updateWordProgress($user->student, $module, 0, $request->words_processed, 0, isTutorial: true);
-            $badgesData = $this->checkTutorialCompletion($user);
-            $redirect = redirect()->route('student.dashboard');
-            if ($badgesData) {
-                $redirect->with('new_badges', [$badgesData]);
-            }
-
-            return $redirect;
-        }
-
-        $totalPossible = $module->words()->count();
-        $wordsSmashed = min($request->words_smashed, $totalPossible);
-        $streak = min($request->streak ?? 0, $wordsSmashed + 1);
-        $accuracy = $totalPossible > 0
-            ? round(min(($wordsSmashed / $totalPossible) * 100, 100), 2)
-            : 0;
-        $session = GameSession::logSession(
-            $user->id, $module->id, 'word', $wordsSmashed, $accuracy, $streak,
-        );
-        $this->progressService->updateWordProgress($user->student, $module, $wordsSmashed, $request->words_processed, $accuracy);
-
-        $redirect = redirect()->route('student.results', ['id' => $session->id]);
-        $newBadges = $this->badgeService->checkGameplayBadges($user, $session->id, $accuracy);
-
-        $badgesData = [];
-        foreach ($newBadges as $badge) {
-            $badgesData[] = [
-                'name' => $badge->name,
-                'description' => $badge->description,
-                'slug' => $badge->slug,
-                'icon' => $badge->icon,
-            ];
-        }
-
-        $tutorialBadge = $this->checkTutorialCompletion($user);
-        if ($tutorialBadge) {
-            $badgesData[] = $tutorialBadge;
-        }
-
-        if (! empty($badgesData)) {
-            $redirect->with('new_badges', $badgesData);
-        }
-
-        return $redirect;
+        return $this->finishRound(auth()->user(), WordModule::findOrFail($request->module_id), $request, 'word');
     }
 
     public function updateWordMastery(Request $request)
@@ -288,14 +228,7 @@ class StudentController extends Controller
     public function speakModeLevels()
     {
         $user = auth()->user();
-
-        $tutWord = WordModule::where('is_tutorial', true)->first();
-        $tutPara = ParagraphModule::where('is_tutorial', true)->first();
-
-        $wordTutorialDone = $tutWord && StudentWordProgress::where('user_id', $user->id)
-            ->where('word_module_id', $tutWord->id)->where('status', 'completed')->exists();
-        $speakTutorialDone = $tutPara && StudentParagraphProgress::where('user_id', $user->id)
-            ->where('paragraph_module_id', $tutPara->id)->where('status', 'completed')->exists();
+        extract($this->tutorialState($user));
 
         if (! $user->student?->tutorial_completed_at && $wordTutorialDone && ! $speakTutorialDone) {
             $progress = StudentParagraphProgress::where('user_id', $user->id)
@@ -350,36 +283,45 @@ class StudentController extends Controller
             'streak' => 'nullable|integer|min:0',
         ]);
 
-        $user = auth()->user();
-        $module = ParagraphModule::findOrFail($request->module_id);
+        return $this->finishRound(auth()->user(), ParagraphModule::findOrFail($request->module_id), $request, 'paragraph');
+    }
 
-        if ($module->is_tutorial && ! $user->student?->tutorial_completed_at) {
-            $this->progressService->updateParagraphProgress($user->student, $module, 0, $request->words_processed, 0, isTutorial: true);
-            $badgesData = $this->checkTutorialCompletion($user);
-            $redirect = redirect()->route('student.dashboard');
-            if ($badgesData) {
-                $redirect->with('new_badges', [$badgesData]);
+    private function finishRound(User $user, WordModule|ParagraphModule $module, Request $request, string $type): RedirectResponse
+    {
+        $isTutorial = $module->is_tutorial && ! $user->student?->tutorial_completed_at;
+
+        if ($isTutorial) {
+            if ($type === 'word') {
+                $this->progressService->updateWordProgress($user->student, $module, 0, $request->words_processed, 0, isTutorial: true);
+            } else {
+                $this->progressService->updateParagraphProgress($user->student, $module, 0, $request->words_processed, 0, isTutorial: true);
             }
 
-            return $redirect;
+            $redirect = redirect()->route('student.dashboard');
+            $badgesData = $this->checkTutorialCompletion($user);
+
+            return $badgesData ? $redirect->with('new_badges', [$badgesData]) : $redirect;
         }
 
-        $totalPoints = $module->words()->count();
-        $wordsSmashed = min($request->words_smashed, $totalPoints);
+        $totalPossible = $module->words()->count();
+        $wordsSmashed = min($request->words_smashed, $totalPossible);
         $streak = min($request->streak ?? 0, $wordsSmashed + 1);
-        $accuracy = $totalPoints > 0
-            ? round(min(($wordsSmashed / $totalPoints) * 100, 100), 2)
+        $accuracy = $totalPossible > 0
+            ? round(min(($wordsSmashed / $totalPossible) * 100, 100), 2)
             : 0;
-        $session = GameSession::logSession(
-            $user->id, $module->id, 'paragraph', $wordsSmashed, $accuracy, $streak,
-        );
-        $this->progressService->updateParagraphProgress($user->student, $module, $wordsSmashed, $request->words_processed, $accuracy);
+
+        $session = GameSession::logSession($user->id, $module->id, $type, $wordsSmashed, $accuracy, $streak);
+
+        if ($type === 'word') {
+            $this->progressService->updateWordProgress($user->student, $module, $wordsSmashed, $request->words_processed, $accuracy);
+        } else {
+            $this->progressService->updateParagraphProgress($user->student, $module, $wordsSmashed, $request->words_processed, $accuracy);
+        }
 
         $redirect = redirect()->route('student.results', ['id' => $session->id]);
-        $newBadges = $this->badgeService->checkGameplayBadges($user, $session->id, $accuracy);
 
         $badgesData = [];
-        foreach ($newBadges as $badge) {
+        foreach ($this->badgeService->checkGameplayBadges($user, $session->id, $accuracy) as $badge) {
             $badgesData[] = [
                 'name' => $badge->name,
                 'description' => $badge->description,
@@ -388,16 +330,11 @@ class StudentController extends Controller
             ];
         }
 
-        $tutorialBadge = $this->checkTutorialCompletion($user);
-        if ($tutorialBadge) {
+        if ($tutorialBadge = $this->checkTutorialCompletion($user)) {
             $badgesData[] = $tutorialBadge;
         }
 
-        if (! empty($badgesData)) {
-            $redirect->with('new_badges', $badgesData);
-        }
-
-        return $redirect;
+        return ! empty($badgesData) ? $redirect->with('new_badges', $badgesData) : $redirect;
     }
 
     public function results($id)
@@ -424,16 +361,9 @@ class StudentController extends Controller
 
     private function checkTutorialCompletion(User $user): ?array
     {
-        $tutWord = WordModule::where('is_tutorial', true)->first();
-        $tutPara = ParagraphModule::where('is_tutorial', true)->first();
+        extract($this->tutorialState($user));
 
-        $wordDone = $tutWord && StudentWordProgress::where('user_id', $user->id)
-            ->where('word_module_id', $tutWord->id)->where('status', 'completed')->exists();
-
-        $paraDone = $tutPara && StudentParagraphProgress::where('user_id', $user->id)
-            ->where('paragraph_module_id', $tutPara->id)->where('status', 'completed')->exists();
-
-        if ($wordDone && $paraDone) {
+        if ($wordTutorialDone && $speakTutorialDone) {
             if (! $user->student->tutorial_completed_at) {
                 $user->student->update(['tutorial_completed_at' => now()]);
             }
@@ -442,5 +372,20 @@ class StudentController extends Controller
         }
 
         return null;
+    }
+
+    private function tutorialState(User $user): array
+    {
+        $tutWord = WordModule::where('is_tutorial', true)->first();
+        $tutPara = ParagraphModule::where('is_tutorial', true)->first();
+
+        return [
+            'tutWord' => $tutWord,
+            'tutPara' => $tutPara,
+            'wordTutorialDone' => $tutWord && StudentWordProgress::where('user_id', $user->id)
+                ->where('word_module_id', $tutWord->id)->where('status', 'completed')->exists(),
+            'speakTutorialDone' => $tutPara && StudentParagraphProgress::where('user_id', $user->id)
+                ->where('paragraph_module_id', $tutPara->id)->where('status', 'completed')->exists(),
+        ];
     }
 }
