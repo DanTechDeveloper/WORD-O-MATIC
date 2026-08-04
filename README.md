@@ -218,8 +218,9 @@ Two correctness guarantees are enforced as committed PHPUnit tests (`php artisan
 - **Tutorial isolation** — tutorial (`is_tutorial=true`) rounds are excluded from the averaged `wordBlastAcc`/`storyQuestAcc` and never affect points/levels/badges. Locked by `ProgressServiceTest::test_tutorial_progress_does_not_pollute_accuracy`.
 - **Mastery immutability on replay** — replaying a completed module (Again button in `GameResults.jsx`, Play Again on `LevelsPage.jsx`) cannot demote an already-`mastered` word: `StudentController::updateWordMastery` / `updateParagraphMastery` reject `mastered → training` writes; `training → mastered` promotion still applies. `StudentDetails.jsx` mastery bars are a read-only view of `curriculumForUser`, so they reflect true best mastery and can't be corrupted by practice rounds. Locked by `CurriculumIsolationTest::test_existing_mastered_word_is_not_downgraded_on_mispronounce`.
 - **Streak integrity** — streak-based badges source `GameSession::max('streak')`, which never includes tutorial plays (tutorial rounds skip `GameSession::logSession` entirely), so tutorial-contaminated streaks are structurally impossible.
+- **Module access gating** — direct URL access to a locked module (`/student/gameplayReadMode/{id}`, `/student/gameplaySpeakMode/{id}`) is blocked by a `LevelService::isModuleAccessible()` check in `StudentController`; a locked module redirects back to the level-select page with a flash error banner. Locked by `StudentController::gameplayReadMode`, `StudentController::gameplaySpeakMode`, `LevelService::isModuleAccessible`.
 
-See `docs/CAVEATS.md` for the full tradeoff ledger (Bug fixes BF1–BF4).
+See `docs/CAVEATS.md` for the full tradeoff ledger (Bug fixes BF1–BF5).
 
 </details>
 

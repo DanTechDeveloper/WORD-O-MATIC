@@ -175,6 +175,12 @@ class StudentController extends Controller
             ->findOrFail($id);
 
         $user = auth()->user();
+
+        if (! $this->levelService->isModuleAccessible($user->id, $id, 'word')) {
+            return redirect()->route('student.readModeLevels')
+                ->with('error', 'This module is locked. Please complete the previous level first.');
+        }
+
         $tutorialComplete = (bool) $user->student?->tutorial_completed_at;
 
         return Inertia::render('Student/GameplayReadMode', [
@@ -279,6 +285,12 @@ class StudentController extends Controller
             ->findOrFail($id);
 
         $user = auth()->user();
+
+        if (! $this->levelService->isModuleAccessible($user->id, $id, 'paragraph')) {
+            return redirect()->route('student.speakModeLevels')
+                ->with('error', 'This module is locked. Please complete the previous level first.');
+        }
+
         $progress = StudentParagraphProgress::where('user_id', $user->id)
             ->where('paragraph_module_id', $id)
             ->first();

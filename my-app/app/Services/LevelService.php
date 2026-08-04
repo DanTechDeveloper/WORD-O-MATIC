@@ -65,4 +65,14 @@ class LevelService
             ];
         });
     }
+
+    public function isModuleAccessible(int $userId, int $moduleId, string $type): bool
+    {
+        $statuses = $type === 'word'
+            ? $this->getWordModuleStatuses($userId)->pluck('status', 'id')
+            : $this->getSpeakModuleStatuses($userId)->pluck('status', 'id');
+
+        $status = $statuses->get($moduleId);
+        return $status !== 'locked';
+    }
 }

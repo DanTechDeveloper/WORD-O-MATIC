@@ -12,7 +12,8 @@ const LEVEL_ICONS = [
 ]
 
 export default function LevelsPage({ modules, mode, tutorialComplete = true, wordTutorialDone = false, speakTutorialDone = false }) {
-    const { auth } = usePage().props
+    const { auth, flash } = usePage().props
+    const [error, setError] = useState(flash?.error ?? null)
     const avatarUrl = auth?.user?.student?.avatar
     const bodyUrl = avatarUrl?.replace("/head.png", "/body.png")
     const isTutorial = mode === "read" ? !tutorialComplete && !wordTutorialDone : !tutorialComplete && wordTutorialDone && !speakTutorialDone
@@ -43,7 +44,21 @@ export default function LevelsPage({ modules, mode, tutorialComplete = true, wor
     }, [modules]);
 
     return (
-        <DashboardLayout disableNav={isTutorial}>
+            <DashboardLayout disableNav={isTutorial}>
+            {error && (
+                <div className="mb-6 bg-error text-on-error px-6 py-3 rounded-lg text-sm font-bold flex items-center gap-3 shadow-[4px_4px_0_0_#4c1d95]">
+                    <span className="material-symbols-outlined text-xl">lock</span>
+                    <span>{error}</span>
+                    <button
+                        type="button"
+                        onClick={() => setError(null)}
+                        className="ml-auto text-on-error/70 hover:text-on-error transition-colors"
+                        aria-label="Dismiss"
+                    >
+                        <span className="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+            )}
             {/* Header */}
             <div className="flex items-center gap-3 md:gap-4 mb-6 pt-2">
                 <Link
