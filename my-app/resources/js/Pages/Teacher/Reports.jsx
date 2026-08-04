@@ -11,8 +11,9 @@ const formatDate = (date) =>
         minute: "2-digit",
     });
 
+const pad = (n) => String(n).padStart(2, '0');
 const now = new Date();
-const minDate = now.toISOString().slice(0, 16);
+const minDate = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
 
 const STATUS_CONFIG = {
     atRisk: { label: "At Risk", color: "bg-rose-500", border: "border-rose-500", text: "text-rose-400", bg: "bg-rose-500/10" },
@@ -29,7 +30,7 @@ export default function Reports({ grouped, flash, deadline }) {
     const [deadlineValue, setDeadlineValue] = useState(deadline || "");
     const [savingDeadline, setSavingDeadline] = useState(false);
 
-    const isPastDeadline = deadlineValue && new Date(deadlineValue) < new Date();
+    const isPastDeadline = deadlineValue && new Date(deadlineValue) <= new Date();
     const isDeadlineSet = !!deadlineValue;
     const isDeadlineSaved = !!deadline;
     const deadlineDate = deadlineValue ? new Date(deadlineValue) : null;

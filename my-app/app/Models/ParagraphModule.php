@@ -55,7 +55,8 @@ class ParagraphModule extends Model
             ->whereIn('user_id', $userIds);
 
         if ($cutoff) {
-            $query->where('created_at', '<=', $cutoff);
+            $cutoffTs = \Carbon\Carbon::parse($cutoff)->format('Y-m-d H:i:s');
+            $query->where('created_at', '<=', $cutoffTs);
         }
 
         $masteryByUser = $query->get()->groupBy('user_id');

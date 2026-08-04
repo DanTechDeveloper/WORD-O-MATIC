@@ -17,6 +17,8 @@
                                     'onTrack' => ['bg' => '#22c55e', 'label' => 'On Track'],
                                     'atRisk' => ['bg' => '#ef4444', 'label' => 'At Risk'],
                                     'support' => ['bg' => '#f59e0b', 'label' => 'Needs Support'],
+                                    'needsSupport' => ['bg' => '#f59e0b', 'label' => 'Needs Support'],
+                                    'in_progress' => ['bg' => '#38bdf8', 'label' => 'In Progress'],
                                     'notStarted' => ['bg' => '#64748b', 'label' => 'Not Started'],
                                 ];
                                 $sc = $statusColors[$data['status']] ?? $statusColors['notStarted'];
@@ -110,7 +112,7 @@
                                     Keep up the fantastic work!
                                 </p>
                             </div>
-                        @elseif ($data['status'] === 'support')
+                        @elseif ($data['status'] === 'needsSupport' || $data['status'] === 'support')
                             <div style="background:#451a03;border:2px solid #f59e0b;border-radius:16px;padding:24px;margin-bottom:32px">
                                 <h2 style="color:#fbbf24;font-size:14px;font-weight:900;text-transform:uppercase;letter-spacing:1px;margin:0 0 12px">
                                     Recommended Interventions
