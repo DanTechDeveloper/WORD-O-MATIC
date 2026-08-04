@@ -306,6 +306,7 @@ resources/
 - Leaderboards
 - Achievement badges
 - Word Blast / Story Quest session persistence
+- Replayable completed levels (practice with best-score safety)
 
 </td>
 </tr>

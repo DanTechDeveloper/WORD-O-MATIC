@@ -1,6 +1,6 @@
 # Gameplay
 
-> Version 1.2
+> Version 1.3
 
 ## Word Blast (Read Mode)
 
@@ -34,6 +34,7 @@
 - Game sessions logged to `game_sessions` (append-only).
 - Progress overwritten on new best score only.
 - Mastery toggles per word — mastered words can still appear in retries (spaced repetition).
+- Completed modules are replayable for practice (results "Again" + level card "PLAY AGAIN"); retries never lower best scores or award extra points.
 
 ## Tutorial
 

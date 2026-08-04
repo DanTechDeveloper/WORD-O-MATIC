@@ -34,7 +34,7 @@ Status mapped by `LevelService`: `locked`, `current`, `in_progress`, `completed`
 
 - Sequential — no skipping.
 - Deadlines set by teacher in Reports.
-- Completed modules not replayable unless conditions met.
+- Completed modules remain replayable ("PLAY AGAIN" on level cards) — best-score-only keeps replays point-safe.
 
 ## Completion Badges
 
