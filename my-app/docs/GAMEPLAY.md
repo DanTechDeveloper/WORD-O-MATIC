@@ -35,6 +35,7 @@
 - Progress overwritten on new best score only.
 - Mastery toggles per word — mastered words can still appear in retries (spaced repetition).
 - Completed modules are replayable for practice (results "Again" + level card "PLAY AGAIN"); retries never lower best scores or award extra points.
+- Direct URL access to a locked module (`gameplayReadMode/{id}`, `gameplaySpeakMode/{id}`) is blocked: `LevelService::isModuleAccessible()` redirects to the level-select page with a flash error.
 
 ## Tutorial
 

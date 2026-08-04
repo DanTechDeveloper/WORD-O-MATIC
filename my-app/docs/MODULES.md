@@ -35,6 +35,7 @@ Status mapped by `LevelService`: `locked`, `current`, `in_progress`, `completed`
 - Sequential — no skipping.
 - Deadlines set by teacher in Reports.
 - Completed modules remain replayable ("PLAY AGAIN" on level cards) — best-score-only keeps replays point-safe.
+- Direct URL access to a locked module (`/student/gameplayReadMode/{id}`, `/student/gameplaySpeakMode/{id}`) is rejected: `LevelService::isModuleAccessible()` gates both endpoints and redirects to the level-select page with a flash error.
 
 ## Completion Badges
 
