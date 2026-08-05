@@ -105,4 +105,51 @@ class CurriculumIsolationTest extends TestCase
 
         $this->assertSame('mastered', StudentWordMastery::where('user_id', $this->student->id)->where('word_id', $word->id)->value('status'));
     }
+
+    public function test_existing_mastered_paragraph_word_is_not_downgraded_on_mispronounce(): void
+    {
+        $module = ParagraphModule::create(['level' => 1, 'title' => 'Level 1']);
+        $word = ParagraphWord::create(['paragraph_module_id' => $module->id, 'word' => 'cat', 'position' => 1]);
+        StudentParagraphMastery::create(['user_id' => $this->student->id, 'paragraph_word_id' => $word->id, 'status' => 'mastered']);
+
+        $this->actingAs($this->student, 'web')
+            ->post('/student/updateParagraphMastery', ['paragraph_word_id' => $word->id, 'status' => 'training']);
+
+        $this->assertSame('mastered', StudentParagraphMastery::where('user_id', $this->student->id)->where('paragraph_word_id', $word->id)->value('status'));
+    }
+
+    public function test_training_paragraph_word_can_be_promoted_to_mastered(): void
+    {
+        $module = ParagraphModule::create(['level' => 1, 'title' => 'Level 1']);
+        $word = ParagraphWord::create(['paragraph_module_id' => $module->id, 'word' => 'dog', 'position' => 2]);
+        StudentParagraphMastery::create(['user_id' => $this->student->id, 'paragraph_word_id' => $word->id, 'status' => 'training']);
+
+        $this->actingAs($this->student, 'web')
+            ->post('/student/updateParagraphMastery', ['paragraph_word_id' => $word->id, 'status' => 'mastered']);
+
+        $this->assertSame('mastered', StudentParagraphMastery::where('user_id', $this->student->id)->where('paragraph_word_id', $word->id)->value('status'));
+    }
+
+    public function test_new_word_can_be_mastered_directly(): void
+    {
+        $module = WordModule::create(['level' => 1, 'title' => 'Level 1']);
+        $word = Word::create(['word_module_id' => $module->id, 'word' => 'bird', 'position' => 1]);
+
+        $this->actingAs($this->student, 'web')
+            ->post('/student/updateWordMastery', ['word_id' => $word->id, 'status' => 'mastered']);
+
+        $this->assertSame('mastered', StudentWordMastery::where('user_id', $this->student->id)->where('word_id', $word->id)->value('status'));
+    }
+
+    public function test_mastered_word_status_unchanged_on_same_status_post(): void
+    {
+        $module = WordModule::create(['level' => 1, 'title' => 'Level 1']);
+        $word = Word::create(['word_module_id' => $module->id, 'word' => 'fish', 'position' => 1]);
+        StudentWordMastery::create(['user_id' => $this->student->id, 'word_id' => $word->id, 'status' => 'training']);
+
+        $this->actingAs($this->student, 'web')
+            ->post('/student/updateWordMastery', ['word_id' => $word->id, 'status' => 'training']);
+
+        $this->assertSame('training', StudentWordMastery::where('user_id', $this->student->id)->where('word_id', $word->id)->value('status'));
+    }
 }
