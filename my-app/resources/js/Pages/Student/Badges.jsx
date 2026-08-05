@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import DashboardLayout from "@/Layouts/Student/DashboardLayout";
-import { Link } from "@inertiajs/react";
+import { Link, usePage } from "@inertiajs/react";
+import DeadlineBanner from "@/Components/DeadlineBanner";
 
 const METRIC_LABELS = {
     total_points: "Points",
@@ -35,6 +36,9 @@ const BADGE_UI_CONFIG = {
 };
 
 export default function Badges({ badges }) {
+    const { auth } = usePage().props;
+    const isDeadlineClosed = auth?.deadline && new Date(auth.deadline) <= new Date();
+
     useEffect(() => {
         localStorage.removeItem('hasNewBadge');
     }, []);
@@ -77,6 +81,8 @@ export default function Badges({ badges }) {
                     <span className="material-symbols-outlined text-2xl">arrow_back</span>
                 </Link>
             </div>
+
+            <DeadlineBanner isDeadlineClosed={isDeadlineClosed} />
 
             <div className="mb-8 text-center">
                 <h2 className="text-4xl lg:text-6xl font-black text-on-surface uppercase tracking-tight mb-2 flex items-center justify-center gap-3">

@@ -3,6 +3,7 @@ import { useState, useEffect } from "react"
 import DashboardLayout from "../../Layouts/Student/DashboardLayout"
 import LevelCard from "../../Components/Student/LevelCard"
 import AvatarSpeechBubble from "@/Components/Student/AvatarSpeechBubble"
+import DeadlineBanner from "@/Components/DeadlineBanner"
 import { readResumeSession } from "@/utils/resumeStorage"
 
 const LEVEL_ICONS = [
@@ -34,8 +35,6 @@ export default function LevelsPage({ modules, mode, tutorialComplete = true, wor
 
     const isRead = mode === "read"
     const [guideDone, setGuideDone] = useState(false)
-    // Detect modules with an in-progress (F5/interrupted) round so the card
-    // can show a CONTINUE affordance instead of PLAY.
     const [resumeModules, setResumeModules] = useState([]);
     useEffect(() => {
         const out = [];
@@ -61,11 +60,7 @@ export default function LevelsPage({ modules, mode, tutorialComplete = true, wor
                     </button>
                 </div>
             )}
-            {isDeadlineClosed && (
-                <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500 rounded-xl">
-                    <p className="text-amber-600 font-semibold">Report period closed. No progress updates will affect reports.</p>
-                </div>
-            )}
+            <DeadlineBanner isDeadlineClosed={isDeadlineClosed} />
             {/* Header */}
             <div className="flex items-center gap-3 md:gap-4 mb-6 pt-2">
                 <Link

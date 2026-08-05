@@ -1,7 +1,8 @@
 import DashboardLayout from "@/Layouts/Teacher/DashboardLayout";
+import DeadlineBanner from "@/Components/DeadlineBanner";
 import { useState } from "react";
 
-export default function Leaderboards({ leaderboard, sections = [], auth }) {
+export default function Leaderboards({ leaderboard, sections = [], auth, isDeadlineClosed = false }) {
     const [activeTab, setActiveTab] = useState("points");
     const [selectedSection, setSelectedSection] = useState("");
     const [search, setSearch] = useState("");
@@ -39,6 +40,8 @@ export default function Leaderboards({ leaderboard, sections = [], auth }) {
                     {activeStudents.length} word-warriors
                 </p>
             </div>
+
+            <DeadlineBanner isDeadlineClosed={isDeadlineClosed} />
 
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                 <div className="flex bg-slate-950 border-2 border-slate-800 rounded-xl p-1 overflow-x-auto">
