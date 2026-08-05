@@ -110,9 +110,9 @@ class ProgressService
         $wb = $fresh->wordBlastAcc;
         $sq = $fresh->storyQuestAcc;
 
-        if (!$wb && !$sq) {
+        if (! $wb && ! $sq) {
             $status = 'notStarted';
-        } elseif (!$wb || !$sq) {
+        } elseif (! $wb || ! $sq) {
             $status = 'in_progress';
         } else {
             $avg = ($wb + $sq) / 2;

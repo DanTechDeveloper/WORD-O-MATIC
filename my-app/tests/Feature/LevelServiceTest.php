@@ -18,6 +18,7 @@ class LevelServiceTest extends TestCase
     use RefreshDatabase;
 
     private LevelService $levelService;
+
     private User $student;
 
     protected function setUp(): void

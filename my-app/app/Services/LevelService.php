@@ -73,6 +73,7 @@ class LevelService
             : $this->getSpeakModuleStatuses($userId)->pluck('status', 'id');
 
         $status = $statuses->get($moduleId);
+
         return $status !== 'locked';
     }
 }

@@ -15,7 +15,7 @@ const LEVEL_ICONS = [
     "local_pizza", "music_note", "sports_soccer", "pets", "auto_awesome", "eco",
 ]
 
-export default function LevelCard({ module, emoji, gameUrl, index, highlightTutorial, tutorialColor, hasResume }) {
+export default function LevelCard({ module, emoji, gameUrl, index, highlightTutorial, tutorialColor, hasResume, isDeadlineClosed = false }) {
     const totalPoints = module.total_points || 0
     const wordsSmashed = module.words_smashed || 0
     const progress =
@@ -57,7 +57,7 @@ export default function LevelCard({ module, emoji, gameUrl, index, highlightTuto
         <div
             className={`absolute inset-0 bg-gradient-to-br ${gradient} ${
                 isCompleted
-                    ? "opacity-60"
+                    ? isDeadlineClosed ? "opacity-30" : "opacity-60"
                     : isPlayable
                     ? "opacity-80 group-hover:opacity-100 transition-opacity"
                     : "opacity-50"
@@ -97,10 +97,17 @@ export default function LevelCard({ module, emoji, gameUrl, index, highlightTuto
             {/* Play button / Completed indicator */}
             <div className="mt-4">
                 {isCompleted ? (
-                    <span className="inline-flex items-center gap-1.5 bg-accent text-surface-container-lowest font-black px-4 py-2 rounded-lg text-sm border-b-[6px] border-accent-deep group-active:border-b-[2px] group-active:translate-y-1 transition-all">
-                        <span className="material-symbols-outlined text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>replay</span>
-                        PLAY AGAIN
-                    </span>
+                    isDeadlineClosed ? (
+                        <span className="inline-flex items-center gap-1.5 bg-gray-500/20 text-gray-500 font-black px-4 py-2 rounded-lg text-sm border-b-[6px] border-gray-500 cursor-not-allowed">
+                            <span className="material-symbols-outlined text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>replay</span>
+                            PLAY AGAIN
+                        </span>
+                    ) : (
+                        <span className="inline-flex items-center gap-1.5 bg-accent text-surface-container-lowest font-black px-4 py-2 rounded-lg text-sm border-b-[6px] border-accent-deep group-active:border-b-[2px] group-active:translate-y-1 transition-all">
+                            <span className="material-symbols-outlined text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>replay</span>
+                            PLAY AGAIN
+                        </span>
+                    )
                 ) : (
                     <span className={`inline-flex items-center gap-1.5 bg-accent text-surface-container-lowest font-black px-4 py-2 rounded-lg text-sm border-b-[6px] border-accent-deep group-active:border-b-[2px] group-active:translate-y-1 transition-all ${hasResume ? "animate-pulse motion-reduce:animate-none" : ""}`}>
                         <span className="material-symbols-outlined text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>play_arrow</span>
@@ -133,18 +140,28 @@ export default function LevelCard({ module, emoji, gameUrl, index, highlightTuto
         ${isCompleted ? "border-accent-deep bg-accent/5" : ""}
         ${isCurrent ? "border-secondary-container ring-2 ring-secondary-container/50" : ""}
         ${isPlayable && !isCurrent && !isCompleted ? "border-surface-variant/30 hover:border-secondary-container/50" : ""}
-        ${isPlayable || isCompleted ? "hover:scale-[1.03] hover:-translate-y-1 active:scale-[1.01] cursor-pointer" : "cursor-default"}
+        ${isPlayable || (isCompleted && !isDeadlineClosed) ? "hover:scale-[1.03] hover:-translate-y-1 active:scale-[1.01] cursor-pointer" : "cursor-default"}
         ${highlightRing}`
 
+    const isClickable = isPlayable || (isCompleted && !isDeadlineClosed)
+
     return (
-        <Link
-            href={`/${gameUrl}/${module.id}`}
-            className={wrapperClass}
-            style={{ animationDelay: `${index * 80}ms` }}
-        >
-            {cover}
-            {shimmer}
-            {inner}
-        </Link>
+        isClickable ? (
+            <Link
+                href={`/${gameUrl}/${module.id}`}
+                className={wrapperClass}
+                style={{ animationDelay: `${index * 80}ms` }}
+            >
+                {cover}
+                {shimmer}
+                {inner}
+            </Link>
+        ) : (
+            <div className={wrapperClass} style={{ animationDelay: `${index * 80}ms` }}>
+                {cover}
+                {shimmer}
+                {inner}
+            </div>
+        )
     )
 }

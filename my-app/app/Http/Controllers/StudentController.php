@@ -341,6 +341,14 @@ class StudentController extends Controller
 
         $session = GameSession::logSession($user->id, $module->id, $type, $wordsSmashed, $accuracy, $streak);
 
+        $deadline = \App\Models\Setting::getValue('report_deadline');
+        $isDeadlineClosed = $deadline && \Carbon\Carbon::parse($deadline)->isPast();
+
+        if ($isDeadlineClosed) {
+            return redirect()->route('student.results', ['id' => $session->id])
+                ->with('info', 'Report period closed. Progress cannot be updated.');
+        }
+
         if ($type === 'word') {
             $this->progressService->updateWordProgress($user->student, $module, $wordsSmashed, $request->words_processed, $accuracy);
         } else {

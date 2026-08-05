@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Models\ParagraphModule;
 use App\Models\ParagraphWord;
-use App\Models\StudentParagraphProgress;
 use App\Models\StudentProfile;
 use App\Models\StudentWordProgress;
 use App\Models\User;
@@ -19,8 +18,11 @@ class ProgressServiceTest extends TestCase
     use RefreshDatabase;
 
     private ProgressService $progressService;
+
     private User $student;
+
     private WordModule $wordModule;
+
     private ParagraphModule $paraModule;
 
     protected function setUp(): void

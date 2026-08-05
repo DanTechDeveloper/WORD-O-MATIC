@@ -22,12 +22,12 @@ class GameSession extends Model
     public static function logSession($userId, $moduleId, $moduleType, $score, $accuracy, $streak)
     {
         return self::create([
-            'user_id'     => $userId,
-            'module_id'   => $moduleId,
+            'user_id' => $userId,
+            'module_id' => $moduleId,
             'module_type' => $moduleType,
-            'score'       => $score,
-            'accuracy'    => $accuracy,
-            'streak'      => $streak ?? 0,
+            'score' => $score,
+            'accuracy' => $accuracy,
+            'streak' => $streak ?? 0,
         ]);
     }
 

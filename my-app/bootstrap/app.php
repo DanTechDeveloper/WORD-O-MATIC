@@ -21,16 +21,17 @@ return Application::configure(basePath: dirname(__DIR__))
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
         ]);
-        
+
         $middleware->alias([
             'role' => EnsureUserRole::class,
         ]);
-        
+
         $middleware->redirectUsersTo(function () {
             $user = auth()->user();
             if ($user?->role === 'teacher') {
                 return route('teacher.dashboard');
             }
+
             return route('student.dashboard');
         });
     })

@@ -40,10 +40,19 @@ class StudentSeeder extends Seeder
         $avatarChars = ['juan', 'kyle', 'leo', 'sam', 'zoe', 'ana'];
 
         $completedLevels = function ($accuracy) {
-            if ($accuracy === null || $accuracy == 0) return 0;
-            if ($accuracy >= 80) return 5;
-            if ($accuracy >= 60) return 3;
-            if ($accuracy >= 40) return 2;
+            if ($accuracy === null || $accuracy == 0) {
+                return 0;
+            }
+            if ($accuracy >= 80) {
+                return 5;
+            }
+            if ($accuracy >= 60) {
+                return 3;
+            }
+            if ($accuracy >= 40) {
+                return 2;
+            }
+
             return 1;
         };
 
@@ -54,15 +63,25 @@ class StudentSeeder extends Seeder
 
             $roll = $i % 10;
             if ($roll < 2) {
-                $status = 'notStarted'; $wAcc = 0.0; $sAcc = 0.0;
+                $status = 'notStarted';
+                $wAcc = 0.0;
+                $sAcc = 0.0;
             } elseif ($roll < 3) {
-                $status = 'in_progress'; $wAcc = round(rand(20, 90) + rand(0, 99) / 100, 2); $sAcc = 0.0;
+                $status = 'in_progress';
+                $wAcc = round(rand(20, 90) + rand(0, 99) / 100, 2);
+                $sAcc = 0.0;
             } elseif ($roll < 5) {
-                $status = 'atRisk'; $wAcc = round(rand(1, 55) + rand(0, 99) / 100, 2); $sAcc = round(rand(1, 55) + rand(0, 99) / 100, 2);
+                $status = 'atRisk';
+                $wAcc = round(rand(1, 55) + rand(0, 99) / 100, 2);
+                $sAcc = round(rand(1, 55) + rand(0, 99) / 100, 2);
             } elseif ($roll < 7) {
-                $status = 'support'; $wAcc = round(rand(55, 78) + rand(0, 99) / 100, 2); $sAcc = round(rand(55, 78) + rand(0, 99) / 100, 2);
+                $status = 'support';
+                $wAcc = round(rand(55, 78) + rand(0, 99) / 100, 2);
+                $sAcc = round(rand(55, 78) + rand(0, 99) / 100, 2);
             } else {
-                $status = 'onTrack'; $wAcc = round(rand(78, 100) + rand(0, 99) / 100, 2); $sAcc = round(rand(78, 100) + rand(0, 99) / 100, 2);
+                $status = 'onTrack';
+                $wAcc = round(rand(78, 100) + rand(0, 99) / 100, 2);
+                $sAcc = round(rand(78, 100) + rand(0, 99) / 100, 2);
             }
 
             $num = str_pad($i + 1, 3, '0', STR_PAD_LEFT);

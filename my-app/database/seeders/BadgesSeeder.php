@@ -67,7 +67,7 @@ class BadgesSeeder extends Seeder
             [
                 'name' => 'On Fire',
                 'slug' => 'on-fire',
-            'description' => 'Nice! Got 3 correct in a row.',
+                'description' => 'Nice! Got 3 correct in a row.',
                 'requirement' => 'Get a 3-game streak.',
                 'metric' => 'streak',
                 'operator' => '>=',
