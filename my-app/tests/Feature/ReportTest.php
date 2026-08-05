@@ -90,6 +90,20 @@ class ReportTest extends TestCase
         );
     }
 
+    public function test_teacher_can_set_deadline_within_current_minute(): void
+    {
+        $this->actingAs($this->teacher);
+
+        $sameMinute = now()->startOfMinute()->format('Y-m-d\TH:i');
+
+        $response = $this->post(route('teacher.reports.deadline'), [
+            'deadline' => $sameMinute,
+        ]);
+
+        $response->assertSessionHas('deadline_set');
+        $this->assertEquals($sameMinute, Setting::getValue('report_deadline'));
+    }
+
     public function test_teacher_can_clear_deadline(): void
     {
         $this->actingAs($this->teacher);
