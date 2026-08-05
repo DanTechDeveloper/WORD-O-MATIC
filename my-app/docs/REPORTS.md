@@ -41,9 +41,12 @@ Training words filtered by `created_at <= deadline` (deadline is normalized via 
 
 Excel (`.xlsx`) export via `ReportsExport` is available after deadline passes.
 - **Class Report Sheet**: Contains student details, status breakdown summary, and two embedded native Excel charts:
-  - **Class Health Distribution** (Pie Chart): Visualizes student status distribution.
+  - **Class Health Distribution** (Pie Chart): Visualizes student status distribution (On Track, Needs Support, At Risk, In Progress, Not Started).
   - **Student Accuracy Comparison** (Bar/Column Chart): Compares Word Blast and Story Quest accuracies per student.
-- **Training Words Detail Sheet**: Full list of words in training per student.
+- **Word Blast Progress Sheet**: Detailed list of words currently in training per student, including:
+  - Student Name, Section, Status, Accuracy (%), Module, Training Words, Word Count
+- **Story Quest Progress Sheet**: Detailed list of paragraphs currently in training per student, including:
+  - Student Name, Section, Status, Accuracy (%), Module, Training Words, Word Count
 
 ## Student Details
 
