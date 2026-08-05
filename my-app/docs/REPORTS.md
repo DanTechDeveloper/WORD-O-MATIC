@@ -19,8 +19,8 @@ Classification formula: `wordBlastAcc` and `storyQuestAcc` averaged.
 
 | State | Behavior |
 |---|---|
-| Before deadline | Checkboxes disabled, Send locked, deadline save locked |
-| After deadline | All enabled |
+| Before deadline | Checkboxes disabled, Send locked, deadline save locked; student gameplay fully open |
+| After deadline | All teacher actions enabled. **Student gameplay blocked** (Option A, see CAVEATS.md BF7): `saveWordProgress` / `saveParagraphProgress` log the session but skip all progress updates (`StudentController::finishRound`); PLAY AGAIN disabled and completed level cards non-clickable (`LevelCard.jsx`), amber banner on `LevelsPage.jsx`. No deadline set → gameplay open. |
 
 Training words filtered by `created_at <= deadline` (deadline is normalized via `Carbon::parse($cutoff)->format('Y-m-d H:i:s')` to avoid SQL string comparison issues with ISO dates).
 
