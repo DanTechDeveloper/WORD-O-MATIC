@@ -1,8 +1,10 @@
 import DashboardLayout from "../../Layouts/Student/DashboardLayout";
 import { Link, usePage } from "@inertiajs/react";
+import DeadlineBanner from "@/Components/DeadlineBanner";
 
 export default function Leaderboards({ leaderboard, totalStudents }) {
     const { auth } = usePage().props;
+    const isDeadlineClosed = auth?.deadline && new Date(auth.deadline) <= new Date();
     const currentUserId = auth.user?.id;
     const currentUserName = auth.user?.name ?? "You";
     const currentEntry = leaderboard.find((e) => e.user_id === currentUserId);
@@ -18,6 +20,8 @@ export default function Leaderboards({ leaderboard, totalStudents }) {
                         <span className="material-symbols-outlined text-2xl">arrow_back</span>
                     </Link>
                 </div>
+
+                <DeadlineBanner isDeadlineClosed={isDeadlineClosed} />
 
                 <div className="text-center mb-8">
                     <h1 className="text-4xl lg:text-6xl font-black text-on-surface uppercase tracking-tight flex items-center justify-center gap-3">

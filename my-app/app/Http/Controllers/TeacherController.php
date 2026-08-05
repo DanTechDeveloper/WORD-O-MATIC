@@ -598,6 +598,9 @@ class TeacherController extends Controller
 
         $sections = $students->pluck('section')->unique()->filter()->sort()->values();
 
+        $deadline = Setting::getValue('report_deadline');
+        $isDeadlineClosed = $deadline && Carbon::parse($deadline, config('app.timezone'))->isPast();
+
         return Inertia::render('Teacher/Leaderboards', [
             'leaderboard' => [
                 'points' => $students->sortByDesc('points')->values(),
@@ -605,6 +608,7 @@ class TeacherController extends Controller
                 'storyQuest' => $students->sortByDesc('storyQuestAcc')->values(),
             ],
             'sections' => $sections,
+            'isDeadlineClosed' => $isDeadlineClosed,
         ]);
     }
 
@@ -659,6 +663,9 @@ class TeacherController extends Controller
             ->whereNotNull('section')->where('section', '!=', '')
             ->distinct()->pluck('section')->sort()->values();
 
+        $deadline = Setting::getValue('report_deadline');
+        $isDeadlineClosed = $deadline && Carbon::parse($deadline, config('app.timezone'))->isPast();
+
         return Inertia::render('Teacher/Badges', [
             'badges' => $badges,
             'topEarners' => $students,
@@ -667,6 +674,7 @@ class TeacherController extends Controller
             'totalEarned' => $totalEarned,
             'mostEarnedBadge' => $mostEarnedBadge,
             'sections' => $sections,
+            'isDeadlineClosed' => $isDeadlineClosed,
         ]);
     }
 

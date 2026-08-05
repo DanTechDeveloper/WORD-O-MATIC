@@ -248,9 +248,10 @@ export function useSpeechRecognition({
                     );
                     propsRef.current.onPermissionDenied?.();
                 } else {
-                    console.error("Speech Recognition Error:", event.error);
-                    if (propsRef.current.onRecognitionError)
-                        propsRef.current.onRecognitionError(event.error);
+                    if (event.error !== "no-speech" && event.error !== "audio-capture" && event.error !== "network") {
+                        console.error("Speech Recognition Error:", event.error);
+                        propsRef.current.onRecognitionError?.(event.error);
+                    }
                 }
             };
 
@@ -272,24 +273,14 @@ export function useSpeechRecognition({
                     try {
                         recognitionRef.current?.start();
                         restartRetryCountRef.current = 0;
-                    } catch (e) {
+                    } catch {
+                        const delay = Math.min(500 * 2 ** restartRetryCountRef.current, 3000);
                         restartRetryCountRef.current += 1;
-                        if (restartRetryCountRef.current <= 2) {
-                            const delays = [0, 500, 1000];
-                            restartTimerRef.current = setTimeout(
-                                tryRestart,
-                                delays[restartRetryCountRef.current],
-                            );
-                        } else {
-                            console.warn(
-                                "Speech recognition restart failed after 3 attempts",
-                            );
-                            restartRetryCountRef.current = 0;
-                        }
+                        restartTimerRef.current = setTimeout(tryRestart, delay);
                     }
                 };
 
-                restartTimerRef.current = setTimeout(tryRestart, 300);
+                restartTimerRef.current = setTimeout(tryRestart, 500);
             };
 
             recognitionRef.current = recognition;

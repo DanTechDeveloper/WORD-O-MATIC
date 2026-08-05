@@ -1,4 +1,5 @@
 import DashboardLayout from "@/Layouts/Teacher/DashboardLayout";
+import DeadlineBanner from "@/Components/DeadlineBanner";
 import { useState } from "react";
 
 const RANK_COLORS = ["#fbbf24", "#94a3b8", "#d97706"];
@@ -12,6 +13,7 @@ export default function Badges({
     mostEarnedBadge,
     sections = [],
     auth,
+    isDeadlineClosed = false,
 }) {
     const [search, setSearch] = useState("");
     const [selectedSection, setSelectedSection] = useState("");
@@ -75,6 +77,8 @@ export default function Badges({
                     across {totalStudents} students
                 </p>
             </div>
+
+            <DeadlineBanner isDeadlineClosed={isDeadlineClosed} />
 
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-10">
                 {summaryCards.map((card, i) => (
