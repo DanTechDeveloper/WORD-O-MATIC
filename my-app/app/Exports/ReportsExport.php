@@ -17,7 +17,8 @@ class ReportsExport implements WithMultipleSheets
     {
         return [
             'Class Report' => new ClassReportSheet($this->students),
-            'Training Words Detail' => new TrainingWordsSheet($this->students),
+            'Word Blast Progress' => new WordBlastSheet($this->students),
+            'Story Quest Progress' => new StoryQuestSheet($this->students),
         ];
     }
 }

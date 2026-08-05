@@ -184,4 +184,92 @@ class ReportTest extends TestCase
         $response->assertRedirect();
         $response->assertSessionHas('error');
     }
+
+    public function test_export_contains_three_sheets(): void
+    {
+        $sheets = (new \App\Exports\ReportsExport([]))->sheets();
+
+        $this->assertCount(3, $sheets);
+        $this->assertArrayHasKey('Class Report', $sheets);
+        $this->assertArrayHasKey('Word Blast Progress', $sheets);
+        $this->assertArrayHasKey('Story Quest Progress', $sheets);
+    }
+
+    public function test_word_blast_sheet_has_correct_headings(): void
+    {
+        $student = [
+            'id' => 1,
+            'name' => 'Test Student',
+            'section' => 'Section A',
+            'status' => 'onTrack',
+            'wordBlastAcc' => 85,
+            'storyQuestAcc' => 90,
+            'read_level' => 1,
+            'speak_level' => 1,
+            'parent_email' => 'test@test.com',
+            'report_sent_at' => null,
+            'trainingWords' => ['Level 1: Vocabulary' => ['word1', 'word2']],
+            'paragraphTrainingWords' => [],
+        ];
+
+        $sheet = new \App\Exports\WordBlastSheet([$student]);
+
+        $this->assertEquals([
+            'Student Name',
+            'Section',
+            'Status',
+            'Accuracy (%)',
+            'Module',
+            'Training Words',
+            'Word Count',
+        ], $sheet->headings());
+
+        $collection = $sheet->collection();
+        $row = $collection->first();
+
+        $this->assertNotNull($row);
+        $this->assertEquals('Test Student', $row[0]);
+        $this->assertEquals('Section A', $row[1]);
+        $this->assertEquals('onTrack', $row[2]);
+        $this->assertEquals(85, $row[3]);
+    }
+
+    public function test_story_quest_sheet_has_correct_headings(): void
+    {
+        $student = [
+            'id' => 1,
+            'name' => 'Test Student',
+            'section' => 'Section B',
+            'status' => 'atRisk',
+            'wordBlastAcc' => 40,
+            'storyQuestAcc' => 60,
+            'read_level' => 1,
+            'speak_level' => 1,
+            'parent_email' => 'test2@test.com',
+            'report_sent_at' => null,
+            'trainingWords' => [],
+            'paragraphTrainingWords' => ['Level 1: Stories' => ['word3', 'word4', 'word5']],
+        ];
+
+        $sheet = new \App\Exports\StoryQuestSheet([$student]);
+
+        $this->assertEquals([
+            'Student Name',
+            'Section',
+            'Status',
+            'Accuracy (%)',
+            'Module',
+            'Training Words',
+            'Word Count',
+        ], $sheet->headings());
+
+        $collection = $sheet->collection();
+        $row = $collection->first();
+
+        $this->assertNotNull($row);
+        $this->assertEquals('Test Student', $row[0]);
+        $this->assertEquals('Section B', $row[1]);
+        $this->assertEquals('atRisk', $row[2]);
+        $this->assertEquals(60, $row[3]);
+    }
 }
