@@ -445,7 +445,9 @@ class TeacherController extends Controller
         }
 
         $request->validate([
-            'deadline' => 'required|date|after_or_equal:now',
+            // ponytail: round down to minute — the browser sends minute precision, so
+            // after_or_equal:now rejects a same-minute deadline once seconds pass it
+            'deadline' => 'required|date|after_or_equal:'.now()->startOfMinute(),
         ]);
 
         Setting::setValue('report_deadline', $request->deadline);

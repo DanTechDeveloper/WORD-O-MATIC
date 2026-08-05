@@ -23,7 +23,7 @@ const STATUS_CONFIG = {
     in_progress: { label: "In Progress", color: "bg-sky-500", border: "border-sky-500", text: "text-sky-400", bg: "bg-sky-500/10" },
 };
 
-export default function Reports({ grouped, flash, deadline }) {
+export default function Reports({ grouped, flash, deadline, errors }) {
     const [selectedIds, setSelectedIds] = useState(new Set());
     const [sending, setSending] = useState(false);
     const sendingRef = useRef(false);
@@ -180,8 +180,13 @@ export default function Reports({ grouped, flash, deadline }) {
                             min={minDate}
                             disabled={isDeadlineSaved}
                             onChange={(e) => setDeadlineValue(e.target.value)}
-                            className="w-full bg-slate-950 border-2 border-slate-800 rounded-xl p-4 text-white font-bold focus:border-purple-500 transition-all outline-none [color-scheme:dark] disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="w-full bg-slate-950 border-2 border-slate-800 rounded-xl p-4 text-white font-bold focus:border-purple-500 transition-all outline-none                             [color-scheme:dark] disabled:opacity-50 disabled:cursor-not-allowed"
                         />
+                        {errors?.deadline && (
+                            <p className="text-rose-400 text-xs font-bold mt-2">
+                                {errors.deadline}
+                            </p>
+                        )}
                         <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-purple-400 pointer-events-none">
                             calendar_month
                         </span>
