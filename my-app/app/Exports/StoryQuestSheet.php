@@ -9,7 +9,7 @@ use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 
-class TrainingWordsSheet implements FromCollection, WithHeadings, WithStyles, WithColumnWidths
+class StoryQuestSheet implements FromCollection, WithHeadings, WithStyles, WithColumnWidths
 {
     protected array $students;
 
@@ -23,7 +23,8 @@ class TrainingWordsSheet implements FromCollection, WithHeadings, WithStyles, Wi
         return [
             'Student Name',
             'Section',
-            'Mode',
+            'Status',
+            'Accuracy (%)',
             'Module',
             'Training Words',
             'Word Count',
@@ -37,29 +38,21 @@ class TrainingWordsSheet implements FromCollection, WithHeadings, WithStyles, Wi
         foreach ($this->students as $s) {
             $name = $s['name'] ?? '';
             $section = $s['section'] ?? '';
+            $status = $s['status'] ?? 'notStarted';
+            $accuracy = $s['storyQuestAcc'] ?? 0;
 
-            if (!empty($s['trainingWords'])) {
-                foreach ($s['trainingWords'] as $moduleTitle => $words) {
+            $words = $s['paragraphTrainingWords'] ?? [];
+
+            if (!empty($words)) {
+                foreach ($words as $moduleTitle => $moduleWords) {
                     $rows[] = [
                         $name,
                         $section,
-                        'Word Blast',
+                        $status,
+                        $accuracy,
                         $moduleTitle,
-                        implode(', ', $words),
-                        count($words),
-                    ];
-                }
-            }
-
-            if (!empty($s['paragraphTrainingWords'])) {
-                foreach ($s['paragraphTrainingWords'] as $moduleTitle => $words) {
-                    $rows[] = [
-                        $name,
-                        $section,
-                        'Story Quest',
-                        $moduleTitle,
-                        implode(', ', $words),
-                        count($words),
+                        implode(', ', $moduleWords),
+                        count($moduleWords),
                     ];
                 }
             }
@@ -85,9 +78,10 @@ class TrainingWordsSheet implements FromCollection, WithHeadings, WithStyles, Wi
             'A' => 25,
             'B' => 15,
             'C' => 14,
-            'D' => 28,
-            'E' => 40,
-            'F' => 12,
+            'D' => 15,
+            'E' => 28,
+            'F' => 40,
+            'G' => 12,
         ];
     }
 }

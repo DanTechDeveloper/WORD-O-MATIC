@@ -33,11 +33,10 @@ class ClassReportSheet implements FromCollection, WithHeadings, WithStyles, With
             'Status',
             'Word Blast Accuracy (%)',
             'Story Quest Accuracy (%)',
-            'Read Level',
-            'Speak Level',
+            'Word Blast Level',
+            'Story Quest Level',
             'Parent Email',
             'Report Sent At',
-            '',
             'Status Category',
             'Count',
         ];
