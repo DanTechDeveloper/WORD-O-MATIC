@@ -37,6 +37,7 @@ class ClassReportSheet implements FromCollection, WithHeadings, WithStyles, With
             'Story Quest Level',
             'Parent Email',
             'Report Sent At',
+            '',
             'Status Category',
             'Count',
         ];

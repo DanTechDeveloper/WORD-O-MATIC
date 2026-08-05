@@ -272,4 +272,89 @@ class ReportTest extends TestCase
         $this->assertEquals('atRisk', $row[2]);
         $this->assertEquals(60, $row[3]);
     }
+
+    public function test_class_report_sheet_has_correct_headings(): void
+    {
+        $student = [
+            'id' => 1,
+            'name' => 'Test Student',
+            'section' => 'Section A',
+            'status' => 'onTrack',
+            'wordBlastAcc' => 85,
+            'storyQuestAcc' => 90,
+            'read_level' => 3,
+            'speak_level' => 2,
+            'parent_email' => 'test@test.com',
+            'report_sent_at' => null,
+        ];
+
+        $sheet = new \App\Exports\ClassReportSheet([$student]);
+
+        $this->assertEquals([
+            'Student Name',
+            'Section',
+            'Status',
+            'Word Blast Accuracy (%)',
+            'Story Quest Accuracy (%)',
+            'Word Blast Level',
+            'Story Quest Level',
+            'Parent Email',
+            'Report Sent At',
+            '',
+            'Status Category',
+            'Count',
+        ], $sheet->headings());
+    }
+
+    public function test_class_report_sheet_collection_formats_data_correctly(): void
+    {
+        $student = [
+            'id' => 1,
+            'name' => 'Test Student',
+            'section' => 'Section A',
+            'status' => 'onTrack',
+            'wordBlastAcc' => 85,
+            'storyQuestAcc' => 90,
+            'read_level' => 3,
+            'speak_level' => 2,
+            'parent_email' => 'test@test.com',
+            'report_sent_at' => null,
+        ];
+
+        $sheet = new \App\Exports\ClassReportSheet([$student]);
+        $collection = $sheet->collection();
+
+        $this->assertCount(5, $collection);
+
+        $studentRow = $collection[0];
+        $this->assertEquals('Test Student', $studentRow[0]);
+        $this->assertEquals('Section A', $studentRow[1]);
+        $this->assertEquals('onTrack', $studentRow[2]);
+        $this->assertEquals(85, $studentRow[3]);
+        $this->assertEquals(90, $studentRow[4]);
+        $this->assertEquals(3, $studentRow[5]);
+        $this->assertEquals(2, $studentRow[6]);
+        $this->assertEquals('test@test.com', $studentRow[7]);
+
+        $statusRow = $collection[4];
+        $this->assertEquals('', $statusRow[0]);
+        $this->assertEquals('Not Started', $statusRow[10]);
+        $this->assertEquals(0, $statusRow[11]);
+    }
+
+    public function test_class_report_sheet_includes_charts(): void
+    {
+        $sheet = new \App\Exports\ClassReportSheet([]);
+        $charts = $sheet->charts();
+
+        $this->assertCount(2, $charts);
+
+        $pieChart = $charts[0];
+        $this->assertEquals('health_pie_chart', $pieChart->getName());
+        $this->assertEquals('Class Health Distribution', $pieChart->getTitle()->getCaption());
+
+        $barChart = $charts[1];
+        $this->assertEquals('accuracy_bar_chart', $barChart->getName());
+        $this->assertEquals('Student Accuracy Comparison (%)', $barChart->getTitle()->getCaption());
+    }
 }
