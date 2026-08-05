@@ -12,11 +12,11 @@ use App\Models\User;
 use App\Models\WordModule;
 use App\Services\BadgeService;
 use Carbon\Carbon;
-use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
+use Maatwebsite\Excel\Facades\Excel;
 
 class TeacherController extends Controller
 {
@@ -271,10 +271,16 @@ class TeacherController extends Controller
     {
         $user = User::with(['student'])->findOrFail($studentId);
 
+        $deadline = Setting::getValue('report_deadline');
+        $deadlineTs = $deadline ? Carbon::parse($deadline, config('app.timezone')) : null;
+        $isPastDeadline = $deadlineTs && $deadlineTs->isPast();
+
+        $cutoff = $isPastDeadline ? $deadline : null;
+
         return Inertia::render('Teacher/StudentDetails', [
             'data' => array_merge($user->toArray(), [
-                'readCurriculum' => WordModule::curriculumForUser($studentId),
-                'speakCurriculum' => ParagraphModule::curriculumForUser($studentId),
+                'readCurriculum' => WordModule::curriculumForUser($studentId, $cutoff),
+                'speakCurriculum' => ParagraphModule::curriculumForUser($studentId, $cutoff),
             ]),
         ]);
     }
@@ -389,8 +395,17 @@ class TeacherController extends Controller
             ->orderBy('name', 'asc')
             ->get();
 
-        $wordTraining = WordModule::trainingWordsForUsers($students->pluck('id')->all());
-        $paraTraining = ParagraphModule::trainingWordsForUsers($students->pluck('id')->all());
+        $deadline = Setting::getValue('report_deadline');
+        $deadlineTs = $deadline ? Carbon::parse($deadline, config('app.timezone')) : null;
+        $isPastDeadline = $deadlineTs && $deadlineTs->isPast();
+
+        if ($isPastDeadline && $deadline) {
+            $wordTraining = WordModule::trainingWordsForUsers($students->pluck('id')->all(), $deadline);
+            $paraTraining = ParagraphModule::trainingWordsForUsers($students->pluck('id')->all(), $deadline);
+        } else {
+            $wordTraining = WordModule::trainingWordsForUsers($students->pluck('id')->all());
+            $paraTraining = ParagraphModule::trainingWordsForUsers($students->pluck('id')->all());
+        }
 
         $students = $students->map(fn ($user) => [
             'id' => $user->id,
@@ -430,7 +445,7 @@ class TeacherController extends Controller
         }
 
         $request->validate([
-            'deadline' => 'required|date|after_or_equal:today',
+            'deadline' => 'required|date|after_or_equal:now',
         ]);
 
         Setting::setValue('report_deadline', $request->deadline);

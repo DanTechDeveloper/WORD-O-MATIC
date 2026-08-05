@@ -2,6 +2,7 @@
 
 namespace App\Exports;
 
+use Carbon\Carbon;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithCharts;
 use Maatwebsite\Excel\Concerns\WithColumnWidths;
@@ -16,7 +17,7 @@ use PhpOffice\PhpSpreadsheet\Chart\Title;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class ClassReportSheet implements FromCollection, WithHeadings, WithStyles, WithColumnWidths, WithCharts
+class ClassReportSheet implements FromCollection, WithCharts, WithColumnWidths, WithHeadings, WithStyles
 {
     protected array $students;
 
@@ -87,7 +88,7 @@ class ClassReportSheet implements FromCollection, WithHeadings, WithStyles, With
                 $student ? ($student['speak_level'] ?? 1) : '',
                 $student ? ($student['parent_email'] ?? '') : '',
                 $student && ! empty($student['report_sent_at'])
-                    ? \Carbon\Carbon::parse($student['report_sent_at'])->format('M j, Y g:i A')
+                    ? Carbon::parse($student['report_sent_at'])->format('M j, Y g:i A')
                     : '',
                 '',
                 $summary ? $summary['label'] : '',
@@ -159,15 +160,15 @@ class ClassReportSheet implements FromCollection, WithHeadings, WithStyles, With
 
         // 2. Bar (Column) Chart for Student Accuracies (A2:A{N} vs D2:D{N} & E2:E{N})
         $categoriesBar = [
-            new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_STRING, "'Class Report'!\$A\$2:\$A\$" . $studentEndRow, null, $studentCount),
+            new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_STRING, "'Class Report'!\$A\$2:\$A\$".$studentEndRow, null, $studentCount),
         ];
         $labelsBar = [
             new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_STRING, "'Class Report'!\$D\$1", null, 1),
             new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_STRING, "'Class Report'!\$E\$1", null, 1),
         ];
         $valuesBar = [
-            new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_NUMBER, "'Class Report'!\$D\$2:\$D\$" . $studentEndRow, null, $studentCount),
-            new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_NUMBER, "'Class Report'!\$E\$2:\$E\$" . $studentEndRow, null, $studentCount),
+            new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_NUMBER, "'Class Report'!\$D\$2:\$D\$".$studentEndRow, null, $studentCount),
+            new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_NUMBER, "'Class Report'!\$E\$2:\$E\$".$studentEndRow, null, $studentCount),
         ];
 
         $seriesBar = new DataSeries(

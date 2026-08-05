@@ -320,7 +320,7 @@ class BadgeTest extends TestCase
             'streak' => 10,
         ]);
 
-        $badgeService = new BadgeService();
+        $badgeService = new BadgeService;
         $awarded = $badgeService->checkGameplayBadges($user, $session->id, 100.0);
 
         $slugs = collect($awarded)->map(fn ($b) => $b->slug)->sort()->values()->all();
@@ -352,7 +352,7 @@ class BadgeTest extends TestCase
             'streak' => 5,
         ]);
 
-        $badgeService = new BadgeService();
+        $badgeService = new BadgeService;
         $awarded = $badgeService->checkGameplayBadges($user, $session->id, 90.0);
 
         $this->assertCount(4, $awarded);

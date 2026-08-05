@@ -3,7 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\ParagraphModule;
-use App\Models\Word;
+use App\Models\User;
 use App\Models\WordModule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -18,7 +18,7 @@ class ModuleCrudTest extends TestCase
     {
         parent::setUp();
 
-        $this->teacher = \App\Models\User::factory()->create(['role' => 'teacher']);
+        $this->teacher = User::factory()->create(['role' => 'teacher']);
     }
 
     public function test_save_word_module_creates_module_and_words(): void

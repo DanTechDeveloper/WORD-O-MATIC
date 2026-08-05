@@ -71,43 +71,43 @@ class CurriculumSeeder extends Seeder
 
             $contentWords = preg_split('/\s+/', trim($paragraphsByLevel[$level]), -1, PREG_SPLIT_NO_EMPTY);
             foreach ($contentWords as $pos => $word) {
-            ParagraphWord::create([
-                'paragraph_module_id' => $paraModule->id,
-                'word' => $word,
-                'position' => $pos + 1,
-            ]);
-        }
-
-        $tutorialWords = ['a', 'I', 'see', 'my', 'the'];
-        $tutorialWordModule = WordModule::firstOrCreate(
-            ['level' => 0],
-            ['title' => 'Tutorial', 'is_tutorial' => true],
-        );
-        if ($tutorialWordModule->wasRecentlyCreated) {
-            foreach ($tutorialWords as $pos => $word) {
-                Word::create([
-                    'word_module_id' => $tutorialWordModule->id,
+                ParagraphWord::create([
+                    'paragraph_module_id' => $paraModule->id,
                     'word' => $word,
                     'position' => $pos + 1,
                 ]);
             }
-        }
 
-        $tutorialContent = 'I see a cat.';
-        $tutorialParaModule = ParagraphModule::firstOrCreate(
-            ['level' => 0],
-            ['title' => 'Tutorial', 'content' => $tutorialContent, 'is_tutorial' => true],
-        );
-        if ($tutorialParaModule->wasRecentlyCreated) {
-            $contentWords = preg_split('/\s+/', trim($tutorialContent), -1, PREG_SPLIT_NO_EMPTY);
-            foreach ($contentWords as $pos => $word) {
-                ParagraphWord::create([
-                    'paragraph_module_id' => $tutorialParaModule->id,
-                    'word' => $word,
-                    'position' => $pos + 1,
-                ]);
+            $tutorialWords = ['a', 'I', 'see', 'my', 'the'];
+            $tutorialWordModule = WordModule::firstOrCreate(
+                ['level' => 0],
+                ['title' => 'Tutorial', 'is_tutorial' => true],
+            );
+            if ($tutorialWordModule->wasRecentlyCreated) {
+                foreach ($tutorialWords as $pos => $word) {
+                    Word::create([
+                        'word_module_id' => $tutorialWordModule->id,
+                        'word' => $word,
+                        'position' => $pos + 1,
+                    ]);
+                }
+            }
+
+            $tutorialContent = 'I see a cat.';
+            $tutorialParaModule = ParagraphModule::firstOrCreate(
+                ['level' => 0],
+                ['title' => 'Tutorial', 'content' => $tutorialContent, 'is_tutorial' => true],
+            );
+            if ($tutorialParaModule->wasRecentlyCreated) {
+                $contentWords = preg_split('/\s+/', trim($tutorialContent), -1, PREG_SPLIT_NO_EMPTY);
+                foreach ($contentWords as $pos => $word) {
+                    ParagraphWord::create([
+                        'paragraph_module_id' => $tutorialParaModule->id,
+                        'word' => $word,
+                        'position' => $pos + 1,
+                    ]);
+                }
             }
         }
     }
-}
 }

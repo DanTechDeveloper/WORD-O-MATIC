@@ -3,13 +3,13 @@
 namespace App\Exports;
 
 use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithStyles;
-use Maatwebsite\Excel\Concerns\WithColumnWidths;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class StoryQuestSheet implements FromCollection, WithHeadings, WithStyles, WithColumnWidths
+class StoryQuestSheet implements FromCollection, WithColumnWidths, WithHeadings, WithStyles
 {
     protected array $students;
 
@@ -43,7 +43,7 @@ class StoryQuestSheet implements FromCollection, WithHeadings, WithStyles, WithC
 
             $words = $s['paragraphTrainingWords'] ?? [];
 
-            if (!empty($words)) {
+            if (! empty($words)) {
                 foreach ($words as $moduleTitle => $moduleWords) {
                     $rows[] = [
                         $name,

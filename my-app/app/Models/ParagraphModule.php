@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -55,7 +56,7 @@ class ParagraphModule extends Model
             ->whereIn('user_id', $userIds);
 
         if ($cutoff) {
-            $cutoffTs = \Carbon\Carbon::parse($cutoff)->format('Y-m-d H:i:s');
+            $cutoffTs = Carbon::parse($cutoff)->format('Y-m-d H:i:s');
             $query->where('created_at', '<=', $cutoffTs);
         }
 
@@ -70,24 +71,28 @@ class ParagraphModule extends Model
     {
         $training = [];
         foreach ($modules as $module) {
-            $words = $module->words->filter(fn ($w) =>
-                isset($mastery[$w->id]) && $mastery[$w->id]->status === 'training'
+            $words = $module->words->filter(fn ($w) => isset($mastery[$w->id]) && $mastery[$w->id]->status === 'training'
             )->pluck('word')->values();
             if ($words->isNotEmpty()) {
                 $training["Level {$module->level}: {$module->title}"] = $words->toArray();
             }
         }
+
         return $training;
     }
 
-    public static function curriculumForUser(int $userId): array
+    public static function curriculumForUser(int $userId, ?string $cutoff = null): array
     {
         $modules = self::with('words')->where('is_tutorial', false)->orderBy('level', 'asc')->get();
 
-        $masteryProgress = DB::table('student_paragraph_mastery')
-            ->where('user_id', $userId)
-            ->get()
-            ->groupBy('paragraph_word_id');
+        $query = DB::table('student_paragraph_mastery')->where('user_id', $userId);
+
+        if ($cutoff) {
+            $cutoffTs = Carbon::parse($cutoff)->format('Y-m-d H:i:s');
+            $query->where('created_at', '<=', $cutoffTs);
+        }
+
+        $masteryProgress = $query->get()->groupBy('paragraph_word_id');
 
         return $modules->map(function ($module) use ($masteryProgress) {
             return [
@@ -116,7 +121,7 @@ class ParagraphModule extends Model
 
         $module->words()->delete();
 
-        $contentWords = !empty(trim($data['content'] ?? ''))
+        $contentWords = ! empty(trim($data['content'] ?? ''))
             ? preg_split('/\s+/', trim($data['content']), -1, PREG_SPLIT_NO_EMPTY)
             : [];
 

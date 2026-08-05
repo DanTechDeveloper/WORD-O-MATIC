@@ -13,6 +13,8 @@ const LEVEL_ICONS = [
 
 export default function LevelsPage({ modules, mode, tutorialComplete = true, wordTutorialDone = false, speakTutorialDone = false }) {
     const { auth, flash } = usePage().props
+    const deadline = auth?.deadline
+    const isDeadlineClosed = deadline && new Date(deadline) <= new Date()
     const [error, setError] = useState(flash?.error ?? null)
     const avatarUrl = auth?.user?.student?.avatar
     const bodyUrl = avatarUrl?.replace("/head.png", "/body.png")
@@ -59,6 +61,11 @@ export default function LevelsPage({ modules, mode, tutorialComplete = true, wor
                     </button>
                 </div>
             )}
+            {isDeadlineClosed && (
+                <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500 rounded-xl">
+                    <p className="text-amber-600 font-semibold">Report period closed. No progress updates will affect reports.</p>
+                </div>
+            )}
             {/* Header */}
             <div className="flex items-center gap-3 md:gap-4 mb-6 pt-2">
                 <Link
@@ -101,6 +108,7 @@ export default function LevelsPage({ modules, mode, tutorialComplete = true, wor
                             highlightTutorial={isTutorial}
                             tutorialColor={isRead ? "accent" : "quest"}
                             hasResume={resumeModules.includes(module.id)}
+                            isDeadlineClosed={isDeadlineClosed}
                         />
                     ))}
                 </div>

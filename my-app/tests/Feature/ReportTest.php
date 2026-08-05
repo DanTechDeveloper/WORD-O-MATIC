@@ -2,9 +2,13 @@
 
 namespace Tests\Feature;
 
-use App\Models\User;
-use App\Models\StudentProfile;
+use App\Exports\ClassReportSheet;
+use App\Exports\ReportsExport;
+use App\Exports\StoryQuestSheet;
+use App\Exports\WordBlastSheet;
 use App\Models\Setting;
+use App\Models\StudentProfile;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -15,6 +19,7 @@ class ReportTest extends TestCase
     // ─── SETUP ──────────────────────────────────────────────────────
 
     private User $teacher;
+
     private User $student;
 
     protected function setUp(): void
@@ -187,7 +192,7 @@ class ReportTest extends TestCase
 
     public function test_export_contains_three_sheets(): void
     {
-        $sheets = (new \App\Exports\ReportsExport([]))->sheets();
+        $sheets = (new ReportsExport([]))->sheets();
 
         $this->assertCount(3, $sheets);
         $this->assertArrayHasKey('Class Report', $sheets);
@@ -212,7 +217,7 @@ class ReportTest extends TestCase
             'paragraphTrainingWords' => [],
         ];
 
-        $sheet = new \App\Exports\WordBlastSheet([$student]);
+        $sheet = new WordBlastSheet([$student]);
 
         $this->assertEquals([
             'Student Name',
@@ -251,7 +256,7 @@ class ReportTest extends TestCase
             'paragraphTrainingWords' => ['Level 1: Stories' => ['word3', 'word4', 'word5']],
         ];
 
-        $sheet = new \App\Exports\StoryQuestSheet([$student]);
+        $sheet = new StoryQuestSheet([$student]);
 
         $this->assertEquals([
             'Student Name',
@@ -288,7 +293,7 @@ class ReportTest extends TestCase
             'report_sent_at' => null,
         ];
 
-        $sheet = new \App\Exports\ClassReportSheet([$student]);
+        $sheet = new ClassReportSheet([$student]);
 
         $this->assertEquals([
             'Student Name',
@@ -321,7 +326,7 @@ class ReportTest extends TestCase
             'report_sent_at' => null,
         ];
 
-        $sheet = new \App\Exports\ClassReportSheet([$student]);
+        $sheet = new ClassReportSheet([$student]);
         $collection = $sheet->collection();
 
         $this->assertCount(5, $collection);
@@ -344,7 +349,7 @@ class ReportTest extends TestCase
 
     public function test_class_report_sheet_includes_charts(): void
     {
-        $sheet = new \App\Exports\ClassReportSheet([]);
+        $sheet = new ClassReportSheet([]);
         $charts = $sheet->charts();
 
         $this->assertCount(2, $charts);
