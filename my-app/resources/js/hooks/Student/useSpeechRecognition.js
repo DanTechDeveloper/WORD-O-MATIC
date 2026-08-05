@@ -218,10 +218,9 @@ export function useSpeechRecognition({
                 }
 
                 if (matchedThisEvent) {
-                    if (mispronounceTimeoutRef.current) {
-                        clearTimeout(mispronounceTimeoutRef.current);
-                        mispronounceTimeoutRef.current = null;
-                    }
+                    clearTimeout(mispronounceTimeoutRef.current);
+                    clearTimers(mispronounceTimeoutRef, restartTimerRef, sentenceTimeoutRef);
+                    mispronouncedInThisWordRef.current = false;
                     return;
                 }
 
