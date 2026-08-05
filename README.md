@@ -219,8 +219,9 @@ Two correctness guarantees are enforced as committed PHPUnit tests (`php artisan
 - **Mastery immutability on replay** — replaying a completed module (Again button in `GameResults.jsx`, Play Again on `LevelsPage.jsx`) cannot demote an already-`mastered` word: `StudentController::updateWordMastery` / `updateParagraphMastery` reject `mastered → training` writes; `training → mastered` promotion still applies. `StudentDetails.jsx` mastery bars are a read-only view of `curriculumForUser`, so they reflect true best mastery and can't be corrupted by practice rounds. Locked by `CurriculumIsolationTest::test_existing_mastered_word_is_not_downgraded_on_mispronounce`.
 - **Streak integrity** — streak-based badges source `GameSession::max('streak')`, which never includes tutorial plays (tutorial rounds skip `GameSession::logSession` entirely), so tutorial-contaminated streaks are structurally impossible.
 - **Module access gating** — direct URL access to a locked module (`/student/gameplayReadMode/{id}`, `/student/gameplaySpeakMode/{id}`) is blocked by a `LevelService::isModuleAccessible()` check in `StudentController`; a locked module redirects back to the level-select page with a flash error banner. Locked by `StudentController::gameplayReadMode`, `StudentController::gameplaySpeakMode`, `LevelService::isModuleAccessible`.
+- **Deadline data freeze** — once the report deadline passes, gameplay is blocked server-side: `finishRound()` logs the `GameSession` but skips all `ProgressService` updates, so teacher reports cannot drift after the deadline. PLAY AGAIN is disabled and completed level cards are non-clickable, with an amber banner on `LevelsPage.jsx`. No deadline set → gameplay fully open. Locked by `GameplayTest::test_round_logs_session_but_skips_progress_when_deadline_passed`, `GameplayTest::test_round_saves_progress_when_no_deadline_is_set`.
 
-See `docs/CAVEATS.md` for the full tradeoff ledger (Bug fixes BF1–BF5).
+See `docs/CAVEATS.md` for the full tradeoff ledger (Bug fixes BF1–BF7).
 
 </details>
 
@@ -338,7 +339,7 @@ resources/
 - Leaderboards
 - Achievement badges
 - Word Blast / Story Quest session persistence
-- Replayable completed levels (practice with best-score safety)
+- Replayable completed levels (practice with best-score safety; disabled after report deadline)
 
 </td>
 </tr>
