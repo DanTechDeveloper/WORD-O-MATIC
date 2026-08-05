@@ -255,6 +255,19 @@ Foreign keys use **cascading deletes**. Deleting a user automatically removes st
 
 </details>
 
+<details>
+<summary><b>Excel Report Structure</b></summary>
+
+<br>
+
+Three-tab Excel export available after deadline:
+
+- **Class Report**: Student roster with status summary and accuracy charts (pie chart + bar chart)
+- **Word Blast Progress**: Training words per student with accuracy percentages and status
+- **Story Quest Progress**: Training paragraphs per student with accuracy percentages and status
+
+</details>
+
 ---
 
 ## 📁 Project Structure
