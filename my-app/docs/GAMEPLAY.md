@@ -47,6 +47,26 @@ Tutorial plays bypass GameSession, mastery, points, leaderboard, and gameplay ba
 Progress is saved but does not affect accuracy/status calculations on `students` table.
 Tutorial Complete badge flashes on Dashboard when both modes finished.
 
+## Speech Recognition Timeout Rules
+
+Both Word Blast (read mode) and Story Quest (speak mode) have a 5-second timeout for recognizing speech:
+
+| Mode | Timeout Behavior |
+|---|---|
+| **Word Mode** | If no word match is detected within 5 seconds of word display, the word is marked as mispronounced and advances to the next word. Internal 300ms/1200ms delays also verify target word identity before firing. |
+| **Sentence Mode** | Same 5-second timeout with additional synchronization. Timeout callbacks verify the target word hasn't changed before firing. This prevents the next word from being incorrectly marked as mispronounced when the 5s rule advances the game while speech results are still processing. |
+
+### Timer Synchronization
+
+All speech recognition timeouts use target word validation:
+- **`sentenceTimeoutRef` (5000ms)**: Stores target word at setup time; only fires if current `targetWord` matches
+- **`mispronounceTimeoutRef` (300ms in sentence mode, 1200ms in word mode)**: Validates target word identity before calling `onMispronounced`
+
+This prevents race conditions where:
+1. User speaks but doesn't complete word within 5s
+2. 5s word timeout fires → `handleMispronounce()` → `moveToNextWord()`
+3. Target word changes, but pending speech recognition timer would have fired with stale transcript
+
 ## Results
 
 Route: `/student/results/{id}`. Shows score, accuracy, streak, badges earned.
