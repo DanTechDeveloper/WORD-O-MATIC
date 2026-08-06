@@ -445,8 +445,6 @@ class TeacherController extends Controller
         }
 
         $request->validate([
-            // ponytail: round down to minute — the browser sends minute precision, so
-            // after_or_equal:now rejects a same-minute deadline once seconds pass it
             'deadline' => 'required|date|after_or_equal:'.now()->startOfMinute(),
         ]);
 
@@ -539,20 +537,35 @@ class TeacherController extends Controller
         $studentIds = $students->pluck('id')->all();
         $wordTraining = WordModule::trainingWordsForUsers($studentIds, $deadline);
         $paraTraining = ParagraphModule::trainingWordsForUsers($studentIds, $deadline);
+        $wordMastered = WordModule::masteredWordsForUsers($studentIds, $deadline);
+        $paraMastered = ParagraphModule::masteredWordsForUsers($studentIds, $deadline);
 
-        $formattedStudents = $students->map(fn ($user) => [
-            'name' => $user->name,
-            'section' => $user->student?->section ?? '',
-            'status' => $user->student?->status ?? 'notStarted',
-            'wordBlastAcc' => $user->student?->wordBlastAcc ?? 0,
-            'storyQuestAcc' => $user->student?->storyQuestAcc ?? 0,
-            'read_level' => $user->student?->read_level ?? 1,
-            'speak_level' => $user->student?->speak_level ?? 1,
-            'parent_email' => $user->student?->parent_email,
-            'report_sent_at' => $user->student?->report_sent_at,
-            'trainingWords' => $wordTraining[$user->id] ?? [],
-            'paragraphTrainingWords' => $paraTraining[$user->id] ?? [],
-        ])->toArray();
+        $wordTitles = WordModule::where('is_tutorial', false)->pluck('title', 'level');
+        $paraTitles = ParagraphModule::where('is_tutorial', false)->pluck('title', 'level');
+
+        $formattedStudents = $students->map(function ($user) use ($wordTraining, $paraTraining, $wordMastered, $paraMastered, $wordTitles, $paraTitles) {
+            $readLevel = $user->student?->read_level ?? 1;
+            $speakLevel = $user->student?->speak_level ?? 1;
+
+            return [
+                'name' => $user->name,
+                'student_id' => $user->student_id,
+                'section' => $user->student?->section ?? '',
+                'status' => $user->student?->status ?? 'notStarted',
+                'wordBlastAcc' => $user->student?->wordBlastAcc ?? 0,
+                'storyQuestAcc' => $user->student?->storyQuestAcc ?? 0,
+                'read_level' => $readLevel,
+                'speak_level' => $speakLevel,
+                'wbLevelLabel' => "Level {$readLevel} - ".($wordTitles[$readLevel] ?? ''),
+                'sqLevelLabel' => "Level {$speakLevel} - ".($paraTitles[$speakLevel] ?? ''),
+                'parent_email' => $user->student?->parent_email,
+                'report_sent_at' => $user->student?->report_sent_at,
+                'trainingWords' => $wordTraining[$user->id] ?? [],
+                'paragraphTrainingWords' => $paraTraining[$user->id] ?? [],
+                'masteredWords' => $wordMastered[$user->id] ?? [],
+                'paragraphMasteredWords' => $paraMastered[$user->id] ?? [],
+            ];
+        })->toArray();
 
         return Excel::download(new ReportsExport($formattedStudents), 'class-report.xlsx');
     }

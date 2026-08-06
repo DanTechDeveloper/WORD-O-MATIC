@@ -30,16 +30,6 @@ class WordModule extends Model
         return $this->relationLoaded('words') ? $this->words->count() : $this->words()->count();
     }
 
-    public static function trainingWordsForUser(int $userId): array
-    {
-        $mastery = DB::table('student_word_mastery')
-            ->where('user_id', $userId)
-            ->get()
-            ->keyBy('word_id');
-
-        return self::buildTrainingWords(self::with('words')->where('is_tutorial', false)->orderBy('level')->get(), $mastery);
-    }
-
     public static function trainingWordsForUsers(array $userIds, ?string $cutoff = null): Collection
     {
         $modules = self::with('words')->where('is_tutorial', false)->orderBy('level')->get();
@@ -55,22 +45,41 @@ class WordModule extends Model
         $masteryByUser = $query->get()->groupBy('user_id');
 
         return collect($userIds)->mapWithKeys(fn ($id) => [
-            $id => self::buildTrainingWords($modules, ($masteryByUser->get($id) ?? collect())->keyBy('word_id')),
+            $id => self::buildStatusWords($modules, 'training', ($masteryByUser->get($id) ?? collect())->keyBy('word_id')),
         ]);
     }
 
-    private static function buildTrainingWords($modules, $mastery): array
+    public static function masteredWordsForUsers(array $userIds, ?string $cutoff = null): Collection
     {
-        $training = [];
+        $modules = self::with('words')->where('is_tutorial', false)->orderBy('level')->get();
+
+        $query = DB::table('student_word_mastery')
+            ->whereIn('user_id', $userIds);
+
+        if ($cutoff) {
+            $cutoffTs = Carbon::parse($cutoff)->format('Y-m-d H:i:s');
+            $query->where('created_at', '<=', $cutoffTs);
+        }
+
+        $masteryByUser = $query->get()->groupBy('user_id');
+
+        return collect($userIds)->mapWithKeys(fn ($id) => [
+            $id => self::buildStatusWords($modules, 'mastered', ($masteryByUser->get($id) ?? collect())->keyBy('word_id')),
+        ]);
+    }
+
+    private static function buildStatusWords($modules, $status, $mastery): array
+    {
+        $words = [];
         foreach ($modules as $module) {
-            $words = $module->words->filter(fn ($w) => isset($mastery[$w->id]) && $mastery[$w->id]->status === 'training'
+            $moduleWords = $module->words->filter(fn ($w) => isset($mastery[$w->id]) && $mastery[$w->id]->status === $status
             )->pluck('word')->values();
-            if ($words->isNotEmpty()) {
-                $training["Level {$module->level}: {$module->title}"] = $words->toArray();
+            if ($moduleWords->isNotEmpty()) {
+                $words["Level {$module->level}: {$module->title}"] = $moduleWords->toArray();
             }
         }
 
-        return $training;
+        return $words;
     }
 
     public static function curriculumForUser(int $userId, ?string $cutoff = null): array
