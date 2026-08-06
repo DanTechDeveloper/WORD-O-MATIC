@@ -25,10 +25,8 @@ class SkillsOverviewSheet implements FromCollection, WithColumnWidths, WithHeadi
             'Student ID',
             'Section',
             'Final Status',
-            'Word Blast Accuracy (%)',
-            'Word Blast Level',
-            'Story Quest Accuracy (%)',
-            'Story Quest Level',
+            'Word Blast',
+            'Story Quest',
         ];
     }
 
@@ -39,10 +37,8 @@ class SkillsOverviewSheet implements FromCollection, WithColumnWidths, WithHeadi
             $s['student_id'] ?? '',
             $s['section'] ?? '',
             $s['status'] ?? 'notStarted',
-            $s['wordBlastAcc'] ?? 0,
-            $s['wbLevelLabel'] ?? "Level {$s['read_level']}",
-            $s['storyQuestAcc'] ?? 0,
-            $s['sqLevelLabel'] ?? "Level {$s['speak_level']}",
+            ($s['wordBlastAcc'] ?? 0).'% ('.($s['wbLevelLabel'] ?? "Level {$s['read_level']}").')',
+            ($s['storyQuestAcc'] ?? 0).'% ('.($s['sqLevelLabel'] ?? "Level {$s['speak_level']}").')',
         ]);
     }
 
@@ -64,10 +60,8 @@ class SkillsOverviewSheet implements FromCollection, WithColumnWidths, WithHeadi
             'B' => 15,
             'C' => 15,
             'D' => 18,
-            'E' => 22,
-            'F' => 32,
-            'G' => 22,
-            'H' => 32,
+            'E' => 42,
+            'F' => 42,
         ];
     }
 }

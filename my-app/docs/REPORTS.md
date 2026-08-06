@@ -40,12 +40,12 @@ Training words filtered by `created_at <= deadline` (deadline is normalized via 
 ## Exports
 
 Excel (`.xlsx`) export via `ReportsExport` is available after deadline passes.
-- **Class Report Sheet**: Contains student details, status breakdown summary, and two embedded native Excel charts:
+- **Class Summary Sheet**: Contains student details, status breakdown summary, and two embedded native Excel charts:
   - **Class Health Distribution** (Pie Chart): Visualizes student status distribution (On Track, Needs Support, At Risk, In Progress, Not Started).
   - **Student Accuracy Comparison** (Bar/Column Chart): Compares Word Blast and Story Quest accuracies per student.
-- **Skills Overview Sheet**: One row per student with identity + status + per-mode progress:
-  - Student Name, Student ID, Section, Final Status, Word Blast Accuracy (%), Word Blast Level (with module name), Story Quest Accuracy (%), Story Quest Level (with module name)
-- **Skill Words Sheet**: One row per student with the actual mastered/training words per mode:
+- **Student Progress Summary Sheet**: One row per student with identity + status + per-mode progress:
+  - Student Name, Student ID, Section, Final Status, Word Blast (accuracy + level combined, e.g. `78% (Level 3 - Phonics Fundamentals)`), Story Quest (accuracy + level combined, e.g. `90% (Level 2 - Farm Animals)`)
+- **Mastered & Training Words Sheet**: One row per student with the actual mastered/training words per mode:
   - Student Name, Word Blast Mastered, Word Blast Training, Story Quest Mastered, Story Quest Training
   - Each cell lists words grouped per level, e.g. `Level 1 - cat, dog` (one group per line)
 
