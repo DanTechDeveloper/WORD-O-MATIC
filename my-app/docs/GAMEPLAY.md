@@ -59,8 +59,11 @@ Both Word Blast (read mode) and Story Quest (speak mode) have a 5-second timeout
 ### Timer Synchronization
 
 All speech recognition timeouts use target word validation:
-- **`sentenceTimeoutRef` (5000ms)**: Stores target word at setup time; only fires if current `targetWord` matches
-- **`mispronounceTimeoutRef` (300ms in sentence mode, 1200ms in word mode)**: Validates target word identity before calling `onMispronounced`
+- **`sentenceTimeoutRef` (5000ms)**: Stores target word at setup; only fires if current `targetWord` matches
+- **`mispronounceTimeoutRef` (200ms in word mode word-final)**: Validates target word before `onMispronounced` call
+- **`mispronounceTimeoutRef` (300ms in sentence mode)**: Validates target word identity before calling `onMispronounced`
+- **`mispronounceTimeoutRef` (1200ms in word mode result loop)**: Validates target word before calling `onMispronounced`
+- **`wordTimeoutRef` (5000ms in useGameplayEngine)**: Delegates to speech hook which validates target word
 
 This prevents race conditions where:
 1. User speaks but doesn't complete word within 5s
