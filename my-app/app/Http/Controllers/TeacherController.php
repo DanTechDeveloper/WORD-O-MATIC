@@ -570,10 +570,6 @@ class TeacherController extends Controller
         return Excel::download(new ReportsExport($formattedStudents), 'class-report.xlsx');
     }
 
-    public function assignments()
-    {
-        return Inertia::render('Teacher/Assignments');
-    }
 
     public function leaderboards()
     {

@@ -209,9 +209,9 @@ class ReportTest extends TestCase
         $sheets = (new ReportsExport([]))->sheets();
 
         $this->assertCount(3, $sheets);
-        $this->assertArrayHasKey('Class Report', $sheets);
-        $this->assertArrayHasKey('Skills Overview', $sheets);
-        $this->assertArrayHasKey('Skill Words', $sheets);
+        $this->assertArrayHasKey('Class Summary', $sheets);
+        $this->assertArrayHasKey('Student Progress Summary', $sheets);
+        $this->assertArrayHasKey('Mastered & Training Words', $sheets);
     }
 
     public function test_skills_overview_sheet_has_correct_headings(): void
@@ -243,10 +243,8 @@ class ReportTest extends TestCase
             'Student ID',
             'Section',
             'Final Status',
-            'Word Blast Accuracy (%)',
-            'Word Blast Level',
-            'Story Quest Accuracy (%)',
-            'Story Quest Level',
+            'Word Blast',
+            'Story Quest',
         ], $sheet->headings());
 
         $collection = $sheet->collection();
@@ -257,10 +255,8 @@ class ReportTest extends TestCase
         $this->assertEquals('S7-001', $row[1]);
         $this->assertEquals('Section A', $row[2]);
         $this->assertEquals('onTrack', $row[3]);
-        $this->assertEquals(85, $row[4]);
-        $this->assertEquals('Level 3 - Phonics Fundamentals', $row[5]);
-        $this->assertEquals(90, $row[6]);
-        $this->assertEquals('Level 2 - Farm Animals', $row[7]);
+        $this->assertEquals('85% (Level 3 - Phonics Fundamentals)', $row[4]);
+        $this->assertEquals('90% (Level 2 - Farm Animals)', $row[5]);
     }
 
     public function test_skills_words_sheet_has_correct_headings(): void
