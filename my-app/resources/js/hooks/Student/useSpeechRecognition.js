@@ -1,7 +1,11 @@
 import { useEffect, useRef } from "react";
 import { isFuzzyMatch } from "@/lib/speechUtils";
 
-function clearTimers(mispronounceTimeoutRef, restartTimerRef, sentenceTimeoutRef) {
+function clearTimers(
+    mispronounceTimeoutRef,
+    restartTimerRef,
+    sentenceTimeoutRef,
+) {
     if (mispronounceTimeoutRef.current) {
         clearTimeout(mispronounceTimeoutRef.current);
         mispronounceTimeoutRef.current = null;
@@ -36,7 +40,7 @@ export function useSpeechRecognition({
         onPermissionDenied,
         onMispronounced,
         onRecognitionError,
-    })
+    });
     propsRef.current = {
         isActive,
         isWordMode,
@@ -45,7 +49,7 @@ export function useSpeechRecognition({
         onPermissionDenied,
         onMispronounced,
         onRecognitionError,
-    }
+    };
 
     const hasMatchedCurrentRef = useRef(false);
     const lastProcessedIndexRef = useRef(-1);
@@ -65,7 +69,11 @@ export function useSpeechRecognition({
         isMountedRef.current = true;
         return () => {
             isMountedRef.current = false;
-            clearTimers(mispronounceTimeoutRef, restartTimerRef, sentenceTimeoutRef);
+            clearTimers(
+                mispronounceTimeoutRef,
+                restartTimerRef,
+                sentenceTimeoutRef,
+            );
             if (recognitionRef.current) recognitionRef.current.abort();
         };
     }, []);
@@ -93,7 +101,11 @@ export function useSpeechRecognition({
                 if (!propsRef.current.isWordMode) {
                     let newFinals = "";
                     let newInterim = "";
-                    for (let i = event.resultIndex; i < event.results.length; i++) {
+                    for (
+                        let i = event.resultIndex;
+                        i < event.results.length;
+                        i++
+                    ) {
                         const r = event.results[i];
                         if (r && r[0]) {
                             if (r.isFinal) {
@@ -105,7 +117,8 @@ export function useSpeechRecognition({
                     }
                     sentenceInterimRef.current = newInterim;
                     sentenceTranscriptRef.current += " " + newFinals;
-                    const withInterim = sentenceTranscriptRef.current + " " + newInterim;
+                    const withInterim =
+                        sentenceTranscriptRef.current + " " + newInterim;
                     const full = withInterim
                         .toLowerCase()
                         .replace(/[^\w\s]/g, "")
@@ -117,16 +130,24 @@ export function useSpeechRecognition({
                             isMountedRef.current &&
                             propsRef.current.isActive &&
                             !hasMatchedCurrentRef.current &&
-                            sentenceTimeoutTargetRef.current === propsRef.current.targetWord?.toLowerCase().trim()
+                            sentenceTimeoutTargetRef.current ===
+                                propsRef.current.targetWord
+                                    ?.toLowerCase()
+                                    .trim()
                         ) {
                             propsRef.current.onMispronounced?.(full);
                         }
                     }, 5000);
-                    const spokenWordCount = full.split(/\s+/).filter(w => w.length > 0).length;
-                    const targetWordCount = target.split(/\s+/).filter(w => w.length > 0).length;
+                    const spokenWordCount = full
+                        .split(/\s+/)
+                        .filter((w) => w.length > 0).length;
+                    const targetWordCount = target
+                        .split(/\s+/)
+                        .filter((w) => w.length > 0).length;
                     speechStoppedAtRef.current = Date.now();
                     let matchedThisEvent = false;
-                    if (!hasMatchedCurrentRef.current &&
+                    if (
+                        !hasMatchedCurrentRef.current &&
                         isFuzzyMatch(full, target) &&
                         spokenWordCount === targetWordCount
                     ) {
@@ -137,34 +158,33 @@ export function useSpeechRecognition({
                     lastProcessedIndexRef.current = event.results.length - 1;
                     if (matchedThisEvent) {
                         clearTimeout(mispronounceTimeoutRef.current);
-                        clearTimers(mispronounceTimeoutRef, restartTimerRef, sentenceTimeoutRef);
+                        clearTimers(
+                            mispronounceTimeoutRef,
+                            restartTimerRef,
+                            sentenceTimeoutRef,
+                        );
                         return;
                     }
                     if (hasMatchedCurrentRef.current) return;
                     if (!full) return;
                     if (Date.now() < gracePeriodEndRef.current) return;
-                    if (speechStoppedAtRef.current && (spokenWordCount !== targetWordCount || !isFuzzyMatch(full, target))) {
+                    if (
+                        speechStoppedAtRef.current &&
+                        (spokenWordCount !== targetWordCount ||
+                            !isFuzzyMatch(full, target))
+                    ) {
                         clearTimeout(mispronounceTimeoutRef.current);
-                        clearTimers(mispronounceTimeoutRef, restartTimerRef, sentenceTimeoutRef);
+                        clearTimers(
+                            mispronounceTimeoutRef,
+                            restartTimerRef,
+                            sentenceTimeoutRef,
+                        );
                         propsRef.current.onMispronounced?.(full);
                         hasMatchedCurrentRef.current = false;
                         mispronouncedInThisWordRef.current = false;
                         return;
                     }
-clearTimeout(mispronounceTimeoutRef.current);
-                mispronounceTimeoutRef.current = setTimeout(() => {
-                    if (
-                        isMountedRef.current &&
-                        propsRef.current.isActive &&
-                        !hasMatchedCurrentRef.current &&
-                        sentenceTimeoutTargetRef.current === target
-                    ) {
-                        mispronouncedInThisWordRef.current = true;
-                        propsRef.current.onMispronounced?.(full);
-                    }
-                }, 300);
-                return;
-            }
+                }
 
                 let matchedThisEvent = false;
                 let latestTranscript = "";
@@ -189,8 +209,8 @@ clearTimeout(mispronounceTimeoutRef.current);
                     latestTranscript = transcript;
 
                     const wordsInTranscript = transcript.split(/\s+/);
-                    const isMatch = wordsInTranscript.some(
-                        (w) => isFuzzyMatch(w, target),
+                    const isMatch = wordsInTranscript.some((w) =>
+                        isFuzzyMatch(w, target),
                     );
 
                     if (isMatch && !hasMatchedCurrentRef.current) {
@@ -213,7 +233,9 @@ clearTimeout(mispronounceTimeoutRef.current);
                             !mispronouncedInThisWordRef.current
                         ) {
                             mispronouncedInThisWordRef.current = true;
-                            propsRef.current.onMispronounced?.(latestTranscript);
+                            propsRef.current.onMispronounced?.(
+                                latestTranscript,
+                            );
                         }
                         innerPathHandled = true;
                         break;
@@ -222,7 +244,11 @@ clearTimeout(mispronounceTimeoutRef.current);
 
                 if (matchedThisEvent) {
                     clearTimeout(mispronounceTimeoutRef.current);
-                    clearTimers(mispronounceTimeoutRef, restartTimerRef, sentenceTimeoutRef);
+                    clearTimers(
+                        mispronounceTimeoutRef,
+                        restartTimerRef,
+                        sentenceTimeoutRef,
+                    );
                     mispronouncedInThisWordRef.current = false;
                     return;
                 }
@@ -236,7 +262,11 @@ clearTimeout(mispronounceTimeoutRef.current);
             };
 
             recognition.onerror = (event) => {
-                clearTimers(mispronounceTimeoutRef, restartTimerRef, sentenceTimeoutRef);
+                clearTimers(
+                    mispronounceTimeoutRef,
+                    restartTimerRef,
+                    sentenceTimeoutRef,
+                );
 
                 if (event.error === "aborted") {
                     console.warn(
@@ -249,7 +279,11 @@ clearTimeout(mispronounceTimeoutRef.current);
                     );
                     propsRef.current.onPermissionDenied?.();
                 } else {
-                    if (event.error !== "no-speech" && event.error !== "audio-capture" && event.error !== "network") {
+                    if (
+                        event.error !== "no-speech" &&
+                        event.error !== "audio-capture" &&
+                        event.error !== "network"
+                    ) {
                         console.error("Speech Recognition Error:", event.error);
                         propsRef.current.onRecognitionError?.(event.error);
                     }
@@ -257,7 +291,11 @@ clearTimeout(mispronounceTimeoutRef.current);
             };
 
             recognition.onend = () => {
-                clearTimers(mispronounceTimeoutRef, restartTimerRef, sentenceTimeoutRef);
+                clearTimers(
+                    mispronounceTimeoutRef,
+                    restartTimerRef,
+                    sentenceTimeoutRef,
+                );
                 lastProcessedIndexRef.current = -1;
                 hasMatchedCurrentRef.current = false;
                 sentenceTranscriptRef.current = "";
@@ -278,7 +316,10 @@ clearTimeout(mispronounceTimeoutRef.current);
                         recognitionRef.current?.start();
                         restartRetryCountRef.current = 0;
                     } catch {
-                        const delay = Math.min(500 * 2 ** restartRetryCountRef.current, 3000);
+                        const delay = Math.min(
+                            500 * 2 ** restartRetryCountRef.current,
+                            3000,
+                        );
                         restartRetryCountRef.current += 1;
                         restartTimerRef.current = setTimeout(tryRestart, delay);
                     }
@@ -291,7 +332,11 @@ clearTimeout(mispronounceTimeoutRef.current);
         }
 
         return () => {
-            clearTimers(mispronounceTimeoutRef, restartTimerRef, sentenceTimeoutRef);
+            clearTimers(
+                mispronounceTimeoutRef,
+                restartTimerRef,
+                sentenceTimeoutRef,
+            );
             if (recognitionRef.current) {
                 recognitionRef.current.abort();
                 recognitionRef.current = null;
@@ -308,13 +353,30 @@ clearTimeout(mispronounceTimeoutRef.current);
         speechStoppedAtRef.current = 0;
         mispronouncedInThisWordRef.current = false;
         sentenceTimeoutTargetRef.current = null;
-        clearTimers(mispronounceTimeoutRef, restartTimerRef, sentenceTimeoutRef);
+        clearTimers(
+            mispronounceTimeoutRef,
+            restartTimerRef,
+            sentenceTimeoutRef,
+        );
         gracePeriodEndRef.current = Date.now() + 500;
-        if (wasMatched && recognitionRef.current && propsRef.current.isActive && propsRef.current.isWordMode) {
-            try { recognitionRef.current.stop(); } catch {}
+        if (
+            wasMatched &&
+            recognitionRef.current &&
+            propsRef.current.isActive &&
+            propsRef.current.isWordMode
+        ) {
+            try {
+                recognitionRef.current.stop();
+            } catch {}
         }
-        if (propsRef.current.isActive && recognitionRef.current && !recognitionRef.current.isListening) {
-            try { recognitionRef.current.start(); } catch {}
+        if (
+            propsRef.current.isActive &&
+            recognitionRef.current &&
+            !recognitionRef.current.isListening
+        ) {
+            try {
+                recognitionRef.current.start();
+            } catch {}
         }
     }, [targetWord]);
 
@@ -326,16 +388,22 @@ clearTimeout(mispronounceTimeoutRef.current);
             try {
                 hasMatchedCurrentRef.current = false;
                 lastProcessedIndexRef.current = -1;
-                clearTimers(mispronounceTimeoutRef, restartTimerRef, sentenceTimeoutRef);
+                clearTimers(
+                    mispronounceTimeoutRef,
+                    restartTimerRef,
+                    sentenceTimeoutRef,
+                );
                 recognition.start();
-            } catch {
-            }
+            } catch {}
         } else {
             try {
-                clearTimers(mispronounceTimeoutRef, restartTimerRef, sentenceTimeoutRef);
+                clearTimers(
+                    mispronounceTimeoutRef,
+                    restartTimerRef,
+                    sentenceTimeoutRef,
+                );
                 recognition.stop();
-            } catch {
-            }
+            } catch {}
         }
     }, [isActive]);
 }
