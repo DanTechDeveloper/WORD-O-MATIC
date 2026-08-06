@@ -118,12 +118,11 @@ class StudentController extends Controller
             $badge->threshold = $badge->threshold_score;
 
             if ($badge->threshold_score !== null) {
-                // Best streak/accuracy counts only pre-deadline sessions so a
-                // post-deadline round can't inflate badge progress display.
-                $sessionQuery = GameSession::where('user_id', $user->id);
-                if ($deadline = \App\Models\Setting::getValue('report_deadline')) {
-                    $sessionQuery->where('created_at', '<', $deadline);
-                }
+                // Best streak/accuracy counts only sessions that weren't deadline-hit,
+                // so a post-deadline round can't inflate badge progress — sticky even
+                // if the deadline is later cleared.
+                $sessionQuery = GameSession::where('user_id', $user->id)
+                    ->where('is_deadline_hit', false);
 
                 $badge->current_value = match ($badge->metric) {
                     'total_points' => $student ? $student->points : 0,
@@ -368,12 +367,12 @@ class StudentController extends Controller
             ? round(min(($wordsSmashed / $totalPossible) * 100, 100), 2)
             : 0;
 
-        $session = GameSession::logSession($user->id, $module->id, $type, $wordsSmashed, $accuracy, $streak);
-
         $deadline = \App\Models\Setting::getValue('report_deadline');
-        $isDeadlineClosed = $deadline && \Carbon\Carbon::parse($deadline)->isPast();
+        $isDeadlineHit = $deadline && \Carbon\Carbon::parse($deadline)->isPast();
 
-        if ($isDeadlineClosed) {
+        $session = GameSession::logSession($user->id, $module->id, $type, $wordsSmashed, $accuracy, $streak, $isDeadlineHit);
+
+        if ($isDeadlineHit) {
             return redirect()->route('student.results', ['id' => $session->id]);
         }
 

@@ -561,7 +561,6 @@ class TeacherController extends Controller
         return Excel::download(new ReportsExport($formattedStudents), 'class-report.xlsx');
     }
 
-
     public function leaderboards()
     {
         $students = StudentProfile::join('users', 'users.id', '=', 'students.user_id')

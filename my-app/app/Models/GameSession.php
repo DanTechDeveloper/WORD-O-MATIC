@@ -17,9 +17,10 @@ class GameSession extends Model
         'score',
         'accuracy',
         'streak',
+        'is_deadline_hit',
     ];
 
-    public static function logSession($userId, $moduleId, $moduleType, $score, $accuracy, $streak)
+    public static function logSession($userId, $moduleId, $moduleType, $score, $accuracy, $streak, $isDeadlineHit = false)
     {
         return self::create([
             'user_id' => $userId,
@@ -28,6 +29,7 @@ class GameSession extends Model
             'score' => $score,
             'accuracy' => $accuracy,
             'streak' => $streak ?? 0,
+            'is_deadline_hit' => $isDeadlineHit,
         ]);
     }
 

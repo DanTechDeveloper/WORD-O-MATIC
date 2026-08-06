@@ -146,7 +146,10 @@ class GameplayTest extends TestCase
             'word_module_id' => $this->module->id,
             'words_smashed' => 10,
         ]);
-        $this->assertDatabaseHas('game_sessions', ['user_id' => $this->student->id]);
+        $this->assertDatabaseHas('game_sessions', [
+            'user_id' => $this->student->id,
+            'is_deadline_hit' => false,
+        ]);
     }
 
     public function test_round_logs_session_but_skips_progress_when_deadline_passed(): void
@@ -167,7 +170,10 @@ class GameplayTest extends TestCase
         $this->assertDatabaseMissing('student_word_progress', [
             'user_id' => $this->student->id,
         ]);
-        $this->assertDatabaseHas('game_sessions', ['user_id' => $this->student->id]);
+        $this->assertDatabaseHas('game_sessions', [
+            'user_id' => $this->student->id,
+            'is_deadline_hit' => true,
+        ]);
     }
 
     public function test_post_deadline_mastery_write_is_rejected(): void
@@ -379,5 +385,30 @@ class GameplayTest extends TestCase
             ->get(route('student.results', $session->id))
             ->assertSuccessful()
             ->assertInertia(fn ($page) => $page->where('deadlineHit', true));
+    }
+
+    public function test_deadline_hit_session_stays_excluded_after_deadline_cleared(): void
+    {
+        Setting::setValue('report_deadline', now()->subMinute()->format('Y-m-d H:i:s'));
+
+        $this->actingAs($this->student)
+            ->post(route('student.saveWordProgress'), [
+                'module_id' => $this->module->id,
+                'words_smashed' => 10,
+                'words_processed' => 10,
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('game_sessions', [
+            'user_id' => $this->student->id,
+            'is_deadline_hit' => true,
+        ]);
+
+        Setting::where('key', 'report_deadline')->delete();
+
+        $streak = GameSession::where('user_id', $this->student->id)
+            ->where('is_deadline_hit', false)
+            ->max('streak');
+        $this->assertNull($streak);
     }
 }
