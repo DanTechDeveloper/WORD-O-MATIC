@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Badges;
 use App\Models\GameSession;
 use App\Models\ParagraphModule;
+use App\Models\Setting;
 use App\Models\StudentParagraphProgress;
 use App\Models\StudentWordProgress;
 use App\Models\User;
@@ -12,6 +13,18 @@ use App\Models\WordModule;
 
 class BadgeService
 {
+    // Best streak/accuracy counts only pre-deadline sessions, so a post-deadline
+    // round can't inflate badge progress display (doc: CAVEATS BF7/BF10).
+    private function bestSessionMetric(User $user, string $column): int
+    {
+        $query = GameSession::where('user_id', $user->id);
+
+        if ($deadline = Setting::getValue('report_deadline')) {
+            $query->where('created_at', '<', $deadline);
+        }
+
+        return (int) $query->max($column) ?? 0;
+    }
     public function awardOnboardingBadge(User $user, string $slug): ?array
     {
         $badge = Badges::where('slug', $slug)->first();
@@ -84,7 +97,7 @@ class BadgeService
         foreach ($badgesToCheck as $badge) {
             $currentValue = match ($badge->metric) {
                 'total_points' => $student->points,
-                'streak' => (int) GameSession::where('user_id', $user->id)->max('streak') ?? 0,
+                'streak' => $this->bestSessionMetric($user, 'streak'),
                 'accuracy' => max((float) $student->wordBlastAcc, (float) $student->storyQuestAcc),
                 'paragraph_completion' => $this->calculateModuleCompletion($user, 'paragraph'),
                 'word_completion' => $this->calculateModuleCompletion($user, 'word'),
@@ -133,7 +146,7 @@ class BadgeService
         foreach ($badgesToCheck as $badge) {
             $currentValue = match ($badge->metric) {
                 'total_points' => $student->points,
-                'streak' => (int) GameSession::where('user_id', $user->id)->max('streak') ?? 0,
+                'streak' => $this->bestSessionMetric($user, 'streak'),
                 'accuracy' => $accuracy,
                 'paragraph_completion' => $this->calculateModuleCompletion($user, 'paragraph'),
                 'word_completion' => $this->calculateModuleCompletion($user, 'word'),
@@ -166,7 +179,7 @@ class BadgeService
         foreach ($badges as $badge) {
             $currentValue = match ($badge->metric) {
                 'total_points' => $student ? $student->points : 0,
-                'streak' => (int) GameSession::where('user_id', $user->id)->max('streak') ?? 0,
+                'streak' => $this->bestSessionMetric($user, 'streak'),
                 'accuracy' => round((float) $session->accuracy, 2),
                 'paragraph_completion' => $this->calculateModuleCompletion($user, 'paragraph'),
                 'word_completion' => $this->calculateModuleCompletion($user, 'word'),

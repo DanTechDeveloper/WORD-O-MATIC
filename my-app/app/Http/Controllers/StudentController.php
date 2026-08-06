@@ -118,10 +118,17 @@ class StudentController extends Controller
             $badge->threshold = $badge->threshold_score;
 
             if ($badge->threshold_score !== null) {
+                // Best streak/accuracy counts only pre-deadline sessions so a
+                // post-deadline round can't inflate badge progress display.
+                $sessionQuery = GameSession::where('user_id', $user->id);
+                if ($deadline = \App\Models\Setting::getValue('report_deadline')) {
+                    $sessionQuery->where('created_at', '<', $deadline);
+                }
+
                 $badge->current_value = match ($badge->metric) {
                     'total_points' => $student ? $student->points : 0,
-                    'streak' => GameSession::where('user_id', $user->id)->max('streak') ?? 0,
-                    'accuracy' => GameSession::where('user_id', $user->id)->max('accuracy') ?? 0,
+                    'streak' => $sessionQuery->max('streak') ?? 0,
+                    'accuracy' => $sessionQuery->max('accuracy') ?? 0,
                     'paragraph_completion' => $this->badgeService->calculateModuleCompletion($user, 'paragraph'),
                     'word_completion' => $this->badgeService->calculateModuleCompletion($user, 'word'),
                     default => 0,
@@ -213,6 +220,12 @@ class StudentController extends Controller
             'status' => 'required|in:mastered,training',
         ]);
 
+        // Post-deadline rounds must not write mastery rows (BF7/BF10).
+        $deadline = \App\Models\Setting::getValue('report_deadline');
+        if ($deadline && \Carbon\Carbon::parse($deadline)->isPast()) {
+            return response()->noContent();
+        }
+
         // Mastery is sticky: a mastered word can never regress to training on replay,
         // matching the best-score-only invariant (see docs/CAVEATS.md BF2/BF4).
         $existing = StudentWordMastery::where('user_id', auth()->id())
@@ -236,6 +249,12 @@ class StudentController extends Controller
             'paragraph_word_id' => 'required|exists:paragraph_words,id',
             'status' => 'required|in:mastered,training',
         ]);
+
+        // Post-deadline rounds must not write mastery rows (BF7/BF10).
+        $deadline = \App\Models\Setting::getValue('report_deadline');
+        if ($deadline && \Carbon\Carbon::parse($deadline)->isPast()) {
+            return response()->noContent();
+        }
 
         // Same sticky-mastery guard: mastered paragraph words cannot regress.
         $existing = StudentParagraphMastery::where('user_id', auth()->id())
@@ -328,7 +347,7 @@ class StudentController extends Controller
     private function finishRound(User $user, WordModule|ParagraphModule $module, Request $request, string $type): RedirectResponse
     {
         $isTutorial = $module->is_tutorial && ! $user->student?->tutorial_completed_at;
-
+        
         if ($isTutorial) {
             if ($type === 'word') {
                 $this->progressService->updateWordProgress($user->student, $module, 0, $request->words_processed, 0, isTutorial: true);
@@ -355,8 +374,7 @@ class StudentController extends Controller
         $isDeadlineClosed = $deadline && \Carbon\Carbon::parse($deadline)->isPast();
 
         if ($isDeadlineClosed) {
-            return redirect()->route('student.results', ['id' => $session->id])
-                ->with('info', 'Report period closed. Progress cannot be updated.');
+            return redirect()->route('student.results', ['id' => $session->id]);
         }
 
         if ($type === 'word') {
@@ -420,6 +438,7 @@ class StudentController extends Controller
             'badgeProgress' => $badgeProgress,
             'nextModuleId' => $nextModule?->id,
             'isMaxLevel' => $isMaxLevel,
+            'deadlineHit' => (bool) ($deadline = \App\Models\Setting::getValue('report_deadline')) && \Carbon\Carbon::parse($deadline)->isPast(),
         ]);
     }
 
