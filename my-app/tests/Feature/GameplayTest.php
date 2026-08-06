@@ -168,4 +168,104 @@ class GameplayTest extends TestCase
         ]);
         $this->assertDatabaseHas('game_sessions', ['user_id' => $this->student->id]);
     }
+
+    // ─── GET ENDPOINT DEADLINE GATE ───────────────────────────────────
+
+    public function test_gameplay_page_redirects_when_deadline_passed(): void
+    {
+        Setting::setValue('report_deadline', now()->subMinute()->format('Y-m-d H:i:s'));
+
+        $this->actingAs($this->student)
+            ->get(route('student.gameplayReadMode', $this->module->id))
+            ->assertRedirect(route('student.readModeLevels'));
+    }
+
+    public function test_gameplay_page_loads_when_no_deadline(): void
+    {
+        Setting::where('key', 'report_deadline')->delete();
+
+        $this->actingAs($this->student)
+            ->get(route('student.gameplayReadMode', $this->module->id))
+            ->assertSuccessful();
+    }
+
+    public function test_speak_gameplay_page_redirects_when_deadline_passed(): void
+    {
+        $paraModule = ParagraphModule::create([
+            'level' => 1,
+            'title' => 'Test Paragraph',
+            'content' => 'The cat is big and fat.',
+        ]);
+        foreach (['The', 'cat', 'is', 'big', 'and', 'fat'] as $pos => $w) {
+            ParagraphWord::create([
+                'paragraph_module_id' => $paraModule->id,
+                'word' => $w,
+                'position' => $pos + 1,
+            ]);
+        }
+
+        Setting::setValue('report_deadline', now()->subMinute()->format('Y-m-d H:i:s'));
+
+        $this->actingAs($this->student)
+            ->get(route('student.gameplaySpeakMode', $paraModule->id))
+            ->assertRedirect(route('student.speakModeLevels'));
+    }
+
+    public function test_speak_gameplay_page_loads_when_no_deadline(): void
+    {
+        $paraModule = ParagraphModule::create([
+            'level' => 1,
+            'title' => 'Test Paragraph',
+            'content' => 'The cat is big and fat.',
+        ]);
+
+        Setting::where('key', 'report_deadline')->delete();
+
+        $this->actingAs($this->student)
+            ->get(route('student.gameplaySpeakMode', $paraModule->id))
+            ->assertSuccessful();
+    }
+
+    public function test_read_tutorial_module_still_loads_when_deadline_passed(): void
+    {
+        Setting::setValue('report_deadline', now()->subMinute()->format('Y-m-d H:i:s'));
+
+        $tutorialModule = WordModule::create([
+            'level' => 0,
+            'title' => 'Tutorial',
+            'is_tutorial' => true,
+        ]);
+        Word::create([
+            'word_module_id' => $tutorialModule->id,
+            'word' => 'cat',
+            'position' => 1,
+        ]);
+
+        $this->actingAs($this->student)
+            ->get(route('student.gameplayReadMode', $tutorialModule->id))
+            ->assertSuccessful();
+    }
+
+    public function test_speak_tutorial_module_still_loads_when_deadline_passed(): void
+    {
+        Setting::setValue('report_deadline', now()->subMinute()->format('Y-m-d H:i:s'));
+
+        $tutorialPara = ParagraphModule::create([
+            'level' => 0,
+            'title' => 'Tutorial',
+            'content' => 'I see the cat.',
+            'is_tutorial' => true,
+        ]);
+        foreach (['I', 'see', 'the', 'cat', '.'] as $pos => $w) {
+            ParagraphWord::create([
+                'paragraph_module_id' => $tutorialPara->id,
+                'word' => $w,
+                'position' => $pos + 1,
+            ]);
+        }
+
+        $this->actingAs($this->student)
+            ->get(route('student.gameplaySpeakMode', $tutorialPara->id))
+            ->assertSuccessful();
+    }
 }

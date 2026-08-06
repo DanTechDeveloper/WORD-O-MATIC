@@ -176,6 +176,11 @@ class StudentController extends Controller
 
         $user = auth()->user();
 
+        $deadline = \App\Models\Setting::getValue('report_deadline');
+        if (! $module->is_tutorial && $deadline && \Carbon\Carbon::parse($deadline)->isPast()) {
+            return redirect()->route('student.readModeLevels');
+        }
+
         if (! $this->levelService->isModuleAccessible($user->id, $id, 'word')) {
             return redirect()->route('student.readModeLevels')
                 ->with('error', 'This module is locked. Please complete the previous level first.');
@@ -285,6 +290,11 @@ class StudentController extends Controller
             ->findOrFail($id);
 
         $user = auth()->user();
+
+        $deadline = \App\Models\Setting::getValue('report_deadline');
+        if (! $module->is_tutorial && $deadline && \Carbon\Carbon::parse($deadline)->isPast()) {
+            return redirect()->route('student.speakModeLevels');
+        }
 
         if (! $this->levelService->isModuleAccessible($user->id, $id, 'paragraph')) {
             return redirect()->route('student.speakModeLevels')
