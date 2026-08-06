@@ -209,20 +209,8 @@ export function useSpeechRecognition({
                             Date.now() >= gracePeriodEndRef.current &&
                             !mispronouncedInThisWordRef.current
                         ) {
-                            clearTimeout(mispronounceTimeoutRef.current);
-                            const wordTarget = target;
-                            mispronounceTimeoutRef.current = setTimeout(() => {
-                                if (
-                                    isMountedRef.current &&
-                                    propsRef.current.isActive &&
-                                    !hasMatchedCurrentRef.current &&
-                                    !mispronouncedInThisWordRef.current &&
-                                    wordTarget === propsRef.current.targetWord?.toLowerCase().trim()
-                                ) {
-                                    mispronouncedInThisWordRef.current = true;
-                                    propsRef.current.onMispronounced?.(latestTranscript);
-                                }
-                            }, 200);
+                            mispronouncedInThisWordRef.current = true;
+                            propsRef.current.onMispronounced?.(latestTranscript);
                         }
                         innerPathHandled = true;
                         break;
@@ -242,20 +230,6 @@ export function useSpeechRecognition({
 
                 if (innerPathHandled) return;
                 if (Date.now() < gracePeriodEndRef.current) return;
-
-                clearTimeout(mispronounceTimeoutRef.current);
-                mispronounceTimeoutRef.current = setTimeout(() => {
-                    if (
-                        isMountedRef.current &&
-                        propsRef.current.isActive &&
-                        !hasMatchedCurrentRef.current &&
-                        !mispronouncedInThisWordRef.current &&
-                        target === propsRef.current.targetWord?.toLowerCase().trim()
-                    ) {
-                        mispronouncedInThisWordRef.current = true;
-                        propsRef.current.onMispronounced?.(latestTranscript);
-                    }
-                }, 1200);
             };
 
             recognition.onerror = (event) => {
