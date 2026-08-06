@@ -154,7 +154,8 @@ export function useSpeechRecognition({
                     if (
                         isMountedRef.current &&
                         propsRef.current.isActive &&
-                        !hasMatchedCurrentRef.current
+                        !hasMatchedCurrentRef.current &&
+                        sentenceTimeoutTargetRef.current === target
                     ) {
                         propsRef.current.onMispronounced?.(full);
                     }
@@ -246,7 +247,8 @@ export function useSpeechRecognition({
                         isMountedRef.current &&
                         propsRef.current.isActive &&
                         !hasMatchedCurrentRef.current &&
-                        !mispronouncedInThisWordRef.current
+                        !mispronouncedInThisWordRef.current &&
+                        target === propsRef.current.targetWord?.toLowerCase().trim()
                     ) {
                         mispronouncedInThisWordRef.current = true;
                         propsRef.current.onMispronounced?.(latestTranscript);
