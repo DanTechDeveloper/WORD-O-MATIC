@@ -162,7 +162,7 @@ export default function GameResults({
         </div>
     );
 
-    if (!deadlineHit && newBadges.length > 0 && badgeIndex < newBadges.length) {
+    if (newBadges.length > 0 && badgeIndex < newBadges.length) {
         return (
             <div className="bg-background text-on-background font-body-md">
                 <BadgeUnlockModal

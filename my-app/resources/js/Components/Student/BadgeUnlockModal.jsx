@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { usePage } from "@inertiajs/react";
 import { playBadgeUnlockSound } from "@/utils/sounds";
 
 export default function BadgeUnlockModal({
@@ -9,13 +10,16 @@ export default function BadgeUnlockModal({
     current,
     total,
 }) {
+    const { auth } = usePage().props;
+    const deadlineClosed = auth?.deadline && new Date(auth.deadline) <= new Date();
+
     useEffect(() => {
         if (show && badge) {
             playBadgeUnlockSound()
         }
     }, [show, badge])
 
-    if (!show || !badge) return null;
+    if (deadlineClosed || !show || !badge) return null;
 
     return (
         <div
