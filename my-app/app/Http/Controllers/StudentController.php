@@ -388,6 +388,11 @@ class StudentController extends Controller
     {
         $session = GameSession::findOrFail($id);
 
+        if ($session->user_id !== auth()->id()) {
+            return redirect()->route('student.dashboard')
+                ->with('error', 'Access denied.');
+        }
+
         if ($session->module_type === 'word') {
             $module = WordModule::withCount('words')->find($session->module_id);
             $nextModule = WordModule::where('level', $module->level + 1)

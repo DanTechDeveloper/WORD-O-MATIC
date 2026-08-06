@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\GameSession;
 use App\Models\ParagraphModule;
 use App\Models\ParagraphWord;
 use App\Models\Setting;
@@ -267,5 +268,60 @@ class GameplayTest extends TestCase
         $this->actingAs($this->student)
             ->get(route('student.gameplaySpeakMode', $tutorialPara->id))
             ->assertSuccessful();
+    }
+
+    // ─── IDOR FIX (H3) ────────────────────────────────────────────────
+
+    public function test_student_can_view_own_session_results(): void
+    {
+        GameSession::create([
+            'user_id' => $this->student->id,
+            'module_id' => $this->module->id,
+            'module_type' => 'word',
+            'score' => 85,
+            'accuracy' => 85.0,
+            'streak' => 3,
+        ]);
+
+        $this->student2 = User::factory()->create(['role' => 'student']);
+        StudentProfile::factory()->for($this->student2)->create([
+            'wordBlastAcc' => 0,
+            'storyQuestAcc' => 0,
+            'status' => 'notStarted',
+        ]);
+
+        $session = GameSession::where('user_id', $this->student2->id)
+            ->where('module_id', $this->module->id)
+            ->firstOrCreate([
+                'user_id' => $this->student2->id,
+                'module_id' => $this->module->id,
+                'module_type' => 'word',
+            ], [
+                'score' => 50,
+                'accuracy' => 50.0,
+                'streak' => 1,
+            ]);
+
+        $this->actingAs($this->student)
+            ->get(route('student.results', $session->id))
+            ->assertRedirect(route('student.dashboard'))
+            ->assertSessionHas('error', 'Access denied.');
+    }
+
+    public function test_student_can_access_own_results(): void
+    {
+        $session = GameSession::create([
+            'user_id' => $this->student->id,
+            'module_id' => $this->module->id,
+            'module_type' => 'word',
+            'score' => 85,
+            'accuracy' => 85.0,
+            'streak' => 3,
+        ]);
+
+        $this->actingAs($this->student)
+            ->get(route('student.results', $session->id))
+            ->assertSuccessful()
+            ->assertInertia(fn ($page) => $page->has('session'));
     }
 }
