@@ -395,17 +395,8 @@ class TeacherController extends Controller
             ->orderBy('name', 'asc')
             ->get();
 
-        $deadline = Setting::getValue('report_deadline');
-        $deadlineTs = $deadline ? Carbon::parse($deadline, config('app.timezone')) : null;
-        $isPastDeadline = $deadlineTs && $deadlineTs->isPast();
-
-        if ($isPastDeadline && $deadline) {
-            $wordTraining = WordModule::trainingWordsForUsers($students->pluck('id')->all(), $deadline);
-            $paraTraining = ParagraphModule::trainingWordsForUsers($students->pluck('id')->all(), $deadline);
-        } else {
-            $wordTraining = WordModule::trainingWordsForUsers($students->pluck('id')->all());
-            $paraTraining = ParagraphModule::trainingWordsForUsers($students->pluck('id')->all());
-        }
+        $wordTraining = WordModule::trainingWordsForUsers($students->pluck('id')->all());
+        $paraTraining = ParagraphModule::trainingWordsForUsers($students->pluck('id')->all());
 
         $students = $students->map(fn ($user) => [
             'id' => $user->id,
