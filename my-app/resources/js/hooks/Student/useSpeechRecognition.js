@@ -210,12 +210,14 @@ export function useSpeechRecognition({
                             !mispronouncedInThisWordRef.current
                         ) {
                             clearTimeout(mispronounceTimeoutRef.current);
+                            const wordTarget = target;
                             mispronounceTimeoutRef.current = setTimeout(() => {
                                 if (
                                     isMountedRef.current &&
                                     propsRef.current.isActive &&
                                     !hasMatchedCurrentRef.current &&
-                                    !mispronouncedInThisWordRef.current
+                                    !mispronouncedInThisWordRef.current &&
+                                    wordTarget === propsRef.current.targetWord?.toLowerCase().trim()
                                 ) {
                                     mispronouncedInThisWordRef.current = true;
                                     propsRef.current.onMispronounced?.(latestTranscript);
