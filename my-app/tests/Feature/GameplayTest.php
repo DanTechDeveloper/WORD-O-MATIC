@@ -160,7 +160,7 @@ class GameplayTest extends TestCase
                 'words_processed' => 10,
             ])
             ->assertRedirect()
-            ->assertSessionHas('info');
+            ->assertSessionMissing('info');
 
         $this->student->refresh();
         $this->assertEquals(0, $this->student->student->points);
@@ -168,6 +168,43 @@ class GameplayTest extends TestCase
             'user_id' => $this->student->id,
         ]);
         $this->assertDatabaseHas('game_sessions', ['user_id' => $this->student->id]);
+    }
+
+    public function test_post_deadline_mastery_write_is_rejected(): void
+    {
+        Setting::setValue('report_deadline', now()->subMinute()->format('Y-m-d H:i:s'));
+
+        $word = Word::where('word_module_id', $this->module->id)->first();
+
+        $this->actingAs($this->student)
+            ->post(route('student.updateWordMastery'), [
+                'word_id' => $word->id,
+                'status' => 'mastered',
+            ])
+            ->assertNoContent();
+
+        $this->assertDatabaseMissing('student_word_mastery', [
+            'user_id' => $this->student->id,
+            'word_id' => $word->id,
+        ]);
+    }
+
+    public function test_pre_deadline_mastery_write_is_accepted(): void
+    {
+        $word = Word::where('word_module_id', $this->module->id)->first();
+
+        $this->actingAs($this->student)
+            ->post(route('student.updateWordMastery'), [
+                'word_id' => $word->id,
+                'status' => 'mastered',
+            ])
+            ->assertNoContent();
+
+        $this->assertDatabaseHas('student_word_mastery', [
+            'user_id' => $this->student->id,
+            'word_id' => $word->id,
+            'status' => 'mastered',
+        ]);
     }
 
     // ─── GET ENDPOINT DEADLINE GATE ───────────────────────────────────
@@ -322,6 +359,25 @@ class GameplayTest extends TestCase
         $this->actingAs($this->student)
             ->get(route('student.results', $session->id))
             ->assertSuccessful()
-            ->assertInertia(fn ($page) => $page->has('session'));
+            ->assertInertia(fn ($page) => $page->has('session')->where('deadlineHit', false));
+    }
+
+    public function test_results_flags_deadline_hit_when_past_deadline(): void
+    {
+        Setting::setValue('report_deadline', now()->subMinute()->format('Y-m-d H:i:s'));
+
+        $session = GameSession::create([
+            'user_id' => $this->student->id,
+            'module_id' => $this->module->id,
+            'module_type' => 'word',
+            'score' => 85,
+            'accuracy' => 85.0,
+            'streak' => 3,
+        ]);
+
+        $this->actingAs($this->student)
+            ->get(route('student.results', $session->id))
+            ->assertSuccessful()
+            ->assertInertia(fn ($page) => $page->where('deadlineHit', true));
     }
 }

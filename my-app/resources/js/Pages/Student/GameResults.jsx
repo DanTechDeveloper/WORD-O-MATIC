@@ -2,6 +2,7 @@ import { Link, usePage } from "@inertiajs/react";
 import { useState } from "react";
 import BadgeUnlockModal from "@/Components/Student/BadgeUnlockModal";
 import NextBadge from "@/Components/Student/NextBadge";
+import DeadlineBanner from "@/Components/DeadlineBanner";
 
 const CONFETTI = [
     { icon: "celebration", color: "text-accent" },
@@ -20,10 +21,11 @@ export default function GameResults({
     badgeProgress,
     nextModuleId,
     isMaxLevel,
+    deadlineHit,
 }) {
     const displayScore = parseInt(session.score) || 0;
     const accuracyPct = parseFloat(session.accuracy) || 0;
-    const isPerfect = accuracyPct >= 100;
+    const isPerfect = !deadlineHit && accuracyPct >= 100;
     const { flash } = usePage().props;
     const newBadgeSlugs = flash?.new_badges?.map(b => b.slug) ?? [];
     const newBadges = badgeProgress?.filter(b => newBadgeSlugs.includes(b.slug)) ?? [];
@@ -67,21 +69,33 @@ export default function GameResults({
                 <div className="w-full max-w-lg mx-auto flex flex-col gap-8 animate-fade-in">
                     <div className="text-center">
                         <h1 className="text-6xl sm:text-7xl font-black text-primary uppercase leading-tight">
-                            {isPerfect ? "PERFECT!" : "GREAT JOB!"}
+                            {deadlineHit ? "TIME'S UP!" : isPerfect ? "PERFECT!" : "GREAT JOB!"}
                         </h1>
                         <p className="text-lg font-bold text-on-surface-variant uppercase tracking-wider mt-2">
                             {moduleTitle}
                         </p>
                     </div>
 
+                    {deadlineHit && (
+                        <DeadlineBanner
+                            isDeadlineClosed
+                            message="Time's up! The Game ended after the Challenge — so no points, no badges, and no leaderboard this time. You still played great!"
+                        />
+                    )}
+
                     <div className="flex gap-4">
                         <div className="flex-1 bg-surface-container rounded-2xl py-6 px-4 text-center border border-surface-variant/20">
                             <div className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1">
-                                Score
+                                {deadlineHit ? "You played" : "Score"}
                             </div>
                             <div className="text-5xl sm:text-6xl font-black text-lime-400">
                                 {displayScore}
                             </div>
+                            {deadlineHit && (
+                                <div className="text-xs font-semibold text-on-surface-variant mt-2">
+                                    Points not counted — deadline passed
+                                </div>
+                            )}
                         </div>
                         <div className="flex-1 bg-surface-container rounded-2xl py-6 px-4 text-center border border-surface-variant/20">
                             <div className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1">
@@ -98,7 +112,7 @@ export default function GameResults({
                         {isPerfect ? "Amazing!" : "You're doing great!"}
                     </div>
 
-                    {nextBadge && <NextBadge badge={nextBadge} />}
+                    {!deadlineHit && nextBadge && <NextBadge badge={nextBadge} />}
 
                     <div className="flex gap-4">
                             <button
@@ -148,7 +162,7 @@ export default function GameResults({
         </div>
     );
 
-    if (newBadges.length > 0 && badgeIndex < newBadges.length) {
+    if (!deadlineHit && newBadges.length > 0 && badgeIndex < newBadges.length) {
         return (
             <div className="bg-background text-on-background font-body-md">
                 <BadgeUnlockModal
