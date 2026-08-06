@@ -10,7 +10,8 @@ export default function DeadlineBanner({ isDeadlineClosed }) {
                 emoji_events
             </span>
             <p className="text-amber-600 font-semibold">
-                The Great Word Challenge is taking a break! Your points are safe play again soon for a brand-new adventure!
+                The Great Word Challenge is taking a break! Your points are safe
+                play again soon for a brand-new adventure!
             </p>
         </div>
     );
