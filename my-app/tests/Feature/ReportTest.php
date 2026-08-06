@@ -4,8 +4,8 @@ namespace Tests\Feature;
 
 use App\Exports\ClassReportSheet;
 use App\Exports\ReportsExport;
-use App\Exports\StoryQuestSheet;
-use App\Exports\WordBlastSheet;
+use App\Exports\SkillsOverviewSheet;
+use App\Exports\SkillsWordsSheet;
 use App\Models\Setting;
 use App\Models\StudentProfile;
 use App\Models\User;
@@ -210,37 +210,43 @@ class ReportTest extends TestCase
 
         $this->assertCount(3, $sheets);
         $this->assertArrayHasKey('Class Report', $sheets);
-        $this->assertArrayHasKey('Word Blast Progress', $sheets);
-        $this->assertArrayHasKey('Story Quest Progress', $sheets);
+        $this->assertArrayHasKey('Skills Overview', $sheets);
+        $this->assertArrayHasKey('Skill Words', $sheets);
     }
 
-    public function test_word_blast_sheet_has_correct_headings(): void
+    public function test_skills_overview_sheet_has_correct_headings(): void
     {
         $student = [
             'id' => 1,
             'name' => 'Test Student',
+            'student_id' => 'S7-001',
             'section' => 'Section A',
             'status' => 'onTrack',
             'wordBlastAcc' => 85,
             'storyQuestAcc' => 90,
-            'read_level' => 1,
-            'speak_level' => 1,
+            'read_level' => 3,
+            'speak_level' => 2,
+            'wbLevelLabel' => 'Level 3 - Phonics Fundamentals',
+            'sqLevelLabel' => 'Level 2 - Farm Animals',
             'parent_email' => 'test@test.com',
             'report_sent_at' => null,
-            'trainingWords' => ['Level 1: Vocabulary' => ['word1', 'word2']],
+            'trainingWords' => [],
             'paragraphTrainingWords' => [],
+            'masteredWords' => [],
+            'paragraphMasteredWords' => [],
         ];
 
-        $sheet = new WordBlastSheet([$student]);
+        $sheet = new SkillsOverviewSheet([$student]);
 
         $this->assertEquals([
             'Student Name',
+            'Student ID',
             'Section',
-            'Status',
-            'Accuracy (%)',
-            'Module',
-            'Training Words',
-            'Word Count',
+            'Final Status',
+            'Word Blast Accuracy (%)',
+            'Word Blast Level',
+            'Story Quest Accuracy (%)',
+            'Story Quest Level',
         ], $sheet->headings());
 
         $collection = $sheet->collection();
@@ -248,12 +254,16 @@ class ReportTest extends TestCase
 
         $this->assertNotNull($row);
         $this->assertEquals('Test Student', $row[0]);
-        $this->assertEquals('Section A', $row[1]);
-        $this->assertEquals('onTrack', $row[2]);
-        $this->assertEquals(85, $row[3]);
+        $this->assertEquals('S7-001', $row[1]);
+        $this->assertEquals('Section A', $row[2]);
+        $this->assertEquals('onTrack', $row[3]);
+        $this->assertEquals(85, $row[4]);
+        $this->assertEquals('Level 3 - Phonics Fundamentals', $row[5]);
+        $this->assertEquals(90, $row[6]);
+        $this->assertEquals('Level 2 - Farm Animals', $row[7]);
     }
 
-    public function test_story_quest_sheet_has_correct_headings(): void
+    public function test_skills_words_sheet_has_correct_headings(): void
     {
         $student = [
             'id' => 1,
@@ -266,20 +276,20 @@ class ReportTest extends TestCase
             'speak_level' => 1,
             'parent_email' => 'test2@test.com',
             'report_sent_at' => null,
-            'trainingWords' => [],
+            'trainingWords' => ['Level 3: Around Town' => ['bird', 'zoo']],
             'paragraphTrainingWords' => ['Level 1: Stories' => ['word3', 'word4', 'word5']],
+            'masteredWords' => ['Level 1: Farm Animals' => ['cat', 'dog']],
+            'paragraphMasteredWords' => ['Level 2: Seasons' => ['rainy', 'sunny']],
         ];
 
-        $sheet = new StoryQuestSheet([$student]);
+        $sheet = new SkillsWordsSheet([$student]);
 
         $this->assertEquals([
             'Student Name',
-            'Section',
-            'Status',
-            'Accuracy (%)',
-            'Module',
-            'Training Words',
-            'Word Count',
+            'Word Blast Mastered',
+            'Word Blast Training',
+            'Story Quest Mastered',
+            'Story Quest Training',
         ], $sheet->headings());
 
         $collection = $sheet->collection();
@@ -287,9 +297,10 @@ class ReportTest extends TestCase
 
         $this->assertNotNull($row);
         $this->assertEquals('Test Student', $row[0]);
-        $this->assertEquals('Section B', $row[1]);
-        $this->assertEquals('atRisk', $row[2]);
-        $this->assertEquals(60, $row[3]);
+        $this->assertEquals("Level 1 - cat, dog", $row[1]);
+        $this->assertEquals("Level 3 - bird, zoo", $row[2]);
+        $this->assertEquals("Level 2 - rainy, sunny", $row[3]);
+        $this->assertEquals("Level 1 - word3, word4, word5", $row[4]);
     }
 
     public function test_class_report_sheet_has_correct_headings(): void
