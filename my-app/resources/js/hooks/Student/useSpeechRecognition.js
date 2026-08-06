@@ -149,7 +149,7 @@ export function useSpeechRecognition({
                         mispronouncedInThisWordRef.current = false;
                         return;
                     }
-                    clearTimeout(mispronounceTimeoutRef.current);
+clearTimeout(mispronounceTimeoutRef.current);
                 mispronounceTimeoutRef.current = setTimeout(() => {
                     if (
                         isMountedRef.current &&
@@ -157,6 +157,7 @@ export function useSpeechRecognition({
                         !hasMatchedCurrentRef.current &&
                         sentenceTimeoutTargetRef.current === target
                     ) {
+                        mispronouncedInThisWordRef.current = true;
                         propsRef.current.onMispronounced?.(full);
                     }
                 }, 300);
