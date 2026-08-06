@@ -144,6 +144,8 @@ export function useSpeechRecognition({
                     if (!full) return;
                     if (Date.now() < gracePeriodEndRef.current) return;
                     if (speechStoppedAtRef.current && (spokenWordCount !== targetWordCount || !isFuzzyMatch(full, target))) {
+                        clearTimeout(mispronounceTimeoutRef.current);
+                        clearTimers(mispronounceTimeoutRef, restartTimerRef, sentenceTimeoutRef);
                         propsRef.current.onMispronounced?.(full);
                         hasMatchedCurrentRef.current = false;
                         mispronouncedInThisWordRef.current = false;
