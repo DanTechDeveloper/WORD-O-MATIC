@@ -368,10 +368,8 @@ class GameplayTest extends TestCase
             ->assertInertia(fn ($page) => $page->has('session')->where('deadlineHit', false));
     }
 
-    public function test_results_flags_deadline_hit_when_past_deadline(): void
+    public function test_results_flags_deadline_hit_for_flagged_session(): void
     {
-        Setting::setValue('report_deadline', now()->subMinute()->format('Y-m-d H:i:s'));
-
         $session = GameSession::create([
             'user_id' => $this->student->id,
             'module_id' => $this->module->id,
@@ -379,6 +377,7 @@ class GameplayTest extends TestCase
             'score' => 85,
             'accuracy' => 85.0,
             'streak' => 3,
+            'is_deadline_hit' => true,
         ]);
 
         $this->actingAs($this->student)

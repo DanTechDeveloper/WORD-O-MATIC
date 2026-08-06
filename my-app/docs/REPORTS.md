@@ -1,6 +1,6 @@
 # Reports
 
-> Version 1.3
+> Version 1.4
 
 ## Dashboard
 
@@ -21,6 +21,8 @@ Classification formula: `wordBlastAcc` and `storyQuestAcc` averaged.
 |---|---|
 | Before deadline | Checkboxes disabled, Send locked, deadline save locked; student gameplay fully open |
 | After deadline | All teacher actions enabled. **Student gameplay blocked** (Option A, see CAVEATS.md BF7): `saveWordProgress` / `saveParagraphProgress` log the session but skip all progress updates (`StudentController::finishRound`); PLAY AGAIN disabled and completed level cards non-clickable (`LevelCard.jsx`), amber banner on `LevelsPage.jsx`. No deadline set → gameplay open. |
+
+Post-deadline sessions are logged with `is_deadline_hit=true` (baked in at `finishRound`, sticky — see DATABASE.md). The results page renders the non-scoring "TIME'S UP!" view (`GameResults.jsx`: deadline banner, "You played" score card, NextBadge hidden), and `BadgeUnlockModal` auto-suppresses via `auth.deadline`. Streak/accuracy badge metrics (`BadgeService::bestSessionMetric`, `StudentController::badges()`) exclude flagged sessions permanently — even if the teacher clears the deadline afterward.
 
 Training words filtered by `created_at <= deadline` (deadline is normalized via `Carbon::parse($cutoff)->format('Y-m-d H:i:s')` to avoid SQL string comparison issues with ISO dates).
 
