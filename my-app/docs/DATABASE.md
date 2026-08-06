@@ -1,6 +1,6 @@
 # Database
 
-> Version 1.3
+> Version 1.4
 
 All migrations in `database/migrations/`. No raw SQL. All foreign keys on `user_id` use `cascadeOnDelete`.
 
@@ -37,7 +37,7 @@ All migrations in `database/migrations/`. No raw SQL. All foreign keys on `user_
 
 | Table | Key Fields | Notes |
 |---|---|---|
-| `game_sessions` | `id, user_id, module_id, module_type, score, accuracy, streak, created_at` | Polymorphic, append-only. Cascade on `user_id`. |
+| `game_sessions` | `id, user_id, module_id, module_type, score, accuracy, streak, is_deadline_hit, created_at` | Polymorphic, append-only. Cascade on `user_id`. `is_deadline_hit` (boolean, default false) is sticky TRUE when the round was played after the report deadline closed — permanently excluded from badge/streak/accuracy metrics even if the deadline is later cleared. |
 
 ### Badges & Practice
 

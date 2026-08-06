@@ -437,7 +437,7 @@ class StudentController extends Controller
             'badgeProgress' => $badgeProgress,
             'nextModuleId' => $nextModule?->id,
             'isMaxLevel' => $isMaxLevel,
-            'deadlineHit' => (bool) ($deadline = \App\Models\Setting::getValue('report_deadline')) && \Carbon\Carbon::parse($deadline)->isPast(),
+            'deadlineHit' => (bool) $session->is_deadline_hit,
         ]);
     }
 

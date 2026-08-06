@@ -219,7 +219,7 @@ Two correctness guarantees are enforced as committed PHPUnit tests (`php artisan
 - **Mastery immutability on replay** — replaying a completed module (Again button in `GameResults.jsx`, Play Again on `LevelsPage.jsx`) cannot demote an already-`mastered` word: `StudentController::updateWordMastery` / `updateParagraphMastery` reject `mastered → training` writes; `training → mastered` promotion still applies. `StudentDetails.jsx` mastery bars are a read-only view of `curriculumForUser`, so they reflect true best mastery and can't be corrupted by practice rounds. Locked by `CurriculumIsolationTest::test_existing_mastered_word_is_not_downgraded_on_mispronounce`.
 - **Streak integrity** — streak-based badges source `GameSession::max('streak')`, which never includes tutorial plays (tutorial rounds skip `GameSession::logSession` entirely), so tutorial-contaminated streaks are structurally impossible.
 - **Module access gating** — direct URL access to a locked module (`/student/gameplayReadMode/{id}`, `/student/gameplaySpeakMode/{id}`) is blocked by a `LevelService::isModuleAccessible()` check in `StudentController`; a locked module redirects back to the level-select page with a flash error banner. Locked by `StudentController::gameplayReadMode`, `StudentController::gameplaySpeakMode`, `LevelService::isModuleAccessible`.
-- **Deadline data freeze** — once the report deadline passes, gameplay is blocked server-side: `finishRound()` logs the `GameSession` but skips all `ProgressService` updates, so teacher reports cannot drift after the deadline. PLAY AGAIN is disabled and completed level cards are non-clickable, with an amber banner on `LevelsPage.jsx`. No deadline set → gameplay fully open. Locked by `GameplayTest::test_round_logs_session_but_skips_progress_when_deadline_passed`, `GameplayTest::test_round_saves_progress_when_no_deadline_is_set`.
+- **Deadline data freeze** — once the report deadline passes, gameplay is blocked server-side: `finishRound()` logs the `GameSession` but skips all `ProgressService` updates, so teacher reports cannot drift after the deadline. PLAY AGAIN is disabled and completed level cards are non-clickable, with an amber banner on `LevelsPage.jsx`. Post-deadline sessions are permanently flagged `is_deadline_hit=true` — excluded from streak/accuracy badge metrics and shown with the non-scoring "TIME'S UP!" results view ("You played", no badges) even if the teacher later clears the deadline. No deadline set → gameplay fully open. Locked by `GameplayTest::test_round_logs_session_but_skips_progress_when_deadline_passed`, `GameplayTest::test_round_saves_progress_when_no_deadline_is_set`, `GameplayTest::test_deadline_hit_session_stays_excluded_after_deadline_cleared`.
 
 See `docs/CAVEATS.md` for the full tradeoff ledger (Bug fixes BF1–BF7).
 
@@ -263,9 +263,9 @@ Foreign keys use **cascading deletes**. Deleting a user automatically removes st
 
 Three-tab Excel export available after deadline:
 
-- **Class Report**: Student roster with status summary and accuracy charts (pie chart + bar chart)
-- **Word Blast Progress**: Training words per student with accuracy percentages and status
-- **Story Quest Progress**: Training paragraphs per student with accuracy percentages and status
+- **Class Summary**: Student roster with status breakdown summary and accuracy charts (pie chart + bar chart)
+- **Student Progress Summary**: One row per student — identity + final status + combined Word Blast / Story Quest accuracy-and-level labels (e.g. `78% (Level 3 - Phonics Fundamentals)`)
+- **Mastered & Training Words**: One row per student — mastered + training words per mode, grouped per level (e.g. `Level 1 - cat, dog`)
 
 </details>
 
