@@ -1,13 +1,37 @@
 import { useState, useRef, useEffect } from "react";
 import { usePage, Link } from "@inertiajs/react";
 import Sidebar from "../../Components/Teacher/Sidebar";
+import DeadlineBanner from "@/Components/DeadlineBanner";
 
 export default function DashboardLayout({ children }) {
     const [isSidebarOpen, setSidebarOpen] = useState(false);
     const [showNotifs, setShowNotifs] = useState(false);
     const notifRef = useRef();
 
+    const { url } = usePage();
     const { teacher } = usePage().props;
+    const { auth } = usePage().props;
+    const deadline = auth?.deadline;
+    const isDeadlineClosed = deadline && new Date(deadline) <= new Date();
+
+    const formatDeadline = (dateStr) => {
+        if (!dateStr) return "";
+        return new Date(dateStr).toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+        });
+    };
+
+    const onReportsPage = url === "/teacher/reports";
+    const showDeadlineBanner = onReportsPage ? !!deadline : isDeadlineClosed;
+    const deadlineMessage = onReportsPage
+        ? isDeadlineClosed
+            ? `The report deadline has passed. All report actions are now available. Deadline was set to ${formatDeadline(deadline)}.`
+            : `Reporting deadline not yet reached. Reports are set to be generated after ${formatDeadline(deadline)}. You may still proceed, but data may not be final.`
+        : "The report deadline has passed. Gameplay is locked and all leaderboards, badges, and reports are now final.";
     const alerts = teacher ? [
         ...(!teacher.has_deadline ? [{ msg: "No report deadline set", href: "/teacher/reports", icon: "event" }] : []),
         ...(!teacher.has_word_modules ? [{ msg: "No Word Blast modules yet", href: "/teacher/word", icon: "book" }] : []),
@@ -101,6 +125,10 @@ export default function DashboardLayout({ children }) {
                 </div>
             </header>
             <main className="md:ml-64 pt-28 pb-12 px-4 md:px-8 min-h-screen bg-background">
+                <DeadlineBanner
+                    isDeadlineClosed={showDeadlineBanner}
+                    message={deadlineMessage}
+                />
                 {children}
             </main>
         </>

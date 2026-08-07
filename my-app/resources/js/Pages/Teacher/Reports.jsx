@@ -118,44 +118,6 @@ export default function Reports({ grouped, flash, deadline, errors }) {
         ? [statusTab]
         : ["atRisk", "support", "onTrack", "in_progress", "notStarted"];
 
-    const renderDeadlineBanner = () => {
-        if (!deadlineValue) return null;
-
-        if (isPastDeadline) {
-            return (
-                <div className="mb-8 bg-lime-500/10 border-2 border-lime-500 rounded-2xl p-5 flex items-center gap-4">
-                    <span className="material-symbols-outlined text-lime-400 text-3xl">
-                        check_circle
-                    </span>
-                    <div>
-                        <p className="text-white font-black uppercase italic text-sm">
-                            Report deadline has passed
-                        </p>
-                        <p className="text-slate-400 text-sm font-semibold mt-1">
-                            All report actions are now available. Deadline was set to {formatDate(deadlineDate)}.
-                        </p>
-                    </div>
-                </div>
-            );
-        }
-
-        return (
-            <div className="mb-8 bg-amber-500/10 border-2 border-amber-500 rounded-2xl p-5 flex items-center gap-4">
-                <span className="material-symbols-outlined text-amber-400 text-3xl">
-                    schedule
-                </span>
-                <div>
-                    <p className="text-white font-black uppercase italic text-sm">
-                        Reporting deadline not yet reached
-                    </p>
-                        <p className="text-slate-400 text-sm font-semibold mt-1">
-                            Reports are set to be generated after {formatDate(deadlineDate)}. You may still proceed, but data may not be final.
-                        </p>
-                </div>
-            </div>
-        );
-    };
-
     const renderDeadlineSetter = () => (
         <div className="bg-slate-900 border-4 border-slate-800 p-8 rounded-[2.5rem] shadow-[8px_8px_0_0_#020617] mb-8">
             <h2 className="text-2xl font-black text-white uppercase italic mb-6 flex items-center gap-3">
@@ -460,8 +422,6 @@ export default function Reports({ grouped, flash, deadline, errors }) {
             )}
 
             {renderDeadlineSetter()}
-
-            {renderDeadlineBanner()}
 
             {isPastDeadline && (
                 <div className="mb-8 flex gap-4">
