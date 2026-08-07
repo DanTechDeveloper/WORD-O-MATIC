@@ -271,16 +271,10 @@ class TeacherController extends Controller
     {
         $user = User::with(['student'])->findOrFail($studentId);
 
-        $deadline = Setting::getValue('report_deadline');
-        $deadlineTs = $deadline ? Carbon::parse($deadline, config('app.timezone')) : null;
-        $isPastDeadline = $deadlineTs && $deadlineTs->isPast();
-
-        $cutoff = $isPastDeadline ? $deadline : null;
-
         return Inertia::render('Teacher/StudentDetails', [
             'data' => array_merge($user->toArray(), [
-                'readCurriculum' => WordModule::curriculumForUser($studentId, $cutoff),
-                'speakCurriculum' => ParagraphModule::curriculumForUser($studentId, $cutoff),
+                'readCurriculum' => WordModule::curriculumForUser($studentId),
+                'speakCurriculum' => ParagraphModule::curriculumForUser($studentId),
             ]),
         ]);
     }
@@ -467,8 +461,8 @@ class TeacherController extends Controller
             ->whereIn('id', $request->student_ids)
             ->get();
 
-        $wordTraining = WordModule::trainingWordsForUsers($request->student_ids, $deadline);
-        $paraTraining = ParagraphModule::trainingWordsForUsers($request->student_ids, $deadline);
+        $wordTraining = WordModule::trainingWordsForUsers($request->student_ids);
+        $paraTraining = ParagraphModule::trainingWordsForUsers($request->student_ids);
 
         $sent = 0;
         $failed = 0;
@@ -526,10 +520,10 @@ class TeacherController extends Controller
             ->get();
 
         $studentIds = $students->pluck('id')->all();
-        $wordTraining = WordModule::trainingWordsForUsers($studentIds, $deadline);
-        $paraTraining = ParagraphModule::trainingWordsForUsers($studentIds, $deadline);
-        $wordMastered = WordModule::masteredWordsForUsers($studentIds, $deadline);
-        $paraMastered = ParagraphModule::masteredWordsForUsers($studentIds, $deadline);
+        $wordTraining = WordModule::trainingWordsForUsers($studentIds);
+        $paraTraining = ParagraphModule::trainingWordsForUsers($studentIds);
+        $wordMastered = WordModule::masteredWordsForUsers($studentIds);
+        $paraMastered = ParagraphModule::masteredWordsForUsers($studentIds);
 
         $wordTitles = WordModule::where('is_tutorial', false)->pluck('title', 'level');
         $paraTitles = ParagraphModule::where('is_tutorial', false)->pluck('title', 'level');

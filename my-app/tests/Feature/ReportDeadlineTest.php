@@ -96,35 +96,34 @@ class ReportDeadlineTest extends TestCase
             );
     }
 
-    public function test_post_deadline_mastery_excluded_from_training()
+    public function test_post_deadline_mastery_write_is_blocked()
     {
-        $cutoffTs = '2026-08-05 13:00:00';
+        Setting::setValue('report_deadline', Carbon::now()->subMinute()->format('Y-m-d H:i:s'));
 
-        // Create mastery AFTER deadline
-        DB::statement(
-            'INSERT INTO student_word_mastery (user_id, word_id, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?)',
-            [$this->student->id, $this->word2->id, 'training', '2026-08-05 13:01:00', '2026-08-05 13:01:00']
-        );
+        $this->student->student->update(['avatar' => '/images/custom-avatar.svg']);
 
-        $words = WordModule::trainingWordsForUsers(
-            [$this->student->id],
-            $cutoffTs
-        );
+        $this->actingAs($this->student)
+            ->post(route('student.updateWordMastery'), [
+                'word_id' => $this->word->id,
+                'status' => 'training',
+            ]);
 
-        $this->assertEmpty($words[$this->student->id]);
+        $this->assertDatabaseMissing('student_word_mastery', [
+            'user_id' => $this->student->id,
+            'word_id' => $this->word->id,
+        ]);
     }
 
     public function test_pre_deadline_mastery_included()
     {
-        $cutoffTs = '2026-08-05 13:00:00';
-
-        // Create mastery BEFORE deadline
+        // Mastery rows are always shown in the curriculum; the write-side
+        // gates in StudentController already keep post-deadline masteries out.
         DB::statement(
             'INSERT INTO student_word_mastery (user_id, word_id, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?)',
             [$this->student->id, $this->word->id, 'mastered', '2026-08-05 12:30:00', '2026-08-05 12:30:00']
         );
 
-        $curriculum = WordModule::curriculumForUser($this->student->id, $cutoffTs);
+        $curriculum = WordModule::curriculumForUser($this->student->id);
 
         $this->assertCount(1, $curriculum[0]['mastered']);
         $this->assertEquals('cat', $curriculum[0]['mastered'][0]);
@@ -132,18 +131,13 @@ class ReportDeadlineTest extends TestCase
 
     public function test_pre_deadline_training_included()
     {
-        $cutoffTs = '2026-08-05 13:00:00';
-
         // Create training record BEFORE deadline
         DB::statement(
             'INSERT INTO student_word_mastery (user_id, word_id, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?)',
             [$this->student->id, $this->word->id, 'training', '2026-08-05 12:50:00', '2026-08-05 12:50:00']
         );
 
-        $words = WordModule::trainingWordsForUsers(
-            [$this->student->id],
-            $cutoffTs
-        );
+        $words = WordModule::trainingWordsForUsers([$this->student->id]);
 
         $this->assertArrayHasKey('Level 1: Level 1', $words[$this->student->id]);
     }
