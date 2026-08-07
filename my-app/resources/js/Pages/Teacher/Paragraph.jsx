@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import DashboardLayout from "../../Layouts/Teacher/DashboardLayout";
 import ParagraphInputModal from "../../Components/Teacher/ParagraphInputModal";
-import { router } from "@inertiajs/react";
+import { router, usePage } from "@inertiajs/react";
 
 export default function Paragraph({ modules }) {
+    const { auth } = usePage().props;
+    const isDeadlineClosed = auth?.deadline && new Date(auth.deadline) <= new Date();
     const levels = modules?.map((m) => m.level).filter((l) => l > 0).sort((a, b) => a - b) ?? [];
     const nextLevel = levels.length > 0 ? Math.max(...levels) + 1 : 1;
     const transformModules = (modulesData) => {
@@ -75,8 +77,13 @@ export default function Paragraph({ modules }) {
                     {levels.map((level) => (
                         <div
                             key={level}
-                            className="bg-slate-900 rounded-[2.5rem] border-4 border-slate-800 p-6 md:p-8 flex flex-col items-center justify-center text-center shadow-[10px_10px_0_0_#020617] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all cursor-pointer group"
-                            onClick={() => openModal(level)}
+                            className={`bg-slate-900 rounded-[2.5rem] border-4 border-slate-800 p-6 md:p-8 flex flex-col items-center justify-center text-center shadow-[10px_10px_0_0_#020617] transition-all group ${
+                                isDeadlineClosed ? "cursor-not-allowed opacity-40" : "hover:translate-x-1 hover:translate-y-1 hover:shadow-none cursor-pointer"
+                            }`}
+                            onClick={() => {
+                                if (isDeadlineClosed) return;
+                                openModal(level);
+                            }}
                         >
                             <div className="w-16 h-16 rounded-2xl bg-slate-950 border-2 border-sky-400 flex items-center justify-center mb-4 rotate-3 group-hover:rotate-0 transition-transform shadow-[4px_4px_0_0_#075985]">
                                 <span className="text-2xl font-black text-sky-400">
@@ -91,9 +98,11 @@ export default function Paragraph({ modules }) {
                                 {calculateModulePoints(level)} Points Total
                             </p>
                             <button
-                                className="mt-6 w-full bg-amber-500 text-white px-4 py-3 rounded-xl border-4 border-slate-950 shadow-[4px_4px_0_0_#78350f] font-black uppercase italic text-xs tracking-tighter hover:translate-y-0.5 hover:shadow-none transition-all flex items-center justify-center gap-2"
+                                className="mt-6 w-full bg-amber-500 text-white px-4 py-3 rounded-xl border-4 border-slate-950 shadow-[4px_4px_0_0_#78350f] font-black uppercase italic text-xs tracking-tighter hover:translate-y-0.5 hover:shadow-none transition-all flex items-center justify-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-[4px_4px_0_0_#78350f]"
+                                disabled={isDeadlineClosed}
                                 onClick={(e) => {
                                     e.stopPropagation();
+                                    if (isDeadlineClosed) return;
                                     openModal(level);
                                 }}
                             >
@@ -107,8 +116,13 @@ export default function Paragraph({ modules }) {
                 {levels.length < 10 && (
                     <div
                         key="add-module"
-                        className="bg-slate-900 rounded-[2.5rem] border-4 border-slate-800 p-6 md:p-8 flex flex-col items-center justify-center text-center shadow-[10px_10px_0_0_#020617] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all cursor-pointer group"
-                        onClick={() => openModal(nextLevel)}
+                        className={`bg-slate-900 rounded-[2.5rem] border-4 border-slate-800 p-6 md:p-8 flex flex-col items-center justify-center text-center shadow-[10px_10px_0_0_#020617] transition-all group ${
+                            isDeadlineClosed ? "cursor-not-allowed opacity-40" : "hover:translate-x-1 hover:translate-y-1 hover:shadow-none cursor-pointer"
+                        }`}
+                        onClick={() => {
+                            if (isDeadlineClosed) return;
+                            openModal(nextLevel);
+                        }}
                     >
                         <div className="w-16 h-16 rounded-2xl bg-slate-950 border-2 border-sky-400 flex items-center justify-center mb-4 transition-transform shadow-[4px_4px_0_0_#075985]">
                             <span className="material-symbols-outlined text-2xl text-sky-400">

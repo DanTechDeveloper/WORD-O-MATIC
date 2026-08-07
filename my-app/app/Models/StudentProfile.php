@@ -33,6 +33,8 @@ class StudentProfile extends Model
 
     protected $casts = [
         'tutorial_completed_at' => 'datetime',
+        'wordBlastAcc' => 'float',
+        'storyQuestAcc' => 'float',
     ];
 
     public function user()

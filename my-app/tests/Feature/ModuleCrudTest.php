@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\ParagraphModule;
+use App\Models\Setting;
 use App\Models\User;
 use App\Models\WordModule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -151,5 +152,35 @@ class ModuleCrudTest extends TestCase
     {
         $response = $this->get('/teacher/wordModules');
         $response->assertRedirect('/');
+    }
+
+    public function test_teacher_cannot_update_word_module_after_deadline(): void
+    {
+        Setting::setValue('report_deadline', now()->subMinute()->format('Y-m-d H:i:s'));
+
+        $response = $this->actingAs($this->teacher)->put('/teacher/wordModules', [
+            'level' => 1,
+            'title' => 'Locked',
+            'words' => array_fill(0, 10, ['word' => '']),
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('error');
+        $this->assertEquals(0, WordModule::count());
+    }
+
+    public function test_teacher_cannot_update_paragraph_module_after_deadline(): void
+    {
+        Setting::setValue('report_deadline', now()->subMinute()->format('Y-m-d H:i:s'));
+
+        $response = $this->actingAs($this->teacher)->put('/teacher/paragraphModules', [
+            'level' => 1,
+            'title' => 'Locked',
+            'content' => 'changed',
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('error');
+        $this->assertEquals(0, ParagraphModule::count());
     }
 }
