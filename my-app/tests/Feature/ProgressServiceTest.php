@@ -210,6 +210,37 @@ class ProgressServiceTest extends TestCase
         $this->assertEquals('in_progress', $this->student->student->status);
     }
 
+    public function test_status_in_progress_when_only_word_progress_and_story_zero(): void
+    {
+        $this->progressService->updateWordProgress(
+            $this->student->student, $this->wordModule,
+            wordsSmashed: 5, wordsProcessed: 5, accuracy: 87.5
+        );
+
+        $this->student->refresh();
+        $this->assertSame(87.5, $this->student->student->wordBlastAcc);
+        $this->assertSame(0.0, $this->student->student->storyQuestAcc);
+        $this->assertSame('in_progress', $this->student->student->status);
+        $this->assertNotEquals('atRisk', $this->student->student->status);
+    }
+
+    public function test_accuracy_zero_is_cast_to_float_and_treated_as_no_skill(): void
+    {
+        $this->student->student->update(['wordBlastAcc' => 87.5, 'storyQuestAcc' => 0]);
+
+        $fresh = $this->student->student->fresh();
+        $this->assertSame(0.0, $fresh->storyQuestAcc);
+        $this->assertFalse((bool) $fresh->storyQuestAcc);
+
+        $this->progressService->updateWordProgress(
+            $this->student->student, $this->wordModule,
+            wordsSmashed: 5, wordsProcessed: 5, accuracy: 90
+        );
+
+        $this->student->refresh();
+        $this->assertSame('in_progress', $this->student->student->status);
+    }
+
     public function test_status_does_not_regress_to_in_progress_on_worse_replay(): void
     {
         $this->progressService->updateWordProgress(

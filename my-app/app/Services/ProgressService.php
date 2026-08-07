@@ -107,15 +107,17 @@ class ProgressService
     private function recalculateStatus(StudentProfile $student): void
     {
         $fresh = $student->fresh();
-        $wb = $fresh->wordBlastAcc;
-        $sq = $fresh->storyQuestAcc;
+        // Force float: DECIMAL columns come back as strings ("0.00" is truthy in PHP,
+        // which would misclassify a one-skill student as atRisk instead of in_progress).
+        $wb = (float) $fresh->wordBlastAcc;
+        $sq = (float) $fresh->storyQuestAcc;
 
         if (! $wb && ! $sq) {
             $status = 'notStarted';
         } elseif (! $wb || ! $sq) {
             $status = 'in_progress';
         } else {
-            $avg = ($wb + $sq) / 2;
+            $avg = ($wb + $sq ) / 2;
             $status = $avg >= 80 ? 'onTrack' : ($avg >= 60 ? 'support' : 'atRisk');
         }
 

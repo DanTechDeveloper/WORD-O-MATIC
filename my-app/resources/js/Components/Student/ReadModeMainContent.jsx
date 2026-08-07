@@ -213,15 +213,25 @@ const ReadModeMainContent = memo(function ReadModeMainContent({
                                     !isWordReady
                                         ? "opacity-30 blur-[2px]"
                                         : "opacity-100 blur-0 transition-all duration-500"
+                                } ${
+                                    isMispronounced && isWordReady
+                                        ? "inline-block text-rose-400 bg-slate-900/80 border-2 border-rose-500 rounded-xl px-3 py-2"
+                                        : ""
                                 }`}
                                 style={{
                                     fontFamily: '"Courier New", "Consolas", "Monaco", monospace',
                                     fontSize: `clamp(2rem, ${Math.max(2, 8 - word.word.length * 0.4)}rem, 8rem)`,
-                                    textShadow: `
-                                        0 0 10px ${color.glow},
-                                        0 0 30px ${color.glow},
-                                        0 0 60px ${color.glow}66
-                                    `,
+                                    textShadow: isMispronounced && isWordReady
+                                        ? `
+                                            0 0 10px rgba(244,63,94,0.6),
+                                            0 0 30px rgba(244,63,94,0.6),
+                                            0 0 60px rgba(244,63,94,0.3)
+                                        `
+                                        : `
+                                            0 0 10px ${color.glow},
+                                            0 0 30px ${color.glow},
+                                            0 0 60px ${color.glow}66
+                                        `,
                                 }}
                             >
                                 {chars.map((char, i) => {

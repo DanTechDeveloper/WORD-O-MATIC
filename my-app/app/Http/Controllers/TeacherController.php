@@ -356,6 +356,11 @@ class TeacherController extends Controller
 
     public function updateWordModule(Request $request)
     {
+        $deadline = Setting::getValue('report_deadline');
+        if ($deadline && \Carbon\Carbon::parse($deadline)->isPast()) {
+            return redirect()->back()->with('error', 'Cannot edit modules after the report deadline.');
+        }
+
         $request->validate([
             'level' => 'required|integer',
             'title' => 'required|string|max:255',
@@ -380,6 +385,11 @@ class TeacherController extends Controller
 
     public function updateParagraphModule(Request $request)
     {
+        $deadline = Setting::getValue('report_deadline');
+        if ($deadline && \Carbon\Carbon::parse($deadline)->isPast()) {
+            return redirect()->back()->with('error', 'Cannot edit modules after the report deadline.');
+        }
+
         $request->validate([
             'level' => 'required|integer',
             'title' => 'required|string|max:255',
