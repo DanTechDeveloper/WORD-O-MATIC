@@ -31,7 +31,7 @@ export default function DashboardLayout({ children }) {
         ? isDeadlineClosed
             ? `The report deadline has passed. All report actions are now available. Deadline was set to ${formatDeadline(deadline)}.`
             : `Reporting deadline not yet reached. Reports are set to be generated after ${formatDeadline(deadline)}. You may still proceed, but data may not be final.`
-        : "The report deadline has passed. Gameplay is locked and all leaderboards, badges, and reports are now final.";
+        : "The report deadline has passed. Gameplay is locked and all leaderboards, badges, and reports are now final. Module editing (Word Blast and Story Quest) is locked as well.";
     const alerts = teacher ? [
         ...(!teacher.has_deadline ? [{ msg: "No report deadline set", href: "/teacher/reports", icon: "event" }] : []),
         ...(!teacher.has_word_modules ? [{ msg: "No Word Blast modules yet", href: "/teacher/word", icon: "book" }] : []),
