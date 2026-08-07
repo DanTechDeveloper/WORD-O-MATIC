@@ -16,9 +16,9 @@ class ReportsExport implements WithMultipleSheets
     public function sheets(): array
     {
         return [
-            'Class Summary' => new ClassReportSheet($this->students),
             'Student Progress Summary' => new SkillsOverviewSheet($this->students),
             'Mastered & Training Words' => new SkillsWordsSheet($this->students),
+            'Class Summary' => new ClassReportSheet($this->students)
         ];
     }
 }
