@@ -116,17 +116,68 @@ class ReportDeadlineTest extends TestCase
 
     public function test_pre_deadline_mastery_included()
     {
-        // Mastery rows are always shown in the curriculum; the write-side
-        // gates in StudentController already keep post-deadline masteries out.
+        $cutoffTs = '2026-08-05 13:00:00';
+
+        // Create mastery BEFORE deadline
         DB::statement(
             'INSERT INTO student_word_mastery (user_id, word_id, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?)',
             [$this->student->id, $this->word->id, 'mastered', '2026-08-05 12:30:00', '2026-08-05 12:30:00']
         );
 
-        $curriculum = WordModule::curriculumForUser($this->student->id);
+        $curriculum = WordModule::curriculumForUser($this->student->id, $cutoffTs);
 
         $this->assertCount(1, $curriculum[0]['mastered']);
         $this->assertEquals('cat', $curriculum[0]['mastered'][0]);
+    }
+
+    public function test_post_deadline_mastery_excluded_from_curriculum()
+    {
+        $cutoffTs = '2026-08-05 13:00:00';
+
+        DB::statement(
+            'INSERT INTO student_word_mastery (user_id, word_id, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?)',
+            [$this->student->id, $this->word->id, 'mastered', '2026-08-05 13:30:00', '2026-08-05 13:30:00']
+        );
+
+        $curriculum = WordModule::curriculumForUser($this->student->id, $cutoffTs);
+
+        $this->assertCount(0, $curriculum[0]['mastered']);
+        $this->assertCount(0, $curriculum[0]['training']);
+    }
+
+    public function test_training_and_mastered_helpers_exclude_post_deadline_rows()
+    {
+        $cutoffTs = '2026-08-05 13:00:00';
+
+        // word = before deadline (mastered), word2 = after deadline (training)
+        DB::statement(
+            'INSERT INTO student_word_mastery (user_id, word_id, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?)',
+            [$this->student->id, $this->word->id, 'mastered', '2026-08-05 12:30:00', '2026-08-05 12:30:00']
+        );
+        DB::statement(
+            'INSERT INTO student_word_mastery (user_id, word_id, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?)',
+            [$this->student->id, $this->word2->id, 'training', '2026-08-05 13:30:00', '2026-08-05 13:30:00']
+        );
+
+        $training = WordModule::trainingWordsForUsers([$this->student->id], $cutoffTs);
+        $mastered = WordModule::masteredWordsForUsers([$this->student->id], $cutoffTs);
+
+        $this->assertArrayNotHasKey('Level 1: Level 1', $training[$this->student->id]);
+        $this->assertArrayHasKey('Level 1: Level 1', $mastered[$this->student->id]);
+        $this->assertEquals(['cat'], $mastered[$this->student->id]['Level 1: Level 1']);
+    }
+
+    public function test_batch_helpers_show_all_rows_when_no_cutoff()
+    {
+        DB::statement(
+            'INSERT INTO student_word_mastery (user_id, word_id, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?)',
+            [$this->student->id, $this->word2->id, 'training', '2026-08-05 13:30:00', '2026-08-05 13:30:00']
+        );
+
+        $training = WordModule::trainingWordsForUsers([$this->student->id]);
+
+        $this->assertArrayHasKey('Level 1: Level 1', $training[$this->student->id]);
+        $this->assertEquals(['dog'], $training[$this->student->id]['Level 1: Level 1']);
     }
 
     public function test_pre_deadline_training_included()
