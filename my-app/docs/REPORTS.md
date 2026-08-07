@@ -26,6 +26,8 @@ Post-deadline sessions are logged with `is_deadline_hit=true` (baked in at `fini
 
 The `created_at <= deadline` filter (normalized via `Carbon::parse($cutoff)->format('Y-m-d H:i:s')` to avoid ISO string comparison issues) applies to training words, mastered words, **and** the curriculum rows shown on `StudentDetails`. The cutoff is centralized in `TeacherController::deadlineCutoff()` (returns the deadline value only once it has passed, else `null`) and threaded through `show`, `reports`, `sendReportEmails`, and `exportReports`. No cutoff passed → all rows returned.
 
+The teacher deadline banner is a single source of truth in `DashboardLayout.jsx` (reads global `auth.deadline`), shown across the main content whenever a deadline is set. Its message is page-aware: the Reports page (`/teacher/reports`) gets deadline-specific copy ("…All report actions are now available. Deadline was set to …" past / "Reporting deadline not yet reached…" future), every other teacher page gets the gameplay-locked copy. Reports no longer renders its own inline banner.
+
 ## Email
 
 - Sent via `Mail::to()->queue()` (queued, not synchronous).
