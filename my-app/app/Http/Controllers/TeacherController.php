@@ -168,6 +168,30 @@ class TeacherController extends Controller
         return $total ? (int) round(($mastered / $total) * 100) : 0;
     }
 
+    private function latestBadge(?int $userId): ?array
+    {
+        if (!$userId) {
+            return null;
+        }
+
+        $badge = User::find($userId)?->badges()
+            ->wherePivotNotNull('earned_at')
+            ->select('badges.id', 'badges.name', 'badges.slug', 'badges.icon', 'student_badges.earned_at')
+            ->orderByPivot('earned_at', 'desc')
+            ->first();
+
+        if (!$badge) {
+            return null;
+        }
+
+        return [
+            'name' => $badge->name,
+            'slug' => $badge->slug,
+            'icon' => $badge->icon,
+            'earned_at' => $badge->pivot->earned_at,
+        ];
+    }
+
     private function dashboardStats(): array
     {
         $allStudents = StudentProfile::join('users', 'users.id', '=', 'students.user_id')
@@ -297,6 +321,7 @@ class TeacherController extends Controller
             'data' => array_merge($user->toArray(), [
                 'readCurriculum' => WordModule::curriculumForUser($studentId, $cutoff),
                 'speakCurriculum' => ParagraphModule::curriculumForUser($studentId, $cutoff),
+                'latestBadge' => $this->latestBadge($studentId),
             ]),
         ]);
     }
@@ -520,6 +545,7 @@ class TeacherController extends Controller
                 'wordBlastProg' => $this->curriculumPercent(WordModule::curriculumForUser($user->id, $cutoff)),
                 'storyQuestProg' => $this->curriculumPercent(ParagraphModule::curriculumForUser($user->id, $cutoff)),
                 'status' => $user->student?->status ?? 'notStarted',
+                'latestBadge' => $this->latestBadge($user->id),
                 'trainingWords' => $wordTraining[$user->id] ?? [],
                 'paragraphTrainingWords' => $paraTraining[$user->id] ?? [],
                 'reported_at' => $deadlineTs->format('F j, Y \a\t g:i A'),

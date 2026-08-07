@@ -74,6 +74,22 @@
                                                 </div>
                                             </td>
                                         </tr>
+                                        <tr>
+                                            <td style="padding:16px 8px 0 0;width:50%">
+                                                <div style="background:#0f172a;border:2px solid #f59e0b;border-radius:16px;padding:16px;text-align:center">
+                                                    <p style="color:#fbbf24;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:1px;margin:0 0 8px">Latest Badge</p>
+                                                    @if (!empty($data['latestBadge']) && !empty($data['latestBadge']['name']))
+                                                        <p style="color:#fff;font-size:24px;font-weight:900;margin:0">{{ $data['latestBadge']['name'] }}</p>
+                                                        @if (!empty($data['latestBadge']['earned_at']))
+                                                            <p style="color:#fbbf24;font-size:11px;font-weight:700;margin:6px 0 0">Earned {{ \Carbon\Carbon::parse($data['latestBadge']['earned_at'])->format('F j, Y') }}</p>
+                                                        @endif
+                                                    @else
+                                                        <p style="color:#64748b;font-size:24px;font-weight:900;margin:0">None</p>
+                                                    @endif
+                                                </div>
+                                            </td>
+                                            <td style="padding:16px 0 0 8px;width:50%"></td>
+                                        </tr>
                                     </table>
                                 </td>
                             </tr>
