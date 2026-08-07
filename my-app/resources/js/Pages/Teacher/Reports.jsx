@@ -423,7 +423,7 @@ export default function Reports({ grouped, flash, deadline, errors }) {
 
             {renderDeadlineSetter()}
 
-            {isPastDeadline && (
+            {isDeadlineSaved && isPastDeadline && (
                 <div className="mb-8 flex gap-4">
                     <a
                         href={route("teacher.reports.export")}
