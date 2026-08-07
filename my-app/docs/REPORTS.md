@@ -1,6 +1,6 @@
 # Reports
 
-> Version 1.4
+> Version 1.5
 
 ## Dashboard
 
@@ -24,7 +24,7 @@ Classification formula: `wordBlastAcc` and `storyQuestAcc` averaged.
 
 Post-deadline sessions are logged with `is_deadline_hit=true` (baked in at `finishRound`, sticky — see DATABASE.md). The results page renders the non-scoring "TIME'S UP!" view (`GameResults.jsx`: deadline banner, "You played" score card, NextBadge hidden), and `BadgeUnlockModal` auto-suppresses via `auth.deadline`. Streak/accuracy badge metrics (`BadgeService::bestSessionMetric`, `StudentController::badges()`) exclude flagged sessions permanently — even if the teacher clears the deadline afterward.
 
-Training words filtered by `created_at <= deadline` (deadline is normalized via `Carbon::parse($cutoff)->format('Y-m-d H:i:s')` to avoid SQL string comparison issues with ISO dates).
+The `created_at <= deadline` filter (normalized via `Carbon::parse($cutoff)->format('Y-m-d H:i:s')` to avoid ISO string comparison issues) applies to training words, mastered words, **and** the curriculum rows shown on `StudentDetails`. The cutoff is centralized in `TeacherController::deadlineCutoff()` (returns the deadline value only once it has passed, else `null`) and threaded through `show`, `reports`, `sendReportEmails`, and `exportReports`. No cutoff passed → all rows returned.
 
 ## Email
 
