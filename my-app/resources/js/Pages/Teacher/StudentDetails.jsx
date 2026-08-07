@@ -78,6 +78,68 @@ export default function StudentDetail({ data }) {
         },
     ];
 
+    const statusMeta = {
+        onTrack: {
+            label: "On Track",
+            color: "text-lime-400",
+            bg: "bg-lime-400/10",
+            border: "border-lime-400",
+            icon: "check_circle",
+        },
+        support: {
+            label: "Needs Support",
+            color: "text-amber-400",
+            bg: "bg-amber-400/10",
+            border: "border-amber-400",
+            icon: "warning",
+        },
+        atRisk: {
+            label: "At Risk",
+            color: "text-red-500",
+            bg: "bg-red-500/10",
+            border: "border-red-500",
+            icon: "error",
+        },
+        notStarted: {
+            label: "Not Started",
+            color: "text-slate-400",
+            bg: "bg-slate-400/10",
+            border: "border-slate-400",
+            icon: "block",
+        },
+        in_progress: {
+            label: "In Progress",
+            color: "text-sky-400",
+            bg: "bg-sky-400/10",
+            border: "border-sky-400",
+            icon: "trending_up",
+        },
+    };
+
+    const recommendations = {
+        onTrack:
+            "Strong performance! Keep it up and finish the remaining modules.",
+        support:
+            "Accuracy is borderline. Regular practice on both skills will get this student back on track.",
+        atRisk:
+            "Performance is at risk. Schedule a focused intervention session soon.",
+        notStarted:
+            "No progress yet. Encourage the student to start Word Blast and Story Quest.",
+        in_progress:
+            "Making progress. Completing both skills will finish the curriculum.",
+    };
+
+    const statusKey = data.student?.status || "notStarted";
+    const status = statusMeta[statusKey] || statusMeta.notStarted;
+    const wbAcc = data.student?.wordBlastAcc
+        ? `${data.student.wordBlastAcc}%`
+        : "N/A";
+    const sqAcc = data.student?.storyQuestAcc
+        ? `${data.student.storyQuestAcc}%`
+        : "N/A";
+    const wbProgress = calcOverallProgress(student.readCurriculum);
+    const sqProgress = calcOverallProgress(student.speakCurriculum);
+
     return (
         <DashboardLayout>
             <div className="mb-10">
@@ -144,6 +206,79 @@ export default function StudentDetail({ data }) {
                     <span className="w-8 h-1 bg-slate-800"></span> Overall
                     Status
                 </h2>
+                <div className="bg-slate-900 rounded-[2rem] border-4 border-slate-800 p-8 shadow-[8px_8px_0_0_#020617] mb-8">
+                    <div className="flex flex-wrap items-center gap-4 mb-8">
+                        <span
+                            className={`material-symbols-outlined text-3xl p-3 ${status.bg} ${status.color} rounded-2xl border-2 ${status.border}`}
+                        >
+                            {status.icon}
+                        </span>
+                        <div>
+                            <div
+                                className={`text-4xl font-black uppercase italic tracking-tighter ${status.color}`}
+                            >
+                                {status.label}
+                            </div>
+                            <p className="mt-1 text-slate-400 font-bold text-lg">
+                                {recommendations[statusKey] || status.label}
+                            </p>
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="bg-slate-950 rounded-3xl border-4 border-slate-800 p-6">
+                            <div className="text-slate-500 font-black uppercase text-base tracking-widest mb-4 flex items-center gap-2">
+                                <span className="material-symbols-outlined text-xl">
+                                    speed
+                                </span>
+                                Performance Summary
+                            </div>
+                            <div className="space-y-3">
+                                <div className="flex justify-between items-center">
+                                    <span className="text-slate-400 font-bold text-lg">
+                                        Word Blast Accuracy
+                                    </span>
+                                    <span className="text-lime-400 font-black uppercase italic tracking-tighter text-2xl">
+                                        {wbAcc}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-slate-400 font-bold text-lg">
+                                        Story Quest Accuracy
+                                    </span>
+                                    <span className="text-cyan-400 font-black uppercase italic tracking-tighter text-2xl">
+                                        {sqAcc}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="bg-slate-950 rounded-3xl border-4 border-slate-800 p-6">
+                            <div className="text-slate-500 font-black uppercase text-base tracking-widest mb-4 flex items-center gap-2">
+                                <span className="material-symbols-outlined text-xl">
+                                    flag
+                                </span>
+                                Curriculum Progress
+                            </div>
+                            <div className="space-y-3">
+                                <div className="flex justify-between items-center">
+                                    <span className="text-slate-400 font-bold text-lg">
+                                        Word Blast
+                                    </span>
+                                    <span className="text-lime-400 font-black uppercase italic tracking-tighter text-2xl">
+                                        {wbProgress}%
+                                    </span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-slate-400 font-bold text-lg">
+                                        Story Quest
+                                    </span>
+                                    <span className="text-cyan-400 font-black uppercase italic tracking-tighter text-2xl">
+                                        {sqProgress}%
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     {modes.map((mode, i) => (
                         <div

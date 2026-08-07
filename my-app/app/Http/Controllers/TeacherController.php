@@ -155,6 +155,19 @@ class TeacherController extends Controller
         ];
     }
 
+    private function curriculumPercent(array $curriculum): int
+    {
+        $mastered = 0;
+        $total = 0;
+
+        foreach ($curriculum as $level) {
+            $mastered += count($level['mastered'] ?? []);
+            $total += $level['words_count'] ?? 0;
+        }
+
+        return $total ? (int) round(($mastered / $total) * 100) : 0;
+    }
+
     private function dashboardStats(): array
     {
         $allStudents = StudentProfile::join('users', 'users.id', '=', 'students.user_id')
@@ -504,6 +517,8 @@ class TeacherController extends Controller
                 'storyQuestAcc' => $user->student?->storyQuestAcc ?? 0,
                 'read_level' => $user->student?->read_level ?? 1,
                 'speak_level' => $user->student?->speak_level ?? 1,
+                'wordBlastProg' => $this->curriculumPercent(WordModule::curriculumForUser($user->id, $cutoff)),
+                'storyQuestProg' => $this->curriculumPercent(ParagraphModule::curriculumForUser($user->id, $cutoff)),
                 'status' => $user->student?->status ?? 'notStarted',
                 'trainingWords' => $wordTraining[$user->id] ?? [],
                 'paragraphTrainingWords' => $paraTraining[$user->id] ?? [],

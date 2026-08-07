@@ -49,14 +49,28 @@
                                         <tr>
                                             <td style="padding:0 8px 0 0;width:50%">
                                                 <div style="background:#0f172a;border:2px solid #334155;border-radius:16px;padding:16px;text-align:center">
-                                                    <p style="color:#64748b;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:1px;margin:0 0 8px">Read Level</p>
+                                                    <p style="color:#64748b;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:1px;margin:0 0 8px">Word Blast Level</p>
                                                     <p style="color:#fff;font-size:24px;font-weight:900;margin:0">{{ $data['read_level'] ?? 1 }}</p>
                                                 </div>
                                             </td>
                                             <td style="padding:0 0 0 8px;width:50%">
                                                 <div style="background:#0f172a;border:2px solid #334155;border-radius:16px;padding:16px;text-align:center">
-                                                    <p style="color:#64748b;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:1px;margin:0 0 8px">Speak Level</p>
+                                                    <p style="color:#64748b;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:1px;margin:0 0 8px">Story Quest Level</p>
                                                     <p style="color:#fff;font-size:24px;font-weight:900;margin:0">{{ $data['speak_level'] ?? 1 }}</p>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding:0 8px 0 0;width:50%">
+                                                <div style="background:#0f172a;border:2px solid #334155;border-radius:16px;padding:16px;text-align:center;border-top-color:#4d7c0f">
+                                                    <p style="color:#65a30d;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:1px;margin:0 0 8px">Word Blast Progress</p>
+                                                    <p style="color:#fff;font-size:24px;font-weight:900;margin:0">{{ $data['wordBlastProg'] ?? 0 }}<span style="color:#65a30d;font-size:14px">% Complete</span></p>
+                                                </div>
+                                            </td>
+                                            <td style="padding:0 0 0 8px;width:50%">
+                                                <div style="background:#0f172a;border:2px solid #334155;border-radius:16px;padding:16px;text-align:center;border-top:4px solid #0e7490">
+                                                    <p style="color:#06b6d4;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:1px;margin:0 0 8px">Story Quest Progress</p>
+                                                    <p style="color:#fff;font-size:24px;font-weight:900;margin:0">{{ $data['storyQuestProg'] ?? 0 }}<span style="color:#06b6d4;font-size:14px">% Complete</span></p>
                                                 </div>
                                             </td>
                                         </tr>
@@ -108,33 +122,20 @@
                         @if ($data['status'] === 'onTrack')
                             <div style="background:#052e16;border:2px solid #22c55e;border-radius:16px;padding:24px;margin-bottom:32px">
                                 <p style="color:#22c55e;font-size:16px;font-weight:700;margin:0;text-align:center">
-                                    All words mastered up to Level {{ $data['read_level'] }}!
-                                    Keep up the fantastic work!
+                                    Strong performance! Keep it up and finish the remaining modules.
                                 </p>
                             </div>
                         @elseif ($data['status'] === 'needsSupport' || $data['status'] === 'support')
                             <div style="background:#451a03;border:2px solid #f59e0b;border-radius:16px;padding:24px;margin-bottom:32px">
-                                <h2 style="color:#fbbf24;font-size:14px;font-weight:900;text-transform:uppercase;letter-spacing:1px;margin:0 0 12px">
-                                    Recommended Interventions
-                                </h2>
-                                <ul style="margin:0;padding-left:20px;color:#fef3c7;font-size:14px;line-height:1.8">
-                                    <li>Practice 15 minutes daily on Word Blast levels 1-{{ $data['read_level'] }}</li>
-                                    <li>Review the training words listed above with your child</li>
-                                    <li>Encourage your child to read aloud at home for 10 minutes a day</li>
-                                    <li>Check in with the teacher for progress tips</li>
-                                </ul>
+                                <p style="color:#fbbf24;font-size:16px;font-weight:700;margin:0;text-align:center">
+                                    Accuracy is borderline. Regular practice on both skills will get this student back on track.
+                                </p>
                             </div>
                         @elseif ($data['status'] === 'atRisk')
                             <div style="background:#450a0a;border:2px solid #ef4444;border-radius:16px;padding:24px;margin-bottom:32px">
-                                <h2 style="color:#fca5a5;font-size:14px;font-weight:900;text-transform:uppercase;letter-spacing:1px;margin:0 0 12px">
-                                    Urgent Interventions Needed
-                                </h2>
-                                <ul style="margin:0;padding-left:20px;color:#fecaca;font-size:14px;line-height:1.8">
-                                    <li>Schedule a 1-on-1 session with the teacher as soon as possible</li>
-                                    <li>Practice Word Blast levels 1-{{ $data['read_level'] }} for 15-20 minutes daily</li>
-                                    <li>Review flashcards for the training words listed above</li>
-                                    <li>Read short stories together every day</li>
-                                </ul>
+                                <p style="color:#fca5a5;font-size:16px;font-weight:700;margin:0;text-align:center">
+                                    Performance is at risk. Schedule a focused intervention session soon.
+                                </p>
                             </div>
                         @endif
 
