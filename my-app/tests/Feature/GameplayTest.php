@@ -195,6 +195,60 @@ class GameplayTest extends TestCase
         ]);
     }
 
+    public function test_round_clamps_score_and_streak_in_session(): void
+    {
+        Setting::where('key', 'report_deadline')->delete();
+
+        $this->actingAs($this->student)
+            ->post(route('student.saveWordProgress'), [
+                'module_id' => $this->module->id,
+                'words_smashed' => 999,
+                'words_processed' => 10,
+                'streak' => 999,
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('game_sessions', [
+            'user_id' => $this->student->id,
+            'module_id' => $this->module->id,
+            'score' => 10,
+            'streak' => 11,
+            'accuracy' => 100.0,
+            'is_deadline_hit' => false,
+        ]);
+    }
+
+    public function test_tutorial_round_still_records_progress_when_deadline_passed(): void
+    {
+        Setting::setValue('report_deadline', now()->subMinute()->format('Y-m-d H:i:s'));
+
+        $tutorialModule = WordModule::create([
+            'level' => 0,
+            'title' => 'Tutorial',
+            'is_tutorial' => true,
+        ]);
+        Word::create([
+            'word_module_id' => $tutorialModule->id,
+            'word' => 'cat',
+            'position' => 1,
+        ]);
+
+        $this->actingAs($this->student)
+            ->post(route('student.saveWordProgress'), [
+                'module_id' => $tutorialModule->id,
+                'words_smashed' => 1,
+                'words_processed' => 1,
+            ])
+            ->assertRedirect(route('student.dashboard'));
+
+        $this->assertDatabaseHas('student_word_progress', [
+            'user_id' => $this->student->id,
+            'word_module_id' => $tutorialModule->id,
+            'status' => 'completed',
+        ]);
+        $this->assertDatabaseMissing('game_sessions', ['user_id' => $this->student->id]);
+    }
+
     public function test_pre_deadline_mastery_write_is_accepted(): void
     {
         $word = Word::where('word_module_id', $this->module->id)->first();
