@@ -14,6 +14,13 @@ const CONFETTI = [
     { icon: "bolt", color: "text-yellow-300" },
 ]
 
+const HEADLINES = {
+    zero: ["EVERY CHAMPION STARTS SOMEWHERE!", "FIRST TRY DONE, LET'S GO!", "EVERY WORD COUNTS!"],
+    low: ["YOU GOT THIS!", "KEEP GOING!", "PRACTICE MAKES PROGRESS!"],
+    mid: ["GREAT JOB!", "NICE WORK!", "KEEP IT UP!"],
+    high: ["INCREDIBLE!", "OUTSTANDING!", "AMAZING!"],
+}
+
 export default function GameResults({
     session,
     moduleTitle,
@@ -26,6 +33,13 @@ export default function GameResults({
     const displayScore = parseInt(session.score) || 0;
     const accuracyPct = parseFloat(session.accuracy) || 0;
     const isPerfect = !deadlineHit && accuracyPct >= 100;
+    const headlinePool = displayScore === 0
+        ? HEADLINES.zero
+        : accuracyPct >= 80 ? HEADLINES.high
+        : accuracyPct >= 60 ? HEADLINES.mid
+        : HEADLINES.low;
+    const headline = isPerfect ? "PERFECT!" : headlinePool[session.id % headlinePool.length];
+    const isCelebrating = !deadlineHit && accuracyPct >= 80;
     const { auth, flash } = usePage().props;
     const isDeadlineClosed = auth?.deadline && new Date(auth.deadline) <= new Date();
     const newBadgeSlugs = flash?.new_badges?.map(b => b.slug) ?? [];
@@ -48,7 +62,7 @@ export default function GameResults({
             <div className="relative min-h-screen flex flex-col items-center justify-center px-6 py-12">
                 <div className="absolute top-1/2 left-1/4 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-primary/10 blur-[120px] rounded-full -z-10 animate-pulse" />
 
-                {isPerfect && (
+                {isCelebrating && (
                     <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
                         {CONFETTI.map((c, i) => (
                             <span
@@ -70,7 +84,7 @@ export default function GameResults({
                 <div className="w-full max-w-lg mx-auto flex flex-col gap-8 animate-fade-in">
                     <div className="text-center">
                         <h1 className="text-6xl sm:text-7xl font-black text-primary uppercase leading-tight">
-                            {deadlineHit ? "TIME'S UP!" : isPerfect ? "PERFECT!" : "GREAT JOB!"}
+                            {deadlineHit ? "TIME'S UP!" : headline}
                         </h1>
                         <p className="text-lg font-bold text-on-surface-variant uppercase tracking-wider mt-2">
                             {moduleTitle}
