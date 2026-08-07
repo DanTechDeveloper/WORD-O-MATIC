@@ -1,6 +1,6 @@
 # Gameplay
 
-> Version 1.3
+> Version 1.4
 
 ## Word Blast (Read Mode)
 
@@ -72,4 +72,18 @@ This prevents race conditions where:
 
 ## Results
 
-Route: `/student/results/{id}`. Shows score, accuracy, streak, badges earned.
+Route: `/student/results/{id}`. Shows a scorecard, headline, call-to-action row, and badges.
+
+**Scorecard** — two tiles: Score ("Score" label, or **"You played"** when the round was deadline-hit) and Words (item count). On a deadline-hit round a "Points not counted — deadline passed" note and an amber DeadlineBanner are shown; NextBadge is hidden.
+
+**Headline** (h1) — fixed `TIME'S UP!` when the round was played after the deadline; `PERFECT!` at 100% accuracy; otherwise a motivational, deterministic pick from four accuracy bands. Low / zero scores never scold (e.g. "YOU GOT THIS!"). Selection is stable per session keyed on `session.id % pool.length` (no math in render, no useMemo).
+
+**Celebration** — confetti overlay fires only when `accuracy >= 80%`.
+
+**Call-to-action row** depends on state:
+
+| State | Buttons |
+|---|---|
+| Game closed (`isDeadlineClosed`) | Home |
+| Max level reached | Again · Home |
+| Normal | Again · Next Level · Home |
