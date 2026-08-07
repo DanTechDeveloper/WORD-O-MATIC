@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
@@ -29,32 +30,37 @@ class WordModule extends Model
         return $this->relationLoaded('words') ? $this->words->count() : $this->words()->count();
     }
 
-    public static function trainingWordsForUsers(array $userIds): Collection
+    public static function trainingWordsForUsers(array $userIds, ?string $cutoff = null): Collection
     {
         $modules = self::with('words')->where('is_tutorial', false)->orderBy('level')->get();
 
-        $masteryByUser = DB::table('student_word_mastery')
-            ->whereIn('user_id', $userIds)
-            ->get()
-            ->groupBy('user_id');
+        $masteryByUser = self::masteryQuery($userIds, $cutoff)->get()->groupBy('user_id');
 
         return collect($userIds)->mapWithKeys(fn ($id) => [
             $id => self::buildStatusWords($modules, 'training', ($masteryByUser->get($id) ?? collect())->keyBy('word_id')),
         ]);
     }
 
-    public static function masteredWordsForUsers(array $userIds): Collection
+    public static function masteredWordsForUsers(array $userIds, ?string $cutoff = null): Collection
     {
         $modules = self::with('words')->where('is_tutorial', false)->orderBy('level')->get();
 
-        $masteryByUser = DB::table('student_word_mastery')
-            ->whereIn('user_id', $userIds)
-            ->get()
-            ->groupBy('user_id');
+        $masteryByUser = self::masteryQuery($userIds, $cutoff)->get()->groupBy('user_id');
 
         return collect($userIds)->mapWithKeys(fn ($id) => [
             $id => self::buildStatusWords($modules, 'mastered', ($masteryByUser->get($id) ?? collect())->keyBy('word_id')),
         ]);
+    }
+
+    private static function masteryQuery(array $userIds, ?string $cutoff = null)
+    {
+        $query = DB::table('student_word_mastery')->whereIn('user_id', $userIds);
+
+        if ($cutoff) {
+            $query->where('created_at', '<=', Carbon::parse($cutoff)->format('Y-m-d H:i:s'));
+        }
+
+        return $query;
     }
 
     private static function buildStatusWords($modules, $status, $mastery): array
@@ -71,11 +77,17 @@ class WordModule extends Model
         return $words;
     }
 
-    public static function curriculumForUser(int $userId): array
+    public static function curriculumForUser(int $userId, ?string $cutoff = null): array
     {
         $modules = self::with('words')->where('is_tutorial', false)->orderBy('level', 'asc')->get();
 
-        $masteryProgress = DB::table('student_word_mastery')->where('user_id', $userId)->get()->groupBy('word_id');
+        $query = DB::table('student_word_mastery')->where('user_id', $userId);
+
+        if ($cutoff) {
+            $query->where('created_at', '<=', Carbon::parse($cutoff)->format('Y-m-d H:i:s'));
+        }
+
+        $masteryProgress = $query->get()->groupBy('word_id');
 
         return $modules->map(function ($module) use ($masteryProgress) {
             return [

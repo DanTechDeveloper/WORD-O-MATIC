@@ -267,14 +267,23 @@ class TeacherController extends Controller
         ];
     }
 
+    private function deadlineCutoff(): ?string
+    {
+        $deadline = Setting::getValue('report_deadline');
+
+        return $deadline && Carbon::parse($deadline)->isPast() ? $deadline : null;
+    }
+
     public function show($studentId)
     {
         $user = User::with(['student'])->findOrFail($studentId);
 
+        $cutoff = $this->deadlineCutoff();
+
         return Inertia::render('Teacher/StudentDetails', [
             'data' => array_merge($user->toArray(), [
-                'readCurriculum' => WordModule::curriculumForUser($studentId),
-                'speakCurriculum' => ParagraphModule::curriculumForUser($studentId),
+                'readCurriculum' => WordModule::curriculumForUser($studentId, $cutoff),
+                'speakCurriculum' => ParagraphModule::curriculumForUser($studentId, $cutoff),
             ]),
         ]);
     }
@@ -389,8 +398,9 @@ class TeacherController extends Controller
             ->orderBy('name', 'asc')
             ->get();
 
-        $wordTraining = WordModule::trainingWordsForUsers($students->pluck('id')->all());
-        $paraTraining = ParagraphModule::trainingWordsForUsers($students->pluck('id')->all());
+        $cutoff = $this->deadlineCutoff();
+        $wordTraining = WordModule::trainingWordsForUsers($students->pluck('id')->all(), $cutoff);
+        $paraTraining = ParagraphModule::trainingWordsForUsers($students->pluck('id')->all(), $cutoff);
 
         $students = $students->map(fn ($user) => [
             'id' => $user->id,
@@ -461,8 +471,9 @@ class TeacherController extends Controller
             ->whereIn('id', $request->student_ids)
             ->get();
 
-        $wordTraining = WordModule::trainingWordsForUsers($request->student_ids);
-        $paraTraining = ParagraphModule::trainingWordsForUsers($request->student_ids);
+        $cutoff = $this->deadlineCutoff();
+        $wordTraining = WordModule::trainingWordsForUsers($request->student_ids, $cutoff);
+        $paraTraining = ParagraphModule::trainingWordsForUsers($request->student_ids, $cutoff);
 
         $sent = 0;
         $failed = 0;
@@ -520,10 +531,11 @@ class TeacherController extends Controller
             ->get();
 
         $studentIds = $students->pluck('id')->all();
-        $wordTraining = WordModule::trainingWordsForUsers($studentIds);
-        $paraTraining = ParagraphModule::trainingWordsForUsers($studentIds);
-        $wordMastered = WordModule::masteredWordsForUsers($studentIds);
-        $paraMastered = ParagraphModule::masteredWordsForUsers($studentIds);
+        $cutoff = $this->deadlineCutoff();
+        $wordTraining = WordModule::trainingWordsForUsers($studentIds, $cutoff);
+        $paraTraining = ParagraphModule::trainingWordsForUsers($studentIds, $cutoff);
+        $wordMastered = WordModule::masteredWordsForUsers($studentIds, $cutoff);
+        $paraMastered = ParagraphModule::masteredWordsForUsers($studentIds, $cutoff);
 
         $wordTitles = WordModule::where('is_tutorial', false)->pluck('title', 'level');
         $paraTitles = ParagraphModule::where('is_tutorial', false)->pluck('title', 'level');
