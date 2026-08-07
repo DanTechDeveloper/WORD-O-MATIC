@@ -1,6 +1,6 @@
 # Reports
 
-> Version 1.5
+> Version 1.6
 
 ## Dashboard
 
@@ -26,18 +26,24 @@ Post-deadline sessions are logged with `is_deadline_hit=true` (baked in at `fini
 
 The `created_at <= deadline` filter (normalized via `Carbon::parse($cutoff)->format('Y-m-d H:i:s')` to avoid ISO string comparison issues) applies to training words, mastered words, **and** the curriculum rows shown on `StudentDetails`. The cutoff is centralized in `TeacherController::deadlineCutoff()` (returns the deadline value only once it has passed, else `null`) and threaded through `show`, `reports`, `sendReportEmails`, and `exportReports`. No cutoff passed → all rows returned.
 
-The teacher deadline banner is a single source of truth in `DashboardLayout.jsx` (reads global `auth.deadline`), shown across the main content whenever a deadline is set. Its message is page-aware: the Reports page (`/teacher/reports`) gets deadline-specific copy ("…All report actions are now available. Deadline was set to …" past / "Reporting deadline not yet reached…" future), every other teacher page gets the gameplay-locked copy. Reports no longer renders its own inline banner.
+The teacher deadline banner is a single source of truth in `DashboardLayout.jsx` (reads global `auth.deadline`), shown across the main content whenever a deadline is set. Its message is page-aware: the Reports page (`/teacher/reports`) gets deadline-specific copy ("…All report actions are now available. Deadline was set to …" past / "Reporting deadline not yet reached…" future), every other teacher page gets the gameplay-locked copy — which also states that **module editing (Word Blast and Story Quest) is locked**. After the deadline, `Word.jsx` / `Paragraph.jsx` disable the Manage buttons and the Add Module card (frontend), and `TeacherController::updateWordModule` / `updateParagraphModule` reject writes (backend). Reports no longer renders its own inline banner.
 
 ## Email
 
 - Sent via `Mail::to()->queue()` (queued, not synchronous).
-- Teacher clicks Send — response returns immediately, mail processed by queue worker.
+- Teacher clicks Send button → response returns immediately, mail processed by queue worker.
 - `reported_at` = deadline timestamp (not current time).
 - Flash data (`sent`, `failed`, `reported_at`) exposed to frontend via `HandleInertiaRequests`.
 
+**Email content** (`student-report.blade.php`) mirrors the teacher `StudentDetails` readout:
+
+- **6-tile grid** (3 rows): `Word Blast` / `Story Quest` accuracy, `Word Blast Level` / `Story Quest Level` (relabeled from Read/Speak Level), and `Word Blast Progress` / `Story Quest Progress` (curriculum completion %, `wordBlastProg` / `storyQuestProg`).
+- `wordBlastProg` / `storyQuestProg` are computed via `TeacherController::curriculumPercent()` — `round(Σmastered / Σwords_count × 100)` per skill, the same percentage the frontend computes from `curriculumForUser`. Kept as two implementations by decision (see CAVEATS).
+- The per-status recommendation block (`onTrack` / `needsSupport` / `support` / `atRisk`) uses the exact copy from the `StudentDetails.jsx` `recommendations` map — that JSX map is the single source of that wording. `notStarted` / `in_progress` have no banner block (same as before).
+
 ## Sent Tracking
 
-- `students.report_sent_at` timestamp set after each successful email queue (`TeacherController.php:475`, inside `sendReportEmails()`; the method itself starts at line 424).
+- `students.report_sent_at` timestamp set after each successful email queue (inside `TeacherController::sendReportEmails()`).
 - Students with a non-null `report_sent_at` are hidden from the selection list and moved to a collapsible "Already Sent" section above the student list.
 - Field must be added to `$fillable` in `StudentProfile` model (silent drop otherwise).
 
@@ -55,4 +61,4 @@ Excel (`.xlsx`) export via `ReportsExport` is available after deadline passes.
 
 ## Student Details
 
-Route: `GET /teacher/studentDetails/{id}`. Shows completed modules, accuracy trends, badge history.
+Route: `GET /teacher/studentDetails/{id}`. Shows completed modules, accuracy trends, badge history. A top **Overall Status panel** summarizes the student at a glance: colored status badge, the per-status recommendation line, a Performance Summary (Word Blast / Story Quest accuracy), and Curriculum Progress (completion % per mode, computed from `curriculumForUser`).
