@@ -316,7 +316,7 @@ resources/
 ### 👩‍🏫 Teacher
 
 - Student management
-- Module assignment & editing (word / paragraph modules)
+- Module assignment & editing (word / paragraph modules) — **locked after the report deadline** (Manage + Add Module disabled, backend-guarded)
 - Progress monitoring
 - Performance reports
 - Parent report emails (Gmail SMTP + deadline gating)
@@ -325,7 +325,7 @@ resources/
   - Top Performing Students chart (switchable: Points / Word Blast / Story Quest)
   - Leaderboards (Points / Word Blast / Story Quest tabs)
   - Badge analytics (catalog, top earners)
-  - Student detail pages
+  - Student detail pages — **Overall Status panel**: colored status badge, per-status recommendation, Performance Summary (accuracy) + Curriculum Progress (completion %)
 
 </td>
 <td width="50%" valign="top">

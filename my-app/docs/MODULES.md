@@ -21,6 +21,8 @@ Tutorial modules (`is_tutorial=true`, `level=0`) seeded via `CurriculumSeeder`. 
 | Update paragraph modules | `PUT /teacher/paragraphModules` |
 | Delete student | `DELETE /teacher/students/{id}` |
 
+> **Deadline edit lock** — after the report deadline passes, teacher module editing is disabled: the Manage buttons and Add Module card on `Word.jsx` / `Paragraph.jsx` are grayed out (frontend), and `TeacherController::updateWordModule` / `updateParagraphModule` reject writes with a flash error ("Cannot edit modules after the report deadline."). The deadline banner copy states this too.
+
 ## Student
 
 | View | Route |
