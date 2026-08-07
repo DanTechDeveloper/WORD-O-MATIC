@@ -140,6 +140,23 @@ export default function StudentDetail({ data }) {
     const wbProgress = calcOverallProgress(student.readCurriculum);
     const sqProgress = calcOverallProgress(student.speakCurriculum);
 
+    const latestBadge = data.latestBadge;
+    const badgeCard =
+        latestBadge && latestBadge.name
+            ? {
+                  label: "Latest Badge",
+                  value: latestBadge.name,
+                  icon: latestBadge.icon || "emoji_events",
+                  color: "text-amber-300",
+              }
+            : {
+                label: "Latest Badge",
+                value: "None",
+                icon: "emoji_events",
+                color: "text-slate-600",
+            };
+    const stats = [...student.stats, badgeCard];
+
     return (
         <DashboardLayout>
             <div className="mb-10">
@@ -175,8 +192,8 @@ export default function StudentDetail({ data }) {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 flex-1 w-full">
-                        {student.stats.map((stat, i) => (
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 flex-1 w-full">
+                        {stats.map((stat, i) => (
                             <div
                                 key={i}
                                 className="bg-slate-900 rounded-3xl border-4 border-slate-800 p-6 shadow-[8px_8px_0_0_#020617]"

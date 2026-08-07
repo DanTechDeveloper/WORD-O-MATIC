@@ -11,6 +11,7 @@ use App\Models\StudentWordProgress;
 use App\Models\User;
 use App\Models\Word;
 use App\Models\WordModule;
+use App\Services\BadgeService;
 use Illuminate\Database\Seeder;
 
 class StudentSeeder extends Seeder
@@ -147,6 +148,8 @@ class StudentSeeder extends Seeder
                 'parent_email' => $hasEmail ? "parent.stu{$num}@email.com" : null,
                 'tutorial_completed_at' => now(),
             ]);
+
+            app(BadgeService::class)->checkAllEligibleBadges($user);
         }
     }
 }
