@@ -26,7 +26,8 @@ export default function GameResults({
     const displayScore = parseInt(session.score) || 0;
     const accuracyPct = parseFloat(session.accuracy) || 0;
     const isPerfect = !deadlineHit && accuracyPct >= 100;
-    const { flash } = usePage().props;
+    const { auth, flash } = usePage().props;
+    const isDeadlineClosed = auth?.deadline && new Date(auth.deadline) <= new Date();
     const newBadgeSlugs = flash?.new_badges?.map(b => b.slug) ?? [];
     const newBadges = badgeProgress?.filter(b => newBadgeSlugs.includes(b.slug)) ?? [];
     const [badgeIndex, setBadgeIndex] = useState(0);
@@ -114,7 +115,17 @@ export default function GameResults({
 
                     {!deadlineHit && nextBadge && <NextBadge badge={nextBadge} />}
 
-                    <div className="flex gap-4">
+                    {isDeadlineClosed ? (
+                        <div className="flex gap-4">
+                            <Link
+                                href="/student/dashboard"
+                                className="flex-1 bg-primary text-on-primary font-bold py-5 rounded-2xl border border-surface-variant/20 text-base uppercase tracking-wider active:scale-[0.97] transition-all hover:brightness-110 text-center flex items-center justify-center"
+                            >
+                                <span className="material-symbols-outlined mr-2">home</span>Home
+                            </Link>
+                        </div>
+                    ) : (
+                        <div className="flex gap-4">
                             <button
                                 onClick={() =>
                                     (window.location.href =
@@ -125,16 +136,7 @@ export default function GameResults({
                             >
                                 <span className="material-symbols-outlined mr-2">replay</span>Again
                             </button>
-                            {isMaxLevel ? (
-                                <button
-                                    disabled
-                                    className="flex-1 bg-surface-container text-on-surface-variant font-bold py-5 rounded-2xl border border-surface-variant/20 text-base uppercase tracking-wider cursor-not-allowed opacity-50"
-                                    onClick={() => alert("Level Complete!")}
-                                >
-                                    <span className="material-symbols-outlined mr-2" style={{ fontVariationSettings: "'FILL' 1" }}>arrow_forward</span>
-                                    Next Level
-                                </button>
-                            ) : nextModuleId ? (
+                            {!isMaxLevel && (nextModuleId ? (
                                 <Link
                                     href={`/student/gameplay${session.module_type === "word" ? "Read" : "Speak"}Mode/${nextModuleId}`}
                                     className="flex-1 bg-primary text-on-primary font-bold py-5 rounded-2xl border border-surface-variant/20 text-base uppercase tracking-wider active:scale-[0.97] transition-all hover:brightness-110 text-center flex items-center justify-center"
@@ -149,7 +151,7 @@ export default function GameResults({
                                     <span className="material-symbols-outlined mr-2" style={{ fontVariationSettings: "'FILL' 1" }}>menu_book</span>
                                     Levels
                                 </Link>
-                            )}
+                            ))}
                             <Link
                                 href="/student/dashboard"
                                 className="flex-1 bg-surface-container-high text-on-surface font-bold py-5 rounded-2xl border border-surface-variant/20 text-base uppercase tracking-wider active:scale-[0.97] transition-all hover:bg-surface-container-highest text-center flex items-center justify-center"
@@ -157,6 +159,7 @@ export default function GameResults({
                                 <span className="material-symbols-outlined mr-2">home</span>Home
                             </Link>
                         </div>
+                    )}
                 </div>
             </div>
         </div>
