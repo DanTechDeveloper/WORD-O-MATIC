@@ -1,5 +1,5 @@
 import DashboardLayout from "../../Layouts/Teacher/DashboardLayout";
-import { useState, useRef } from "react";
+import { useState } from "react";
 import {
     BarChart,
     ResponsiveContainer,
@@ -87,11 +87,9 @@ export default function Dashboard({
 
     const [selectedCategory, setSelectedCategory] = useState("notStarted");
     const [selectedHealthSection, setSelectedHealthSection] = useState("");
-    const tableRef = useRef(null);
 
     const selectCategory = (key) => {
         setSelectedCategory(key === selectedCategory ? "" : key);
-        tableRef.current?.scrollIntoView({ behavior: "smooth" });
     };
 
     const statusSections = [...new Set(students.map((s) => s.section).filter(Boolean))];
@@ -239,7 +237,7 @@ export default function Dashboard({
                 </div>
 
                 {/* Student table (filtered by category + section) */}
-                <div ref={tableRef} className="mt-6">
+                <div className="mt-6">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
                         <h4 className="text-white font-black uppercase italic text-sm">
                             {selectedCategory
@@ -267,7 +265,6 @@ export default function Dashboard({
                             <thead>
                                 <tr className="border-b-2 border-slate-800 bg-slate-950">
                                     <th className="px-4 py-2 text-slate-500 font-black uppercase text-xs tracking-widest">Name</th>
-                                    <th className="px-4 py-2 text-slate-500 font-black uppercase text-xs tracking-widest">Section</th>
                                     <th className="px-4 py-2 text-slate-500 font-black uppercase text-xs tracking-widest text-right">Word Blast</th>
                                     <th className="px-4 py-2 text-slate-500 font-black uppercase text-xs tracking-widest text-right">Story Quest</th>
                                     <th className="px-4 py-2 text-slate-500 font-black uppercase text-xs tracking-widest">Status</th>
@@ -277,7 +274,7 @@ export default function Dashboard({
                                 {tableStudents.length === 0 ? (
                                     <tr>
                                         <td
-                                            colSpan="5"
+                                            colSpan="4"
                                             className="px-4 py-8 text-center text-slate-600 font-black uppercase tracking-widest text-sm"
                                         >
                                             No students match the current filters
@@ -290,7 +287,6 @@ export default function Dashboard({
                                             className="hover:bg-slate-900/50 transition-colors"
                                         >
                                             <td className="px-4 py-3 text-white font-bold">{s.name}</td>
-                                            <td className="px-4 py-3 text-white font-bold">{s.section || "N/A"}</td>
                                             <td className="px-4 py-3 text-purple-400 font-black italic text-right">{s.wordBlastAcc ?? 0}%</td>
                                             <td className="px-4 py-3 text-cyan-400 font-black italic text-right">{s.storyQuestAcc ?? 0}%</td>
                                             <td className="px-4 py-3">{statusBadge(s.status)}</td>
