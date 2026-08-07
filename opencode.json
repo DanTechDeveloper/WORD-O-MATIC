@@ -8,6 +8,23 @@
      "path": "my-app/docs",
       "description": "Project documentation: architecture, conventions, database, deployment, gameplay, gamification, modules, reports, rules, caveats, developer guide"
     }
+  },
+
+  "provider": {
+    "tokenrouter": {
+      "id": "tokenrouter",
+      "name": "Token Router",
+      "npm": "@ai-sdk/openai-compatible",
+      "options": {
+        "baseURL": "https://api.tokenrouter.com/v1",
+        "apiKey": "sk-LhK95U9YwQs8AetnNZOdDJiPaX8Z7DqWpFndcuuF2RRsqT2z"
+      },
+      "models": {
+        "moonshotai/kimi-k3-free": {
+          "name": "moonshotai/kimi-k3-free"
+        }
+      }
+    }
   }, 
   "plugin": [
     "opencode-history-search",
@@ -16,6 +33,7 @@
     "opencode-wakatime",
     "@dietrichgebert/ponytail"
   ],
+
 
   "permission": {
     "edit": "ask",
