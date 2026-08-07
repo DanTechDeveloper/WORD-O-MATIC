@@ -292,11 +292,13 @@ class ReportTest extends TestCase
         $row = $collection->first();
 
         $this->assertNotNull($row);
+        $this->assertCount(2, $collection);
         $this->assertEquals('Test Student', $row[0]);
         $this->assertEquals("Level 1 - cat, dog", $row[1]);
         $this->assertEquals("Level 3 - bird, zoo", $row[2]);
         $this->assertEquals("Level 2 - rainy, sunny", $row[3]);
         $this->assertEquals("Level 1 - word3, word4, word5", $row[4]);
+        $this->assertEquals(['', '', '', '', ''], $collection[1]);
     }
 
     public function test_class_report_sheet_has_correct_headings(): void
@@ -318,15 +320,8 @@ class ReportTest extends TestCase
 
         $this->assertEquals([
             'Student Name',
-            'Section',
-            'Status',
             'Word Blast Accuracy (%)',
             'Story Quest Accuracy (%)',
-            'Word Blast Level',
-            'Story Quest Level',
-            'Parent Email',
-            'Report Sent At',
-            '',
             'Status Category',
             'Count',
         ], $sheet->headings());
@@ -354,18 +349,28 @@ class ReportTest extends TestCase
 
         $studentRow = $collection[0];
         $this->assertEquals('Test Student', $studentRow[0]);
-        $this->assertEquals('Section A', $studentRow[1]);
-        $this->assertEquals('onTrack', $studentRow[2]);
-        $this->assertEquals(85, $studentRow[3]);
-        $this->assertEquals(90, $studentRow[4]);
-        $this->assertEquals(3, $studentRow[5]);
-        $this->assertEquals(2, $studentRow[6]);
-        $this->assertEquals('test@test.com', $studentRow[7]);
+        $this->assertEquals(85, $studentRow[1]);
+        $this->assertEquals(90, $studentRow[2]);
 
         $statusRow = $collection[4];
         $this->assertEquals('', $statusRow[0]);
-        $this->assertEquals('Not Started', $statusRow[10]);
-        $this->assertEquals(0, $statusRow[11]);
+        $this->assertEquals('Not Started', $statusRow[3]);
+        $this->assertEquals(0, $statusRow[4]);
+    }
+
+    public function test_class_report_sheet_maps_support_status_to_needs_support_count(): void
+    {
+        $sheet = new ClassReportSheet([
+            ['name' => 'A', 'status' => 'support'],
+            ['name' => 'B', 'status' => 'onTrack'],
+        ]);
+        $collection = $sheet->collection();
+
+        $needsSupport = $collection->first(fn ($row) => $row[3] === 'Needs Support');
+        $onTrack = $collection->first(fn ($row) => $row[3] === 'On Track');
+
+        $this->assertEquals(1, $needsSupport[4]);
+        $this->assertEquals(1, $onTrack[4]);
     }
 
     public function test_class_report_sheet_includes_charts(): void

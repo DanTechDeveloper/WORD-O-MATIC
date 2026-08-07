@@ -31,13 +31,17 @@ class SkillsWordsSheet implements FromCollection, WithColumnWidths, WithHeadings
 
     public function collection()
     {
-        return collect($this->students)->map(fn ($s) => [
-            $s['name'] ?? '',
-            $this->formatWords($s['masteredWords'] ?? []),
-            $this->formatWords($s['trainingWords'] ?? []),
-            $this->formatWords($s['paragraphMasteredWords'] ?? []),
-            $this->formatWords($s['paragraphTrainingWords'] ?? []),
-        ]);
+        return collect($this->students)->flatMap(function ($s) {
+            $row = [
+                $s['name'] ?? '',
+                $this->formatWords($s['masteredWords'] ?? []),
+                $this->formatWords($s['trainingWords'] ?? []),
+                $this->formatWords($s['paragraphMasteredWords'] ?? []),
+                $this->formatWords($s['paragraphTrainingWords'] ?? []),
+            ];
+
+            return array_merge([$row], [['', '', '', '', '']]);
+        });
     }
 
     private function formatWords(array $wordsByLevel): string

@@ -2,7 +2,6 @@
 
 namespace App\Exports;
 
-use Carbon\Carbon;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithCharts;
 use Maatwebsite\Excel\Concerns\WithColumnWidths;
@@ -30,15 +29,8 @@ class ClassReportSheet implements FromCollection, WithCharts, WithColumnWidths, 
     {
         return [
             'Student Name',
-            'Section',
-            'Status',
             'Word Blast Accuracy (%)',
             'Story Quest Accuracy (%)',
-            'Word Blast Level',
-            'Story Quest Level',
-            'Parent Email',
-            'Report Sent At',
-            '',
             'Status Category',
             'Count',
         ];
@@ -48,7 +40,7 @@ class ClassReportSheet implements FromCollection, WithCharts, WithColumnWidths, 
     {
         $summaryCategories = [
             ['label' => 'On Track', 'key' => 'onTrack'],
-            ['label' => 'Needs Support', 'key' => 'needsSupport'],
+            ['label' => 'Needs Support', 'key' => 'support'],
             ['label' => 'At Risk', 'key' => 'atRisk'],
             ['label' => 'In Progress', 'key' => 'in_progress'],
             ['label' => 'Not Started', 'key' => 'notStarted'],
@@ -56,7 +48,7 @@ class ClassReportSheet implements FromCollection, WithCharts, WithColumnWidths, 
 
         $statusCounts = [
             'onTrack' => 0,
-            'needsSupport' => 0,
+            'support' => 0,
             'atRisk' => 0,
             'in_progress' => 0,
             'notStarted' => 0,
@@ -80,17 +72,8 @@ class ClassReportSheet implements FromCollection, WithCharts, WithColumnWidths, 
 
             $rows[] = [
                 $student ? ($student['name'] ?? '') : '',
-                $student ? ($student['section'] ?? '') : '',
-                $student ? ($student['status'] ?? '') : '',
                 $student ? ($student['wordBlastAcc'] ?? 0) : '',
                 $student ? ($student['storyQuestAcc'] ?? 0) : '',
-                $student ? ($student['read_level'] ?? 1) : '',
-                $student ? ($student['speak_level'] ?? 1) : '',
-                $student ? ($student['parent_email'] ?? '') : '',
-                $student && ! empty($student['report_sent_at'])
-                    ? Carbon::parse($student['report_sent_at'])->format('M j, Y g:i A')
-                    : '',
-                '',
                 $summary ? $summary['label'] : '',
                 $summary ? ($statusCounts[$summary['key']] ?? 0) : '',
             ];
@@ -114,17 +97,10 @@ class ClassReportSheet implements FromCollection, WithCharts, WithColumnWidths, 
     {
         return [
             'A' => 25,
-            'B' => 15,
-            'C' => 18,
-            'D' => 22,
-            'E' => 22,
-            'F' => 14,
-            'G' => 14,
-            'H' => 30,
-            'I' => 25,
-            'J' => 5,
-            'K' => 20,
-            'L' => 12,
+            'B' => 22,
+            'C' => 22,
+            'D' => 20,
+            'E' => 12,
         ];
     }
 
@@ -135,10 +111,10 @@ class ClassReportSheet implements FromCollection, WithCharts, WithColumnWidths, 
 
         // 1. Pie Chart for Class Health Distribution (K2:L6 summary)
         $categoriesPie = [
-            new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_STRING, "'Class Report'!\$K\$2:\$K\$6", null, 5),
+            new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_STRING, "'Class Report'!\$D\$2:\$D\$6", null, 5),
         ];
         $valuesPie = [
-            new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_NUMBER, "'Class Report'!\$L\$2:\$L\$6", null, 5),
+            new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_NUMBER, "'Class Report'!\$E\$2:\$E\$6", null, 5),
         ];
 
         $seriesPie = new DataSeries(
@@ -163,12 +139,12 @@ class ClassReportSheet implements FromCollection, WithCharts, WithColumnWidths, 
             new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_STRING, "'Class Report'!\$A\$2:\$A\$".$studentEndRow, null, $studentCount),
         ];
         $labelsBar = [
-            new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_STRING, "'Class Report'!\$D\$1", null, 1),
-            new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_STRING, "'Class Report'!\$E\$1", null, 1),
+            new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_STRING, "'Class Report'!\$B\$1", null, 1),
+            new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_STRING, "'Class Report'!\$C\$1", null, 1),
         ];
         $valuesBar = [
-            new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_NUMBER, "'Class Report'!\$D\$2:\$D\$".$studentEndRow, null, $studentCount),
-            new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_NUMBER, "'Class Report'!\$E\$2:\$E\$".$studentEndRow, null, $studentCount),
+            new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_NUMBER, "'Class Report'!\$B\$2:\$B\$".$studentEndRow, null, $studentCount),
+            new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_NUMBER, "'Class Report'!\$C\$2:\$C\$".$studentEndRow, null, $studentCount),
         ];
 
         $seriesBar = new DataSeries(
