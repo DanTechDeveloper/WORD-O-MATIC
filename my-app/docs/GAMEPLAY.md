@@ -70,6 +70,15 @@ This prevents race conditions where:
 2. 5s word timeout fires → `handleMispronounce()` → `moveToNextWord()`
 3. Target word changes, but pending speech recognition timer would have fired with stale transcript
 
+### Mic Gating During Feedback (echo protection)
+
+Mode-aware `isActive` gate in the two gameplay pages:
+
+| Mode | isActive | Why |
+|---|---|---|
+| Word Blast (read) | `gameState === "ACTIVE" && !isExploding && !isMispronounced` | Mic closes for the 500ms blast + 800ms "Try Again!" windows so the *program's own* spoken feedback ("Great!", "Almost!") can't be re-captured and fuzzy-match the short target word. Safe: the next word only appears after the window, so no student speech is lost. |
+| Story Quest (speak) | `gameState === "ACTIVE"` only | Mic stays live continuously — students read sentences back-to-back; stopping would clip the head of the next utterance. Full-sentence fuzzy matching makes feedback-echo mis-recapture negligible. |
+
 ## Results
 
 Route: `/student/results/{id}`. Shows a scorecard, headline, call-to-action row, and badges.
