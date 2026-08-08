@@ -43,7 +43,6 @@ export function useGameplayEngine({
 
     const [currentWordIndex, setCurrentWordIndex] = useState(() => resume?.currentWordIndex ?? 0);
     const [wordsSmashed, setWordsSmashed] = useState(() => resume?.wordsSmashed ?? 0);
-    // Mid-round resume jumps straight to ACTIVE (skip countdown intro).
     const [gameState, setGameState] = useState(() => resume ? "ACTIVE" : "IDLE");
     const [isMispronounced, setIsMispronounced] = useState(false);
     const [isExploding, setIsExploding] = useState(false);
@@ -88,8 +87,6 @@ export function useGameplayEngine({
         currentStreakRef.current = currentStreak;
     }, [onWordRecognized, onMispronounce, currentWordIndex, wordsSmashed, maxStreak, words, currentStreak]);
 
-    // Persist resume session only while actively playing (so a fresh
-    // IDLE mount never looks like an in-progress round)
     useEffect(() => {
         if (typeof window === "undefined" || !moduleId || gameState !== "ACTIVE") {
             return;
@@ -112,6 +109,7 @@ export function useGameplayEngine({
         currentStreak,
         maxStreak,
         timeLeft,
+        moduleId,
     ]);
 
     useEffect(() => {
@@ -122,9 +120,7 @@ export function useGameplayEngine({
                 setIsWordReady(true);
             }, 500);
         }
-        return () => {
-            clearTimeout(wordEntryTimerRef.current);
-        };
+        return () => clearTimeout(wordEntryTimerRef.current);
     }, [currentWordIndex, gameState]);
 
     useEffect(() => {
@@ -136,19 +132,20 @@ export function useGameplayEngine({
             clearTimeout(wordTimeoutRef.current);
             clearTimeout(pointsFeedbackTimerRef.current);
             clearTimeout(scoreEmphasizeTimerRef.current);
+            clearTimeout(wordEntryTimerRef.current);
         };
     }, []);
 
-    const clearResume = () => {
+    const clearResume = useCallback(() => {
         clearResumeSession(moduleId);
-    };
+    }, [moduleId]);
 
     useEffect(() => {
         if (gameState === "COMPLETED" || gameState === "GAMEOVER") {
             clearResume();
             hasSaved.current = false;
         }
-    }, [gameState]);
+    }, [gameState, clearResume]);
 
     const moveToNextWord = useCallback(() => {
         setCurrentWordIndex((prev) => Math.min(prev + 1, totalWords));
@@ -169,9 +166,7 @@ export function useGameplayEngine({
                     words_processed: currentWordIndexRef.current,
                     streak: maxStreakRef.current,
                 },
-                {
-                    preserveState: true,
-                },
+                { preserveState: true }
             );
         }
     }, [moduleId, saveEndpoint]);
@@ -180,11 +175,7 @@ export function useGameplayEngine({
     persistProgressRef.current = persistProgress;
 
     useEffect(() => {
-        if (
-            gameState === "ACTIVE" &&
-            currentWordIndex >= totalWords &&
-            totalWords > 0
-        ) {
+        if (gameState === "ACTIVE" && currentWordIndex >= totalWords && totalWords > 0) {
             persistProgressRef.current();
             setGameState("COMPLETED");
         }
@@ -198,7 +189,10 @@ export function useGameplayEngine({
         playSuccessSound();
 
         const wordObj = wordsRef.current[currentWordIndexRef.current];
-        if (!wordObj) return;
+        if (!wordObj) {
+            wordRecognizedGuardRef.current = false;
+            return;
+        }
         onWordRecognizedRef.current?.(wordObj);
 
         const points = 1;
@@ -272,14 +266,17 @@ export function useGameplayEngine({
         }, 800);
     }, [moveToNextWord]);
 
-    onMispronounceFnRef.current = handleMispronounce;
+    // FIX: Moved ref assignment into useEffect for React 18 safety
+    useEffect(() => {
+        onMispronounceFnRef.current = handleMispronounce;
+    }, [handleMispronounce]);
 
     useEffect(() => {
         if (gameState === "ACTIVE" && isWordReady) {
             clearTimeout(wordTimeoutRef.current);
             wordTimeoutRef.current = setTimeout(
                 () => onMispronounceFnRef.current(),
-                5000,
+                5000
             );
         }
         return () => clearTimeout(wordTimeoutRef.current);
@@ -287,26 +284,26 @@ export function useGameplayEngine({
 
     const handleTimeUp = useCallback(() => {
         clearAllTimers({
-            mispronounce: mispronounceTimerRef.current,
-            wordRecognized: wordRecognizedTimerRef.current,
+            mispronounceTimer: mispronounceTimerRef.current,
+            wordRecognizedTimer: wordRecognizedTimerRef.current,
             wordTimeout: wordTimeoutRef.current,
-            feedback: feedbackTimerRef.current,
-            pointsFeedback: pointsFeedbackTimerRef.current,
-            scoreEmphasize: scoreEmphasizeTimerRef.current,
-            streakShake: streakShakeTimerRef.current,
-            wordEntry: wordEntryTimerRef.current,
+            feedbackTimer: feedbackTimerRef.current,
+            pointsFeedbackTimer: pointsFeedbackTimerRef.current,
+            scoreEmphasizeTimer: scoreEmphasizeTimerRef.current,
+            streakShakeTimer: streakShakeTimerRef.current,
+            wordEntryTimer: wordEntryTimerRef.current,
         });
         setIsExploding(false);
         persistProgress();
         clearResume();
+        
         if (currentWordIndexRef.current >= totalWords) {
             setGameState("COMPLETED");
         } else {
             setGameState("GAMEOVER");
         }
-    }, [persistProgress, totalWords]);
+    }, [persistProgress, totalWords, clearResume]);
 
-    // Countdown tick owned by the engine so time survives a refresh.
     useEffect(() => {
         if (gameState !== "ACTIVE") return;
         const id = setInterval(() => {
@@ -322,10 +319,7 @@ export function useGameplayEngine({
         return () => clearInterval(id);
     }, [gameState, handleTimeUp]);
 
-    const countdownValue = useCountdown(gameState, () =>
-        setGameState("ACTIVE"),
-    );
-
+    const countdownValue = useCountdown(gameState, () => setGameState("ACTIVE"));
 
     const startGame = useCallback(() => {
         setGameState((prev) => (prev === "IDLE" ? "COUNTDOWN" : prev));
