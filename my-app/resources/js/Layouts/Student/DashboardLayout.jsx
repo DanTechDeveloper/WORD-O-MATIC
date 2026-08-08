@@ -7,7 +7,7 @@ function BottomNav({ disableNav }) {
     const hasNewBadge = typeof window !== 'undefined' && localStorage.getItem('hasNewBadge') === '1';
 
     return (
-        <nav className={`fixed bottom-0 left-0 right-0 h-20 bg-background border-t-2 border-outline z-40 flex items-center justify-around px-4 ${disableNav ? "pointer-events-none opacity-60" : ""}`}>
+        <nav className={`fixed bottom-0 left-0 right-0 h-20 bg-background border-t-2 border-outline z-40 flex items-center justify-around px-4 ${disableNav ? "pointer-events-none" : ""}`}>
             <Link
                 href="/student/dashboard"
                 className={`flex flex-col items-center gap-0.5 px-6 py-2 rounded-lg transition-colors ${
