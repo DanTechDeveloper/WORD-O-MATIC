@@ -256,7 +256,20 @@ export function useSpeechRecognition({
     const recognitionRef = useRef(null);
     const isWordMode = matchMode === "word";
 
-    const propsRef = useRef({
+    const propsRef = useRef(null);
+
+    useEffect(() => {
+        propsRef.current = {
+            isActive,
+            isWordMode,
+            targetWord,
+            onWordRecognized,
+            onPermissionDenied,
+            onMispronounced,
+            onRecognitionError,
+            onRestartFailed,
+        };
+    }, [
         isActive,
         isWordMode,
         targetWord,
@@ -265,17 +278,7 @@ export function useSpeechRecognition({
         onMispronounced,
         onRecognitionError,
         onRestartFailed,
-    });
-    propsRef.current = {
-        isActive,
-        isWordMode,
-        targetWord,
-        onWordRecognized,
-        onPermissionDenied,
-        onMispronounced,
-        onRecognitionError,
-        onRestartFailed,
-    };
+    ]);
 
     // State refs - flat object with primitive values (Rules of Hooks compliant)
     const stateRefs = useRef({
