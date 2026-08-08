@@ -1,10 +1,15 @@
 import DashboardLayout from "../../Layouts/Student/DashboardLayout";
 import { Link, usePage } from "@inertiajs/react";
 import DeadlineBanner from "@/Components/DeadlineBanner";
+import BackButton from "@/Components/Student/BackButton";
+import PageHeader from "@/Components/Student/PageHeader";
+import EmptyState from "@/Components/Student/EmptyState";
+import StudentAvatar from "@/Components/Student/StudentAvatar";
+import useDeadlineStatus from "@/hooks/Student/useDeadlineStatus";
 
 export default function Leaderboards({ leaderboard, totalStudents }) {
     const { auth } = usePage().props;
-    const isDeadlineClosed = auth?.deadline && new Date(auth.deadline) <= new Date();
+    const isDeadlineClosed = useDeadlineStatus();
     const currentUserId = auth.user?.id;
     const currentUserName = auth.user?.name ?? "You";
     const currentEntry = leaderboard.find((e) => e.user_id === currentUserId);
@@ -13,22 +18,12 @@ export default function Leaderboards({ leaderboard, totalStudents }) {
         <DashboardLayout>
             <div className="max-w-4xl mx-auto pt-2">
                 <div className="mb-4">
-                    <Link
-                        href="/student/dashboard"
-                        className="bg-surface-container-high border-2 border-surface-variant/50 p-2 rounded-full text-on-surface inline-flex items-center justify-center hover:bg-surface-variant transition-all shadow-lg w-12 h-12"
-                    >
-                        <span className="material-symbols-outlined text-2xl">arrow_back</span>
-                    </Link>
+                    <BackButton />
                 </div>
 
                 <DeadlineBanner isDeadlineClosed={isDeadlineClosed} />
 
-                <div className="text-center mb-8">
-                    <h1 className="text-4xl lg:text-6xl font-black text-on-surface uppercase tracking-tight flex items-center justify-center gap-3">
-                        <span className="material-symbols-outlined text-5xl lg:text-7xl text-tertiary" style={{ fontVariationSettings: "'FILL' 1" }}>emoji_events</span>
-                        Leaderboard
-                    </h1>
-                </div>
+                <PageHeader icon="emoji_events" title="Leaderboard" as="h1" />
 
                 {/* Current user highlight */}
                 {currentEntry && (
@@ -36,13 +31,7 @@ export default function Leaderboards({ leaderboard, totalStudents }) {
                         style={{ boxShadow: "0 0 20px rgba(163,230,53,0.1)" }}
                     >
                         <div className="flex items-center gap-6">
-                            <div className="w-14 h-14 rounded-xl overflow-hidden flex items-center justify-center bg-surface-container-high">
-                                {currentEntry.avatar ? (
-                                    <img src={currentEntry.avatar} alt="" className="w-full h-full object-cover" />
-                                ) : (
-                                    <span className="material-symbols-outlined text-3xl text-on-surface-variant">person</span>
-                                )}
-                            </div>
+                            <StudentAvatar url={currentEntry.avatar} alt="" size="lg" />
                             <div>
                                 <p className="text-2xl font-black text-lime-400">{currentUserName}</p>
                                 <p className="text-sm text-on-surface-variant font-bold">That's you!</p>
@@ -56,11 +45,11 @@ export default function Leaderboards({ leaderboard, totalStudents }) {
                 )}
 
                 {totalStudents === 0 && (
-                    <div className="text-center py-20">
-                        <span className="material-symbols-outlined text-6xl text-on-surface-variant mb-4 block">rocket_launch</span>
-                        <p className="font-black uppercase tracking-widest text-base text-on-surface-variant">No explorers yet</p>
-                        <p className="text-sm text-on-surface-variant/60 mt-2">Complete your first exercise to appear on the board!</p>
-                    </div>
+                    <EmptyState
+                        icon="rocket_launch"
+                        title="No explorers yet"
+                        message="Complete your first exercise to appear on the board!"
+                    />
                 )}
 
                 {totalStudents > 0 && (
@@ -88,13 +77,7 @@ export default function Leaderboards({ leaderboard, totalStudents }) {
                                                 <span className="text-4xl font-black">{`#${rank}`}</span>
                                             )}
                                         </span>
-                                        <div className="w-12 h-12 rounded-xl overflow-hidden flex items-center justify-center bg-surface-container-high">
-                                            {entry.avatar ? (
-                                                <img src={entry.avatar} alt="" className="w-full h-full object-cover" />
-                                            ) : (
-                                                <span className="material-symbols-outlined text-2xl text-on-surface-variant">person</span>
-                                            )}
-                                        </div>
+                                        <StudentAvatar url={entry.avatar} alt="" />
                                         <div>
                                             <p className={`font-black text-lg ${isCurrentUser ? "text-lime-400" : "text-on-surface"}`}>
                                                 {isCurrentUser ? currentUserName : `Explorer ${rank}`}

@@ -1,8 +1,10 @@
 import { Link, usePage } from "@inertiajs/react";
 import { useState } from "react";
-import BadgeUnlockModal from "@/Components/Student/BadgeUnlockModal";
+import BadgeUnlockFlow from "@/Components/Student/BadgeUnlockFlow";
 import NextBadge from "@/Components/Student/NextBadge";
+import StatTile from "@/Components/Student/StatTile";
 import DeadlineBanner from "@/Components/DeadlineBanner";
+import useDeadlineStatus from "@/hooks/Student/useDeadlineStatus";
 
 const CONFETTI = [
     { icon: "celebration", color: "text-accent" },
@@ -40,22 +42,17 @@ export default function GameResults({
         : HEADLINES.low;
     const headline = isPerfect ? "PERFECT!" : headlinePool[session.id % headlinePool.length];
     const isCelebrating = !deadlineHit && accuracyPct >= 80;
-    const { auth, flash } = usePage().props;
-    const isDeadlineClosed = auth?.deadline && new Date(auth.deadline) <= new Date();
+    const { flash } = usePage().props;
+    const isDeadlineClosed = useDeadlineStatus();
     const newBadgeSlugs = flash?.new_badges?.map(b => b.slug) ?? [];
     const newBadges = badgeProgress?.filter(b => newBadgeSlugs.includes(b.slug)) ?? [];
-    const [badgeIndex, setBadgeIndex] = useState(0);
+    const [badgeFlowDone, setBadgeFlowDone] = useState(false);
 
     const nextBadge = badgeProgress?.filter((b) => !b.is_earned).sort((a, b) => {
         const ap = a.threshold > 0 ? (a.current_value / a.threshold) : 0;
         const bp = b.threshold > 0 ? (b.current_value / b.threshold) : 0;
         return bp - ap;
     })[0] ?? null;
-
-    const done = badgeIndex >= newBadges.length;
-    if (done && newBadges.length > 0) {
-        localStorage.setItem('hasNewBadge', '1');
-    }
 
     const renderResults = () => (
         <div className="bg-background text-on-background font-body-md">
@@ -99,27 +96,12 @@ export default function GameResults({
                     )}
 
                     <div className="flex gap-4">
-                        <div className="flex-1 bg-surface-container rounded-2xl py-6 px-4 text-center border border-surface-variant/20">
-                            <div className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1">
-                                {deadlineHit ? "You played" : "Score"}
-                            </div>
-                            <div className="text-5xl sm:text-6xl font-black text-lime-400">
-                                {displayScore}
-                            </div>
-                            {deadlineHit && (
-                                <div className="text-xs font-semibold text-on-surface-variant mt-2">
-                                    Points not counted — deadline passed
-                                </div>
-                            )}
-                        </div>
-                        <div className="flex-1 bg-surface-container rounded-2xl py-6 px-4 text-center border border-surface-variant/20">
-                            <div className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1">
-                                Words
-                            </div>
-                            <div className="text-5xl sm:text-6xl font-black text-on-surface">
-                                {totalItems}
-                            </div>
-                        </div>
+                        <StatTile
+                            label={deadlineHit ? "You played" : "Score"}
+                            value={displayScore}
+                            note={deadlineHit ? "Points not counted — deadline passed" : undefined}
+                        />
+                        <StatTile label="Words" value={totalItems} valueClassName="text-on-surface" />
                     </div>
 
                     <div className="text-center text-xl sm:text-2xl font-bold text-lime-400 flex items-center justify-center gap-2">
@@ -179,17 +161,10 @@ export default function GameResults({
         </div>
     );
 
-    if (newBadges.length > 0 && badgeIndex < newBadges.length) {
+    if (newBadges.length > 0 && !badgeFlowDone) {
         return (
             <div className="bg-background text-on-background font-body-md">
-                <BadgeUnlockModal
-                    badge={newBadges[badgeIndex]}
-                    show={true}
-                    current={badgeIndex + 1}
-                    total={newBadges.length}
-                    buttonText={badgeIndex + 1 < newBadges.length ? "TAP FOR NEXT BADGE" : "TAP TO CONTINUE"}
-                    onContinue={() => setBadgeIndex(i => i + 1)}
-                />
+                <BadgeUnlockFlow badges={newBadges} onDone={() => setBadgeFlowDone(true)} />
             </div>
         );
     }

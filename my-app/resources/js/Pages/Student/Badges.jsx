@@ -1,7 +1,10 @@
 import { useEffect } from "react";
 import DashboardLayout from "@/Layouts/Student/DashboardLayout";
-import { Link, usePage } from "@inertiajs/react";
 import DeadlineBanner from "@/Components/DeadlineBanner";
+import BackButton from "@/Components/Student/BackButton";
+import PageHeader from "@/Components/Student/PageHeader";
+import ProgressBar from "@/Components/Student/ProgressBar";
+import useDeadlineStatus from "@/hooks/Student/useDeadlineStatus";
 
 const METRIC_LABELS = {
     total_points: "Points",
@@ -36,8 +39,7 @@ const BADGE_UI_CONFIG = {
 };
 
 export default function Badges({ badges }) {
-    const { auth } = usePage().props;
-    const isDeadlineClosed = auth?.deadline && new Date(auth.deadline) <= new Date();
+    const isDeadlineClosed = useDeadlineStatus();
 
     useEffect(() => {
         localStorage.removeItem('hasNewBadge');
@@ -74,25 +76,16 @@ export default function Badges({ badges }) {
     return (
         <DashboardLayout>
             <div className="mb-4 pt-2">
-                <Link
-                    href="/student/dashboard"
-                    className="bg-surface-container-high border-2 border-surface-variant/50 p-2 rounded-full text-on-surface inline-flex items-center justify-center hover:bg-surface-variant transition-all aspect-square shadow-lg w-12 h-12"
-                >
-                    <span className="material-symbols-outlined text-2xl">arrow_back</span>
-                </Link>
+                <BackButton />
             </div>
 
             <DeadlineBanner isDeadlineClosed={isDeadlineClosed} />
 
-            <div className="mb-8 text-center">
-                <h2 className="text-4xl lg:text-6xl font-black text-on-surface uppercase tracking-tight mb-2 flex items-center justify-center gap-3">
-                    <span className="material-symbols-outlined text-5xl lg:text-7xl text-tertiary" style={{ fontVariationSettings: "'FILL' 1" }}>emoji_events</span>
-                    Achievements
-                </h2>
-                <p className="text-on-surface-variant text-base font-bold max-w-lg mx-auto">
-                    Collect them all by completing challenges
-                </p>
-            </div>
+            <PageHeader
+                icon="emoji_events"
+                title="Achievements"
+                subtitle="Collect them all by completing challenges"
+            />
 
             {/* Unlocked */}
             {earnedAchievements.length > 0 && (
@@ -119,8 +112,13 @@ export default function Badges({ badges }) {
                                 <p className="text-sm text-on-surface-variant/70 mt-1 leading-tight">
                                     {badge.description}
                                 </p>
-                                <div className="mt-3 w-full bg-slate-900 h-2.5 rounded-full overflow-hidden">
-                                    <div className={`h-full ${badge.colors.bg}`} style={{ width: `${badge.progress}%` }} />
+                                <div className="mt-3">
+                                    <ProgressBar
+                                        value={badge.progress}
+                                        barClassName={badge.colors.bg}
+                                        trackClassName="bg-slate-900"
+                                        heightClassName="h-2.5"
+                                    />
                                 </div>
                             </div>
                         ))}
@@ -152,13 +150,16 @@ export default function Badges({ badges }) {
                                 </p>
                                 {badge.hasThreshold && (
                                     <div className="mt-3">
-                                        <div className="flex justify-between text-sm font-bold text-on-surface-variant/50 mb-1">
-                                            <span>{badge.currentValue}/{badge.threshold}</span>
+                                            <div className="flex justify-between text-sm font-bold text-on-surface-variant/50 mb-1">
+                                                <span>{badge.currentValue}/{badge.threshold}</span>
+                                            </div>
+                                            <ProgressBar
+                                                value={badge.progress}
+                                                barClassName="bg-slate-700"
+                                                trackClassName="bg-slate-900"
+                                                heightClassName="h-2.5"
+                                            />
                                         </div>
-                                        <div className="w-full bg-slate-900 h-2.5 rounded-full overflow-hidden">
-                                            <div className="h-full bg-slate-700" style={{ width: `${badge.progress}%` }} />
-                                        </div>
-                                    </div>
                                 )}
                             </div>
                         ))}
