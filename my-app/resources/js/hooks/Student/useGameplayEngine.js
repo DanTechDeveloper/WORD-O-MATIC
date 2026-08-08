@@ -186,6 +186,8 @@ export function useGameplayEngine({
         wordRecognizedGuardRef.current = true;
 
         clearTimeout(wordTimeoutRef.current);
+        clearTimeout(mispronounceTimerRef.current);
+        mispronounceGuardRef.current = false;
         playSuccessSound();
 
         const wordObj = wordsRef.current[currentWordIndexRef.current];
@@ -237,6 +239,8 @@ export function useGameplayEngine({
         mispronounceGuardRef.current = true;
 
         clearTimeout(wordTimeoutRef.current);
+        clearTimeout(wordRecognizedTimerRef.current);
+        wordRecognizedGuardRef.current = false;
         const wordObj = wordsRef.current[currentWordIndexRef.current];
         if (!wordObj) {
             mispronounceGuardRef.current = false;
