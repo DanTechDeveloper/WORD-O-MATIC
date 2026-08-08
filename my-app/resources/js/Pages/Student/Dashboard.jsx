@@ -1,7 +1,8 @@
 import { Link, usePage } from "@inertiajs/react";
 import { useState } from "react";
 import AvatarSpeechBubble from "@/Components/Student/AvatarSpeechBubble";
-import BadgeUnlockModal from "@/Components/Student/BadgeUnlockModal";
+import BadgeUnlockFlow from "@/Components/Student/BadgeUnlockFlow";
+import ProgressBar from "@/Components/Student/ProgressBar";
 import DashboardLayout from "../../Layouts/Student/DashboardLayout";
 
 const MODE_STYLES = {
@@ -55,8 +56,6 @@ export default function Dashboard({
     const avatarUrl = auth?.user?.student?.avatar;
     const bodyUrl = avatarUrl?.replace("/head.png", "/body.png");
     const newBadges = flash?.new_badges ?? [];
-    const [badgeIndex, setBadgeIndex] = useState(0);
-
     const showGuide = !tutorialComplete && bodyUrl;
     const showGuideBubble = showGuide && !guideDone;
     const highlightRead = showGuide && !wordTutorialDone;
@@ -104,15 +103,8 @@ export default function Dashboard({
 
     return (
         <>
-            {badgeIndex < newBadges.length && (
-                <BadgeUnlockModal
-                    badge={newBadges[badgeIndex]}
-                    show={true}
-                    current={badgeIndex + 1}
-                    total={newBadges.length}
-                    buttonText={badgeIndex + 1 < newBadges.length ? "TAP FOR NEXT BADGE" : "TAP TO CONTINUE"}
-                    onContinue={() => setBadgeIndex(i => i + 1)}
-                />
+            {newBadges.length > 0 && (
+                <BadgeUnlockFlow badges={newBadges} markNewBadge={false} />
             )}
             <DashboardLayout disableNav={showGuide}>
                 <div className="flex flex-col justify-center py-10 lg:py-14 space-y-8">
@@ -204,12 +196,7 @@ export default function Dashboard({
                                             {p.total > 0 ? `${p.earned}/${p.total}` : "Not started"}
                                         </span>
                                     </div>
-                                    <div className="h-3 w-full bg-background/60 rounded-full overflow-hidden border border-outline/30">
-                                        <div
-                                            className={`h-full rounded-full transition-all duration-700 ease-out ${s.barFill}`}
-                                            style={{ width: `${pct}%` }}
-                                        />
-                                    </div>
+                                    <ProgressBar value={pct} barClassName={s.barFill} />
                                 </div>
                             </Link>
                         );

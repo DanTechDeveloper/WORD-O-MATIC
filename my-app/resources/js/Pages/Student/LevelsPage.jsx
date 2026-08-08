@@ -1,9 +1,11 @@
-import { Link, usePage } from "@inertiajs/react"
+import { usePage } from "@inertiajs/react"
 import { useState, useEffect } from "react"
 import DashboardLayout from "../../Layouts/Student/DashboardLayout"
 import LevelCard from "../../Components/Student/LevelCard"
+import BackButton from "../../Components/Student/BackButton"
 import AvatarSpeechBubble from "@/Components/Student/AvatarSpeechBubble"
 import DeadlineBanner from "@/Components/DeadlineBanner"
+import useDeadlineStatus from "@/hooks/Student/useDeadlineStatus"
 import { readResumeSession } from "@/utils/resumeStorage"
 
 const LEVEL_ICONS = [
@@ -14,8 +16,7 @@ const LEVEL_ICONS = [
 
 export default function LevelsPage({ modules, mode, tutorialComplete = true, wordTutorialDone = false, speakTutorialDone = false }) {
     const { auth, flash } = usePage().props
-    const deadline = auth?.deadline
-    const isDeadlineClosed = deadline && new Date(deadline) <= new Date()
+    const isDeadlineClosed = useDeadlineStatus()
     const [error, setError] = useState(flash?.error ?? null)
     const avatarUrl = auth?.user?.student?.avatar
     const bodyUrl = avatarUrl?.replace("/head.png", "/body.png")
@@ -63,13 +64,7 @@ export default function LevelsPage({ modules, mode, tutorialComplete = true, wor
             <DeadlineBanner isDeadlineClosed={isDeadlineClosed} />
             {/* Header */}
             <div className="flex items-center gap-3 md:gap-4 mb-6 pt-2">
-                <Link
-                    href="/student/dashboard"
-                    aria-label="Back to dashboard"
-                    className="bg-surface-container-high border-2 border-surface-variant/50 p-2.5 rounded-full text-on-surface flex items-center justify-center hover:bg-surface-variant transition-all aspect-square shadow-[4px_4px_0_0_#4c1d95] flex-shrink-0"
-                >
-                    <span className="material-symbols-outlined text-2xl" aria-hidden="true">arrow_back</span>
-                </Link>
+                <BackButton />
                 <div className="flex-1 min-w-0">
                     <h2 className="text-on-surface text-2xl md:text-3xl font-black uppercase truncate flex items-center gap-2">
                         <span className={`material-symbols-outlined text-3xl ${isRead ? "text-accent" : "text-quest"}`} style={{ fontVariationSettings: "'FILL' 1" }}>{isRead ? "menu_book" : "mic"}</span>

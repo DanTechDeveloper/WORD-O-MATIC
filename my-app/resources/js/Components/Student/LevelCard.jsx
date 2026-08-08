@@ -1,4 +1,5 @@
 import { Link } from "@inertiajs/react"
+import ProgressBar from "./ProgressBar"
 
 const COVER_GRADIENTS = [
     "from-purple-600/40 to-pink-600/20",
@@ -125,12 +126,7 @@ export default function LevelCard({ module, emoji, gameUrl, index, highlightTuto
 
             {/* Progress bar */}
             <div className="mt-3">
-                <div className="w-full bg-background/40 rounded-full h-2 overflow-hidden">
-                    <div
-                        className={`h-full rounded-full transition-all duration-1000 ease-out bg-accent`}
-                        style={{ width: `${progress}%` }}
-                    />
-                </div>
+                <ProgressBar value={progress} trackClassName="bg-background/40" heightClassName="h-2" durationClassName="duration-1000" />
                 <p className="text-on-surface-variant font-bold text-xs mt-1.5">
                     {wordsSmashed} / {totalPoints} words
                 </p>
