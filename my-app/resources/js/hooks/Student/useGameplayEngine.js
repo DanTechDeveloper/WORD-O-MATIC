@@ -4,6 +4,29 @@ import { router } from "@inertiajs/react";
 import { playSuccessSound, playFeedbackSound, playMispronounceSound } from "@/utils/sounds";
 import { readResumeSession, clearResumeSession } from "@/utils/resumeStorage";
 
+function normalizeWord(word) {
+    return (word ?? "").toLowerCase().replace(/[^\w\s]/g, "").trim();
+}
+
+function getStreakFeedbackMessage(streak) {
+    if (streak >= 6) return "Excellent!";
+    if (streak >= 4) return "Great Job!";
+    if (streak >= 2) return "Great!";
+    return "Good!";
+}
+
+function getStreakShakeIntensity(streak) {
+    if (streak >= 8) return "intense";
+    if (streak >= 5) return "medium";
+    return "subtle";
+}
+
+function clearAllTimers(timers) {
+    Object.values(timers).forEach((timer) => {
+        if (timer) clearTimeout(timer);
+    });
+}
+
 export function useGameplayEngine({
     words = [],
     totalWords = 0,

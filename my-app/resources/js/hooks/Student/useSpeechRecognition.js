@@ -8,16 +8,19 @@ const IRRECOVERABLE_ERRORS = new Set([
 ]);
 
 function clearAllTimers(timers) {
-    Object.values(timers).forEach((ref) => {
-        if (ref && ref.current) {
-            clearTimeout(ref.current);
-            ref.current = null;
+    Object.keys(timers).forEach((key) => {
+        if (timers[key]) {
+            clearTimeout(timers[key]);
+            timers[key] = null;
         }
     });
 }
 
 function normalizeTarget(word) {
-    return word?.toLowerCase().trim() ?? "";
+    return (word ?? "")
+        .toLowerCase()
+        .replace(/[^\w\s]/g, "")
+        .trim();
 }
 
 function normalizeTranscript(text) {
@@ -60,17 +63,20 @@ function processSentenceModeResult(
     stateRefs.current.interim = newInterim;
     const full = buildFullSentence(stateRefs.current.transcript, newInterim);
 
-    clearTimeout(timerRefs.current.sentence.current);
+    clearTimeout(timerRefs.current.sentence);
     timeoutRefs.current.target = target;
 
-    timerRefs.current.sentence.current = setTimeout(() => {
+    timerRefs.current.sentence = setTimeout(() => {
         if (
             stateRefs.current.isMounted &&
             propsRef.current.isActive &&
             !stateRefs.current.hasMatched &&
             timeoutRefs.current.target === target
         ) {
-            propsRef.current.onMispronounced?.(full);
+            if (!stateRefs.current.mispronouncedSentence) {
+                stateRefs.current.mispronouncedSentence = true;
+                propsRef.current.onMispronounced?.(full);
+            }
         }
     }, 5000);
 
@@ -100,11 +106,14 @@ function processSentenceModeResult(
     if (Date.now() < timeoutRefs.current.graceEnd) return;
 
     if (
-        stateRefs.current.stoppedAt &&
-        (spokenWordCount !== targetWordCount || !isFuzzyMatch(full, target))
+        spokenWordCount >= targetWordCount &&
+        isFuzzyMatch(full, target) === false
     ) {
         clearAllTimers(timerRefs.current);
-        propsRef.current.onMispronounced?.(full);
+        if (!stateRefs.current.mispronouncedSentence) {
+            stateRefs.current.mispronouncedSentence = true;
+            propsRef.current.onMispronounced?.(full);
+        }
         stateRefs.current.hasMatched = false;
         stateRefs.current.mispronouncedInWord = false;
     }
@@ -196,11 +205,12 @@ function handleRecognitionEnd(
     stateRefs.current.interim = "";
     stateRefs.current.stoppedAt = 0;
     stateRefs.current.mispronouncedInWord = false;
+    stateRefs.current.mispronouncedSentence = false;
+    stateRefs.current.isListening = false;
     timeoutRefs.current.restartCount = 0;
 
     if (IRRECOVERABLE_ERRORS.has(lastErrorRef.current)) {
         lastErrorRef.current = null;
-        stateRefs.current.isListening = false;
         return;
     }
 
@@ -213,23 +223,24 @@ function handleRecognitionEnd(
         }
 
         timeoutRefs.current.restartCount++;
-        if (timeoutRefs.current.restartCount > 3) return;
+        if (timeoutRefs.current.restartCount > 3) {
+            propsRef.current.onRestartFailed?.();
+            return;
+        }
 
         try {
             stateRefs.current.isListening = true;
             recognitionRef.current?.start();
-            timeoutRefs.current.restartCount = 0;
         } catch {
             const delay = Math.min(
                 500 * 2 ** timeoutRefs.current.restartCount,
                 3000,
             );
-            timeoutRefs.current.restartCount += 1;
-            timerRefs.current.restart.current = setTimeout(tryRestart, delay);
+            timerRefs.current.restart = setTimeout(tryRestart, delay);
         }
     };
 
-    timerRefs.current.restart.current = setTimeout(tryRestart, 500);
+    timerRefs.current.restart = setTimeout(tryRestart, 500);
 }
 
 export function useSpeechRecognition({
@@ -239,6 +250,7 @@ export function useSpeechRecognition({
     onPermissionDenied,
     onMispronounced,
     onRecognitionError,
+    onRestartFailed,
     matchMode = "word",
 }) {
     const recognitionRef = useRef(null);
@@ -252,6 +264,7 @@ export function useSpeechRecognition({
         onPermissionDenied,
         onMispronounced,
         onRecognitionError,
+        onRestartFailed,
     });
     propsRef.current = {
         isActive,
@@ -261,24 +274,27 @@ export function useSpeechRecognition({
         onPermissionDenied,
         onMispronounced,
         onRecognitionError,
+        onRestartFailed,
     };
 
-    // State refs - flat object with ref values (Rule of Hooks compliant)
+    // State refs - flat object with primitive values (Rules of Hooks compliant)
     const stateRefs = useRef({
         hasMatched: false,
         lastProcessed: -1,
         isMounted: false,
         stoppedAt: 0,
         mispronouncedInWord: false,
+        mispronouncedSentence: false,
         transcript: "",
         interim: "",
         isListening: false,
     });
 
+    // Timers stored as plain values (not refs) to avoid nested hook violation
     const timerRefs = useRef({
-        mispronounce: useRef(null),
-        restart: useRef(null),
-        sentence: useRef(null),
+        mispronounce: null,
+        restart: null,
+        sentence: null,
     });
 
     const timeoutRefs = useRef({
@@ -313,7 +329,6 @@ export function useSpeechRecognition({
             recognition.lang = "en-US";
 
             recognition.onresult = (event) => {
-                stateRefs.current.isListening = true;
                 if (!propsRef.current.isActive) return;
 
                 const target = normalizeTarget(propsRef.current.targetWord);
@@ -349,7 +364,6 @@ export function useSpeechRecognition({
             };
 
             recognition.onend = () => {
-                stateRefs.current.isListening = false;
                 handleRecognitionEnd(
                     timerRefs,
                     timeoutRefs,
@@ -358,6 +372,10 @@ export function useSpeechRecognition({
                     propsRef,
                     lastErrorRef,
                 );
+            };
+
+            recognition.onstart = () => {
+                stateRefs.current.isListening = true;
             };
 
             recognitionRef.current = recognition;
@@ -375,14 +393,16 @@ export function useSpeechRecognition({
     useEffect(() => {
         const wasMatched = stateRefs.current.hasMatched;
         stateRefs.current.hasMatched = false;
+        stateRefs.current.mispronouncedInWord = false;
+        stateRefs.current.mispronouncedSentence = false;
         stateRefs.current.lastProcessed = -1;
         stateRefs.current.transcript = "";
         stateRefs.current.interim = "";
         stateRefs.current.stoppedAt = 0;
-        stateRefs.current.mispronouncedInWord = false;
         timeoutRefs.current.target = null;
-        clearAllTimers(timerRefs.current);
         timeoutRefs.current.graceEnd = Date.now() + 500;
+        timeoutRefs.current.restartCount = 0;
+        clearAllTimers(timerRefs.current);
         if (
             wasMatched &&
             recognitionRef.current &&
@@ -406,6 +426,11 @@ export function useSpeechRecognition({
     }, [targetWord]);
 
     useEffect(() => {
+        timeoutRefs.current.graceEnd = Date.now() + 500;
+        timeoutRefs.current.restartCount = 0;
+    }, []);
+
+    useEffect(() => {
         const recognition = recognitionRef.current;
         if (!recognition) return;
 
@@ -416,13 +441,17 @@ export function useSpeechRecognition({
                 clearAllTimers(timerRefs.current);
                 stateRefs.current.isListening = true;
                 recognition.start();
-            } catch {}
+            } catch (e) {
+                console.debug("Speech recognition start failed:", e);
+            }
         } else {
             try {
                 stateRefs.current.isListening = false;
                 clearAllTimers(timerRefs.current);
                 recognition.stop();
-            } catch {}
+            } catch (e) {
+                console.debug("Speech recognition stop failed:", e);
+            }
         }
     }, [isActive]);
 }
