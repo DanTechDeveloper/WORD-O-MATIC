@@ -1,6 +1,6 @@
 # Architecture
 
-> Version 1.3
+> Version 1.4
 
 ## Backend
 
@@ -53,6 +53,10 @@ Axios JSON endpoints (mastery toggles) bypass Inertia and return `noContent()`.
 | Random word order | `inRandomOrder()` per session in Read mode, prevents memorization |
 | Mastery = explicit per-word toggle | Auto-mastery removed; `updateWordMastery`/`updateParagraphMastery` via axios |
 | PIN with plain+hash | Hash for auth, plain for teacher display (thesis-acceptable) |
+| Atomic bulk student creation | `storeBulk()` normalizes all rows → validates → one `DB::transaction`; a bad row rejects the whole batch (no partial rosters) |
+| Separate modals per creation flow | `AddStudentModal` vs `BulkAddStudentModal` — distinct two-stage flows; each `useForm` gets its own error keys |
+| PHP-side dup normalization | Case/whitespace-insensitive duplicate checks run in PHP (student IDs, word module words) because MySQL's ci collation differs from SQLite (tests) |
+| `has_progress` flag on word modules | `wordModules()` exposes whether any `StudentWordMastery` row exists → modal shows a progress-reset `confirm()` before editing |
 
 ## Auth Flow
 

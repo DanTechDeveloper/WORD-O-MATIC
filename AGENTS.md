@@ -101,6 +101,14 @@ middleware aliases are registered in `bootstrap/app.php`.
   from `tailwind.config.js` tokens (Tactile Arcade: Arcade Lime `#a3e635` action,
   indigo-void canvas, hard offset shadows). Avoid raw `zinc-*`/`slate-*`/`purple-*`
   defaults — see `DESIGN.md` §6.
+- **`useForm.post(url, options)` sends the form's own data state** — set it via
+  `setData` before `post`; the options object is for callbacks only, never a
+  payload. Passing a body as the 2nd arg sends `{}` and fails validation
+  invisibly (the bulk-add student bug).
+- **Word module edits are strictly validated** (PHP-normalized): all 10 slots
+  required, no intra-module dups, no reuse of a word from another level (incl.
+  tutorial), `max:20`, stored uppercase; `has_progress` triggers a reset
+  `confirm()`. See `docs/MODULES.md`.
 
 ## Workflow conventions
 
