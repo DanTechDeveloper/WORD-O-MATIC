@@ -1,7 +1,11 @@
 import React, { useEffect } from "react";
 import { useForm } from "@inertiajs/react";
 
-export default function AddStudentModal({ isOpen, onClose }) {
+export default function AddStudentModal({
+    isOpen,
+    onClose,
+    existingStudentIds = new Set(),
+}) {
     const { data, setData, post, processing, errors, reset } = useForm({
         fullName: "",
         pin: "",
@@ -33,6 +37,38 @@ export default function AddStudentModal({ isOpen, onClose }) {
         }
     }, [isOpen]);
 
+    const nameOk = data.fullName.trim().length > 0;
+    const idOk = data.studentID.trim().length > 0;
+    const idUnique = !existingStudentIds.has(data.studentID.trim().toLowerCase());
+    const sectionOk = data.section.trim().length > 0;
+    const pinOk = /^\d{4}$/.test(data.pin);
+    const emailOk =
+        data.parent_email.trim() === "" ||
+        /^\S+@\S+\.\S+$/.test(data.parent_email.trim());
+
+    const fieldError = (name) => {
+        switch (name) {
+            case "fullName":
+                return nameOk ? null : "Full name is required.";
+            case "studentID":
+                if (!idOk) return "Student ID is required.";
+                if (!idUnique) return "This ID is already registered.";
+                return null;
+            case "section":
+                return sectionOk ? null : "Section is required.";
+            case "pin":
+                return pinOk ? null : "PIN must be 4 digits.";
+            case "parent_email":
+                return emailOk ? null : "Enter a valid email.";
+            default:
+                return null;
+        }
+    };
+
+    const shownError = (name) => fieldError(name) || errors[name];
+
+    const formValid = nameOk && idOk && idUnique && sectionOk && pinOk && emailOk;
+
     if (!isOpen) return null;
 
     const handleSubmit = (e) => {
@@ -44,6 +80,11 @@ export default function AddStudentModal({ isOpen, onClose }) {
             },
         });
     };
+
+    const inputClass = (name) =>
+        `w-full bg-slate-950 border-3 sm:border-4 rounded-xl sm:rounded-2xl p-3 sm:p-4 text-sm sm:text-base text-white font-bold focus:border-purple-500 outline-none transition-all placeholder:text-slate-700 ${
+            shownError(name) ? "border-rose-500" : "border-slate-800"
+        }`;
 
     return (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
@@ -71,7 +112,7 @@ export default function AddStudentModal({ isOpen, onClose }) {
                 </header>
 
                 <form onSubmit={handleSubmit} className="p-4 sm:p-6 lg:p-8 space-y-5 sm:space-y-6">
-                    {/* Full Name Input */}
+                    {/* Student ID Input */}
                     <div className="space-y-2">
                         <label className="block text-xs font-black text-slate-500 uppercase tracking-widest ml-2">
                             STUDENT ID
@@ -83,16 +124,16 @@ export default function AddStudentModal({ isOpen, onClose }) {
                             onChange={(e) =>
                                 setData("studentID", e.target.value)
                             }
-                            className="w-full bg-slate-950 border-3 sm:border-4 border-slate-800 rounded-xl sm:rounded-2xl p-3 sm:p-4 text-sm sm:text-base text-white font-bold focus:border-purple-500 outline-none transition-all placeholder:text-slate-700"
+                            className={inputClass("studentID")}
                             placeholder="e.g. 2023-000001"
                         />
-                        {errors.studentID && (
+                        {shownError("studentID") && (
                             <p className="text-rose-500 text-[10px] font-black mt-1 uppercase ml-2">
-                                {errors.studentID}
+                                {shownError("studentID")}
                             </p>
                         )}
-                    </div>{" "}
-                    {/* Full Name Input */}
+                    </div>
+                    {/* Section Input */}
                     <div className="space-y-2">
                         <label className="block text-xs font-black text-slate-500 uppercase tracking-widest ml-2">
                             SECTION
@@ -102,12 +143,12 @@ export default function AddStudentModal({ isOpen, onClose }) {
                             type="text"
                             value={data.section}
                             onChange={(e) => setData("section", e.target.value)}
-                            className="w-full bg-slate-950 border-3 sm:border-4 border-slate-800 rounded-xl sm:rounded-2xl p-3 sm:p-4 text-sm sm:text-base text-white font-bold focus:border-purple-500 outline-none transition-all placeholder:text-slate-700"
+                            className={inputClass("section")}
                             placeholder="e.g. 6-STEM-B"
                         />
-                        {errors.section && (
+                        {shownError("section") && (
                             <p className="text-rose-500 text-[10px] font-black mt-1 uppercase ml-2">
-                                {errors.section}
+                                {shownError("section")}
                             </p>
                         )}
                     </div>
@@ -122,12 +163,12 @@ export default function AddStudentModal({ isOpen, onClose }) {
                             onChange={(e) =>
                                 setData("fullName", e.target.value)
                             }
-                            className="w-full bg-slate-950 border-3 sm:border-4 border-slate-800 rounded-xl sm:rounded-2xl p-3 sm:p-4 text-sm sm:text-base text-white font-bold focus:border-purple-500 outline-none transition-all placeholder:text-slate-700"
+                            className={inputClass("fullName")}
                             placeholder="e.g. LEO JUPITER"
                         />
-                        {errors.fullName && (
+                        {shownError("fullName") && (
                             <p className="text-rose-500 text-[10px] font-black mt-1 uppercase ml-2">
-                                {errors.fullName}
+                                {shownError("fullName")}
                             </p>
                         )}
                     </div>
@@ -158,9 +199,9 @@ export default function AddStudentModal({ isOpen, onClose }) {
                             The student will use this PIN to log into their
                             mission console.
                         </p>
-                        {errors.pin && (
+                        {shownError("pin") && (
                             <p className="text-rose-500 text-[10px] font-black mt-1 uppercase ml-2">
-                                {errors.pin}
+                                {shownError("pin")}
                             </p>
                         )}
                     </div>
@@ -175,12 +216,12 @@ export default function AddStudentModal({ isOpen, onClose }) {
                             onChange={(e) =>
                                 setData("parent_email", e.target.value)
                             }
-                            className="w-full bg-slate-950 border-3 sm:border-4 border-slate-800 rounded-xl sm:rounded-2xl p-3 sm:p-4 text-sm sm:text-base text-white font-bold focus:border-purple-500 outline-none transition-all placeholder:text-slate-700"
+                            className={inputClass("parent_email")}
                             placeholder="e.g. parent@email.com"
                         />
-                        {errors.parent_email && (
+                        {shownError("parent_email") && (
                             <p className="text-rose-500 text-[10px] font-black mt-1 uppercase ml-2">
-                                {errors.parent_email}
+                                {shownError("parent_email")}
                             </p>
                         )}
                     </div>
@@ -216,19 +257,24 @@ export default function AddStudentModal({ isOpen, onClose }) {
                                 Female
                             </label>
                         </div>
-                        {errors.gender && (
+                        {shownError("gender") && (
                             <p className="text-rose-500 text-[10px] font-black mt-1 uppercase ml-2">
-                                {errors.gender}
+                                {shownError("gender")}
                             </p>
                         )}
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="pt-4 flex gap-4">
+                    <div className="pt-4 flex flex-col gap-3">
+                        {!formValid && (
+                            <p className="text-[10px] text-rose-500 font-black uppercase tracking-widest text-center">
+                                Resolve the highlighted fields to continue.
+                            </p>
+                        )}
                         <button
                             type="submit"
-                            disabled={processing}
-                            className={`flex-1 bg-lime-400 text-slate-950 font-black uppercase italic py-3 sm:py-4 text-sm sm:text-base rounded-xl sm:rounded-2xl border-3 sm:border-4 border-slate-950 shadow-[6px_6px_0_0_#3f6212] hover:translate-y-0.5 hover:shadow-[3px_3px_0_0_#3f6212] transition-all ${processing ? "opacity-50 cursor-not-allowed" : ""}`}
+                            disabled={processing || !formValid}
+                            className={`flex-1 bg-lime-400 text-slate-950 font-black uppercase italic py-3 sm:py-4 text-sm sm:text-base rounded-xl sm:rounded-2xl border-3 sm:border-4 border-slate-950 shadow-[6px_6px_0_0_#3f6212] hover:translate-y-0.5 hover:shadow-[3px_3px_0_0_#3f6212] transition-all ${processing || !formValid ? "opacity-50 cursor-not-allowed" : ""}`}
                         >
                             {processing
                                 ? "Initializing..."

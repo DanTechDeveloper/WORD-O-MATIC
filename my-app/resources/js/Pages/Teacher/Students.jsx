@@ -20,7 +20,7 @@ const statusTabs = [
     { value: "notStarted", label: "Not Started" },
 ];
 
-export default function Students({ data, sections, filters }) {
+export default function Students({ data, sections, filters, existingStudentIds }) {
     const students = data.data ?? [];
     const meta = {
         current_page: data.current_page ?? 1,
@@ -29,6 +29,10 @@ export default function Students({ data, sections, filters }) {
         to: data.to,
         total: data.total,
     };
+
+    const existingIds = new Set(
+        (existingStudentIds || []).map((id) => String(id).trim().toLowerCase()),
+    );
 
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [editStudent, setEditStudent] = useState(null);
@@ -533,6 +537,7 @@ export default function Students({ data, sections, filters }) {
             <AddStudentModal
                 isOpen={isAddModalOpen}
                 onClose={() => setIsAddModalOpen(false)}
+                existingStudentIds={existingIds}
             />
             <EditStudentModal
                 isOpen={!!editStudent}

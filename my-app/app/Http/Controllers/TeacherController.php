@@ -17,6 +17,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Maatwebsite\Excel\Facades\Excel;
@@ -132,6 +133,7 @@ class TeacherController extends Controller
         return Inertia::render('Teacher/Students', [
             'data' => $students,
             'sections' => $sections,
+            'existingStudentIds' => User::where('role', 'student')->whereNotNull('student_id')->pluck('student_id'),
             'filters' => [
                 'sort' => $sort,
                 'direction' => $direction,
@@ -331,13 +333,24 @@ class TeacherController extends Controller
 
     public function store(Request $request)
     {
+        // Normalize before validate: the unique rule must see the trimmed ID,
+        // otherwise "2023-000001 " passes unique then collides after trim.
+        $request->merge([
+            'fullName' => trim($request->fullName),
+            'studentID' => trim($request->studentID),
+            'section' => trim($request->section),
+            'parent_email' => trim((string) $request->parent_email) !== ''
+                ? strtolower(trim((string) $request->parent_email))
+                : null,
+        ]);
+
         $request->validate([
-            'fullName' => 'required',
-            'studentID' => 'required',
-            'section' => 'required',
-            'pin' => 'required',
+            'fullName' => 'required|string|max:255',
+            'studentID' => ['required', 'string', 'max:50', Rule::unique('users', 'student_id')],
+            'section' => 'required|string|max:255',
+            'pin' => 'required|digits:4',
             'gender' => 'nullable|in:male,female',
-            'parent_email' => 'nullable|email',
+            'parent_email' => 'nullable|email|max:255',
         ]);
 
         $student = User::create([
