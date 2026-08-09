@@ -8,13 +8,16 @@ use App\Models\Badges;
 use App\Models\ParagraphModule;
 use App\Models\Setting;
 use App\Models\StudentProfile;
+use App\Models\StudentWordMastery;
 use App\Models\User;
 use App\Models\WordModule;
 use App\Services\BadgeService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -170,7 +173,7 @@ class TeacherController extends Controller
 
     private function latestBadge(?int $userId): ?array
     {
-        if (!$userId) {
+        if (! $userId) {
             return null;
         }
 
@@ -180,7 +183,7 @@ class TeacherController extends Controller
             ->orderByPivot('earned_at', 'desc')
             ->first();
 
-        if (!$badge) {
+        if (! $badge) {
             return null;
         }
 
@@ -377,6 +380,8 @@ class TeacherController extends Controller
                 'level' => $module->level,
                 'title' => $module->title,
                 'total_points' => $module->total_points,
+                'has_progress' => $module->words->isNotEmpty()
+                    && StudentWordMastery::whereIn('word_id', $module->words->pluck('id'))->exists(),
                 'words' => $module->words->map(function ($word) {
                     return [
                         'id' => $word->id,
@@ -395,7 +400,7 @@ class TeacherController extends Controller
     public function updateWordModule(Request $request)
     {
         $deadline = Setting::getValue('report_deadline');
-        if ($deadline && \Carbon\Carbon::parse($deadline)->isPast()) {
+        if ($deadline && Carbon::parse($deadline)->isPast()) {
             return redirect()->back()->with('error', 'Cannot edit modules after the report deadline.');
         }
 
@@ -403,9 +408,50 @@ class TeacherController extends Controller
             'level' => 'required|integer',
             'title' => 'required|string|max:255',
             'words' => 'required|array|size:10',
-            'words.*.word' => 'nullable|string',
+            'words.*.word' => 'required|string|max:20',
             'totalScore' => 'nullable|numeric',
         ]);
+
+        // Case-insensitive duplicate + empty-slot enforcement. Normalized in PHP
+        // because MySQL's ci collation differs from SQLite (tests).
+        $normalized = collect($request->words)->map(
+            fn ($w) => strtolower(trim($w['word'] ?? ''))
+        );
+
+        $emptyIndex = $normalized->search(fn ($word) => $word === '');
+        if ($emptyIndex !== false) {
+            throw ValidationException::withMessages([
+                "words.$emptyIndex.word" => 'Every word must be filled in.',
+            ]);
+        }
+
+        $duplicateWord = $normalized->countBy()
+            ->filter(fn ($count) => $count > 1)
+            ->keys()
+            ->first();
+
+        if ($duplicateWord !== null) {
+            throw ValidationException::withMessages([
+                'words.'.$normalized->search($duplicateWord).'.word' => '"'.strtoupper($duplicateWord).'" is duplicated in this module.',
+            ]);
+        }
+
+        // Tutorial words are included automatically: the tutorial is a
+        // WordModule with level = 0, so its words live in the same table.
+        $currentModuleId = WordModule::where('level', $request->level)->value('id');
+        $taken = DB::table('words')
+            ->join('word_modules', 'words.word_module_id', '=', 'word_modules.id')
+            ->when($currentModuleId, fn ($q) => $q->where('words.word_module_id', '!=', $currentModuleId))
+            ->get()
+            ->mapWithKeys(fn ($row) => [strtolower($row->word) => $row->level]);
+
+        $collision = $normalized->search(fn ($word) => isset($taken[$word]));
+        if ($collision !== false) {
+            $word = $normalized[$collision];
+            throw ValidationException::withMessages([
+                "words.$collision.word" => '"'.strtoupper($word).'" is already used in Level '.$taken[$word].'.',
+            ]);
+        }
 
         WordModule::saveWithWords($request->all());
 
@@ -424,7 +470,7 @@ class TeacherController extends Controller
     public function updateParagraphModule(Request $request)
     {
         $deadline = Setting::getValue('report_deadline');
-        if ($deadline && \Carbon\Carbon::parse($deadline)->isPast()) {
+        if ($deadline && Carbon::parse($deadline)->isPast()) {
             return redirect()->back()->with('error', 'Cannot edit modules after the report deadline.');
         }
 
