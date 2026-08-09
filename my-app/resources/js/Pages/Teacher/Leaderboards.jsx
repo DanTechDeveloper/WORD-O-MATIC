@@ -1,5 +1,10 @@
 import DashboardLayout from "@/Layouts/Teacher/DashboardLayout";
 import { useState } from "react";
+import PageHeader from "@/Components/Teacher/PageHeader";
+import TabBar from "@/Components/Teacher/TabBar";
+import SelectField from "@/Components/Teacher/SelectField";
+import SearchInput from "@/Components/Teacher/SearchInput";
+import AvatarChip from "@/Components/Teacher/AvatarChip";
 
 export default function Leaderboards({ leaderboard, sections = [], auth }) {
     const [activeTab, setActiveTab] = useState("points");
@@ -7,9 +12,9 @@ export default function Leaderboards({ leaderboard, sections = [], auth }) {
     const [search, setSearch] = useState("");
 
     const TAB_CONFIG = [
-        { key: "points", label: "Points", icon: "military_tech" },
-        { key: "wordBlast", label: "Word Blast", icon: "auto_stories" },
-        { key: "storyQuest", label: "Story Quest", icon: "record_voice_over" },
+        { value: "points", label: "Points", icon: "military_tech" },
+        { value: "wordBlast", label: "Word Blast", icon: "auto_stories" },
+        { value: "storyQuest", label: "Story Quest", icon: "record_voice_over" },
     ];
 
     const activeStudents = leaderboard?.[activeTab] ?? [];
@@ -41,30 +46,21 @@ export default function Leaderboards({ leaderboard, sections = [], auth }) {
             </div>
 
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                <div className="flex bg-slate-950 border-2 border-slate-800 rounded-xl p-1 overflow-x-auto">
-                    {TAB_CONFIG.map((tab) => (
-                        <button
-                            key={tab.key}
-                            onClick={() => setActiveTab(tab.key)}
-                            className={`px-4 py-2 font-black text-xs uppercase whitespace-nowrap rounded-lg transition-all flex items-center gap-2 ${
-                                activeTab === tab.key
-                                    ? "bg-lime-400 text-slate-950 shadow-[2px_2px_0_0_#3f6212]"
-                                    : "text-slate-400 hover:text-lime-300"
-                            }`}
-                        >
-                            <span className="material-symbols-outlined text-sm">
-                                {tab.icon}
-                            </span>
-                            {tab.label}
-                        </button>
-                    ))}
-                </div>
+                <TabBar
+                    tabs={TAB_CONFIG}
+                    active={activeTab}
+                    onSelect={setActiveTab}
+                    className="flex bg-slate-950 border-2 border-slate-800 rounded-xl p-1 overflow-x-auto"
+                    itemClassName="px-4 py-2 font-black text-xs uppercase whitespace-nowrap rounded-lg transition-all flex items-center gap-2"
+                    activeClassName="bg-lime-400 text-slate-950 shadow-[2px_2px_0_0_#3f6212]"
+                    inactiveClassName="text-slate-400 hover:text-lime-300"
+                />
 
-                <div className="flex gap-3 w-full sm:w-auto">
-                    <select
+<div className="flex gap-3 w-full sm:w-auto">
+                    <SelectField
                         value={selectedSection}
                         onChange={(e) => setSelectedSection(e.target.value)}
-                        className="appearance-none bg-slate-950 border-2 border-slate-800 rounded-xl pl-4 pr-10 py-3 text-white font-bold focus:outline-none focus:border-lime-500 cursor-pointer text-sm"
+                        wrapperClassName="flex-1 sm:flex-none min-w-[160px]"
                     >
                         <option value="">All Sections</option>
                         {sections.map((s) => (
@@ -72,20 +68,14 @@ export default function Leaderboards({ leaderboard, sections = [], auth }) {
                                 {s}
                             </option>
                         ))}
-                    </select>
+                    </SelectField>
 
-                    <div className="relative w-64">
-                        <input
-                            type="text"
-                            placeholder="Search name..."
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            className="w-full bg-slate-950 border-2 border-slate-800 rounded-xl pl-10 pr-4 py-3 text-white font-bold focus:outline-none focus:border-lime-500 transition-all text-sm"
-                        />
-                        <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-lg">
-                            search
-                        </span>
-                    </div>
+                    <SearchInput
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        placeholder="Search name..."
+                        wrapperClassName="w-64"
+                    />
                 </div>
             </div>
 
@@ -137,19 +127,7 @@ export default function Leaderboards({ leaderboard, sections = [], auth }) {
                                             )}
                                         </span>
 
-                                        <div className="w-12 h-12 rounded-lg bg-slate-950 border-2 border-lime-400 overflow-hidden shrink-0">
-                                            {s.avatar ? (
-                                                <img
-                                                    src={s.avatar}
-                                                    alt={s.name}
-                                                    className="w-full h-full object-cover"
-                                                />
-                                            ) : (
-                                                <span className="material-symbols-outlined text-xl text-slate-500">
-                                                    person
-                                                </span>
-                                            )}
-                                        </div>
+                                        <AvatarChip src={s.avatar} alt={s.name} />
 
                                         <div>
                                             <p className="font-black text-white text-base">

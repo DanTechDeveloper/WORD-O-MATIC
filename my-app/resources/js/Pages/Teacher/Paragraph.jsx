@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import DashboardLayout from "../../Layouts/Teacher/DashboardLayout";
 import ParagraphInputModal from "../../Components/Teacher/ParagraphInputModal";
 import { router, usePage } from "@inertiajs/react";
+import ModuleCard from "@/Components/Teacher/ModuleCard";
 
 export default function Paragraph({ modules }) {
     const { auth } = usePage().props;
@@ -75,69 +76,28 @@ export default function Paragraph({ modules }) {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
                     {levels.map((level) => (
-                        <div
+                        <ModuleCard
                             key={level}
-                            className={`bg-slate-900 rounded-[2.5rem] border-4 border-slate-800 p-6 md:p-8 flex flex-col items-center justify-center text-center shadow-[10px_10px_0_0_#020617] transition-all group ${
-                                isDeadlineClosed ? "cursor-not-allowed opacity-40" : "hover:translate-x-1 hover:translate-y-1 hover:shadow-none cursor-pointer"
-                            }`}
-                            onClick={() => {
-                                if (isDeadlineClosed) return;
-                                openModal(level);
-                            }}
-                        >
-                            <div className="w-16 h-16 rounded-2xl bg-slate-950 border-2 border-sky-400 flex items-center justify-center mb-4 rotate-3 group-hover:rotate-0 transition-transform shadow-[4px_4px_0_0_#075985]">
-                                <span className="text-2xl font-black text-sky-400">
-                                    {level}
-                                </span>
-                            </div>
-                            <p className="text-lg font-black text-white uppercase italic tracking-tighter mb-1 truncate w-full px-2">
-                                {entriesByLevel[level]?.title ||
-                                    `Module ${level}`}
-                            </p>
-                            <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest truncate w-full px-2">
-                                {calculateModulePoints(level)} Points Total
-                            </p>
-                            <button
-                                className="mt-6 w-full bg-amber-500 text-white px-4 py-3 rounded-xl border-4 border-slate-950 shadow-[4px_4px_0_0_#78350f] font-black uppercase italic text-xs tracking-tighter hover:translate-y-0.5 hover:shadow-none transition-all flex items-center justify-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-[4px_4px_0_0_#78350f]"
-                                disabled={isDeadlineClosed}
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (isDeadlineClosed) return;
-                                    openModal(level);
-                                }}
-                            >
-                                <span className="material-symbols-outlined text-sm">
-                                    edit_note
-                                </span>
-                                Manage
-                            </button>
-                        </div>
-                ))}
-                {levels.length < 10 && (
-                    <div
-                        key="add-module"
-                        className={`bg-slate-900 rounded-[2.5rem] border-4 border-slate-800 p-6 md:p-8 flex flex-col items-center justify-center text-center shadow-[10px_10px_0_0_#020617] transition-all group ${
-                            isDeadlineClosed ? "cursor-not-allowed opacity-40" : "hover:translate-x-1 hover:translate-y-1 hover:shadow-none cursor-pointer"
-                        }`}
-                        onClick={() => {
-                            if (isDeadlineClosed) return;
-                            openModal(nextLevel);
-                        }}
-                    >
-                        <div className="w-16 h-16 rounded-2xl bg-slate-950 border-2 border-sky-400 flex items-center justify-center mb-4 transition-transform shadow-[4px_4px_0_0_#075985]">
-                            <span className="material-symbols-outlined text-2xl text-sky-400">
-                                add_box
-                            </span>
-                        </div>
-                        <p className="text-lg font-black text-white uppercase italic tracking-tighter mb-1">
-                            Add Module
-                        </p>
-                        <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest">
-                            Level {nextLevel}
-                        </p>
-                    </div>
-                )}
-            </div>
+                            level={level}
+                            title={entriesByLevel[level]?.title || `Module ${level}`}
+                            meta={`${calculateModulePoints(level)} Points Total`}
+                            accent="sky"
+                            disabled={isDeadlineClosed}
+                            onClick={() => openModal(level)}
+                        />
+                    ))}
+                    {levels.length < 10 && (
+                        <ModuleCard
+                            key="add-module"
+                            level={nextLevel}
+                            title="Add Module"
+                            isAdd
+                            accent="sky"
+                            disabled={isDeadlineClosed}
+                            onClick={() => openModal(nextLevel)}
+                        />
+                    )}
+                </div>
 
                 <ParagraphInputModal
                     isOpen={isModalOpen}

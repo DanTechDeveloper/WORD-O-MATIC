@@ -1,5 +1,12 @@
 import DashboardLayout from "@/Layouts/Teacher/DashboardLayout";
 import { useState } from "react";
+import StatCard from "@/Components/Teacher/StatCard";
+import Card from "@/Components/Teacher/Card";
+import SelectField from "@/Components/Teacher/SelectField";
+import SearchInput from "@/Components/Teacher/SearchInput";
+import TableTh from "@/Components/Teacher/TableTh";
+import TableEmptyRow from "@/Components/Teacher/TableEmptyRow";
+import AvatarChip from "@/Components/Teacher/AvatarChip";
 
 const RANK_COLORS = ["#fbbf24", "#94a3b8", "#d97706"];
 
@@ -78,31 +85,11 @@ export default function Badges({
 
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-10">
                 {summaryCards.map((card, i) => (
-                    <div
-                        key={i}
-                        className="bg-slate-900 border-2 border-slate-800 p-6 rounded-2xl shadow-[4px_4px_0_0_#020617]"
-                    >
-                        <span
-                            className={`material-symbols-outlined text-3xl ${card.color} mb-4 block`}
-                        >
-                            {card.icon}
-                        </span>
-                        <h3 className="text-slate-500 text-xs font-black uppercase tracking-widest mb-1">
-                            {card.label}
-                        </h3>
-                        <p className="text-3xl font-black text-white italic tracking-tighter">
-                            {card.value}
-                        </p>
-                        {card.sub && (
-                            <p className="text-xs text-slate-500 font-semibold mt-1">
-                                {card.sub}
-                            </p>
-                        )}
-                    </div>
+                    <StatCard key={i} {...card} />
                 ))}
             </div>
 
-            <div className="bg-slate-900 border-4 border-slate-800 p-8 rounded-[2.5rem] shadow-[8px_8px_0_0_#020617] mb-10">
+            <Card className="mb-10">
                 <h2 className="text-2xl font-black text-white uppercase italic flex items-center gap-3 mb-6">
                     <span className="material-symbols-outlined text-yellow-400">
                         workspace_premium
@@ -150,9 +137,9 @@ export default function Badges({
                         );
                     })}
                 </div>
-            </div>
+            </Card>
 
-            <div className="bg-slate-900 border-4 border-slate-800 p-8 rounded-[2.5rem] shadow-[8px_8px_0_0_#020617]">
+            <Card>
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
                     <h2 className="text-2xl font-black text-white uppercase italic flex items-center gap-3">
                         <span className="material-symbols-outlined text-yellow-400">
@@ -160,11 +147,12 @@ export default function Badges({
                         </span>
                         Top Badge Earners
                     </h2>
-                    <div className="flex gap-3 w-full md:w-auto">
-                        <select
+                    <div className="flex gap-3 w-full md:w-auto items-center">
+                        <SelectField
                             value={selectedSection}
                             onChange={(e) => setSelectedSection(e.target.value)}
-                            className="appearance-none bg-slate-950 border-2 border-slate-800 rounded-xl pl-4 pr-10 py-2 text-white font-black focus:outline-none focus:border-lime-500 cursor-pointer text-sm flex-1 md:flex-none"
+                            padSelect="py-2"
+                            wrapperClassName="flex-1 md:flex-none"
                         >
                             <option value="">All Sections</option>
                             {sections.map((s) => (
@@ -172,20 +160,17 @@ export default function Badges({
                                     {s}
                                 </option>
                             ))}
-                        </select>
+                        </SelectField>
 
-                        <div className="relative w-56">
-                            <input
-                                type="text"
-                                placeholder="Search name..."
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                className="w-full bg-slate-950 border-2 border-slate-800 rounded-xl pl-10 pr-4 py-2 text-white font-bold focus:outline-none focus:border-lime-500 text-sm"
-                            />
-                            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-lg">
-                                search
-                            </span>
-                        </div>
+                        <SearchInput
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            placeholder="Search name..."
+                            pad="py-2"
+                            inputIconPad="pl-10 pr-4"
+                            iconClassName="text-slate-500 text-lg"
+                            wrapperClassName="w-56"
+                        />
                     </div>
                 </div>
 
@@ -193,33 +178,18 @@ export default function Badges({
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="border-b-4 border-slate-800">
-                                <th className="px-6 py-4 text-slate-500 font-black uppercase text-xs tracking-widest">
-                                    Rank
-                                </th>
-                                <th className="px-6 py-4 text-slate-500 font-black uppercase text-xs tracking-widest">
-                                    Student
-                                </th>
-                                <th className="px-6 py-4 text-slate-500 font-black uppercase text-xs tracking-widest">
-                                    Section
-                                </th>
-                                <th className="px-6 py-4 text-slate-500 font-black uppercase text-xs tracking-widest text-center">
-                                    Badges
-                                </th>
-                                <th className="px-6 py-4 text-slate-500 font-black uppercase text-xs tracking-widest">
-                                    Last Earned
-                                </th>
+                                <TableTh>Rank</TableTh>
+                                <TableTh>Student</TableTh>
+                                <TableTh>Section</TableTh>
+                                <TableTh align="center">Badges</TableTh>
+                                <TableTh>Last Earned</TableTh>
                             </tr>
                         </thead>
                         <tbody className="divide-y-2 divide-slate-800/50">
                             {filtered.length === 0 && (
-                                <tr>
-                                    <td
-                                        colSpan="5"
-                                        className="px-6 py-10 text-center text-slate-500 font-black uppercase tracking-widest text-sm"
-                                    >
-                                        No students match the current filters
-                                    </td>
-                                </tr>
+                                <TableEmptyRow colSpan="5">
+                                    No students match the current filters
+                                </TableEmptyRow>
                             )}
                             {filtered.map((student, i) => {
                                 const rank = i + 1;
@@ -257,19 +227,11 @@ export default function Badges({
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-lg bg-slate-950 border-2 border-lime-400 overflow-hidden">
-                                                    {student.avatar ? (
-                                                        <img
-                                                            src={student.avatar}
-                                                            alt={student.name}
-                                                            className="w-full h-full object-cover"
-                                                        />
-                                                    ) : (
-                                                        <span className="material-symbols-outlined text-slate-500">
-                                                            person
-                                                        </span>
-                                                    )}
-                                                </div>
+                                                <AvatarChip
+                                                    src={student.avatar}
+                                                    alt={student.name}
+                                                    size="w-10 h-10"
+                                                />
                                                 <span className="font-black text-white">
                                                     {student.name}
                                                 </span>
@@ -310,7 +272,7 @@ export default function Badges({
                         </tbody>
                     </table>
                 </div>
-            </div>
+            </Card>
         </DashboardLayout>
     );
 }
