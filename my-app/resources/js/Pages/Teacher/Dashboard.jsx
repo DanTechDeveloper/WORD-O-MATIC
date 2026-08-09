@@ -97,8 +97,8 @@ export default function Dashboard({
         .filter((s) => !selectedCategory || s.status === selectedCategory)
         .filter((s) => !selectedHealthSection || s.section === selectedHealthSection);
 
-    const ColoredBar = ({ payload, ...props }) => (
-        <rect {...props} fill={payload?.color ?? "#a3e635"} />
+    const ColoredBar = ({ x, y, width, height, payload }) => (
+        <rect x={x} y={y} width={width} height={height} fill={payload?.color ?? "#a3e635"} />
     );
 
     const STATUS_BADGE = {
