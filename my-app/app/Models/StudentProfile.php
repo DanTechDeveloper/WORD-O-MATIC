@@ -28,6 +28,7 @@ class StudentProfile extends Model
         'section',
         'tutorial_completed_at',
         'gender',
+        'parent_email',
         'report_sent_at',
     ];
 
