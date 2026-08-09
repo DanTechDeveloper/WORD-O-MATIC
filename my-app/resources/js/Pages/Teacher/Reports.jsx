@@ -1,6 +1,10 @@
 import { useState, useRef } from "react";
 import { router } from "@inertiajs/react";
 import DashboardLayout from "@/Layouts/Teacher/DashboardLayout";
+import Card from "@/Components/Teacher/Card";
+import PageHeader from "@/Components/Teacher/PageHeader";
+import TabBar from "@/Components/Teacher/TabBar";
+import SearchInput from "@/Components/Teacher/SearchInput";
 
 const formatDate = (date) =>
     date?.toLocaleDateString("en-US", {
@@ -119,7 +123,7 @@ export default function Reports({ grouped, flash, deadline, errors }) {
         : ["atRisk", "support", "onTrack", "in_progress", "notStarted"];
 
     const renderDeadlineSetter = () => (
-        <div className="bg-slate-900 border-4 border-slate-800 p-8 rounded-[2.5rem] shadow-[8px_8px_0_0_#020617] mb-8">
+        <Card className="mb-8">
             <h2 className="text-2xl font-black text-white uppercase italic mb-6 flex items-center gap-3">
                 <span className="material-symbols-outlined text-purple-400">
                     event
@@ -142,7 +146,7 @@ export default function Reports({ grouped, flash, deadline, errors }) {
                             min={minDate}
                             disabled={isDeadlineSaved}
                             onChange={(e) => setDeadlineValue(e.target.value)}
-                            className="w-full bg-slate-950 border-2 border-slate-800 rounded-xl p-4 text-white font-bold focus:border-purple-500 transition-all outline-none                             [color-scheme:dark] disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="w-full bg-slate-950 border-2 border-slate-800 rounded-xl p-4 text-white font-bold focus:border-purple-500 transition-all outline-none [color-scheme:dark] disabled:opacity-50 disabled:cursor-not-allowed"
                         />
                         {errors?.deadline && (
                             <p className="text-rose-400 text-xs font-bold mt-2">
@@ -210,7 +214,7 @@ export default function Reports({ grouped, flash, deadline, errors }) {
                     </div>
                 </div>
             )}
-        </div>
+        </Card>
     );
 
     const allStudentsFlat = Object.values(grouped).flat();
@@ -437,7 +441,7 @@ export default function Reports({ grouped, flash, deadline, errors }) {
                 </div>
             )}
 
-            <div className="bg-slate-900 border-4 border-slate-800 p-8 rounded-[2.5rem] shadow-[8px_8px_0_0_#020617]">
+            <Card>
                     <div className="flex items-center justify-between mb-8">
                         <h2 className="text-2xl font-black text-white uppercase italic flex items-center gap-3">
                             <span className="material-symbols-outlined text-purple-400">
@@ -450,34 +454,23 @@ export default function Reports({ grouped, flash, deadline, errors }) {
                         </span>
                     </div>
 
-                    <div className="relative mb-4">
-                        <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-lime-400">
-                            search
-                        </span>
-                        <input
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full bg-slate-950 border-2 border-slate-800 rounded-xl pl-12 pr-4 py-3 text-white font-bold focus:outline-none focus:border-lime-500 transition-all text-sm"
-                            placeholder="Search student by name..."
-                            type="text"
-                        />
-                    </div>
+                    <SearchInput
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Search student by name..."
+                        inputIconPad="pl-12 pr-4"
+                        iconPos="left-4"
+                        iconClassName="text-lime-400"
+                        wrapperClassName="mb-4"
+                    />
 
-                    <div className="flex items-center bg-slate-950 border-2 border-slate-800 p-1 rounded-xl mb-6 overflow-x-auto">
-                        {statusTabs.map((tab) => (
-                            <button
-                                key={tab.value}
-                                onClick={() => setStatusTab(tab.value)}
-                                className={`px-4 py-2 font-black text-xs whitespace-nowrap rounded-lg transition-all ${
-                                    statusTab === tab.value
-                                        ? "bg-lime-400 text-slate-950 shadow-[2px_2px_0_0_#3f6212]"
-                                        : "text-slate-400 hover:text-lime-300"
-                                }`}
-                            >
-                                {tab.label}
-                            </button>
-                        ))}
-                    </div>
+                    <TabBar
+                        tabs={statusTabs}
+                        active={statusTab}
+                        onSelect={setStatusTab}
+                        className="flex items-center bg-slate-950 border-2 border-slate-800 p-1 rounded-xl mb-6 overflow-x-auto"
+                        itemClassName="px-4 py-2 font-black text-xs whitespace-nowrap rounded-lg transition-all"
+                    />
 
                     <div className="mb-6">
                         <button
@@ -534,7 +527,7 @@ export default function Reports({ grouped, flash, deadline, errors }) {
                     {renderSentSection()}
 
                     {renderStudentList()}
-                </div>
+                </Card>
         </DashboardLayout>
     );
 }
