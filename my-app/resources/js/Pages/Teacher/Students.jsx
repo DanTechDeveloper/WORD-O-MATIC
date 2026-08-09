@@ -37,14 +37,18 @@ export default function Students({ data, sections, filters }) {
     const debounceRef = useRef(null);
 
     function navigate(params) {
-        router.get("/teacher/students", {
-            ...filters,
-            ...params,
-            page: params.page ?? 1,
-        }, {
-            preserveState: true,
-            preserveScroll: true,
-        });
+        router.get(
+            "/teacher/students",
+            {
+                ...filters,
+                ...params,
+                page: params.page ?? 1,
+            },
+            {
+                preserveState: true,
+                preserveScroll: true,
+            },
+        );
     }
 
     function handleSearch(e) {
@@ -111,7 +115,8 @@ export default function Students({ data, sections, filters }) {
     const statusStyles = {
         atRisk: "bg-error-container text-on-error-container border-error",
         onTrack: "bg-green-900/50 text-green-400 border-green-500",
-        support: "bg-tertiary-container text-on-tertiary-container border-tertiary",
+        support:
+            "bg-tertiary-container text-on-tertiary-container border-tertiary",
         notStarted: "bg-slate-800/50 text-slate-500 border-slate-700",
         in_progress: "bg-sky-900/50 text-sky-400 border-sky-500",
     };
@@ -195,7 +200,10 @@ export default function Students({ data, sections, filters }) {
                             >
                                 <option value="">All Sections</option>
                                 {sections.map((sectionName) => (
-                                    <option key={sectionName} value={sectionName}>
+                                    <option
+                                        key={sectionName}
+                                        value={sectionName}
+                                    >
                                         {sectionName}
                                     </option>
                                 ))}
@@ -214,61 +222,107 @@ export default function Students({ data, sections, filters }) {
                             const pAcc = student.storyQuestAcc;
                             const wRisk = riskStyles[computeRisk(wAcc)];
                             const pRisk = riskStyles[computeRisk(pAcc)];
-                            const sStyle = statusStyles[student.status?.type] || statusStyles.notStarted;
+                            const sStyle =
+                                statusStyles[student.status?.type] ||
+                                statusStyles.notStarted;
 
                             return (
-                                <div key={student.id ?? index} className="p-4 sm:p-5 flex flex-col gap-3">
+                                <div
+                                    key={student.id ?? index}
+                                    className="p-4 sm:p-5 flex flex-col gap-3"
+                                >
                                     <div className="flex items-center gap-3">
-                                        <div className={`w-11 h-11 sm:w-12 sm:h-12 rounded-lg bg-slate-950 border-2 border-lime-400 overflow-hidden shrink-0 ${student.rotation} shadow-[3px_3px_0px_0px_#3f6212]`}>
-                                            <img alt={student.fullName} src={student.avatar} className="w-full h-full object-cover" />
+                                        <div
+                                            className={`w-11 h-11 sm:w-12 sm:h-12 rounded-lg bg-slate-950 border-2 border-lime-400 overflow-hidden shrink-0 ${student.rotation} shadow-[3px_3px_0px_0px_#3f6212]`}
+                                        >
+                                            <img
+                                                alt={student.fullName}
+                                                src={student.avatar}
+                                                className="w-full h-full object-cover"
+                                            />
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <div className="font-headline-md text-sm sm:text-base text-white truncate">{student.fullName}</div>
-                                            <div className="text-xs text-slate-500 font-label-bold">ID: {student.studentID}</div>
+                                            <div className="font-headline-md text-sm sm:text-base text-white truncate">
+                                                {student.fullName}
+                                            </div>
+                                            <div className="text-xs text-slate-500 font-label-bold">
+                                                ID: {student.studentID}
+                                            </div>
                                         </div>
-                                        <span className={`${sStyle} px-2 sm:px-3 py-1 rounded-full border-2 text-[10px] sm:text-xs font-black uppercase shrink-0`}>
-                                            {student.status?.label || "Not Started"}
+                                        <span
+                                            className={`${sStyle} px-2 sm:px-3 py-1 rounded-full border-2 text-[10px] sm:text-xs font-black uppercase shrink-0`}
+                                        >
+                                            {student.status?.label ||
+                                                "Not Started"}
                                         </span>
                                     </div>
                                     <div className="flex items-center gap-4 flex-wrap">
                                         <div className="flex items-center gap-1.5">
-                                            <div className={`w-2.5 h-2.5 rounded-full ${wRisk.dot}`}></div>
-                                            <span className="text-[10px] text-slate-500 font-label-bold uppercase">Word Blast:</span>
-                                            <span className={`font-label-bold text-xs ${wRisk.text} uppercase`}>
-                                                {wAcc == null ? "N/A" : wAcc + "%"}
+                                            <div
+                                                className={`w-2.5 h-2.5 rounded-full ${wRisk.dot}`}
+                                            ></div>
+                                            <span className="text-[10px] text-slate-500 font-label-bold uppercase">
+                                                Word Blast:
+                                            </span>
+                                            <span
+                                                className={`font-label-bold text-xs ${wRisk.text} uppercase`}
+                                            >
+                                                {wAcc == null
+                                                    ? "N/A"
+                                                    : wAcc + "%"}
                                             </span>
                                         </div>
                                         <div className="flex items-center gap-1.5">
-                                            <div className={`w-2.5 h-2.5 rounded-full ${pRisk.dot}`}></div>
-                                            <span className="text-[10px] text-slate-500 font-label-bold uppercase">Story Quest:</span>
-                                            <span className={`font-label-bold text-xs ${pRisk.text} uppercase`}>
-                                                {pAcc == null ? "N/A" : pAcc + "%"}
+                                            <div
+                                                className={`w-2.5 h-2.5 rounded-full ${pRisk.dot}`}
+                                            ></div>
+                                            <span className="text-[10px] text-slate-500 font-label-bold uppercase">
+                                                Story Quest:
+                                            </span>
+                                            <span
+                                                className={`font-label-bold text-xs ${pRisk.text} uppercase`}
+                                            >
+                                                {pAcc == null
+                                                    ? "N/A"
+                                                    : pAcc + "%"}
                                             </span>
                                         </div>
-            <div className="ml-auto flex gap-2">
-                                                <Link href={`/teacher/studentDetails/${student.id}`} className="bg-lime-400 text-slate-950 px-4 py-2 rounded-xl border-3 border-slate-950 shadow-[4px_4px_0_0_#3f6212] font-black uppercase italic text-xs tracking-tighter hover:translate-y-0.5 hover:shadow-[2px_2px_0_0_#3f6212] transition-all">
-                                                    View
-                                                </Link>
-                                                <button
-                                                    onClick={() => setEditStudent(student)}
-                                                    className="bg-purple-500 text-white px-4 py-2 rounded-xl border-3 border-slate-950 shadow-[4px_4px_0_0_#4c1d95] font-black uppercase italic text-xs tracking-tighter hover:translate-y-0.5 hover:shadow-[2px_2px_0_0_#4c1d95] transition-all"
-                                                >
-                                                    Edit
-                                                </button>
-                                                <button
-                                                    onClick={() => {
-                                                        if (window.confirm(`Delete ${student.fullName}? This cannot be undone.`)) {
-                                                            router.delete(`/teacher/students/${student.id}`, {
+                                        <div className="ml-auto flex gap-2">
+                                            <Link
+                                                href={`/teacher/studentDetails/${student.id}`}
+                                                className="bg-lime-400 text-slate-950 px-4 py-2 rounded-xl border-3 border-slate-950 shadow-[4px_4px_0_0_#3f6212] font-black uppercase italic text-xs tracking-tighter hover:translate-y-0.5 hover:shadow-[2px_2px_0_0_#3f6212] transition-all"
+                                            >
+                                                View
+                                            </Link>
+                                            <button
+                                                onClick={() =>
+                                                    setEditStudent(student)
+                                                }
+                                                className="bg-purple-500 text-white px-4 py-2 rounded-xl border-3 border-slate-950 shadow-[4px_4px_0_0_#4c1d95] font-black uppercase italic text-xs tracking-tighter hover:translate-y-0.5 hover:shadow-[2px_2px_0_0_#4c1d95] transition-all"
+                                            >
+                                                Edit
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    if (
+                                                        window.confirm(
+                                                            `Delete ${student.fullName}? This cannot be undone.`,
+                                                        )
+                                                    ) {
+                                                        router.delete(
+                                                            `/teacher/students/${student.id}`,
+                                                            {
                                                                 preserveState: true,
                                                                 preserveScroll: true,
-                                                            });
-                                                        }
-                                                    }}
-                                                    className="bg-rose-600 text-white px-4 py-2 rounded-xl border-3 border-slate-950 shadow-[4px_4px_0_0_#7f1d1d] font-black uppercase italic text-xs tracking-tighter hover:translate-y-0.5 hover:shadow-[2px_2px_0_0_#7f1d1d] transition-all"
-                                                >
-                                                    Delete
-                                                </button>
-                                            </div>
+                                                            },
+                                                        );
+                                                    }
+                                                }}
+                                                className="bg-rose-600 text-white px-4 py-2 rounded-xl border-3 border-slate-950 shadow-[4px_4px_0_0_#7f1d1d] font-black uppercase italic text-xs tracking-tighter hover:translate-y-0.5 hover:shadow-[2px_2px_0_0_#7f1d1d] transition-all"
+                                            >
+                                                Delete
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             );
@@ -283,11 +337,21 @@ export default function Students({ data, sections, filters }) {
                     <table className="hidden lg:table w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-slate-900 border-b-4 border-slate-800">
-                                <th className="px-6 py-5 font-headline-md text-sm uppercase tracking-widest text-lime-400">Name</th>
-                                <th className="px-6 py-5 font-headline-md text-sm uppercase tracking-widest text-lime-400">Word Blast</th>
-                                <th className="px-6 py-5 font-headline-md text-sm uppercase tracking-widest text-lime-400">Story Quest</th>
-                                <th className="px-6 py-5 font-headline-md text-sm uppercase tracking-widest text-lime-400">Final Status</th>
-                                <th className="px-6 py-5 font-headline-md text-sm uppercase tracking-widest text-lime-400">Action</th>
+                                <th className="px-6 py-5 font-headline-md text-sm uppercase tracking-widest text-lime-400">
+                                    Name
+                                </th>
+                                <th className="px-6 py-5 font-headline-md text-sm uppercase tracking-widest text-lime-400">
+                                    Word Blast
+                                </th>
+                                <th className="px-6 py-5 font-headline-md text-sm uppercase tracking-widest text-lime-400">
+                                    Story Quest
+                                </th>
+                                <th className="px-6 py-5 font-headline-md text-sm uppercase tracking-widest text-lime-400">
+                                    Final Status
+                                </th>
+                                <th className="px-6 py-5 font-headline-md text-sm uppercase tracking-widest text-lime-400">
+                                    Action
+                                </th>
                             </tr>
                         </thead>
                         <tbody className="divide-y-2 divide-slate-800/50">
@@ -296,61 +360,101 @@ export default function Students({ data, sections, filters }) {
                                 const pAcc = student.storyQuestAcc;
                                 const wRisk = riskStyles[computeRisk(wAcc)];
                                 const pRisk = riskStyles[computeRisk(pAcc)];
-                                const sStyle = statusStyles[student.status?.type] || statusStyles.notStarted;
+                                const sStyle =
+                                    statusStyles[student.status?.type] ||
+                                    statusStyles.notStarted;
 
                                 return (
-                                    <tr key={student.id ?? index} className="hover:bg-slate-900/50 transition-colors group">
+                                    <tr
+                                        key={student.id ?? index}
+                                        className="hover:bg-slate-900/50 transition-colors group"
+                                    >
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-4">
-                                                <div className={`w-12 h-12 rounded-lg bg-slate-950 border-2 border-lime-400 overflow-hidden ${student.rotation} group-hover:rotate-0 transition-transform shadow-[3px_3px_0px_0px_#3f6212]`}>
-                                                    <img alt={student.fullName} src={student.avatar} />
+                                                <div
+                                                    className={`w-12 h-12 rounded-lg bg-slate-950 border-2 border-lime-400 overflow-hidden ${student.rotation} group-hover:rotate-0 transition-transform shadow-[3px_3px_0px_0px_#3f6212]`}
+                                                >
+                                                    <img
+                                                        alt={student.fullName}
+                                                        src={student.avatar}
+                                                    />
                                                 </div>
                                                 <div>
-                                                    <div className="font-headline-md text-base text-white">{student.fullName}</div>
-                                                    <div className="text-xs text-slate-500 font-label-bold">ID: {student.studentID}</div>
+                                                    <div className="font-headline-md text-base text-white">
+                                                        {student.fullName}
+                                                    </div>
+                                                    <div className="text-xs text-slate-500 font-label-bold">
+                                                        ID: {student.studentID}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-2">
-                                                <div className={`w-3 h-3 rounded-full ${wRisk.dot}`}></div>
-                                                <span className={`font-label-bold ${wRisk.text} uppercase`}>
-                                                    {wAcc == null ? "N/A" : wAcc + "%"}
+                                                <div
+                                                    className={`w-3 h-3 rounded-full ${wRisk.dot}`}
+                                                ></div>
+                                                <span
+                                                    className={`font-label-bold ${wRisk.text} uppercase`}
+                                                >
+                                                    {wAcc == null
+                                                        ? "N/A"
+                                                        : wAcc + "%"}
                                                 </span>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-2">
-                                                <div className={`w-3 h-3 rounded-full ${pRisk.dot}`}></div>
-                                                <span className={`font-label-bold ${pRisk.text} uppercase`}>
-                                                    {pAcc == null ? "N/A" : pAcc + "%"}
+                                                <div
+                                                    className={`w-3 h-3 rounded-full ${pRisk.dot}`}
+                                                ></div>
+                                                <span
+                                                    className={`font-label-bold ${pRisk.text} uppercase`}
+                                                >
+                                                    {pAcc == null
+                                                        ? "N/A"
+                                                        : pAcc + "%"}
                                                 </span>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className={`${sStyle} px-3 py-1 rounded-full border-2 text-xs font-black uppercase`}>
-                                                {student.status?.label || "Not Started"}
+                                            <span
+                                                className={`${sStyle} px-3 py-1 rounded-full border-2 text-xs font-black uppercase`}
+                                            >
+                                                {student.status?.label ||
+                                                    "Not Started"}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex gap-2">
-                                                <Link href={`/teacher/studentDetails/${student.id}`}
-                                                    className="bg-lime-400 text-slate-950 px-6 py-3 rounded-2xl border-4 border-slate-950 shadow-[6px_6px_0_0_#3f6212] font-black uppercase italic text-xs tracking-tighter hover:translate-y-0.5 hover:shadow-[3px_3px_0_0_#3f6212] transition-all flex items-center justify-center gap-2">
+                                                <Link
+                                                    href={`/teacher/studentDetails/${student.id}`}
+                                                    className="bg-lime-400 text-slate-950 px-6 py-3 rounded-2xl border-4 border-slate-950 shadow-[6px_6px_0_0_#3f6212] font-black uppercase italic text-xs tracking-tighter hover:translate-y-0.5 hover:shadow-[3px_3px_0_0_#3f6212] transition-all flex items-center justify-center gap-2"
+                                                >
                                                     View
                                                 </Link>
                                                 <button
-                                                    onClick={() => setEditStudent(student)}
+                                                    onClick={() =>
+                                                        setEditStudent(student)
+                                                    }
                                                     className="bg-purple-500 text-white px-6 py-3 rounded-2xl border-4 border-slate-950 shadow-[6px_6px_0_0_#4c1d95] font-black uppercase italic text-xs tracking-tighter hover:translate-y-0.5 hover:shadow-[3px_3px_0_0_#4c1d95] transition-all flex items-center justify-center gap-2"
                                                 >
                                                     Edit
                                                 </button>
                                                 <button
                                                     onClick={() => {
-                                                        if (window.confirm(`Delete ${student.fullName}? This cannot be undone.`)) {
-                                                            router.delete(`/teacher/students/${student.id}`, {
-                                                                preserveState: true,
-                                                                preserveScroll: true,
-                                                            });
+                                                        if (
+                                                            window.confirm(
+                                                                `Delete ${student.fullName}? This cannot be undone.`,
+                                                            )
+                                                        ) {
+                                                            router.delete(
+                                                                `/teacher/students/${student.id}`,
+                                                                {
+                                                                    preserveState: true,
+                                                                    preserveScroll: true,
+                                                                },
+                                                            );
                                                         }
                                                     }}
                                                     className="bg-rose-600 text-white px-6 py-3 rounded-2xl border-4 border-slate-950 shadow-[6px_6px_0_0_#7f1d1d] font-black uppercase italic text-xs tracking-tighter hover:translate-y-0.5 hover:shadow-[3px_3px_0_0_#7f1d1d] transition-all flex items-center justify-center gap-2"
@@ -364,7 +468,10 @@ export default function Students({ data, sections, filters }) {
                             })}
                             {students.length === 0 && (
                                 <tr>
-                                    <td colSpan="5" className="px-6 py-12 text-center text-slate-500 font-black uppercase text-sm">
+                                    <td
+                                        colSpan="5"
+                                        className="px-6 py-12 text-center text-slate-500 font-black uppercase text-sm"
+                                    >
                                         No students found
                                     </td>
                                 </tr>
@@ -381,11 +488,15 @@ export default function Students({ data, sections, filters }) {
                         {meta.last_page > 1 && (
                             <div className="flex gap-2">
                                 <button
-                                    onClick={() => goToPage(meta.current_page - 1)}
+                                    onClick={() =>
+                                        goToPage(meta.current_page - 1)
+                                    }
                                     disabled={meta.current_page <= 1}
                                     className="w-9 h-9 lg:w-10 lg:h-10 flex items-center justify-center rounded-lg border-2 border-slate-800 text-lime-400 hover:bg-slate-800/50 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                                 >
-                                    <span className="material-symbols-outlined text-[20px] lg:text-[24px]">chevron_left</span>
+                                    <span className="material-symbols-outlined text-[20px] lg:text-[24px]">
+                                        chevron_left
+                                    </span>
                                 </button>
                                 {pageRange().map((page) => (
                                     <button
@@ -401,11 +512,17 @@ export default function Students({ data, sections, filters }) {
                                     </button>
                                 ))}
                                 <button
-                                    onClick={() => goToPage(meta.current_page + 1)}
-                                    disabled={meta.current_page >= meta.last_page}
+                                    onClick={() =>
+                                        goToPage(meta.current_page + 1)
+                                    }
+                                    disabled={
+                                        meta.current_page >= meta.last_page
+                                    }
                                     className="w-9 h-9 lg:w-10 lg:h-10 flex items-center justify-center rounded-lg border-2 border-slate-800 text-lime-400 hover:bg-slate-800/50 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                                 >
-                                    <span className="material-symbols-outlined text-[20px] lg:text-[24px]">chevron_right</span>
+                                    <span className="material-symbols-outlined text-[20px] lg:text-[24px]">
+                                        chevron_right
+                                    </span>
                                 </button>
                             </div>
                         )}

@@ -19,6 +19,7 @@ export default function Word({ modules }) {
                     : [],
                 title: moduleData ? moduleData.title : `Module ${level}`,
                 totalPoints: moduleData ? moduleData.total_points : 0,
+                hasProgress: moduleData ? moduleData.has_progress : false,
             };
         });
         return data;
@@ -44,6 +45,14 @@ export default function Word({ modules }) {
         setIsModalOpen(false);
         setSelectedLevel(null);
     };
+
+    const takenWords = {};
+    (modules || []).forEach((module) => {
+        if (module.level === selectedLevel) return;
+        (module.words || []).forEach((w) => {
+            takenWords[w.word.trim().toLowerCase()] = module.level;
+        });
+    });
 
     return (
         <DashboardLayout>
@@ -128,6 +137,8 @@ export default function Word({ modules }) {
                 level={selectedLevel}
                 words={wordsByLevel[selectedLevel]?.words}
                 title={wordsByLevel[selectedLevel]?.title}
+                hasProgress={wordsByLevel[selectedLevel]?.hasProgress}
+                takenWords={takenWords}
             />
         </DashboardLayout>
     );
