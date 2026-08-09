@@ -24,6 +24,7 @@ Route::middleware(['auth'])->group(function () {
         ->middleware('role:teacher')
         ->group(function () {
             Route::post('/addStudent', [TeacherController::class, 'store'])->name('addStudent.store');
+            Route::post('/addStudents', [TeacherController::class, 'storeBulk'])->name('addStudents.store');
 
             Route::get('/wordModules', [TeacherController::class, 'wordModules'])->name('wordModules');
             Route::put('/wordModules', [TeacherController::class, 'updateWordModule'])->name('wordModules.update');

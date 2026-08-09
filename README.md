@@ -219,6 +219,7 @@ Two correctness guarantees are enforced as committed PHPUnit tests (`php artisan
 - **Mastery immutability on replay** — replaying a completed module (Again button in `GameResults.jsx`, Play Again on `LevelsPage.jsx`) cannot demote an already-`mastered` word: `StudentController::updateWordMastery` / `updateParagraphMastery` reject `mastered → training` writes; `training → mastered` promotion still applies. `StudentDetails.jsx` mastery bars are a read-only view of `curriculumForUser`, so they reflect true best mastery and can't be corrupted by practice rounds. Locked by `CurriculumIsolationTest::test_existing_mastered_word_is_not_downgraded_on_mispronounce`.
 - **Streak integrity** — streak-based badges source `GameSession::max('streak')`, which never includes tutorial plays (tutorial rounds skip `GameSession::logSession` entirely), so tutorial-contaminated streaks are structurally impossible.
 - **Module access gating** — direct URL access to a locked module (`/student/gameplayReadMode/{id}`, `/student/gameplaySpeakMode/{id}`) is blocked by a `LevelService::isModuleAccessible()` check in `StudentController`; a locked module redirects back to the level-select page with a flash error banner. Locked by `StudentController::gameplayReadMode`, `StudentController::gameplaySpeakMode`, `LevelService::isModuleAccessible`.
+- **Atomic bulk roster creation** — a bulk student paste is created only if every row validates (same normalization rules as single-add; case/whitespace-insensitive intra-batch duplicate IDs rejected) and one bad row rejects the whole batch — no partial rosters. Locked by `AddStudentBulkTest` (22 cases: exact-50 boundary, dup handling, invalid gender/email, non-array input safety).
 - **Deadline data freeze** — once the report deadline passes, gameplay is blocked server-side: `finishRound()` logs the `GameSession` but skips all `ProgressService` updates, so teacher reports cannot drift after the deadline — post-deadline plays write zero progress/mastery rows, so `LevelService` level status can never advance after the deadline. PLAY AGAIN is disabled and completed level cards are non-clickable, with an amber banner on `LevelsPage.jsx`. Post-deadline sessions are permanently flagged `is_deadline_hit=true` — excluded from streak/accuracy badge metrics and shown with the non-scoring "TIME'S UP!" results view ("You played", no badges) even if the teacher later clears the deadline. The teacher-facing deadline banner is a single source of truth in `DashboardLayout.jsx` (page-aware message: deadline-specific copy on Reports, gameplay-locked copy elsewhere). No deadline set → gameplay fully open. Locked by `GameplayTest::test_round_logs_session_but_skips_progress_when_deadline_passed`, `GameplayTest::test_round_saves_progress_when_no_deadline_is_set`, `GameplayTest::test_deadline_hit_session_stays_excluded_after_deadline_cleared`.
 
 See `docs/CAVEATS.md` for the full tradeoff ledger (Bug fixes BF1–BF7).
@@ -315,8 +316,9 @@ resources/
 
 ### 👩‍🏫 Teacher
 
-- Student management
+- Student management — single add with live validation, or **bulk paste** (`Name, ID, Section` per line → auto PINs → per-row gender/email → atomic, dup-guarded batch create, max 50)
 - Module assignment & editing (word / paragraph modules) — **locked after the report deadline** (Manage + Add Module disabled, backend-guarded)
+  - Word modules: **paste up to 10 words** at once; all 10 slots required, words are uppercased and capped at 20 chars, no intra-module duplicates, no reuse of a word already used in another level (incl. tutorial), and a progress-reset confirmation when the module has student progress
 - Progress monitoring
 - Performance reports
 - Parent report emails (Gmail SMTP + deadline gating)

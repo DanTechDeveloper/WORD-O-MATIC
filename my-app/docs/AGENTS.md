@@ -1,6 +1,6 @@
 # Word-O-Matic
 
-> Version 1.3 — Developer Guide
+> Version 1.4 — Developer Guide
 
 ## Design Context
 
@@ -72,13 +72,55 @@ Guided by AvatarSpeechBubble on Dashboard + guide overlay on first gameplay. Enf
 
 Session logging done via `GameSession::logSession()` static method on the model (no service class).
 
+## Student Management (Teacher)
+
+Two creation paths, both routed through the same rules and the shared private
+`TeacherController::persistStudent()` (writes the `users` row + `students`
+row: role `student`, bcrypt + plain PIN, default avatar by gender, zeros):
+
+- **Single add** — `POST /teacher/addStudent` → `store()`. `store()` and
+  `Students()` share `existingStudentIds` (pluck of `student_id`) so the modal
+  does live client-side checks ("This ID is already registered."). Inertia
+  validation errors still backstop the server.
+- **Bulk paste** — `POST /teacher/addStudents` → `storeBulk()`
+  (`addStudents.store`). Payload is `students[]` (max 50): paste grammar
+  `Name, ID, Section` per line; the modal fills auto-generated 4-digit PINs
+  and optional per-row gender/email in the preview. `storeBulk()` normalizes
+  every row → validates with wildcard rules → a manual case/whitespace-
+  insensitive intra-batch duplicate pass (only the first collision is reported
+  per request) → creates everything in ONE `DB::transaction` (all-or-nothing).
+  `Rule::unique('users','student_id')` backstops against existing students.
+- Frontend: `BulkAddStudentModal.jsx` is a separate component from
+  `AddStudentModal.jsx` — each `useForm` gets its own error keys, so they
+  never cross-contaminate.
+
+## Word Module Editing (Teacher)
+
+`PUT /teacher/wordModules` → `updateWordModule()`. Words are normalized in PHP
+(lowercase for checks, uppercase for storage via `WordModule::saveWithWords`).
+Rules:
+
+- Exactly 10 word slots, all required (`required|string|max:20`); blanks fail
+  ("Every word must be filled in.").
+- No intra-module duplicates — case-insensitive, error points at the first
+  slot (`"X" is duplicated in this module.`).
+- No cross-module reuse — a word already used in another level (including the
+  tutorial module, level 0) is rejected (`"X" is already used in Level N.`).
+  The module being edited is excluded, so resaving its own words is fine.
+  Checks run in PHP because MySQL's ci collation differs from SQLite (tests).
+- `wordModules()` exposes `has_progress` (any `StudentWordMastery` row on the
+  module's words); the modal then asks for a `window.confirm` before saving
+  because saving deletes and recreates the module's words.
+- `WordInputModal.jsx` supports pasting 10 words (split on spaces/commas) and
+  live per-row duplicate detection before submit.
+
 ## Conventions
 
 - No comments unless explaining _why_.
 - Extend before creating new.
 - After each task: list changed files + what changed + intentionally untouched + follow-up.
 - Frontend pages: `resources/js/Pages/{Student,Teacher}/`. Hooks: `hooks/`. Components: `Components/`.
-- Inertia forms: `router.post` / `router.put`.
+- Inertia forms: `router.post` / `router.put`. `useForm.post(url, options)` sends the form's OWN data state — set data via `setData` before `post`; the options object is for callbacks/visibility, never a body (passing a payload as the 2nd arg sends `{}` and silently fails validation).
 - JSON endpoints (`/student/updateWordMastery`, `/student/updateParagraphMastery`)
   go through axios and return `response()->noContent()`; page forms/transitions
   stay Inertia `router.*`.
@@ -92,6 +134,11 @@ Session logging done via `GameSession::logSession()` static method on the model 
 - SQLite in-memory — no MySQL features.
 - Mail driver: `array`.
 - DashboardServiceTest deleted — logic inlined into TeacherController.
+- `assertSessionHasNoErrors()` takes NO key argument (asserts zero errors
+  session-wide). For per-key absence use
+  `assertArrayNotHasKey($key, session('errors')->getBag('default')->messages())`.
+- Student/word-module validation hardening lives in `AddStudentBulkTest.php`
+  (22 cases) and `ModuleCrudTest.php` (dup/blank/length/deadline/has_progress).
 
 ## Data Flow
 

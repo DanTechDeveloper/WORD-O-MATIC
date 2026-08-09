@@ -2,6 +2,7 @@ import DashboardLayout from "@/Layouts/Teacher/DashboardLayout";
 import { Link, router } from "@inertiajs/react";
 import { useRef, useState } from "react";
 import AddStudentModal from "@/Components/Teacher/AddStudentModal";
+import BulkAddStudentModal from "@/Components/Teacher/BulkAddStudentModal";
 import EditStudentModal from "@/Components/Teacher/EditStudentModal";
 
 const sortOptions = [
@@ -35,6 +36,7 @@ export default function Students({ data, sections, filters, existingStudentIds }
     );
 
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
     const [editStudent, setEditStudent] = useState(null);
     const [statusTab, setStatusTab] = useState(filters.status ?? "");
     const searchRef = useRef(null);
@@ -146,6 +148,15 @@ export default function Students({ data, sections, filters, existingStudentIds }
                                 add_circle
                             </span>
                             Add Student
+                        </button>
+                        <button
+                            onClick={() => setIsBulkModalOpen(true)}
+                            className="bg-purple-500 text-white px-4 sm:px-6 py-3 rounded-2xl border-4 border-slate-950 shadow-[6px_6px_0_0_#4c1d95] font-black uppercase italic text-sm tracking-tighter hover:translate-y-1 hover:shadow-[3px_3px_0_0_#4c1d95] transition-all flex items-center justify-center gap-2"
+                        >
+                            <span className="material-symbols-outlined">
+                                playlist_add
+                            </span>
+                            Bulk Add
                         </button>
                         <div className="flex items-center bg-slate-900 rounded-2xl border-4 border-slate-800 p-1 sm:p-2 shadow-[4px_4px_0_0_#020617] overflow-x-auto">
                             {statusTabs.map((tab) => (
@@ -537,6 +548,11 @@ export default function Students({ data, sections, filters, existingStudentIds }
             <AddStudentModal
                 isOpen={isAddModalOpen}
                 onClose={() => setIsAddModalOpen(false)}
+                existingStudentIds={existingIds}
+            />
+            <BulkAddStudentModal
+                isOpen={isBulkModalOpen}
+                onClose={() => setIsBulkModalOpen(false)}
                 existingStudentIds={existingIds}
             />
             <EditStudentModal

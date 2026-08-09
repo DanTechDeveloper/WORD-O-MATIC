@@ -1,6 +1,6 @@
 # CAVEATS
 
-> Version 1.0 — ledger of known tradeoffs, risks, and intentional shortcuts.
+> Version 1.1 — ledger of known tradeoffs, risks, and intentional shortcuts.
 
 This file exists so no caveat gets lost. Every row below is a known behavior
 that may surprise, a risk that is accepted for MVP, or a tradeoff with an
@@ -40,6 +40,9 @@ fix" column names the event that should prompt the fix — not before (YAGNI).
 | M8 | Onboarding | `updateAvatar` validates `avatar_url` as free-form string (`StudentController.php:74`, only `required|string`) — arbitrary value stored in `avatar` and rendered as `<img src>` in `StudentDetails`. |
 | M9 | Onboarding | `CheckStudentOnboarding` gates the avatar step only — direct URL to any gameplay module bypasses tutorial ordering; tutorial branches assume `->first()` tutorial module. |
 | M10 | CI | vitest/Pint/typecheck are not wired into CI (PHP tests only) — JS regressions ship invisibly. |
+| M11 | Bulk students | Intra-batch duplicate reporting is first-collision-only — the pass throws on the first duplicate pair (TeacherController `storeBulk`), so a batch with several duplicated IDs surfaces one error per submit and the teacher re-submits to find the next. |
+| M12 | Bulk students | Atomicity is all-or-nothing — one invalid row (bad email, duplicate ID, malformed line) rejects the entire batch with per-row errors; a 40-row paste with one typo is rejected wholesale. Intended (no partial rosters), but strict. |
+| M13 | Word modules | "Paste 10 words" silently drops anything past the 10th token — `handleFill` fills `parts[i] || ""` and never warns that extra words were discarded. |
 
 ## Low (accepted)
 
@@ -49,6 +52,7 @@ fix" column names the event that should prompt the fix — not before (YAGNI).
 | L2 | Results | `results()` crashes on null module if the session's module was deleted (`$module->words_count`). |
 | L3 | Performance | `TeacherController::dashboardStats()` re-queries aggregates per request, no caching — fine at MVP scale. |
 | L4 | Deploy | Queue env divergence: local `.env` uses `sync`, prod expects `database` — async ordering and failure visibility differ. |
+| L5 | Bulk students | 50-row batch cap is hard-coded in two places: client (`rows.length <= 50` in `BulkAddStudentModal.jsx`) and server (`students` `max:50` rule) — a magic number duplicated across the stack. |
 
 ## Explicitly accepted for MVP
 

@@ -353,15 +353,83 @@ class TeacherController extends Controller
             'parent_email' => 'nullable|email|max:255',
         ]);
 
+        $this->persistStudent([
+            'fullName' => $request->fullName,
+            'studentID' => $request->studentID,
+            'section' => $request->section,
+            'pin' => $request->pin,
+            'gender' => $request->gender,
+            'parent_email' => $request->parent_email,
+        ]);
+
+        return redirect()->back();
+    }
+
+    public function storeBulk(Request $request)
+    {
+        // Normalize every row before validate so the unique rule sees trimmed
+        // IDs (same trap as store(): "2023-000001 " would pass unique then collide).
+        $rows = collect($request->input('students', []))
+            ->map(function ($row) {
+                $parentEmail = trim((string) ($row['parent_email'] ?? ''));
+
+                return [
+                    'fullName' => trim((string) ($row['fullName'] ?? '')),
+                    'studentID' => trim((string) ($row['studentID'] ?? '')),
+                    'section' => trim((string) ($row['section'] ?? '')),
+                    'pin' => (string) ($row['pin'] ?? ''),
+                    'gender' => $row['gender'] ?? null,
+                    'parent_email' => $parentEmail !== '' ? strtolower($parentEmail) : null,
+                ];
+            })
+            ->values()
+            ->all();
+
+        $request->merge(['students' => $rows]);
+
+        $validated = $request->validate([
+            'students' => 'required|array|min:1|max:50',
+            'students.*.fullName' => 'required|string|max:255',
+            'students.*.studentID' => ['required', 'string', 'max:50', Rule::unique('users', 'student_id')],
+            'students.*.section' => 'required|string|max:255',
+            'students.*.pin' => 'required|digits:4',
+            'students.*.gender' => 'nullable|in:male,female',
+            'students.*.parent_email' => 'nullable|email|max:255',
+        ]);
+
+        // Rule::unique can't see sibling rows in the same request, so catch
+        // intra-batch duplicates before any row is persisted (all-or-nothing).
+        $seen = [];
+        foreach ($validated['students'] as $i => $row) {
+            $id = strtolower($row['studentID']);
+            if (isset($seen[$id])) {
+                throw ValidationException::withMessages([
+                    "students.$i.studentID" => "\"{$row['studentID']}\" appears twice in this list.",
+                ]);
+            }
+            $seen[$id] = true;
+        }
+
+        DB::transaction(function () use ($validated) {
+            foreach ($validated['students'] as $row) {
+                $this->persistStudent($row);
+            }
+        });
+
+        return redirect()->back();
+    }
+
+    private function persistStudent(array $data): User
+    {
         $student = User::create([
-            'name' => $request->fullName,
-            'student_id' => $request->studentID,
-            'pin' => Hash::make($request->pin),
-            'pin_plain' => $request->pin,
+            'name' => $data['fullName'],
+            'student_id' => $data['studentID'],
+            'pin' => Hash::make($data['pin']),
+            'pin_plain' => $data['pin'],
             'role' => 'student',
         ]);
 
-        $defaultAvatar = match ($request->gender) {
+        $defaultAvatar = match ($data['gender'] ?? null) {
             'male' => '/images/boy.svg',
             'female' => '/images/girl.svg',
             default => null,
@@ -375,12 +443,12 @@ class TeacherController extends Controller
             'status' => 'notStarted',
             'wordBlastAcc' => 0.0,
             'storyQuestAcc' => 0.0,
-            'section' => $request->section,
-            'gender' => $request->gender,
-            'parent_email' => $request->parent_email,
+            'section' => $data['section'],
+            'gender' => $data['gender'] ?? null,
+            'parent_email' => $data['parent_email'] ?? null,
         ]);
 
-        return redirect()->back();
+        return $student;
     }
 
     public function wordModules()
