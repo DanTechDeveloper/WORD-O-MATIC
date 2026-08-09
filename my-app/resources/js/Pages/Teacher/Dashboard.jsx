@@ -1,6 +1,5 @@
 import DashboardLayout from "../../Layouts/Teacher/DashboardLayout";
 import { useState } from "react";
-
 import {
     BarChart,
     ResponsiveContainer,
@@ -11,14 +10,6 @@ import {
     Bar,
     Cell
 } from "recharts";
-import StatCard from "@/Components/Teacher/StatCard";
-import Card from "@/Components/Teacher/Card";
-import StatusBadge from "@/Components/Teacher/StatusBadge";
-import TabBar from "@/Components/Teacher/TabBar";
-import TableTh from "@/Components/Teacher/TableTh";
-import TableEmptyRow from "@/Components/Teacher/TableEmptyRow";
-import SearchInput from "@/Components/Teacher/SearchInput";
-import SelectField from "@/Components/Teacher/SelectField";
 
 export default function Dashboard({
     totalStudents,
@@ -35,16 +26,10 @@ export default function Dashboard({
     const [nameFilter, setNameFilter] = useState("");
     const [activeMetric, setActiveMetric] = useState("points");
     const METRICS = [
-        { value: "points", label: "Points", icon: "military_tech" },
-        { value: "wordBlast", label: "Word Blast", icon: "auto_stories" },
-        { value: "storyQuest", label: "Story Quest", icon: "record_voice_over" },
+        { key: "points", label: "Points", icon: "military_tech", valueKey: "points" },
+        { key: "wordBlast", label: "Word Blast", icon: "auto_stories", valueKey: "wordBlastAcc" },
+        { key: "storyQuest", label: "Story Quest", icon: "record_voice_over", valueKey: "storyQuestAcc" },
     ];
-    const metricValueKey = {
-        points: "points",
-        wordBlast: "wordBlastAcc",
-        storyQuest: "storyQuestAcc",
-    };
-
     const stats = [
         {
             label: "Total Students",
@@ -72,8 +57,8 @@ export default function Dashboard({
         },
     ];
 
-    const activeMetricKey = activeMetric;
-    const currentList = topStudents[activeMetricKey] ?? [];
+    const activeMetricObj = METRICS.find((m) => m.key === activeMetric) ?? METRICS[0];
+    const currentList = topStudents[activeMetricObj.key] ?? [];
     const filteredTopStudents = currentList
         .filter((s) => !nameFilter || s.name.toLowerCase().includes(nameFilter.toLowerCase()))
         .filter((s) => !selectedSection || s.section === selectedSection)
@@ -82,16 +67,16 @@ export default function Dashboard({
 
     const sectionListForFilter = [...new Set(currentList.map((s) => s.section).filter(Boolean))];
 
-    const topBarKey = metricValueKey[activeMetricKey];
+    const topBarKey = activeMetricObj.valueKey;
 
     const RANK_COLORS = ["#fbbf24", "#94a3b8", "#d97706"];
 
     const STATUS_CATEGORIES = [
-        { value: "notStarted", label: "Not Started", countKey: "notStarted", color: "#64748b", icon: "hourglass_empty" },
-        { value: "in_progress", label: "In Progress", countKey: "in_progress", color: "#38bdf8", icon: "progress_activity" },
-        { value: "atRisk", label: "At Risk", countKey: "atRisk", color: "#fb7185", icon: "error" },
-        { value: "needsSupport", label: "Needs Support", countKey: "needsSupport", color: "#fbbf24", icon: "tips_and_updates" },
-        { value: "onTrack", label: "On Track", countKey: "onTrack", color: "#a3e635", icon: "check_circle" },
+        { key: "notStarted", label: "Not Started", countKey: "notStarted", color: "#64748b", icon: "hourglass_empty" },
+        { key: "in_progress", label: "In Progress", countKey: "in_progress", color: "#38bdf8", icon: "progress_activity" },
+        { key: "atRisk", label: "At Risk", countKey: "atRisk", color: "#fb7185", icon: "error" },
+        { key: "needsSupport", label: "Needs Support", countKey: "needsSupport", color: "#fbbf24", icon: "tips_and_updates" },
+        { key: "onTrack", label: "On Track", countKey: "onTrack", color: "#a3e635", icon: "check_circle" },
     ];
 
     const chartData = STATUS_CATEGORIES.map((cat) => ({
@@ -116,7 +101,7 @@ export default function Dashboard({
         <rect {...props} fill={payload?.color ?? "#a3e635"} />
     );
 
-    const STATUS_BADGE_CLASS = {
+    const STATUS_BADGE = {
         onTrack: "bg-green-900/50 text-green-400 border-green-500",
         needsSupport: "bg-amber-900/50 text-amber-400 border-amber-500",
         notStarted: "bg-slate-800/50 text-slate-500 border-slate-700",
@@ -125,16 +110,17 @@ export default function Dashboard({
     };
 
     const statusBadge = (status) => {
-        const cfg = STATUS_CATEGORIES.find((c) => c.value === status);
+        const cfg = STATUS_CATEGORIES.find((c) => c.key === status);
         return (
-            <StatusBadge color={STATUS_BADGE_CLASS[status] ?? STATUS_BADGE_CLASS.notStarted}>
+            <span
+                className={`px-3 py-1 rounded-full border-2 text-[10px] font-black uppercase ${
+                    STATUS_BADGE[status] ?? "bg-slate-800/50 text-slate-500 border-slate-700"
+                }`}
+            >
                 {cfg?.label ?? status}
-            </StatusBadge>
+            </span>
         );
     };
-
-    const labelFor = (key) =>
-        METRICS.find((m) => m.value === key)?.label ?? key;
 
     return (
         <DashboardLayout>
@@ -150,17 +136,29 @@ export default function Dashboard({
             {/* Stats Cards — horizontal */}
             <div className="flex flex-col sm:flex-row gap-4 mb-10">
                 {stats.map((stat, index) => (
-                    <StatCard
+                    <div
                         key={index}
-                        {...stat}
-                        iconPosition="row"
                         className="bg-slate-900 border-2 border-slate-800 p-6 rounded-2xl shadow-[4px_4px_0_0_#020617] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all cursor-default flex-1"
-                    />
+                    >
+                        <div className="flex items-start justify-between mb-4">
+                            <span
+                                className={`material-symbols-outlined text-3xl ${stat.color}`}
+                            >
+                                {stat.icon}
+                            </span>
+                        </div>
+                        <h3 className="text-slate-500 text-xs font-black uppercase tracking-widest mb-1">
+                            {stat.label}
+                        </h3>
+                        <p className="text-3xl font-black text-white italic tracking-tighter">
+                            {stat.value}
+                        </p>
+                    </div>
                 ))}
             </div>
 
             {/* Class Health Distribution — bar graph */}
-            <Card className="mb-10">
+            <div className="bg-slate-900 border-4 border-slate-800 p-8 rounded-[2.5rem] shadow-[8px_8px_0_0_#020617] mb-10">
                 <h3 className="text-white text-sm font-black uppercase tracking-widest mb-6 flex items-center gap-2">
                     <span className="material-symbols-outlined text-cyan-400 text-sm">
                         monitoring
@@ -219,10 +217,10 @@ export default function Dashboard({
                 <div className="mt-4 flex flex-wrap gap-2">
                     {STATUS_CATEGORIES.map((cat) => (
                         <button
-                            key={cat.value}
-                            onClick={() => selectCategory(cat.value)}
+                            key={cat.key}
+                            onClick={() => selectCategory(cat.key)}
                             className={`flex items-center gap-2 px-3 py-2 rounded-lg font-black uppercase italic text-xs transition-all ${
-                                selectedCategory === cat.value
+                                selectedCategory === cat.key
                                     ? "bg-lime-400 text-slate-950 shadow-[2px_2px_0_0_#3f6212]"
                                     : "bg-slate-950 border-2 border-slate-800 text-slate-400 hover:text-lime-300"
                             }`}
@@ -243,37 +241,45 @@ export default function Dashboard({
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
                         <h4 className="text-white font-black uppercase italic text-sm">
                             {selectedCategory
-                                ? `Students: ${STATUS_CATEGORIES.find((c) => c.value === selectedCategory)?.label}`
+                                ? `Students: ${STATUS_CATEGORIES.find((c) => c.key === selectedCategory)?.label}`
                                 : "All Students"}
                         </h4>
-                        <SelectField
-                            value={selectedHealthSection}
-                            onChange={(e) => setSelectedHealthSection(e.target.value)}
-                            icon="expand_more"
-                            selectClassName="py-2"
-                            wrapperClassName="min-w-[160px]"
-                        >
-                            <option value="">All Sections</option>
-                            {statusSections.map((section) => (
-                                <option key={section} value={section}>{section}</option>
-                            ))}
-                        </SelectField>
+                        <div className="relative min-w-[160px]">
+                            <select
+                                className="w-full appearance-none bg-slate-950 border-2 border-slate-800 rounded-xl pl-4 pr-10 py-2 text-white font-bold focus:outline-none focus:border-lime-500 cursor-pointer transition-all text-sm"
+                                value={selectedHealthSection}
+                                onChange={(e) => setSelectedHealthSection(e.target.value)}
+                            >
+                                <option value="">All Sections</option>
+                                {statusSections.map((section) => (
+                                    <option key={section} value={section}>{section}</option>
+                                ))}
+                            </select>
+                            <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-lime-400">
+                                filter_list
+                            </span>
+                        </div>
                     </div>
                     <div className="border-2 border-slate-800 rounded-xl overflow-hidden">
                         <table className="w-full text-left border-collapse">
                             <thead>
                                 <tr className="border-b-2 border-slate-800 bg-slate-950">
-                                    <TableTh className="px-4 py-2">Name</TableTh>
-                                    <TableTh className="px-4 py-2 text-right">Word Blast</TableTh>
-                                    <TableTh className="px-4 py-2 text-right">Story Quest</TableTh>
-                                    <TableTh className="px-4 py-2">Status</TableTh>
+                                    <th className="px-4 py-2 text-slate-500 font-black uppercase text-xs tracking-widest">Name</th>
+                                    <th className="px-4 py-2 text-slate-500 font-black uppercase text-xs tracking-widest text-right">Word Blast</th>
+                                    <th className="px-4 py-2 text-slate-500 font-black uppercase text-xs tracking-widest text-right">Story Quest</th>
+                                    <th className="px-4 py-2 text-slate-500 font-black uppercase text-xs tracking-widest">Status</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-800/50">
                                 {tableStudents.length === 0 ? (
-                                    <TableEmptyRow colSpan="4">
-                                        No students match the current filters
-                                    </TableEmptyRow>
+                                    <tr>
+                                        <td
+                                            colSpan="4"
+                                            className="px-4 py-8 text-center text-slate-600 font-black uppercase tracking-widest text-sm"
+                                        >
+                                            No students match the current filters
+                                        </td>
+                                    </tr>
                                 ) : (
                                     tableStudents.map((s) => (
                                         <tr
@@ -291,10 +297,10 @@ export default function Dashboard({
                         </table>
                     </div>
                 </div>
-            </Card>
+            </div>
 
             {/* Section Performance Comparison Table */}
-            <Card pad="10" className="mb-10">
+            <div className="bg-slate-900 border-4 border-slate-800 p-10 rounded-[2.5rem] shadow-[8px_8px_0_0_#020617] mb-10">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
                     <h2 className="text-2xl font-black text-white uppercase italic flex items-center gap-3">
                         <span className="material-symbols-outlined text-cyan-400">
@@ -302,66 +308,83 @@ export default function Dashboard({
                         </span>
                         Section Performance Overview
                     </h2>
-
+                  
                 </div>
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="border-b-4 border-slate-800">
-                                <TableTh>Section</TableTh>
-                                <TableTh align="center">Total Students</TableTh>
-                                <TableTh>AVG. WORD BLAST</TableTh>
-                                <TableTh>AVG. STORY QUEST</TableTh>
-                                <TableTh>FINAL STATUS</TableTh>
+                                <th className="px-6 py-4 text-slate-500 font-black uppercase text-xs tracking-widest">
+                                    Section
+                                </th>
+                                <th className="px-6 py-4 text-slate-500 font-black uppercase text-xs tracking-widest text-center">
+                                    Total Students
+                                </th>
+                                <th className="px-6 py-4 text-slate-500 font-black uppercase text-xs tracking-widest">
+                                    AVG. WORD BLAST
+                                </th>
+                                <th className="px-6 py-4 text-slate-500 font-black uppercase text-xs tracking-widest">
+                                    AVG. STORY QUEST
+                                </th>
+                                <th className="px-6 py-4 text-slate-500 font-black uppercase text-xs tracking-widest">
+                                    FINAL STATUS
+                                </th>
+                            
                             </tr>
                         </thead>
                         <tbody className="divide-y-2 divide-slate-800/50">
                             {sectionPerformance.map((item, idx) => (
-                                <tr
-                                    key={idx}
-                                    className="hover:bg-slate-900/50 transition-all"
-                                >
-                                    <td className="px-6 py-4 text-white font-bold">
-                                        {item.section}
-                                    </td>
-                                    <td className="px-6 py-4 text-white text-center font-bold">
-                                        {item.student_count}
-                                    </td>
-                                    <td className="px-6 py-4 text-purple-400 font-black italic">
-                                        {item.avg_read}%
-                                    </td>
-                                    <td className="px-6 py-4 text-lime-400 font-black italic">
-                                        {item.avg_speak}%
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <StatusBadge
-                                            color={
-                                                item.status === "On Track"
-                                                    ? "green"
-                                                    : item.status === "Needs Support"
-                                                      ? "amber"
-                                                      : item.status === "Not Started"
-                                                        ? "slate"
-                                                        : "rose"
-                                            }
-                                        >
-                                            {item.status}
-                                        </StatusBadge>
+                                    <tr
+                                        key={idx}
+                                        className="hover:bg-slate-900/50 transition-all"
+                                    >
+                                        <td className="px-6 py-4 text-white font-bold">
+                                            {item.section}
+                                        </td>
+                                        <td className="px-6 py-4 text-white text-center font-bold">
+                                            {item.student_count}
+                                        </td>
+                                        <td className="px-6 py-4 text-purple-400 font-black italic">
+                                            {item.avg_read}%
+                                        </td>
+                                        <td className="px-6 py-4 text-lime-400 font-black italic">
+                                            {item.avg_speak}%
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span
+                                                className={`px-3 py-1 rounded-full border-2 text-[10px] font-black uppercase ${
+                                                    item.status === "On Track"
+                                                        ? "bg-green-900/50 text-green-400 border-green-500"
+                                                        : item.status ===
+                                                            "Needs Support"
+                                                          ? "bg-amber-900/50 text-amber-400 border-amber-500"
+                                                          : item.status === "Not Started"
+                                                            ? "bg-slate-800/50 text-slate-500 border-slate-700"
+                                                            : "bg-rose-900/50 text-rose-400 border-rose-500"
+                                                }`}
+                                            >
+                                                {item.status}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))}
+                            {sectionPerformance.length === 0 && (
+                                <tr>
+                                    <td
+                                        colSpan="6"
+                                        className="px-6 py-10 text-center text-slate-600 font-black uppercase tracking-widest"
+                                    >
+                                        No section data available
                                     </td>
                                 </tr>
-                            ))}
-                            {sectionPerformance.length === 0 && (
-                                <TableEmptyRow colSpan="6">
-                                    No section data available
-                                </TableEmptyRow>
                             )}
                         </tbody>
                     </table>
                 </div>
-            </Card>
+            </div>
 
             {/* Top Performing Students */}
-            <Card pad="10" className="mb-10">
+            <div className="bg-slate-900 border-4 border-slate-800 p-10 rounded-[2.5rem] shadow-[8px_8px_0_0_#020617] mb-10">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
                     <div className="flex items-center gap-4">
                         <h2 className="text-2xl font-black text-white uppercase italic flex items-center gap-3">
@@ -370,34 +393,51 @@ export default function Dashboard({
                             </span>
                             Top Performing Students
                         </h2>
-                        <TabBar
-                            tabs={METRICS}
-                            active={activeMetricKey}
-                            onSelect={setActiveMetric}
-                            className="flex items-center gap-1 bg-slate-950 border-2 border-slate-800 rounded-xl p-1"
-                            itemClassName="flex items-center gap-1.5 px-4 py-2 rounded-lg font-black uppercase italic text-xs transition-all"
-                            activeClassName="bg-lime-400 text-slate-950 shadow-[2px_2px_0_0_#3f6212]"
-                            inactiveClassName="text-slate-500 hover:text-lime-300"
-                        />
-                    </div>
-                    <div className="flex flex-col sm:flex-row gap-3 items-center">
-                        <SearchInput
-                            value={nameFilter}
-                            onChange={(e) => setNameFilter(e.target.value)}
-                            placeholder="Search name..."
-                        />
-                        <SelectField
-                            value={selectedSection}
-                            onChange={(e) => setSelectedSection(e.target.value)}
-                            icon="expand_more"
-                            selectClassName="py-3"
-                            wrapperClassName="min-w-[160px]"
-                        >
-                            <option value="">All Sections</option>
-                            {sectionListForFilter.map((section) => (
-                                <option key={section} value={section}>{section}</option>
+                        <div className="flex items-center gap-1 bg-slate-950 border-2 border-slate-800 rounded-xl p-1">
+                            {METRICS.map((metric) => (
+                                <button
+                                    key={metric.key}
+                                    onClick={() => setActiveMetric(metric.key)}
+                                    className={`flex items-center gap-1.5 px-4 py-2 rounded-lg font-black uppercase italic text-xs transition-all ${
+                                        activeMetric === metric.key
+                                            ? "bg-lime-400 text-slate-950 shadow-[2px_2px_0_0_#3f6212]"
+                                            : "text-slate-500 hover:text-lime-300"
+                                    }`}
+                                >
+                                    <span className="material-symbols-outlined text-sm">{metric.icon}</span>
+                                    {metric.label}
+                                </button>
                             ))}
-                        </SelectField>
+                        </div>
+                    </div>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                        <div className="relative">
+                            <input
+                                type="text"
+                                placeholder="Search name..."
+                                value={nameFilter}
+                                onChange={(e) => setNameFilter(e.target.value)}
+                                className="w-full bg-slate-950 border-2 border-slate-800 rounded-xl pl-10 pr-4 py-3 text-white font-bold focus:outline-none focus:border-lime-500 transition-all text-sm"
+                            />
+                            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-lg">
+                                search
+                            </span>
+                        </div>
+                        <div className="relative min-w-[160px]">
+                            <select
+                                className="w-full appearance-none bg-slate-950 border-2 border-slate-800 rounded-xl pl-4 pr-10 py-3 text-white font-bold focus:outline-none focus:border-lime-500 cursor-pointer transition-all text-sm"
+                                value={selectedSection}
+                                onChange={(e) => setSelectedSection(e.target.value)}
+                            >
+                                <option value="">All Sections</option>
+                                {sectionListForFilter.map((section) => (
+                                    <option key={section} value={section}>{section}</option>
+                                ))}
+                            </select>
+                            <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-lime-400">
+                                filter_list
+                            </span>
+                        </div>
                     </div>
                 </div>
                 {filteredTopStudents.length > 0 ? (
@@ -467,17 +507,17 @@ export default function Dashboard({
                                                     )}
                                                     <span>{s.name}</span>
                                                 </p>
-                                                 <div className="space-y-1 text-xs">
-                                                 <p className="font-black text-lime-400">
-                                                     {labelFor(activeMetricKey)}:{" "}
-                                                     {topBarKey === "points"
-                                                         ? `${s.points?.toLocaleString() ?? 0}`
-                                                         : `${s[topBarKey] ?? 0}%`}
-                                                 </p>
-                                                 <p className="text-slate-400 font-semibold">Section: {s.section || 'N/A'}</p>
-                                                 <p className="text-purple-400 font-semibold">Word Blast: {s.wordBlastAcc ?? 0}%</p>
-                                                 <p className="text-cyan-400 font-semibold">Story Quest: {s.storyQuestAcc ?? 0}%</p>
-                                             </div>
+                                                     <div className="space-y-1 text-xs">
+                                                     <p className="font-black text-lime-400">
+                                                         {activeMetricObj.label}:{" "}
+                                                         {activeMetricObj.valueKey === "points"
+                                                             ? `${s.points?.toLocaleString() ?? 0}`
+                                                             : `${s[activeMetricObj.valueKey] ?? 0}%`}
+                                                     </p>
+                                                     <p className="text-slate-400 font-semibold">Section: {s.section || 'N/A'}</p>
+                                                     <p className="text-purple-400 font-semibold">Word Blast: {s.wordBlastAcc ?? 0}%</p>
+                                                     <p className="text-cyan-400 font-semibold">Story Quest: {s.storyQuestAcc ?? 0}%</p>
+                                                 </div>
                                             </div>
                                         );
                                     }}
@@ -498,7 +538,7 @@ export default function Dashboard({
                         No students match the current filters
                     </div>
                 )}
-            </Card>
+            </div>
         </DashboardLayout>
     );
 }
