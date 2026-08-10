@@ -327,16 +327,43 @@ class GameplayTest extends TestCase
         Setting::setValue('report_deadline', now()->subMinute()->format('Y-m-d H:i:s'));
 
         $this->actingAs($this->student)
-            ->get(route('student.gameplayReadMode', $this->module->id))
+            ->get(route('student.gameplayReadMode', $this->module->level))
             ->assertRedirect(route('student.readModeLevels'));
     }
 
     public function test_gameplay_page_loads_when_no_deadline(): void
     {
         Setting::where('key', 'report_deadline')->delete();
+        $this->student->student->update(['tutorial_completed_at' => now()]);
 
         $this->actingAs($this->student)
-            ->get(route('student.gameplayReadMode', $this->module->id))
+            ->get(route('student.gameplayReadMode', $this->module->level))
+            ->assertSuccessful();
+    }
+
+    public function test_real_module_redirects_to_levels_during_onboarding(): void
+    {
+        $this->actingAs($this->student)
+            ->get(route('student.gameplayReadMode', $this->module->level))
+            ->assertRedirect(route('student.readModeLevels'))
+            ->assertSessionMissing('error');
+    }
+
+    public function test_tutorial_module_loads_at_level_zero_during_onboarding(): void
+    {
+        $tutorialModule = WordModule::create([
+            'level' => 0,
+            'title' => 'Tutorial',
+            'is_tutorial' => true,
+        ]);
+        Word::create([
+            'word_module_id' => $tutorialModule->id,
+            'word' => 'cat',
+            'position' => 1,
+        ]);
+
+        $this->actingAs($this->student)
+            ->get(route('student.gameplayReadMode', 0))
             ->assertSuccessful();
     }
 
@@ -358,7 +385,7 @@ class GameplayTest extends TestCase
         Setting::setValue('report_deadline', now()->subMinute()->format('Y-m-d H:i:s'));
 
         $this->actingAs($this->student)
-            ->get(route('student.gameplaySpeakMode', $paraModule->id))
+            ->get(route('student.gameplaySpeakMode', $paraModule->level))
             ->assertRedirect(route('student.speakModeLevels'));
     }
 
@@ -371,9 +398,61 @@ class GameplayTest extends TestCase
         ]);
 
         Setting::where('key', 'report_deadline')->delete();
+        $this->student->student->update(['tutorial_completed_at' => now()]);
 
         $this->actingAs($this->student)
-            ->get(route('student.gameplaySpeakMode', $paraModule->id))
+            ->get(route('student.gameplaySpeakMode', $paraModule->level))
+            ->assertSuccessful();
+    }
+
+    public function test_speak_real_module_redirects_to_levels_during_onboarding(): void
+    {
+        $paraModule = ParagraphModule::create([
+            'level' => 1,
+            'title' => 'Test Paragraph',
+            'content' => 'The cat is big and fat.',
+        ]);
+
+        $this->actingAs($this->student)
+            ->get(route('student.gameplaySpeakMode', $paraModule->level))
+            ->assertRedirect(route('student.speakModeLevels'))
+            ->assertSessionMissing('error');
+    }
+
+    public function test_speak_tutorial_module_loads_at_level_zero_during_onboarding(): void
+    {
+        $tutorialPara = ParagraphModule::create([
+            'level' => 0,
+            'title' => 'Tutorial',
+            'content' => 'I see the cat.',
+            'is_tutorial' => true,
+        ]);
+        foreach (['I', 'see', 'the', 'cat', '.'] as $pos => $w) {
+            ParagraphWord::create([
+                'paragraph_module_id' => $tutorialPara->id,
+                'word' => $w,
+                'position' => $pos + 1,
+            ]);
+        }
+
+        $this->actingAs($this->student)
+            ->get(route('student.gameplaySpeakMode', 0))
+            ->assertSuccessful();
+    }
+
+    public function test_tutorial_module_loads_at_level_zero_after_tutorial_completed(): void
+    {
+        $this->student->student->update(['tutorial_completed_at' => now()]);
+
+        $tutorialPara = ParagraphModule::create([
+            'level' => 0,
+            'title' => 'Tutorial',
+            'content' => 'I see the cat.',
+            'is_tutorial' => true,
+        ]);
+
+        $this->actingAs($this->student)
+            ->get(route('student.gameplaySpeakMode', 0))
             ->assertSuccessful();
     }
 
@@ -393,7 +472,7 @@ class GameplayTest extends TestCase
         ]);
 
         $this->actingAs($this->student)
-            ->get(route('student.gameplayReadMode', $tutorialModule->id))
+            ->get(route('student.gameplayReadMode', $tutorialModule->level))
             ->assertSuccessful();
     }
 
@@ -416,7 +495,7 @@ class GameplayTest extends TestCase
         }
 
         $this->actingAs($this->student)
-            ->get(route('student.gameplaySpeakMode', $tutorialPara->id))
+            ->get(route('student.gameplaySpeakMode', $tutorialPara->level))
             ->assertSuccessful();
     }
 

@@ -150,7 +150,7 @@ class StudentController extends Controller
         $user = auth()->user();
         extract($this->tutorialState($user));
 
-        if (! $user->student?->tutorial_completed_at && ! $wordTutorialDone) {
+        if (! $user->student?->tutorial_completed_at) {
             $progress = StudentWordProgress::where('user_id', $user->id)
                 ->where('word_module_id', $tutWord->id)->first();
             $modules = collect([[
@@ -175,22 +175,31 @@ class StudentController extends Controller
         ]);
     }
 
-    public function gameplayReadMode($id)
+    public function gameplayReadMode($level)
     {
+        $user = auth()->user();
+
+        // Routes are level-based (the domain key — see saveWithWords), so the
+        // tutorial is naturally /gameplayReadMode/0.
         $module = WordModule::with('words')
             ->select(['id', 'level', 'title', 'is_tutorial'])
-            ->findOrFail($id);
-
-        $user = auth()->user();
+            ->where('level', $level)
+            ->firstOrFail();
+        $id = $module->id;
 
         $deadline = \App\Models\Setting::getValue('report_deadline');
         if (! $module->is_tutorial && $deadline && \Carbon\Carbon::parse($deadline)->isPast()) {
             return redirect()->route('student.readModeLevels');
         }
 
+        // Onboarding lock: until the tutorial is completed, real level URLs
+        // silently bounce back to the level picker — no error banner.
+        if (! $user->student?->tutorial_completed_at && ! $module->is_tutorial) {
+            return redirect()->route('student.readModeLevels');
+        }
+
         if (! $this->levelService->isModuleAccessible($user->id, $id, 'word')) {
-            return redirect()->route('student.readModeLevels')
-                ->with('error', 'This module is locked. Please complete the previous level first.');
+            return redirect()->route('student.readModeLevels');
         }
 
         $tutorialComplete = (bool) $user->student?->tutorial_completed_at;
@@ -277,7 +286,7 @@ class StudentController extends Controller
         $user = auth()->user();
         extract($this->tutorialState($user));
 
-        if (! $user->student?->tutorial_completed_at && $wordTutorialDone && ! $speakTutorialDone) {
+        if (! $user->student?->tutorial_completed_at) {
             $progress = StudentParagraphProgress::where('user_id', $user->id)
                 ->where('paragraph_module_id', $tutPara->id)->first();
             $modules = collect([[
@@ -302,22 +311,28 @@ class StudentController extends Controller
         ]);
     }
 
-    public function gameplaySpeakMode($id)
+    public function gameplaySpeakMode($level)
     {
+        $user = auth()->user();
+
         $module = ParagraphModule::with('words')
             ->select(['id', 'level', 'title', 'content', 'is_tutorial'])
-            ->findOrFail($id);
-
-        $user = auth()->user();
+            ->where('level', $level)
+            ->firstOrFail();
+        $id = $module->id;
 
         $deadline = \App\Models\Setting::getValue('report_deadline');
         if (! $module->is_tutorial && $deadline && \Carbon\Carbon::parse($deadline)->isPast()) {
             return redirect()->route('student.speakModeLevels');
         }
 
+        // Onboarding lock: real level URLs silently bounce back.
+        if (! $user->student?->tutorial_completed_at && ! $module->is_tutorial) {
+            return redirect()->route('student.speakModeLevels');
+        }
+
         if (! $this->levelService->isModuleAccessible($user->id, $id, 'paragraph')) {
-            return redirect()->route('student.speakModeLevels')
-                ->with('error', 'This module is locked. Please complete the previous level first.');
+            return redirect()->route('student.speakModeLevels');
         }
 
         $progress = StudentParagraphProgress::where('user_id', $user->id)
@@ -443,7 +458,8 @@ class StudentController extends Controller
             'moduleTitle' => $module->title,
             'totalItems' => $totalItems,
             'badgeProgress' => $badgeProgress,
-            'nextModuleId' => $nextModule?->id,
+            'moduleLevel' => $module->level,
+            'nextModuleLevel' => $nextModule?->level,
             'isMaxLevel' => $isMaxLevel,
             'deadlineHit' => (bool) $session->is_deadline_hit,
         ]);
