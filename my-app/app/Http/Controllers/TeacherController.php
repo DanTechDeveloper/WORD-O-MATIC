@@ -106,7 +106,6 @@ class TeacherController extends Controller
                     'id' => $user->id,
                     'fullName' => $user->name,
                     'studentID' => $user->student_id,
-                    'pin' => $user->pin_plain ?? '',
                     'avatar' => $student?->avatar,
                     'section' => $student?->section ?? '',
                     'gender' => $student?->gender ?? '',
@@ -316,6 +315,14 @@ class TeacherController extends Controller
         return $deadline && Carbon::parse($deadline)->isPast() ? $deadline : null;
     }
 
+    private function pinIsTaken(string $pin, ?int $ignoreId = null): bool
+    {
+        return User::where('role', 'student')
+            ->when($ignoreId, fn ($q) => $q->where('id', '!=', $ignoreId))
+            ->get()
+            ->contains(fn (User $user) => Hash::check($pin, $user->pin));
+    }
+
     public function show($studentId)
     {
         $user = User::with(['student'])->findOrFail($studentId);
@@ -352,6 +359,10 @@ class TeacherController extends Controller
             'gender' => 'nullable|in:male,female',
             'parent_email' => 'nullable|email|max:255',
         ]);
+
+        if ($this->pinIsTaken($request->pin)) {
+            throw ValidationException::withMessages(['pin' => 'This PIN is already in use by another student.']);
+        }
 
         $this->persistStudent([
             'fullName' => $request->fullName,
@@ -425,7 +436,6 @@ class TeacherController extends Controller
             'name' => $data['fullName'],
             'student_id' => $data['studentID'],
             'pin' => Hash::make($data['pin']),
-            'pin_plain' => $data['pin'],
             'role' => 'student',
         ]);
 
@@ -861,15 +871,6 @@ class TeacherController extends Controller
         ]);
     }
 
-    public function studentPins()
-    {
-        return inertia()->render('Teacher/Students', [
-            'existingPins' => User::where('role', 'student')
-                ->whereNotNull('pin_plain')
-                ->pluck('pin_plain'),
-        ]);
-    }
-
     public function updateStudent(Request $request, $id)
     {
         $user = User::findOrFail($id);
@@ -879,6 +880,7 @@ class TeacherController extends Controller
             'section' => 'required',
             'gender' => 'nullable|in:male,female',
             'parent_email' => 'nullable|email',
+            'pin' => 'nullable|digits:4',
         ]);
 
         $pin = $request->pin;
@@ -886,9 +888,11 @@ class TeacherController extends Controller
             'name' => $request->fullName,
         ];
 
-        if ($pin && $pin !== $user->pin_plain) {
+        if ($pin) {
+            if ($this->pinIsTaken($pin, $user->id)) {
+                throw ValidationException::withMessages(['pin' => 'This PIN is already in use by another student.']);
+            }
             $updateData['pin'] = Hash::make($pin);
-            $updateData['pin_plain'] = $pin;
         }
 
         $user->update($updateData);

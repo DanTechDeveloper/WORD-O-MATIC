@@ -4,7 +4,7 @@ import { useForm } from "@inertiajs/react";
 export default function EditStudentModal({ isOpen, onClose, student }) {
     const { data, setData, put, processing, errors, reset } = useForm({
         fullName: student?.fullName ?? "",
-        pin: student?.pin ?? "",
+        pin: "",
         section: student?.section ?? "",
         gender: student?.gender ?? "",
         parent_email: student?.parent_email ?? "",
@@ -19,7 +19,7 @@ export default function EditStudentModal({ isOpen, onClose, student }) {
         if (isOpen && student) {
             setData({
                 fullName: student.fullName,
-                pin: student.pin,
+                pin: "",
                 section: student.section,
                 gender: student.gender ?? "",
                 parent_email: student.parent_email ?? "",
@@ -124,10 +124,14 @@ export default function EditStudentModal({ isOpen, onClose, student }) {
                         </label>
                         <div className="flex gap-2">
                             <input
-                                readOnly
                                 type="text"
+                                inputMode="numeric"
+                                maxLength={4}
                                 value={data.pin}
-                                className="flex-1 bg-slate-950 border-3 sm:border-4 border-slate-800 rounded-xl sm:rounded-2xl p-3 sm:p-4 text-lime-400 font-black text-xl sm:text-2xl tracking-[0.3em] sm:tracking-[0.5em] text-center outline-none"
+                                onChange={(e) =>
+                                    setData("pin", e.target.value.replace(/\D/g, ""))
+                                }
+                                className="flex-1 bg-slate-950 border-3 sm:border-4 border-slate-800 rounded-xl sm:rounded-2xl p-3 sm:p-4 text-lime-400 font-black text-xl sm:text-2xl tracking-[0.3em] sm:tracking-[0.5em] text-center outline-none focus:border-purple-500"
                             />
                             <button
                                 type="button"
@@ -141,7 +145,8 @@ export default function EditStudentModal({ isOpen, onClose, student }) {
                             </button>
                         </div>
                         <p className="text-[10px] text-slate-600 font-bold uppercase tracking-tight ml-2">
-                            The student uses this PIN to log in.
+                            Leave blank to keep the current PIN. Enter a new PIN or
+                            tap refresh to auto-generate.
                         </p>
                         {errors.pin && (
                             <p className="text-rose-500 text-[10px] font-black mt-1 uppercase ml-2">
