@@ -54,6 +54,10 @@ class ProgressService
             return;
         }
 
+        $wordsProcessed = max(0, $wordsProcessed);
+        $wordsSmashed = max(0, min($wordsSmashed, $wordsProcessed));
+        $accuracy = max(0, min(100, (float) $accuracy));
+
         $progress = $progressClass::firstOrNew([
             'user_id' => $student->user_id,
             $moduleKey => $module->id,

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { usePage } from "@inertiajs/react";
 
 export default function ParagraphInputModal({
     isOpen,
@@ -9,6 +10,7 @@ export default function ParagraphInputModal({
     totalScore,
     onSave,
 }) {
+    const { errors } = usePage().props;
     const [currentEntry, setCurrentEntry] = useState(entries?.[0] || "");
     const [currentTitle, setCurrentTitle] = useState(
         title || `Module ${level}`,
@@ -36,7 +38,6 @@ export default function ParagraphInputModal({
             currentTitle,
             calculateTotalPoints(),
         );
-        onClose();
     };
 
     if (!isOpen) return null;
@@ -71,6 +72,11 @@ export default function ParagraphInputModal({
                         className="w-full bg-slate-950 border-2 border-slate-800 rounded-xl px-4 py-3 text-white font-bold focus:outline-none focus:border-sky-500 transition-all uppercase text-lg"
                         placeholder="Edit Module Title..."
                     />
+                    {errors.title && (
+                        <p className="mt-2 text-rose-400 text-xs font-black uppercase tracking-widest">
+                            {errors.title}
+                        </p>
+                    )}
                 </div>
 
                 <div className="space-y-4 flex-grow overflow-y-auto pr-2">
@@ -85,6 +91,11 @@ export default function ParagraphInputModal({
                             placeholder="Enter paragraph content here..."
                         />
                     </div>
+                    {errors.content && (
+                        <p className="text-rose-400 text-xs font-black uppercase tracking-widest">
+                            {errors.content}
+                        </p>
+                    )}
                 </div>
 
                 <div className="mt-6 md:mt-10 flex flex-col sm:flex-row justify-end gap-3 md:gap-4">
@@ -96,7 +107,8 @@ export default function ParagraphInputModal({
                     </button>
                     <button
                         onClick={handleSave}
-                        className="w-full sm:w-auto px-6 md:px-8 py-3 md:py-4 bg-sky-400 text-slate-950 rounded-2xl border-4 border-slate-950 shadow-[4px_4px_0_0_#075985] md:shadow-[6px_6px_0_0_#075985] font-black uppercase italic text-xs tracking-tighter hover:translate-y-0.5 hover:shadow-none transition-all flex justify-center items-center gap-2"
+                        disabled={!currentEntry.trim() || !currentTitle.trim()}
+                        className="w-full sm:w-auto px-6 md:px-8 py-3 md:py-4 bg-sky-400 text-slate-950 rounded-2xl border-4 border-slate-950 shadow-[4px_4px_0_0_#075985] md:shadow-[6px_6px_0_0_#075985] font-black uppercase italic text-xs tracking-tighter hover:translate-y-0.5 hover:shadow-none transition-all flex justify-center items-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-[4px_4px_0_0_#075985] md:disabled:hover:shadow-[6px_6px_0_0_#075985]"
                     >
                         <span className="material-symbols-outlined text-sm">
                             save

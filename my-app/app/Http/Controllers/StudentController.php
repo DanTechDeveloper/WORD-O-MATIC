@@ -19,6 +19,7 @@ use App\Services\LevelService;
 use App\Services\ProgressService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
 class StudentController extends Controller
@@ -361,6 +362,13 @@ class StudentController extends Controller
         }
 
         $totalPossible = $module->words()->count();
+
+        if ($request->words_processed > $totalPossible) {
+            throw ValidationException::withMessages([
+                'words_processed' => 'Words processed cannot exceed the module word count.',
+            ]);
+        }
+
         $wordsSmashed = min($request->words_smashed, $totalPossible);
         $streak = min($request->streak ?? 0, $wordsSmashed + 1);
         $accuracy = $totalPossible > 0

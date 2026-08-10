@@ -195,6 +195,59 @@ class GameplayTest extends TestCase
         ]);
     }
 
+    public function test_round_rejects_words_processed_above_module_total(): void
+    {
+        Setting::where('key', 'report_deadline')->delete();
+
+        $this->actingAs($this->student)
+            ->post(route('student.saveWordProgress'), [
+                'module_id' => $this->module->id,
+                'words_smashed' => 3,
+                'words_processed' => 999,
+            ])
+            ->assertSessionHasErrors('words_processed');
+
+        $this->assertDatabaseMissing('student_word_progress', [
+            'user_id' => $this->student->id,
+        ]);
+        $this->assertDatabaseMissing('game_sessions', [
+            'user_id' => $this->student->id,
+        ]);
+    }
+
+    public function test_paragraph_round_rejects_words_processed_above_module_total(): void
+    {
+        Setting::where('key', 'report_deadline')->delete();
+
+        $paraModule = ParagraphModule::create([
+            'level' => 1,
+            'title' => 'Test Paragraph',
+            'content' => 'The cat is big and fat.',
+        ]);
+        foreach (['The', 'cat', 'is', 'big', 'and', 'fat'] as $pos => $w) {
+            ParagraphWord::create([
+                'paragraph_module_id' => $paraModule->id,
+                'word' => $w,
+                'position' => $pos + 1,
+            ]);
+        }
+
+        $this->actingAs($this->student)
+            ->post(route('student.saveParagraphProgress'), [
+                'module_id' => $paraModule->id,
+                'words_smashed' => 3,
+                'words_processed' => 999,
+            ])
+            ->assertSessionHasErrors('words_processed');
+
+        $this->assertDatabaseMissing('student_paragraph_progress', [
+            'user_id' => $this->student->id,
+        ]);
+        $this->assertDatabaseMissing('game_sessions', [
+            'user_id' => $this->student->id,
+        ]);
+    }
+
     public function test_round_clamps_score_and_streak_in_session(): void
     {
         Setting::where('key', 'report_deadline')->delete();

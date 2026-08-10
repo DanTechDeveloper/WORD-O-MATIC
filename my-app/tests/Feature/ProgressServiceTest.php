@@ -343,7 +343,7 @@ class ProgressServiceTest extends TestCase
         $this->assertEquals(3, $this->student->student->points);
     }
 
-    public function test_smashed_greater_than_processed_is_stored_as_is(): void
+    public function test_smashed_greater_than_processed_is_clamped_to_processed(): void
     {
         $this->progressService->updateWordProgress(
             $this->student->student, $this->wordModule,
@@ -355,10 +355,10 @@ class ProgressServiceTest extends TestCase
             ->first();
 
         $this->assertSame('in_progress', $record->status);
-        $this->assertEquals(5, $record->words_smashed);
+        $this->assertEquals(3, $record->words_smashed);
 
         $this->student->refresh();
-        $this->assertEquals(5, $this->student->student->points);
+        $this->assertEquals(3, $this->student->student->points);
         $this->assertEquals(1, $this->student->student->read_level);
     }
 
@@ -380,7 +380,7 @@ class ProgressServiceTest extends TestCase
         $this->assertEquals(0, $this->student->student->points);
     }
 
-    public function test_accuracy_above_100_stored_unclamped(): void
+    public function test_accuracy_above_100_is_clamped_to_100(): void
     {
         $this->progressService->updateWordProgress(
             $this->student->student, $this->wordModule,
@@ -388,10 +388,10 @@ class ProgressServiceTest extends TestCase
         );
 
         $this->student->refresh();
-        $this->assertSame(150.0, (float) $this->student->student->wordBlastAcc);
+        $this->assertSame(100.0, (float) $this->student->student->wordBlastAcc);
     }
 
-    public function test_negative_accuracy_stored_unclamped(): void
+    public function test_negative_accuracy_is_clamped_to_zero(): void
     {
         $this->progressService->updateWordProgress(
             $this->student->student, $this->wordModule,
@@ -399,10 +399,10 @@ class ProgressServiceTest extends TestCase
         );
 
         $this->student->refresh();
-        $this->assertSame(-10.0, (float) $this->student->student->wordBlastAcc);
+        $this->assertSame(0.0, (float) $this->student->student->wordBlastAcc);
     }
 
-    public function test_negative_smashed_is_stored_but_never_adds_points(): void
+    public function test_negative_smashed_is_clamped_to_zero(): void
     {
         $this->progressService->updateWordProgress(
             $this->student->student, $this->wordModule,
@@ -414,11 +414,11 @@ class ProgressServiceTest extends TestCase
             ->first();
 
         $this->assertSame('completed', $record->status);
-        $this->assertSame(-1, $record->words_smashed);
+        $this->assertSame(0, $record->words_smashed);
 
         $this->student->refresh();
         $this->assertEquals(2, $this->student->student->read_level);
-        $this->assertSame(-1, $this->student->student->points);
+        $this->assertSame(0, $this->student->student->points);
     }
 
     public function test_new_best_overwrites_accuracy_even_when_worse(): void
