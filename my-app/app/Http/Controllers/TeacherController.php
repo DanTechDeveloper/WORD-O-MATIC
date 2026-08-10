@@ -315,9 +315,13 @@ class TeacherController extends Controller
         return $deadline && Carbon::parse($deadline)->isPast() ? $deadline : null;
     }
 
-    private function pinIsTaken(string $pin, ?int $ignoreId = null): bool
+    private function pinIsTaken(string $pin, ?string $name = null, ?int $ignoreId = null): bool
     {
+        // Login resolves by name + PIN (->first()), so a PIN collision only
+        // matters between students who share a name. Scoping the bcrypt scan
+        // to same-name rows keeps this O(same-name count) instead of O(all).
         return User::where('role', 'student')
+            ->when($name, fn ($q) => $q->where('name', $name))
             ->when($ignoreId, fn ($q) => $q->where('id', '!=', $ignoreId))
             ->get()
             ->contains(fn (User $user) => Hash::check($pin, $user->pin));
@@ -360,7 +364,7 @@ class TeacherController extends Controller
             'parent_email' => 'nullable|email|max:255',
         ]);
 
-        if ($this->pinIsTaken($request->pin)) {
+        if ($this->pinIsTaken($request->pin, $request->fullName)) {
             throw ValidationException::withMessages(['pin' => 'This PIN is already in use by another student.']);
         }
 
@@ -889,7 +893,7 @@ class TeacherController extends Controller
         ];
 
         if ($pin) {
-            if ($this->pinIsTaken($pin, $user->id)) {
+            if ($this->pinIsTaken($pin, $request->fullName, $user->id)) {
                 throw ValidationException::withMessages(['pin' => 'This PIN is already in use by another student.']);
             }
             $updateData['pin'] = Hash::make($pin);

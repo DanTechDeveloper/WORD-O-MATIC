@@ -52,7 +52,7 @@ Axios JSON endpoints (mastery toggles) bypass Inertia and return `noContent()`.
 | Cascade deletes | All child tables cascade on `user_id` — delete user = clean slate |
 | Random word order | `inRandomOrder()` per session in Read mode, prevents memorization |
 | Mastery = explicit per-word toggle | Auto-mastery removed; `updateWordMastery`/`updateParagraphMastery` via axios |
-| PIN with hash only | `pin` is bcrypt-only and **reset-only** — teachers set a new PIN but can never read it back (`pin_plain` removed). Enforced by `pinIsTaken()` uniqueness on `store()`/`updateStudent()` |
+| PIN with hash only | `pin` is bcrypt-only and **reset-only** — teachers set a new PIN but can never read it back (`pin_plain` removed). Uniqueness via `pinIsTaken()` on `store()`/`updateStudent()`, scoped to same-name students (login resolves by name + PIN) so the bcrypt scan stays O(same-name count) |
 | Rate-limited logins | `throttle:30,1` on student login, `throttle:5,1` on teacher login (brute-force mitigation) |
 | Avatar follows gender, until customized | `updateStudent()` re-syncs the gender-default avatar only while it is still a placeholder (`/images/boy.svg` / `/images/girl.svg`); custom heroes are kept (gender and avatar decoupled) |
 | Atomic bulk student creation | `storeBulk()` normalizes all rows → validates → one `DB::transaction`; a bad row rejects the whole batch (no partial rosters) |

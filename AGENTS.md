@@ -75,7 +75,8 @@ middleware aliases are registered in `bootstrap/app.php`.
   bcrypt-only (`pin`, in `$hidden`) and is **reset-only** — never readable back;
   `EditStudentModal` shows a blank PIN ("leave blank to keep current") and
   `TeacherController::pinIsTaken()` rejects any PIN already in use by another
-  student on `store()` / `updateStudent()`.
+  student **with the same name** on `store()` / `updateStudent()` (the scan is
+  scoped to same-name rows — login resolves by name + PIN — so it stays fast).
 - Role guard: `EnsureUserRole` (alias `role`). `CheckStudentOnboarding` gates
   `/student/*` — a student is blocked until they pick a non-default avatar
   (not `/images/boy.svg` or `/images/girl.svg`); the middleware redirects to

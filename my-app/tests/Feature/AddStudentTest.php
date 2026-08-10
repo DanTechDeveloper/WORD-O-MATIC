@@ -226,11 +226,11 @@ class AddStudentTest extends TestCase
     {
         $this->actingAs($this->teacher)->post('/teacher/addStudent', $this->validPayload());
 
-        $target = User::factory()->create(['role' => 'student']);
+        $target = User::factory()->create(['role' => 'student', 'name' => 'LEO JUPITER']);
         $target->student()->create(['section' => '6-STEM-B']);
 
         $response = $this->actingAs($this->teacher)->put("/teacher/students/{$target->id}", [
-            'fullName' => $target->name,
+            'fullName' => 'LEO JUPITER',
             'section' => '6-STEM-B',
             'pin' => '1234',
             'gender' => '',
@@ -238,6 +238,20 @@ class AddStudentTest extends TestCase
         ]);
 
         $response->assertSessionHasErrors('pin');
+    }
+
+    public function test_store_allows_same_pin_for_different_names(): void
+    {
+        $this->actingAs($this->teacher)->post('/teacher/addStudent', $this->validPayload());
+
+        $response = $this->actingAs($this->teacher)->post('/teacher/addStudent', $this->validPayload([
+            'fullName' => 'ANOTHER STUDENT',
+            'studentID' => '2023-000002',
+            'pin' => '1234',
+        ]));
+
+        $response->assertRedirect();
+        $this->assertEquals(2, User::where('role', 'student')->count());
     }
 
     public function test_update_student_keeps_pin_when_blank(): void
