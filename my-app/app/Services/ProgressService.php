@@ -71,7 +71,7 @@ class ProgressService
         $totalWords = $module->words()->count();
         // Status is sticky: a worse replay must not regress a completed module,
         // since LevelsPage now allows replaying completed levels (regression guard).
-        $progress->status = ($progress->status === 'completed' || $wordsProcessed >= $totalWords)
+        $progress->status = ($progress->status === 'completed' || ($totalWords > 0 && $wordsProcessed >= $totalWords))
             ? 'completed'
             : 'in_progress';
         $progress->save();
