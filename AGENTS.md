@@ -68,16 +68,20 @@ middleware aliases are registered in `bootstrap/app.php`.
 ## Auth & middleware
 
 - Teacher login: `GET/POST /teacher/login` → `UserController@teacherLoginPost`
-  validates `username` + `password` (no email).
+  validates `username` + `password` (no email). POST is rate-limited
+  (`throttle:5,1`).
 - Student login: `GET /` (root) shows the student login form; login uses
-  `name` + 4-digit PIN. PIN is stored as bcrypt (`pin`) **and** plain text
-  (`pin_plain`) — both are in `$fillable`; `pin` is in `$hidden`, `pin_plain` is
-  not.
+  `name` + 4-digit PIN (POST rate-limited `throttle:30,1`). PIN is stored
+  bcrypt-only (`pin`, in `$hidden`) and is **reset-only** — never readable back;
+  `EditStudentModal` shows a blank PIN ("leave blank to keep current") and
+  `TeacherController::pinIsTaken()` rejects any PIN already in use by another
+  student on `store()` / `updateStudent()`.
 - Role guard: `EnsureUserRole` (alias `role`). `CheckStudentOnboarding` gates
   `/student/*` — a student is blocked until they pick a non-default avatar
   (not `/images/boy.svg` or `/images/girl.svg`); the middleware redirects to
-  `student.splashScreen`. It does **not** gate the tutorial flow; onboarding
-  past the avatar step is unguarded by middleware.
+  `student.splashScreen`. It also bounces avatar-complete students away from
+  `splashScreen`/`avatarSelection` (no re-entry). It does **not** gate the
+  tutorial flow; onboarding past the avatar step is unguarded by middleware.
 - Teacher routes live under `/teacher/*`; student routes under `/student/*`.
   Teacher pages are wrapped by `resources/js/Layouts/Teacher/DashboardLayout`;
   the sidebar is `Components/Teacher/Sidebar.jsx`.

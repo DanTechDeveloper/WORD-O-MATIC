@@ -1,6 +1,6 @@
 # Word-O-Matic
 
-> Version 1.4 — Developer Guide
+> Version 1.5 — Developer Guide
 
 ## Design Context
 
@@ -44,7 +44,11 @@ JS/vitest/pint are not wired into it.
 | Student | `/student` | `role:student` + `CheckStudentOnboarding` | name + 4-digit PIN |
 
 Teacher login: `UserController@teacherLoginPost` — validates `username` + `password`, no email.
-PIN stored as bcrypt (`pin`) + plain text (`pin_plain`).
+Both login routes are rate-limited: student `throttle:30,1`, teacher `throttle:5,1`.
+Student PIN is stored bcrypt-only (`pin`) and is **reset-only** — never readable back;
+teachers set a new PIN via `EditStudentModal` (blank = keep current), and
+`TeacherController::pinIsTaken()` rejects any PIN already in use by another student
+on `store()` / `updateStudent()`.
 Student login runs `BadgeService::checkAllEligibleBadges($user)` (constructor-injected
 into `UserController`) when the student has a custom avatar.
 
@@ -59,7 +63,8 @@ Tutorial uses dedicated modules (`is_tutorial=true`, `level=0`):
 - Story Quest: "I see a cat." paragraph
 Tutorial plays skip GameSession, mastery, points, leaderboard, and gameplay badges.
 Tutorial Complete badge awarded when both modes are done via `BadgeService::awardOnboardingBadge('tutorial-complete')`.
-Guided by AvatarSpeechBubble on Dashboard + guide overlay on first gameplay. Enforced by `CheckStudentOnboarding` middleware.
+Guided by AvatarSpeechBubble on Dashboard + guide overlay on first gameplay. Enforced by `CheckStudentOnboarding` middleware,
+which also bounces avatar-complete students away from `splashScreen`/`avatarSelection` (no re-entry).
 
 ## Services
 
@@ -76,12 +81,21 @@ Session logging done via `GameSession::logSession()` static method on the model 
 
 Two creation paths, both routed through the same rules and the shared private
 `TeacherController::persistStudent()` (writes the `users` row + `students`
-row: role `student`, bcrypt + plain PIN, default avatar by gender, zeros):
+row: role `student`, bcrypt-only PIN, default avatar by gender, zeros):
 
 - **Single add** — `POST /teacher/addStudent` → `store()`. `store()` and
   `Students()` share `existingStudentIds` (pluck of `student_id`) so the modal
   does live client-side checks ("This ID is already registered."). Inertia
-  validation errors still backstop the server.
+  validation errors still backstop the server. PINs are bcrypt-only and unique:
+  `pinIsTaken()` (a `Hash::check` scan over student rows) rejects a PIN already
+  in use by another student.
+- **Edit** — `PUT /teacher/students/{student}` → `updateStudent()`. The PIN is
+  **reset-only**: `EditStudentModal` shows a blank field ("leave blank to keep
+  current", refresh to auto-generate) — it is never pre-filled and cannot be
+  read back. A new PIN is also checked against `pinIsTaken()` (skipping the
+  student being edited). Changing gender re-syncs the gender-default avatar only
+  while the current avatar is still a placeholder (`/images/boy.svg` /
+  `/images/girl.svg`); custom avatars are kept.
 - **Bulk paste** — `POST /teacher/addStudents` → `storeBulk()`
   (`addStudents.store`). Payload is `students[]` (max 50): paste grammar
   `Name, ID, Section` per line; the modal fills auto-generated 4-digit PINs

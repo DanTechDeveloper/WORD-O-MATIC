@@ -1,6 +1,6 @@
 # Architecture
 
-> Version 1.4
+> Version 1.5
 
 ## Backend
 
@@ -52,7 +52,9 @@ Axios JSON endpoints (mastery toggles) bypass Inertia and return `noContent()`.
 | Cascade deletes | All child tables cascade on `user_id` — delete user = clean slate |
 | Random word order | `inRandomOrder()` per session in Read mode, prevents memorization |
 | Mastery = explicit per-word toggle | Auto-mastery removed; `updateWordMastery`/`updateParagraphMastery` via axios |
-| PIN with plain+hash | Hash for auth, plain for teacher display (thesis-acceptable) |
+| PIN with hash only | `pin` is bcrypt-only and **reset-only** — teachers set a new PIN but can never read it back (`pin_plain` removed). Enforced by `pinIsTaken()` uniqueness on `store()`/`updateStudent()` |
+| Rate-limited logins | `throttle:30,1` on student login, `throttle:5,1` on teacher login (brute-force mitigation) |
+| Avatar follows gender, until customized | `updateStudent()` re-syncs the gender-default avatar only while it is still a placeholder (`/images/boy.svg` / `/images/girl.svg`); custom heroes are kept (gender and avatar decoupled) |
 | Atomic bulk student creation | `storeBulk()` normalizes all rows → validates → one `DB::transaction`; a bad row rejects the whole batch (no partial rosters) |
 | Separate modals per creation flow | `AddStudentModal` vs `BulkAddStudentModal` — distinct two-stage flows; each `useForm` gets its own error keys |
 | PHP-side dup normalization | Case/whitespace-insensitive duplicate checks run in PHP (student IDs, word module words) because MySQL's ci collation differs from SQLite (tests) |
@@ -60,7 +62,7 @@ Axios JSON endpoints (mastery toggles) bypass Inertia and return `noContent()`.
 
 ## Auth Flow
 
-> The `CheckStudentOnboarding` middleware gates **only** the avatar step (rejects `/images/boy.svg` and `/images/girl.svg`). Tutorial gating is not enforced by middleware.
+> The `CheckStudentOnboarding` middleware gates **only** the avatar step (rejects `/images/boy.svg` and `/images/girl.svg`) and additionally bounces avatar-complete students away from `splashScreen`/`avatarSelection` (no re-entry). Tutorial gating is not enforced by middleware.
 
 ```
 Guest → Login → Student: 3-step onboarding (Splash → Avatar Selection → Tutorial) → Dashboard

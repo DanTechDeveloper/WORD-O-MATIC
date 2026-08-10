@@ -1,6 +1,6 @@
 # CAVEATS
 
-> Version 1.1 — ledger of known tradeoffs, risks, and intentional shortcuts.
+> Version 1.2 — ledger of known tradeoffs, risks, and intentional shortcuts.
 
 This file exists so no caveat gets lost. Every row below is a known behavior
 that may surprise, a risk that is accepted for MVP, or a tradeoff with an
@@ -21,10 +21,10 @@ fix" column names the event that should prompt the fix — not before (YAGNI).
 
 | # | Area | Caveat | Consequence | Trigger to fix |
 |---|---|---|---|---|
-| H1 | Emails | `StudentReportMail` is sent via `Mail::to()->queue()` (StudentReportMail.php:33) — a queue worker must run in prod (DEPLOYMENT.md:34). Kung walang worker, ang emails ay tumutumpok sa `jobs` table pero ang UI ay nagsasabing "sent" at `report_sent_at` ay nase-set (TeacherController.php:480). No failure detection. | Parents never receive reports while teacher believes they were sent | First production email run |
+| H1 | Emails | `StudentReportMail` is sent via `Mail::to()->queue()` (StudentReportMail.php:33) — a queue worker must run in prod (DEPLOYMENT.md:34). Without a worker, emails pile up in the `jobs` table but the UI reports "sent" and `report_sent_at` is still set (TeacherController.php:480). No failure detection. | Parents never receive reports while teacher believes they were sent | First production email run |
 | H2 | Gameplay trust | `saveWordProgress` / `saveParagraphProgress` validate `words_processed` with only `min:0` (StudentController.php:186), so a student can POST `words_processed: 999` → `ProgressService` sets `status='completed'` (ProgressService.php:74). `words_smashed` is clamped but completion status is not. | Progress/levels/leaderboard can be gamed without playing | If cheating becomes a real concern |
 | H4 | Reports (product) | Retries erase the struggle signal: 25 retries → perfect → `onTrack` → no warning email. `game_sessions` holds every attempt but reports only use best scores. | Warning-only reports miss the students who needed the most attempts | Prof feedback says parents need attempt counts |
-| H6 | Security | Student PINs stored plaintext in `pin_plain` (intentional — teacher PIN management reads them back). Data-at-rest tradeoff. | Compromised DB exposes student PINs | Security review / auth change |
+| H6 | Security | PINs are bcrypt-only and **reset-only** (`pin_plain` removed 2026-08-10) — a PIN can never be read back, so a teacher who forgets a student's PIN must reset it. Uniqueness is enforced by `pinIsTaken()`, an O(students) `Hash::check` scan on every `store()` / `updateStudent()` (TeacherController.php:318). | Teacher can't state a student's current PIN; the per-write scan is fine at class scale. Bulk add (`storeBulk`) does NOT run the PIN-uniqueness check (only single add does) | Class scale grows / uniqueness must also hold for bulk adds |
 
 ## Medium
 
@@ -79,6 +79,6 @@ fix" column names the event that should prompt the fix — not before (YAGNI).
 - **Replay vs. mastery** — Replaying a completed module (Again button in `GameResults.jsx`, Play Again on `LevelsPage.jsx`) is a *fresh practice round* with its own `useGameplayEngine` state; it does **not** reset or resume mastery rows. Mastery writes are gated server-side to be add-only (`mastered` stays `mastered`; `training → mastered` allowed), so practice feedback still fires without demoting earned mastery. `StudentDetails.jsx` and `LevelsPage.jsx` are read-only views of `curriculumForUser` + denorm columns and cannot corrupt mastery client-side.
 - **Replayable completed levels** — LevelCard allows "PLAY AGAIN" on completed modules; H4 is the known tradeoff of this decision.
 - **Single global report deadline** — per-class deadlines deferred (M4).
-- **Teacher-visible PINs** — `pin_plain` readback for teacher convenience; security tradeoff accepted (H6).
+- **Reset-only student PINs** — `pin_plain` removed; PINs are bcrypt-only and never displayed. `EditStudentModal` leaves the field blank ("leave blank to keep current") with a refresh-to-generate button; the accepted tradeoff is that a teacher can no longer read a PIN back (H6).
 - **No Form Request classes / no Policies** — inline validation + middleware only; fine while controllers stay small.
 - **Curriculum progress % formula duplicated (JS + PHP)** — the completion percentage (`round(Σmastered / Σwords_count × 100)`) lives in two places: `StudentDetails.jsx` `calcOverallProgress()` (frontend, over `curriculumForUser`) and `TeacherController::curriculumPercent()` (backend, for the email's `wordBlastProg` / `storyQuestProg`). Deliberately kept separate by decision (frontend computes from the already-loaded curriculum it renders; the email is a server-side batch). If the two ever drift, the fix is to retire the JS copy and feed `wordBlastProg` / `storyQuestProg` into `StudentDetails`, or vice versa — do not add a third implementation.
