@@ -151,7 +151,7 @@ export default function LevelCard({ module, emoji, gameUrl, index, highlightTuto
     return (
         isClickable ? (
             <Link
-                href={`/${gameUrl}/${module.id}`}
+                href={`/${gameUrl}/${module.level}`}
                 className={wrapperClass}
                 style={{ animationDelay: `${index * 80}ms` }}
             >

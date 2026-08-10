@@ -62,8 +62,8 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/badges', [StudentController::class, 'badges'])->name('badges');
             Route::get('/readModeLevels', [StudentController::class, 'readModeLevels'])->name('readModeLevels');
             Route::get('/speakModeLevels', [StudentController::class, 'speakModeLevels'])->name('speakModeLevels');
-            Route::get('/gameplaySpeakMode/{id}', [StudentController::class, 'gameplaySpeakMode'])->name('gameplaySpeakMode');
-            Route::get('/gameplayReadMode/{id}', [StudentController::class, 'gameplayReadMode'])->name('gameplayReadMode');
+            Route::get('/gameplaySpeakMode/{level}', [StudentController::class, 'gameplaySpeakMode'])->name('gameplaySpeakMode');
+            Route::get('/gameplayReadMode/{level}', [StudentController::class, 'gameplayReadMode'])->name('gameplayReadMode');
             Route::post('/saveParagraphProgress', [StudentController::class, 'saveParagraphProgress'])->name('saveParagraphProgress');
             Route::post('/saveWordProgress', [StudentController::class, 'saveWordProgress'])->name('saveWordProgress');
             Route::post('/updateWordMastery', [StudentController::class, 'updateWordMastery'])->name('updateWordMastery');

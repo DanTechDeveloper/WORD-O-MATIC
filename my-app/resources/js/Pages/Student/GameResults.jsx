@@ -14,45 +14,59 @@ const CONFETTI = [
     { icon: "party_mode", color: "text-quest" },
     { icon: "emoji_events", color: "text-amber-400" },
     { icon: "bolt", color: "text-yellow-300" },
-]
+];
 
 const HEADLINES = {
-    zero: ["EVERY CHAMPION STARTS SOMEWHERE!", "FIRST TRY DONE, LET'S GO!", "EVERY WORD COUNTS!"],
+    zero: [
+        "EVERY CHAMPION STARTS SOMEWHERE!",
+        "FIRST TRY DONE, LET'S GO!",
+        "EVERY WORD COUNTS!",
+    ],
     low: ["YOU GOT THIS!", "KEEP GOING!", "PRACTICE MAKES PROGRESS!"],
     mid: ["GREAT JOB!", "NICE WORK!", "KEEP IT UP!"],
     high: ["INCREDIBLE!", "OUTSTANDING!", "AMAZING!"],
-}
+};
 
 export default function GameResults({
     session,
     moduleTitle,
     totalItems,
     badgeProgress,
-    nextModuleId,
+    moduleLevel,
+    nextModuleLevel,
     isMaxLevel,
     deadlineHit,
 }) {
     const displayScore = parseInt(session.score) || 0;
     const accuracyPct = parseFloat(session.accuracy) || 0;
     const isPerfect = !deadlineHit && accuracyPct >= 100;
-    const headlinePool = displayScore === 0
-        ? HEADLINES.zero
-        : accuracyPct >= 80 ? HEADLINES.high
-        : accuracyPct >= 60 ? HEADLINES.mid
-        : HEADLINES.low;
-    const headline = isPerfect ? "PERFECT!" : headlinePool[session.id % headlinePool.length];
+    const headlinePool =
+        displayScore === 0
+            ? HEADLINES.zero
+            : accuracyPct >= 80
+              ? HEADLINES.high
+              : accuracyPct >= 60
+                ? HEADLINES.mid
+                : HEADLINES.low;
+    const headline = isPerfect
+        ? "PERFECT!"
+        : headlinePool[session.id % headlinePool.length];
     const isCelebrating = !deadlineHit && accuracyPct >= 80;
     const { flash } = usePage().props;
     const isDeadlineClosed = useDeadlineStatus();
-    const newBadgeSlugs = flash?.new_badges?.map(b => b.slug) ?? [];
-    const newBadges = badgeProgress?.filter(b => newBadgeSlugs.includes(b.slug)) ?? [];
+    const newBadgeSlugs = flash?.new_badges?.map((b) => b.slug) ?? [];
+    const newBadges =
+        badgeProgress?.filter((b) => newBadgeSlugs.includes(b.slug)) ?? [];
     const [badgeFlowDone, setBadgeFlowDone] = useState(false);
 
-    const nextBadge = badgeProgress?.filter((b) => !b.is_earned).sort((a, b) => {
-        const ap = a.threshold > 0 ? (a.current_value / a.threshold) : 0;
-        const bp = b.threshold > 0 ? (b.current_value / b.threshold) : 0;
-        return bp - ap;
-    })[0] ?? null;
+    const nextBadge =
+        badgeProgress
+            ?.filter((b) => !b.is_earned)
+            .sort((a, b) => {
+                const ap = a.threshold > 0 ? a.current_value / a.threshold : 0;
+                const bp = b.threshold > 0 ? b.current_value / b.threshold : 0;
+                return bp - ap;
+            })[0] ?? null;
 
     const renderResults = () => (
         <div className="bg-background text-on-background font-body-md">
@@ -99,17 +113,32 @@ export default function GameResults({
                         <StatTile
                             label={deadlineHit ? "You played" : "Score"}
                             value={displayScore}
-                            note={deadlineHit ? "Points not counted — deadline passed" : undefined}
+                            note={
+                                deadlineHit
+                                    ? "Points not counted — deadline passed"
+                                    : undefined
+                            }
                         />
-                        <StatTile label="Words" value={totalItems} valueClassName="text-on-surface" />
+                        <StatTile
+                            label="Words"
+                            value={totalItems}
+                            valueClassName="text-on-surface"
+                        />
                     </div>
 
                     <div className="text-center text-xl sm:text-2xl font-bold text-lime-400 flex items-center justify-center gap-2">
-                        <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>sentiment_very_satisfied</span>
+                        <span
+                            className="material-symbols-outlined text-2xl"
+                            style={{ fontVariationSettings: "'FILL' 1" }}
+                        >
+                            sentiment_very_satisfied
+                        </span>
                         {isPerfect ? "Amazing!" : "You're doing great!"}
                     </div>
 
-                    {!deadlineHit && nextBadge && <NextBadge badge={nextBadge} />}
+                    {!deadlineHit && nextBadge && (
+                        <NextBadge badge={nextBadge} />
+                    )}
 
                     {isDeadlineClosed ? (
                         <div className="flex gap-4">
@@ -117,7 +146,10 @@ export default function GameResults({
                                 href="/student/dashboard"
                                 className="flex-1 bg-primary text-on-primary font-bold py-5 rounded-2xl border border-surface-variant/20 text-base uppercase tracking-wider active:scale-[0.97] transition-all hover:brightness-110 text-center flex items-center justify-center"
                             >
-                                <span className="material-symbols-outlined mr-2">home</span>Home
+                                <span className="material-symbols-outlined mr-2">
+                                    home
+                                </span>
+                                Home
                             </Link>
                         </div>
                     ) : (
@@ -126,33 +158,51 @@ export default function GameResults({
                                 onClick={() =>
                                     (window.location.href =
                                         window.location.origin +
-                                        `/student/gameplay${session.module_type === "word" ? "Read" : "Speak"}Mode/${session.module_id}`)
+                                        `/student/gameplay${session.module_type === "word" ? "Read" : "Speak"}Mode/${moduleLevel}`)
                                 }
                                 className="flex-1 bg-surface-container-high text-on-surface font-bold py-5 rounded-2xl border border-surface-variant/20 text-base uppercase tracking-wider active:scale-[0.97] transition-all hover:bg-surface-container-highest"
                             >
-                                <span className="material-symbols-outlined mr-2">replay</span>Again
+                                <span className="material-symbols-outlined mr-2">
+                                    replay
+                                </span>
+                                Again
                             </button>
-                            {!isMaxLevel && (nextModuleId ? (
-                                <Link
-                                    href={`/student/gameplay${session.module_type === "word" ? "Read" : "Speak"}Mode/${nextModuleId}`}
-                                    className="flex-1 bg-primary text-on-primary font-bold py-5 rounded-2xl border border-surface-variant/20 text-base uppercase tracking-wider active:scale-[0.97] transition-all hover:brightness-110 text-center flex items-center justify-center"
-                                >
-                                    <span className="material-symbols-outlined mr-2">arrow_forward</span>Next Level
-                                </Link>
-                            ) : (
-                                <Link
-                                    href="/student/readModeLevels"
-                                    className="flex-1 bg-surface-container-high text-on-surface font-bold py-5 rounded-2xl border border-surface-variant/20 text-base uppercase tracking-wider active:scale-[0.97] transition-all hover:bg-surface-container-highest text-center flex items-center justify-center"
-                                >
-                                    <span className="material-symbols-outlined mr-2" style={{ fontVariationSettings: "'FILL' 1" }}>menu_book</span>
-                                    Levels
-                                </Link>
-                            ))}
+                            {!isMaxLevel &&
+                                (nextModuleLevel ? (
+                                    <Link
+                                        href={`/student/gameplay${session.module_type === "word" ? "Read" : "Speak"}Mode/${nextModuleLevel}`}
+                                        className="flex-1 bg-primary text-on-primary font-bold py-5 rounded-2xl border border-surface-variant/20 text-base uppercase tracking-wider active:scale-[0.97] transition-all hover:brightness-110 text-center flex items-center justify-center"
+                                    >
+                                        <span className="material-symbols-outlined mr-2">
+                                            arrow_forward
+                                        </span>
+                                        Next Level
+                                    </Link>
+                                ) : (
+                                    <Link
+                                        href="/student/readModeLevels"
+                                        className="flex-1 bg-surface-container-high text-on-surface font-bold py-5 rounded-2xl border border-surface-variant/20 text-base uppercase tracking-wider active:scale-[0.97] transition-all hover:bg-surface-container-highest text-center flex items-center justify-center"
+                                    >
+                                        <span
+                                            className="material-symbols-outlined mr-2"
+                                            style={{
+                                                fontVariationSettings:
+                                                    "'FILL' 1",
+                                            }}
+                                        >
+                                            menu_book
+                                        </span>
+                                        Levels
+                                    </Link>
+                                ))}
                             <Link
                                 href="/student/dashboard"
                                 className="flex-1 bg-surface-container-high text-on-surface font-bold py-5 rounded-2xl border border-surface-variant/20 text-base uppercase tracking-wider active:scale-[0.97] transition-all hover:bg-surface-container-highest text-center flex items-center justify-center"
                             >
-                                <span className="material-symbols-outlined mr-2">home</span>Home
+                                <span className="material-symbols-outlined mr-2">
+                                    home
+                                </span>
+                                Home
                             </Link>
                         </div>
                     )}
@@ -164,7 +214,10 @@ export default function GameResults({
     if (newBadges.length > 0 && !badgeFlowDone) {
         return (
             <div className="bg-background text-on-background font-body-md">
-                <BadgeUnlockFlow badges={newBadges} onDone={() => setBadgeFlowDone(true)} />
+                <BadgeUnlockFlow
+                    badges={newBadges}
+                    onDone={() => setBadgeFlowDone(true)}
+                />
             </div>
         );
     }
