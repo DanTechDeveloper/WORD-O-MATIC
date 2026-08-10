@@ -256,8 +256,8 @@ class LevelServiceTest extends TestCase
         $this->assertFalse($this->levelService->isModuleAccessible($this->student->id, $p2->id, 'paragraph'));
     }
 
-    // ponytail: pins LevelService quirk — tutorial modules are absent from the
-    // status map, so isModuleAccessible() resolves null !== 'locked' to true.
+    // ponytail: regression lock for BF16 — tutorial modules are outside the level
+    // chain (absent from the status map) but must stay playable during onboarding.
     public function test_is_module_accessible_tutorial_always_true(): void
     {
         $tutorial = WordModule::create(['level' => 0, 'title' => 'Tutorial', 'is_tutorial' => true]);
@@ -265,11 +265,11 @@ class LevelServiceTest extends TestCase
         $this->assertTrue($this->levelService->isModuleAccessible($this->student->id, $tutorial->id, 'word'));
     }
 
-    // ponytail: pins LevelService quirk — an unknown id is not 'locked', so
-    // access resolves to true. Controllers still findOrFail before this call.
-    public function test_is_module_accessible_nonexistent_id_returns_true(): void
+    // ponytail: regression lock for BF16 — access is deny-by-default: an unknown
+    // id (nonexistent, wrong type) must resolve to false, not null !== 'locked'.
+    public function test_is_module_accessible_nonexistent_id_returns_false(): void
     {
-        $this->assertTrue($this->levelService->isModuleAccessible($this->student->id, 999999, 'word'));
+        $this->assertFalse($this->levelService->isModuleAccessible($this->student->id, 999999, 'word'));
     }
 
     public function test_statuses_ordered_by_level_not_insertion(): void
