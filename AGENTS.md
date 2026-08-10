@@ -114,6 +114,15 @@ middleware aliases are registered in `bootstrap/app.php`.
   required, no intra-module dups, no reuse of a word from another level (incl.
   tutorial), `max:20`, stored uppercase; `has_progress` triggers a reset
   `confirm()`. See `docs/MODULES.md`.
+- **Paragraph module content is trimmed + required** — empty/whitespace content
+  is rejected on save (a zero-word module can never complete: `ProgressService`
+  guards completion with `$totalWords > 0`). Words stored case-as-entered via
+  `ParagraphModule::saveWithContent` (unlike Word Blast's uppercase). See
+  `docs/MODULES.md`.
+- **Gameplay progress inputs are clamped at the service**: `words_processed`
+  above the module's word count is rejected in `finishRound`, and
+  `ProgressService` clamps `processed ≥ 0`, `smashed ≤ processed`, `accuracy
+  ∈ [0,100]` — the client-trust model's remaining gap is CAVEATS.md H2.
 
 ## Workflow conventions
 
