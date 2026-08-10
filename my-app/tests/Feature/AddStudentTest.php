@@ -162,7 +162,7 @@ class AddStudentTest extends TestCase
     {
         $student = User::factory()->create(['role' => 'student']);
 
-        $response = $this->actingAs($this->teacher)->post('/teacher/addStudent', $this->validPayload());
+        $response = $this->actingAs($student)->post('/teacher/addStudent', $this->validPayload());
 
         $response->assertForbidden();
         $this->assertEquals(0, User::where('role', 'student')->where('id', '!=', $student->id)->count());
