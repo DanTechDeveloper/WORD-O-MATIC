@@ -41,8 +41,8 @@ export function useGameplayEngine({
         return resumeData ? resumeData : (moduleId ? readResumeSession(moduleId) : null);
     }, [resumeData, moduleId]);
 
-    const [currentWordIndex, setCurrentWordIndex] = useState(() => resume?.currentWordIndex ?? 0);
-    const [wordsSmashed, setWordsSmashed] = useState(() => resume?.wordsSmashed ?? 0);
+    const [currentWordIndex, setCurrentWordIndex] = useState(() => Math.min(resume?.currentWordIndex ?? 0, totalWords));
+    const [wordsSmashed, setWordsSmashed] = useState(() => Math.min(resume?.wordsSmashed ?? 0, totalWords));
     const [gameState, setGameState] = useState(() => resume ? "ACTIVE" : "IDLE");
     const [isMispronounced, setIsMispronounced] = useState(false);
     const [isExploding, setIsExploding] = useState(false);
