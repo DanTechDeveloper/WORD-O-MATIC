@@ -162,9 +162,51 @@ class AddStudentTest extends TestCase
     {
         $student = User::factory()->create(['role' => 'student']);
 
-        $response = $this->actingAs($student)->post('/teacher/addStudent', $this->validPayload());
+        $response = $this->actingAs($this->teacher)->post('/teacher/addStudent', $this->validPayload());
 
         $response->assertForbidden();
         $this->assertEquals(0, User::where('role', 'student')->where('id', '!=', $student->id)->count());
+    }
+
+    public function test_updating_gender_switches_default_avatar(): void
+    {
+        $user = User::factory()->create(['role' => 'student']);
+        $user->student()->create([
+            'section' => '6-STEM-B',
+            'gender' => 'male',
+            'avatar' => '/images/boy.svg',
+        ]);
+
+        $this->actingAs($this->teacher)->put("/teacher/students/{$user->id}", [
+            'fullName' => $user->name,
+            'section' => '6-STEM-B',
+            'gender' => 'female',
+            'parent_email' => '',
+        ])->assertRedirect();
+
+        $profile = $user->fresh()->student;
+        $this->assertEquals('female', $profile->gender);
+        $this->assertEquals('/images/girl.svg', $profile->avatar);
+    }
+
+    public function test_updating_gender_preserves_custom_avatar(): void
+    {
+        $user = User::factory()->create(['role' => 'student']);
+        $user->student()->create([
+            'section' => '6-STEM-B',
+            'gender' => 'male',
+            'avatar' => '/images/avatars/ana/head.png',
+        ]);
+
+        $this->actingAs($this->teacher)->put("/teacher/students/{$user->id}", [
+            'fullName' => $user->name,
+            'section' => '6-STEM-B',
+            'gender' => 'female',
+            'parent_email' => '',
+        ])->assertRedirect();
+
+        $profile = $user->fresh()->student;
+        $this->assertEquals('female', $profile->gender);
+        $this->assertEquals('/images/avatars/ana/head.png', $profile->avatar);
     }
 }

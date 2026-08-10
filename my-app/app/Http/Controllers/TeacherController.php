@@ -893,11 +893,26 @@ class TeacherController extends Controller
 
         $user->update($updateData);
 
-        $user->student()->update([
+        $studentData = [
             'section' => $request->section,
             'gender' => $request->gender,
             'parent_email' => $request->parent_email,
-        ]);
+        ];
+
+        // Sync the gender-default avatar only while it's still a placeholder.
+        // Students who picked a custom hero keep it (gender and avatar are decoupled).
+        $defaultAvatar = match ($request->gender) {
+            'male' => '/images/boy.svg',
+            'female' => '/images/girl.svg',
+            default => null,
+        };
+
+        $currentAvatar = $user->student()->value('avatar');
+        if ($defaultAvatar && (! $currentAvatar || in_array($currentAvatar, ['/images/boy.svg', '/images/girl.svg']))) {
+            $studentData['avatar'] = $defaultAvatar;
+        }
+
+        $user->student()->update($studentData);
 
         return redirect()->back()->with('success', 'Student updated successfully.');
     }
