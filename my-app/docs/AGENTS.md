@@ -1,6 +1,6 @@
 # Word-O-Matic
 
-> Version 1.5 — Developer Guide
+> Version 1.6 — Developer Guide
 
 ## Design Context
 
@@ -71,7 +71,7 @@ which also bounces avatar-complete students away from `splashScreen`/`avatarSele
 
 | Service | Responsibility |
 |---|---|
-| `ProgressService` | Update word/paragraph progress (best score only), recalculate status |
+| `ProgressService` | Update word/paragraph progress (best score only), recalculate status. Clamps client-reported inputs at the service boundary — `words_processed ≥ 0`, `words_smashed ≤ words_processed`, `accuracy ∈ [0,100]` — and never completes a module with 0 words (`$totalWords > 0` guard). |
 | `BadgeService` | Award badges, check thresholds. `calculateModuleCompletion()` computes paragraph/word completion % from `words_smashed`. `checkAllEligibleBadges()` also runs at student login (avatar set). |
 | `LevelService` | Module lock/current/completed status per student |
 | `TeacherController::dashboardStats()` | Teacher dashboard stats (private method, no service class). Returns `topStudents`, `chartCounts`, `sectionPerformance`, and a per-student `students` list (id, name, section, wordBlastAcc, storyQuestAcc, status) powering the class-health drill-down table. |
@@ -128,6 +128,18 @@ Rules:
   because saving deletes and recreates the module's words.
 - `WordInputModal.jsx` supports pasting 10 words (split on spaces/commas) and
   live per-row duplicate detection before submit.
+
+## Paragraph Module Editing (Teacher)
+
+`PUT /teacher/paragraphModules` → `updateParagraphModule()`. Content is trimmed
+then required (`required|string`) — empty or whitespace-only content is rejected,
+so a zero-word paragraph module can never be created (a zero-word module would
+strand students: `ProgressService` refuses to complete a module with 0 words —
+`$totalWords > 0` guard, see CAVEATS.md BF13). Words are split on whitespace and
+stored case-as-entered via `ParagraphModule::saveWithContent` (deletes +
+recreates the module's words each save). `ParagraphInputModal.jsx` disables Save
+while content or title is empty and renders server validation errors in-modal
+(modals never close themselves on a failed save).
 
 ## Conventions
 
