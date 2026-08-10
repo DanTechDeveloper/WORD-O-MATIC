@@ -48,7 +48,8 @@ Both login routes are rate-limited: student `throttle:30,1`, teacher `throttle:5
 Student PIN is stored bcrypt-only (`pin`) and is **reset-only** — never readable back;
 teachers set a new PIN via `EditStudentModal` (blank = keep current), and
 `TeacherController::pinIsTaken()` rejects any PIN already in use by another student
-on `store()` / `updateStudent()`.
+**with the same name** on `store()` / `updateStudent()` (the bcrypt scan is scoped to
+same-name rows because login resolves by name + PIN).
 Student login runs `BadgeService::checkAllEligibleBadges($user)` (constructor-injected
 into `UserController`) when the student has a custom avatar.
 
@@ -86,9 +87,9 @@ row: role `student`, bcrypt-only PIN, default avatar by gender, zeros):
 - **Single add** — `POST /teacher/addStudent` → `store()`. `store()` and
   `Students()` share `existingStudentIds` (pluck of `student_id`) so the modal
   does live client-side checks ("This ID is already registered."). Inertia
-  validation errors still backstop the server. PINs are bcrypt-only and unique:
-  `pinIsTaken()` (a `Hash::check` scan over student rows) rejects a PIN already
-  in use by another student.
+  validation errors still backstop the server. PINs are bcrypt-only and unique per
+  name: `pinIsTaken()` (a `Hash::check` scan over same-name student rows) rejects a
+  PIN already in use by another student with the same name.
 - **Edit** — `PUT /teacher/students/{student}` → `updateStudent()`. The PIN is
   **reset-only**: `EditStudentModal` shows a blank field ("leave blank to keep
   current", refresh to auto-generate) — it is never pre-filled and cannot be
