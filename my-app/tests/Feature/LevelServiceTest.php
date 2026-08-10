@@ -216,4 +216,121 @@ class LevelServiceTest extends TestCase
         $this->assertEquals('in_progress', $statuses[2]['status']);
         $this->assertEquals('locked', $statuses[3]['status']);
     }
+
+    public function test_is_module_accessible_word_current_vs_locked(): void
+    {
+        $this->createWordModules(3);
+        $m1 = WordModule::where('level', 1)->first();
+        $m2 = WordModule::where('level', 2)->first();
+
+        $this->assertTrue($this->levelService->isModuleAccessible($this->student->id, $m1->id, 'word'));
+        $this->assertFalse($this->levelService->isModuleAccessible($this->student->id, $m2->id, 'word'));
+    }
+
+    public function test_is_module_accessible_completed_and_in_progress(): void
+    {
+        $this->createWordModules(3);
+        $m1 = WordModule::where('level', 1)->first();
+        $m2 = WordModule::where('level', 2)->first();
+        $m3 = WordModule::where('level', 3)->first();
+
+        StudentWordProgress::create([
+            'user_id' => $this->student->id, 'word_module_id' => $m1->id, 'words_smashed' => 5, 'status' => 'completed',
+        ]);
+        StudentWordProgress::create([
+            'user_id' => $this->student->id, 'word_module_id' => $m2->id, 'words_smashed' => 2, 'status' => 'in_progress',
+        ]);
+
+        $this->assertTrue($this->levelService->isModuleAccessible($this->student->id, $m1->id, 'word'));
+        $this->assertTrue($this->levelService->isModuleAccessible($this->student->id, $m2->id, 'word'));
+        $this->assertFalse($this->levelService->isModuleAccessible($this->student->id, $m3->id, 'word'));
+    }
+
+    public function test_is_module_accessible_paragraph_current_vs_locked(): void
+    {
+        $this->createParagraphModules(3);
+        $p1 = ParagraphModule::where('level', 1)->first();
+        $p2 = ParagraphModule::where('level', 2)->first();
+
+        $this->assertTrue($this->levelService->isModuleAccessible($this->student->id, $p1->id, 'paragraph'));
+        $this->assertFalse($this->levelService->isModuleAccessible($this->student->id, $p2->id, 'paragraph'));
+    }
+
+    // ponytail: pins LevelService quirk — tutorial modules are absent from the
+    // status map, so isModuleAccessible() resolves null !== 'locked' to true.
+    public function test_is_module_accessible_tutorial_always_true(): void
+    {
+        $tutorial = WordModule::create(['level' => 0, 'title' => 'Tutorial', 'is_tutorial' => true]);
+
+        $this->assertTrue($this->levelService->isModuleAccessible($this->student->id, $tutorial->id, 'word'));
+    }
+
+    // ponytail: pins LevelService quirk — an unknown id is not 'locked', so
+    // access resolves to true. Controllers still findOrFail before this call.
+    public function test_is_module_accessible_nonexistent_id_returns_true(): void
+    {
+        $this->assertTrue($this->levelService->isModuleAccessible($this->student->id, 999999, 'word'));
+    }
+
+    public function test_statuses_ordered_by_level_not_insertion(): void
+    {
+        foreach ([3, 1, 2] as $level) {
+            $module = WordModule::create(['level' => $level, 'title' => "Module $level"]);
+            Word::create(['word_module_id' => $module->id, 'word' => "w{$level}", 'position' => 1]);
+        }
+
+        $statuses = $this->levelService->getWordModuleStatuses($this->student->id);
+
+        $this->assertSame([1, 2, 3], collect($statuses)->pluck('level')->all());
+    }
+
+    public function test_word_and_paragraph_chains_independent(): void
+    {
+        $this->createWordModules(2);
+        $this->createParagraphModules(2);
+
+        StudentWordProgress::create([
+            'user_id' => $this->student->id,
+            'word_module_id' => WordModule::where('level', 1)->first()->id,
+            'words_smashed' => 5, 'status' => 'completed',
+        ]);
+
+        $word = $this->levelService->getWordModuleStatuses($this->student->id);
+        $speak = $this->levelService->getSpeakModuleStatuses($this->student->id);
+
+        $this->assertEquals(['completed', 'current'], collect($word)->pluck('status')->all());
+        $this->assertEquals(['current', 'locked'], collect($speak)->pluck('status')->all());
+    }
+
+    public function test_empty_curriculum_returns_empty_collection(): void
+    {
+        $this->assertTrue($this->levelService->getWordModuleStatuses($this->student->id)->isEmpty());
+        $this->assertTrue($this->levelService->getSpeakModuleStatuses($this->student->id)->isEmpty());
+    }
+
+    public function test_out_of_order_progress(): void
+    {
+        $this->createWordModules(3);
+        StudentWordProgress::create([
+            'user_id' => $this->student->id,
+            'word_module_id' => WordModule::where('level', 3)->first()->id,
+            'words_smashed' => 2, 'status' => 'in_progress',
+        ]);
+
+        $statuses = $this->levelService->getWordModuleStatuses($this->student->id);
+
+        $this->assertEquals('current', $statuses[0]['status']);
+        $this->assertEquals('locked', $statuses[1]['status']);
+        $this->assertEquals('in_progress', $statuses[2]['status']);
+    }
+
+    public function test_zero_word_module_still_current_and_total_points_zero(): void
+    {
+        WordModule::create(['level' => 1, 'title' => 'Empty Module']);
+
+        $statuses = $this->levelService->getWordModuleStatuses($this->student->id);
+
+        $this->assertEquals('current', $statuses[0]['status']);
+        $this->assertSame(0, $statuses[0]['total_points']);
+    }
 }
