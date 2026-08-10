@@ -592,9 +592,9 @@ class BadgeTest extends TestCase
         $this->assertSame(3, StudentBadges::where('user_id', $user->id)->count());
     }
 
-    // ponytail: pins CAVEATS F1 — an empty non-tutorial curriculum evaluates to
-    // 100% completion, so a fresh install awards the finisher badges immediately.
-    public function test_check_all_eligible_empty_curriculum_awards_finishers(): void
+    // ponytail: regression lock for BF15 — an empty non-tutorial curriculum
+    // must NOT award the finisher badges (was 100% completion, free badges).
+    public function test_check_all_eligible_empty_curriculum_does_not_award_finishers(): void
     {
         $this->seedBadges();
         $this->seedCompletionBadges();
@@ -602,8 +602,8 @@ class BadgeTest extends TestCase
 
         (new BadgeService)->checkAllEligibleBadges($user);
 
-        $this->assertTrue($this->hasBadge($user, 'word-blast-finisher'));
-        $this->assertTrue($this->hasBadge($user, 'story-finisher'));
+        $this->assertFalse($this->hasBadge($user, 'word-blast-finisher'));
+        $this->assertFalse($this->hasBadge($user, 'story-finisher'));
     }
 
     public function test_meets_threshold_operator_variants(): void
@@ -619,7 +619,7 @@ class BadgeTest extends TestCase
             ['points' => 10, 'expected' => ['eq-ten', 'gt-five', 'lte-ten']],
             ['points' => 11, 'expected' => ['gt-five']],
         ] as $case) {
-            [$user] = $this->makeStudent('Operator ' . $case['points']);
+            [$user] = $this->makeStudent('Operator '.$case['points']);
             $user->student->update(['points' => $case['points']]);
 
             (new BadgeService)->checkAllEligibleBadges($user);
@@ -861,12 +861,45 @@ class BadgeTest extends TestCase
         $this->assertEquals(46.67, (new BadgeService)->calculateModuleCompletion($user, 'word'));
     }
 
-    // ponytail: pins CAVEATS F1 — zero non-tutorial modules evaluates to 100%.
-    public function test_calculate_completion_empty_curriculum_returns_100(): void
+    // ponytail: regression lock for BF15 — zero non-tutorial modules is 0%.
+    public function test_calculate_completion_empty_curriculum_returns_zero(): void
     {
         [$user] = $this->makeStudent('Empty Curriculum');
 
+        $this->assertEquals(0.0, (new BadgeService)->calculateModuleCompletion($user, 'word'));
+        $this->assertEquals(0.0, (new BadgeService)->calculateModuleCompletion($user, 'paragraph'));
+    }
+
+    // ponytail: regression lock for BF15 — a module shrunk after completion must
+    // not report completion above 100%.
+    public function test_calculate_completion_after_module_shrink_is_capped_at_100(): void
+    {
+        [$user] = $this->makeStudent('Shrunk Module');
+
+        $module = $this->makeWordModule(1, 10);
+        StudentWordProgress::create([
+            'user_id' => $user->id, 'word_module_id' => $module->id, 'words_smashed' => 10, 'status' => 'completed',
+        ]);
+
+        Word::where('word_module_id', $module->id)->where('position', '>', 5)->delete();
+
         $this->assertEquals(100.0, (new BadgeService)->calculateModuleCompletion($user, 'word'));
-        $this->assertEquals(100.0, (new BadgeService)->calculateModuleCompletion($user, 'paragraph'));
+    }
+
+    // ponytail: regression lock for BF17 — onboarding/action badges must attach
+    // the pivot as 'earned', matching metric badges (was default 'in_progress').
+    public function test_action_badge_pivot_status_is_earned(): void
+    {
+        $this->seedBadges();
+        [$user] = $this->makeStudent('Pivot Status');
+        $user->student->update(['tutorial_completed_at' => now()]);
+
+        (new BadgeService)->checkAllEligibleBadges($user);
+
+        $rows = StudentBadges::where('user_id', $user->id)->get();
+        $this->assertCount(2, $rows);
+        foreach ($rows as $row) {
+            $this->assertSame('earned', $row->status);
+        }
     }
 }

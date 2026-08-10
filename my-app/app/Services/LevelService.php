@@ -74,6 +74,16 @@ class LevelService
 
         $status = $statuses->get($moduleId);
 
+        // Tutorial modules are outside the level chain (absent from $statuses), so
+        // they arrive as null and must stay playable during onboarding.
+        if ($status === null) {
+            $moduleClass = $type === 'word' ? WordModule::class : ParagraphModule::class;
+
+            return $moduleClass::where('is_tutorial', true)->whereKey($moduleId)->exists();
+        }
+
+        // Deny by default: unknown ids (nonexistent, wrong type) must not slip
+        // through the old `null !== 'locked'` gap.
         return $status !== 'locked';
     }
 }

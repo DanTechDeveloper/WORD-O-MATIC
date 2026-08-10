@@ -30,7 +30,7 @@ class BadgeService
         }
 
         $changes = $user->badges()->syncWithoutDetaching([
-            $badge->id => ['earned_at' => now()],
+            $badge->id => ['earned_at' => now(), 'status' => 'earned'],
         ]);
 
         if (empty($changes['attached'])) {
@@ -73,7 +73,7 @@ class BadgeService
             }
 
             $user->badges()->syncWithoutDetaching([
-                $badge->id => ['earned_at' => now()],
+                $badge->id => ['earned_at' => now(), 'status' => 'earned'],
             ]);
 
             $awarded[] = [
@@ -211,15 +211,19 @@ class BadgeService
             ->get()
             ->sum('words_count');
 
+        // Fail-closed: an empty curriculum is 0%, never 100% — a fresh install
+        // with only the tutorial must not hand out the finisher badges for free.
         if ($total === 0) {
-            return 100;
+            return 0;
         }
 
         $earned = $progressClass::where('user_id', $user->id)
             ->when($tutorialModule, fn ($q) => $q->where($moduleKey, '!=', $tutorialModule->id))
             ->sum('words_smashed');
 
-        return round(($earned / $total) * 100, 2);
+        // Cap at 100: a module shrunk after completion can leave words_smashed
+        // above the curriculum total, which must not report >100% completion.
+        return round(min(100, ($earned / $total) * 100), 2);
     }
 
     private function meetsThreshold($value, string $operator, $threshold): bool
