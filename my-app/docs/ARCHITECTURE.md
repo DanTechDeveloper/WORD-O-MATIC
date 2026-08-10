@@ -1,6 +1,6 @@
 # Architecture
 
-> Version 1.5
+> Version 1.6
 
 ## Backend
 
@@ -59,6 +59,9 @@ Axios JSON endpoints (mastery toggles) bypass Inertia and return `noContent()`.
 | Separate modals per creation flow | `AddStudentModal` vs `BulkAddStudentModal` — distinct two-stage flows; each `useForm` gets its own error keys |
 | PHP-side dup normalization | Case/whitespace-insensitive duplicate checks run in PHP (student IDs, word module words) because MySQL's ci collation differs from SQLite (tests) |
 | `has_progress` flag on word modules | `wordModules()` exposes whether any `StudentWordMastery` row exists → modal shows a progress-reset `confirm()` before editing |
+| Progress writes clamped at the service | `ProgressService::updateModuleProgress` clamps `processed ≥ 0`, `smashed ≤ processed`, `accuracy ∈ [0,100]` — the single choke point every caller routes through, because controller per-field rules can't cover cross-field lies (`smashed = total, processed = 0` point-farm) |
+| Zero-word module guard | A module with 0 words can never be `completed` (`$totalWords > 0`); paragraph content is validated non-empty at save so zero-word modules can't be created |
+| `words_processed` bounded by the module | `finishRound` rejects `words_processed > totalPossible` (ValidationException) before logging — closes the literal `processed=999` vector; the targeted claim (`processed = total`) is a documented open risk (CAVEATS H2) |
 
 ## Auth Flow
 

@@ -1,6 +1,6 @@
 # Modules
 
-> Version 1.2
+> Version 1.3
 
 ## Structure
 
@@ -33,6 +33,22 @@ Tutorial modules (`is_tutorial=true`, `level=0`) seeded via `CurriculumSeeder`. 
 - Words are stored uppercased (`WordModule::saveWithWords`).
 - `WordInputModal.jsx` offers a "Paste 10 words" bulk fill (split on spaces/commas; extras past the 10th are silently dropped) and live per-row duplicate detection before submit.
 - If the module has student progress (`has_progress` from `wordModules()`), saving asks for a `window.confirm` because saving deletes and recreates the module's words.
+
+### Paragraph module edit rules
+
+`updateParagraphModule()` enforces:
+
+- Content is trimmed then required (`required|string`) — empty or whitespace-only
+  content is rejected with a validation error. A zero-word paragraph module is
+  invalid: `ProgressService` never completes a module with 0 words (`$totalWords >
+  0` guard), so one would strand students at its level instead of completing
+  (see CAVEATS.md BF13).
+- Words are split on whitespace and stored case-as-entered via
+  `ParagraphModule::saveWithContent` (deletes + recreates the module's words on
+  every save) — note this differs from Word Blast, which uppercases.
+- `ParagraphInputModal.jsx` disables Save while content or title is empty and
+  renders server validation errors in-modal (it never closes itself on a failed
+  save).
 
 ## Student
 
