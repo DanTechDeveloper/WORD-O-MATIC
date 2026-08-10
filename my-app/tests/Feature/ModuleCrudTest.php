@@ -502,6 +502,27 @@ class ModuleCrudTest extends TestCase
         $this->assertEquals('brand new story', $module->content);
     }
 
+    public function test_teacher_cannot_save_paragraph_module_with_empty_content(): void
+    {
+        $response = $this->actingAs($this->teacher)->put('/teacher/paragraphModules', [
+            'level' => 1,
+            'title' => 'Empty Para',
+            'content' => '',
+        ]);
+
+        $response->assertSessionHasErrors('content');
+        $this->assertEquals(0, ParagraphModule::count());
+
+        $response = $this->actingAs($this->teacher)->put('/teacher/paragraphModules', [
+            'level' => 1,
+            'title' => 'Whitespace Para',
+            'content' => '   ',
+        ]);
+
+        $response->assertSessionHasErrors('content');
+        $this->assertEquals(0, ParagraphModule::count());
+    }
+
     public function test_guest_cannot_access_word_modules(): void
     {
         $response = $this->get('/teacher/wordModules');

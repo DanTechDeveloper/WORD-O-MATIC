@@ -569,10 +569,12 @@ class TeacherController extends Controller
             return redirect()->back()->with('error', 'Cannot edit modules after the report deadline.');
         }
 
+        $request->merge(['content' => trim((string) $request->input('content', ''))]);
+
         $request->validate([
             'level' => 'required|integer',
             'title' => 'required|string|max:255',
-            'content' => 'nullable|string',
+            'content' => 'required|string',
         ]);
 
         ParagraphModule::saveWithContent($request->all());
