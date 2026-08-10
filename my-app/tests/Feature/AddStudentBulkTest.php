@@ -45,7 +45,6 @@ class AddStudentBulkTest extends TestCase
         $first = User::where('role', 'student')->where('student_id', '2023-001')->first();
         $this->assertNotNull($first);
         $this->assertEquals('STUDENT 1', $first->name);
-        $this->assertEquals('0001', $first->pin_plain);
         $this->assertTrue(Hash::check('0001', $first->pin));
         $this->assertEquals('6-STEM-B', $first->student->section);
         $this->assertNull($first->student->gender);

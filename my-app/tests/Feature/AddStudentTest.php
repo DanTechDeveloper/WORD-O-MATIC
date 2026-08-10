@@ -42,7 +42,6 @@ class AddStudentTest extends TestCase
         $this->assertNotNull($user);
         $this->assertEquals('LEO JUPITER', $user->name);
         $this->assertEquals('2023-000001', $user->student_id);
-        $this->assertEquals('1234', $user->pin_plain);
         $this->assertTrue(Hash::check('1234', $user->pin));
 
         $profile = $user->student;
@@ -208,5 +207,64 @@ class AddStudentTest extends TestCase
         $profile = $user->fresh()->student;
         $this->assertEquals('female', $profile->gender);
         $this->assertEquals('/images/avatars/ana/head.png', $profile->avatar);
+    }
+
+    public function test_store_rejects_pin_already_in_use(): void
+    {
+        $this->actingAs($this->teacher)->post('/teacher/addStudent', $this->validPayload());
+
+        $response = $this->actingAs($this->teacher)->post('/teacher/addStudent', $this->validPayload([
+            'studentID' => '2023-000002',
+            'pin' => '1234',
+        ]));
+
+        $response->assertSessionHasErrors('pin');
+        $this->assertEquals(1, User::where('role', 'student')->count());
+    }
+
+    public function test_update_student_rejects_pin_already_in_use(): void
+    {
+        $this->actingAs($this->teacher)->post('/teacher/addStudent', $this->validPayload());
+
+        $target = User::factory()->create(['role' => 'student']);
+        $target->student()->create(['section' => '6-STEM-B']);
+
+        $response = $this->actingAs($this->teacher)->put("/teacher/students/{$target->id}", [
+            'fullName' => $target->name,
+            'section' => '6-STEM-B',
+            'pin' => '1234',
+            'gender' => '',
+            'parent_email' => '',
+        ]);
+
+        $response->assertSessionHasErrors('pin');
+    }
+
+    public function test_update_student_keeps_pin_when_blank(): void
+    {
+        $this->actingAs($this->teacher)->post('/teacher/addStudent', $this->validPayload());
+        $user = User::where('role', 'student')->first();
+
+        $this->actingAs($this->teacher)->put("/teacher/students/{$user->id}", [
+            'fullName' => 'NEW NAME',
+            'section' => '6-STEM-B',
+            'pin' => '',
+            'gender' => '',
+            'parent_email' => '',
+        ])->assertRedirect();
+
+        $fresh = $user->fresh();
+        $this->assertEquals('NEW NAME', $fresh->name);
+        $this->assertTrue(Hash::check('1234', $fresh->pin));
+    }
+
+    public function test_students_list_does_not_expose_pin(): void
+    {
+        $this->actingAs($this->teacher)->post('/teacher/addStudent', $this->validPayload());
+
+        $this->actingAs($this->teacher)->get('/teacher/students')
+            ->assertInertia(fn ($page) => $page
+                ->component('Teacher/Students')
+                ->where('data', fn ($data) => ! array_key_exists('pin', $data['data'][0])));
     }
 }

@@ -9,9 +9,9 @@ use Inertia\Inertia;
 
 Route::middleware('guest')->group(function () {
     Route::get('/', [UserController::class, 'index'])->name('login');
-    Route::post('/', [UserController::class, 'login']);
+    Route::post('/', [UserController::class, 'login'])->middleware('throttle:30,1');
     Route::get('/teacher/login', [UserController::class, 'teacherLogin'])->name('teacher.login');
-    Route::post('/teacher/login', [UserController::class, 'teacherLoginPost']);
+    Route::post('/teacher/login', [UserController::class, 'teacherLoginPost'])->middleware('throttle:5,1');
 });
 
 //   Route::inertia("/", "Testing/Microphone");
@@ -44,7 +44,6 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/leaderboards', [TeacherController::class, 'leaderboards'])->name('leaderboards');
             Route::get('/assignments', [TeacherController::class, 'assignments'])->name('assignments');
             Route::get('/badges', [TeacherController::class, 'badges'])->name('badges');
-            Route::get('/studentPins', [TeacherController::class, 'studentPins'])->name('studentPins');
             Route::put('/students/{student}', [TeacherController::class, 'updateStudent'])->name('students.update');
             Route::delete('/students/{student}', [TeacherController::class, 'destroy'])->name('students.destroy');
         });

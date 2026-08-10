@@ -40,6 +40,10 @@ class StudentSeeder extends Seeder
         $sections = ['Sector 7-G', 'Sector Alpha', 'Sector Bravo'];
         $avatarChars = ['juan', 'kyle', 'leo', 'sam', 'zoe', 'ana'];
 
+        // Shuffle of a full range guarantees 100 unique random PINs (no collisions).
+        $pins = range(1000, 9999);
+        shuffle($pins);
+
         $completedLevels = function ($accuracy) {
             if ($accuracy === null || $accuracy == 0) {
                 return 0;
@@ -93,7 +97,7 @@ class StudentSeeder extends Seeder
             $user = User::create([
                 'name' => $firstNames[$i],
                 'student_id' => "STU-{$num}",
-                'pin' => '1234',
+                'pin' => (string) $pins[$i],
                 'role' => 'student',
             ]);
 
