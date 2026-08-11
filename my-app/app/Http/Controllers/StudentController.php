@@ -17,6 +17,7 @@ use App\Models\WordModule;
 use App\Services\BadgeService;
 use App\Services\LevelService;
 use App\Services\ProgressService;
+use App\Services\ReportService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -28,6 +29,7 @@ class StudentController extends Controller
         protected BadgeService $badgeService,
         protected LevelService $levelService,
         protected ProgressService $progressService,
+        protected ReportService $reportService,
     ) {}
 
     public function splashScreen()
@@ -187,8 +189,7 @@ class StudentController extends Controller
             ->firstOrFail();
         $id = $module->id;
 
-        $deadline = \App\Models\Setting::getValue('report_deadline');
-        if (! $module->is_tutorial && $deadline && \Carbon\Carbon::parse($deadline)->isPast()) {
+        if (! $module->is_tutorial && $this->reportService->cutoff()) {
             return redirect()->route('student.readModeLevels');
         }
 
@@ -230,8 +231,7 @@ class StudentController extends Controller
         ]);
 
         // Post-deadline rounds must not write mastery rows (BF7/BF10).
-        $deadline = \App\Models\Setting::getValue('report_deadline');
-        if ($deadline && \Carbon\Carbon::parse($deadline)->isPast()) {
+        if ($this->reportService->cutoff()) {
             return response()->noContent();
         }
 
@@ -260,8 +260,7 @@ class StudentController extends Controller
         ]);
 
         // Post-deadline rounds must not write mastery rows (BF7/BF10).
-        $deadline = \App\Models\Setting::getValue('report_deadline');
-        if ($deadline && \Carbon\Carbon::parse($deadline)->isPast()) {
+        if ($this->reportService->cutoff()) {
             return response()->noContent();
         }
 
@@ -321,8 +320,7 @@ class StudentController extends Controller
             ->firstOrFail();
         $id = $module->id;
 
-        $deadline = \App\Models\Setting::getValue('report_deadline');
-        if (! $module->is_tutorial && $deadline && \Carbon\Carbon::parse($deadline)->isPast()) {
+        if (! $module->is_tutorial && $this->reportService->cutoff()) {
             return redirect()->route('student.speakModeLevels');
         }
 
@@ -362,7 +360,7 @@ class StudentController extends Controller
     private function finishRound(User $user, WordModule|ParagraphModule $module, Request $request, string $type): RedirectResponse
     {
         $isTutorial = $module->is_tutorial && ! $user->student?->tutorial_completed_at;
-        
+
         if ($isTutorial) {
             if ($type === 'word') {
                 $this->progressService->updateWordProgress($user->student, $module, 0, $request->words_processed, 0, isTutorial: true);
@@ -390,8 +388,7 @@ class StudentController extends Controller
             ? round(min(($wordsSmashed / $totalPossible) * 100, 100), 2)
             : 0;
 
-        $deadline = \App\Models\Setting::getValue('report_deadline');
-        $isDeadlineHit = $deadline && \Carbon\Carbon::parse($deadline)->isPast();
+        $isDeadlineHit = (bool) $this->reportService->cutoff();
 
         $session = GameSession::logSession($user->id, $module->id, $type, $wordsSmashed, $accuracy, $streak, $isDeadlineHit);
 

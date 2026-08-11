@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\TeacherController;
 use App\Http\Controllers\UserController;
@@ -37,12 +38,11 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/classes', [TeacherController::class, 'classes'])->name('classes');
             Route::get('/students', [TeacherController::class, 'students'])->name('students');
             Route::get('/studentDetails/{student}', [TeacherController::class, 'show'])->name('studentDetails.show');
-            Route::get('/reports', [TeacherController::class, 'reports'])->name('reports');
-            Route::post('/reports/send-emails', [TeacherController::class, 'sendReportEmails'])->name('reports.sendEmails');
-            Route::post('/reports/deadline', [TeacherController::class, 'saveDeadline'])->name('reports.deadline');
-            Route::get('/reports/export', [TeacherController::class, 'exportReports'])->name('reports.export');
+            Route::get('/reports', [ReportController::class, 'reports'])->name('reports');
+            Route::post('/reports/send-emails', [ReportController::class, 'sendReportEmails'])->name('reports.sendEmails');
+            Route::post('/reports/deadline', [ReportController::class, 'saveDeadline'])->name('reports.deadline');
+            Route::get('/reports/export', [ReportController::class, 'exportReports'])->name('reports.export');
             Route::get('/leaderboards', [TeacherController::class, 'leaderboards'])->name('leaderboards');
-            Route::get('/assignments', [TeacherController::class, 'assignments'])->name('assignments');
             Route::get('/badges', [TeacherController::class, 'badges'])->name('badges');
             Route::put('/students/{student}', [TeacherController::class, 'updateStudent'])->name('students.update');
             Route::delete('/students/{student}', [TeacherController::class, 'destroy'])->name('students.destroy');

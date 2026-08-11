@@ -119,14 +119,7 @@ function processSentenceModeResult(
     }
 }
 
-function processWordModeResult(
-    event,
-    target,
-    stateRefs,
-    timeoutRefs,
-    timerRefs,
-    propsRef,
-) {
+function processWordModeResult(event, target, stateRefs, timerRefs, propsRef) {
     for (let i = event.resultIndex; i < event.results.length; ++i) {
         if (i <= stateRefs.current.lastProcessed) continue;
 
@@ -144,6 +137,8 @@ function processWordModeResult(
             continue;
         }
 
+        propsRef.current.onSpeechHeard?.();
+
         if (isFuzzyMatch(transcript, target)) {
             stateRefs.current.hasMatched = true;
             stateRefs.current.lastProcessed = i;
@@ -154,7 +149,6 @@ function processWordModeResult(
             stateRefs.current.lastProcessed = i;
             if (
                 !stateRefs.current.hasMatched &&
-                Date.now() >= timeoutRefs.current.graceEnd &&
                 !stateRefs.current.mispronouncedInWord
             ) {
                 stateRefs.current.mispronouncedInWord = true;
@@ -249,6 +243,7 @@ export function useSpeechRecognition({
     onWordRecognized,
     onPermissionDenied,
     onMispronounced,
+    onSpeechHeard,
     onRecognitionError,
     onRestartFailed,
     matchMode = "word",
@@ -266,6 +261,7 @@ export function useSpeechRecognition({
             onWordRecognized,
             onPermissionDenied,
             onMispronounced,
+            onSpeechHeard,
             onRecognitionError,
             onRestartFailed,
         };
@@ -276,6 +272,7 @@ export function useSpeechRecognition({
         onWordRecognized,
         onPermissionDenied,
         onMispronounced,
+        onSpeechHeard,
         onRecognitionError,
         onRestartFailed,
     ]);
@@ -341,7 +338,6 @@ export function useSpeechRecognition({
                         event,
                         target,
                         stateRefs,
-                        timeoutRefs,
                         timerRefs,
                         propsRef,
                     );
@@ -410,6 +406,7 @@ export function useSpeechRecognition({
             wasMatched &&
             recognitionRef.current &&
             propsRef.current.isActive &&
+            stateRefs.current.isListening &&
             propsRef.current.isWordMode
         ) {
             try {

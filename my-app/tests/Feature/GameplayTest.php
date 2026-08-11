@@ -195,6 +195,34 @@ class GameplayTest extends TestCase
         ]);
     }
 
+    public function test_post_deadline_paragraph_mastery_write_is_rejected(): void
+    {
+        Setting::setValue('report_deadline', now()->subMinute()->format('Y-m-d H:i:s'));
+
+        $paraModule = ParagraphModule::create([
+            'level' => 1,
+            'title' => 'Test Paragraph',
+            'content' => 'The cat is big and fat.',
+        ]);
+        $paraWord = ParagraphWord::create([
+            'paragraph_module_id' => $paraModule->id,
+            'word' => 'cat',
+            'position' => 1,
+        ]);
+
+        $this->actingAs($this->student)
+            ->post(route('student.updateParagraphMastery'), [
+                'paragraph_word_id' => $paraWord->id,
+                'status' => 'mastered',
+            ])
+            ->assertNoContent();
+
+        $this->assertDatabaseMissing('student_paragraph_mastery', [
+            'user_id' => $this->student->id,
+            'paragraph_word_id' => $paraWord->id,
+        ]);
+    }
+
     public function test_round_rejects_words_processed_above_module_total(): void
     {
         Setting::where('key', 'report_deadline')->delete();

@@ -76,7 +76,7 @@ Mode-aware `isActive` gate in the two gameplay pages:
 
 | Mode | isActive | Why |
 |---|---|---|
-| Word Blast (read) | `gameState === "ACTIVE" && !isExploding && !isMispronounced && isWordReady` | Mic closes for three windows: (1) 500ms blast after correct match; (2) 800ms "Try Again!" after mispronounce; (3) 500ms word-entry prep (`isWordReady=false`) while the new word fades in blurred/30% opacity. Safe: the word isn't readable until `isWordReady=true`. No echo feedback can fuzzy-match the short target word, and no student speech is lost — they only read fully-visible words. |
+| Word Blast (read) | `gameState === "ACTIVE" && !isExploding && !isMispronounced` | Mic closes for two windows: (1) 500ms blast after correct match; (2) 800ms "Try Again!" after mispronounce. Echo feedback from those windows can't fuzzy-match the short target word. The word changes instantly (no fade-in prep window); a 5s `wordTimeoutRef` fallback in the engine (reset on every recognized speech via `onSpeechHeard`) catches silence. |
 | Story Quest (speak) | `gameState === "ACTIVE"` only | Mic stays live continuously — students read sentences back-to-back; stopping would clip the head of the next utterance. Full-sentence matching (full transcript, word count equality) makes feedback-echo mis-recapture negligible. |
 
 ## Results
