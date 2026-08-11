@@ -68,20 +68,18 @@ class TeacherController extends Controller
 
         $sortMap = [
             'name' => ['users.name', $direction],
-            'risk' => ['students.wordBlastAcc', 'desc'],
             'level' => ['students.read_level', 'asc'],
         ];
 
         [$sortCol, $sortDir] = $sortMap[$sort] ?? ['users.name', 'asc'];
 
+        $query->join('students', 'users.id', '=', 'students.user_id')
+            ->select('users.*');
+
         if ($sort === 'risk') {
-            $query->join('students', 'users.id', '=', 'students.user_id')
-                ->orderByRaw('(COALESCE(students.wordBlastAcc,0) + COALESCE(students.storyQuestAcc,0)) / 2 '.$sortDir)
-                ->select('users.*');
+            $query->orderByRaw('(COALESCE(students.wordBlastAcc,0) + COALESCE(students.storyQuestAcc,0)) / 2 desc');
         } else {
-            $query->join('students', 'users.id', '=', 'students.user_id')
-                ->orderBy($sortCol, $sortDir)
-                ->select('users.*');
+            $query->orderBy($sortCol, $sortDir);
         }
 
         $students = $query->paginate(8)
@@ -303,14 +301,7 @@ class TeacherController extends Controller
     {
         // Normalize before validate: the unique rule must see the trimmed ID,
         // otherwise "2023-000001 " passes unique then collides after trim.
-        $request->merge([
-            'fullName' => trim($request->fullName),
-            'studentID' => trim($request->studentID),
-            'section' => trim($request->section),
-            'parent_email' => trim((string) $request->parent_email) !== ''
-                ? strtolower(trim((string) $request->parent_email))
-                : null,
-        ]);
+        $request->merge($this->normalizeStudentRow($request->all()));
 
         $request->validate([
             'fullName' => 'required|string|max:255',
@@ -342,18 +333,7 @@ class TeacherController extends Controller
         // Normalize every row before validate so the unique rule sees trimmed
         // IDs (same trap as store(): "2023-000001 " would pass unique then collide).
         $rows = collect($request->input('students', []))
-            ->map(function ($row) {
-                $parentEmail = trim((string) ($row['parent_email'] ?? ''));
-
-                return [
-                    'fullName' => trim((string) ($row['fullName'] ?? '')),
-                    'studentID' => trim((string) ($row['studentID'] ?? '')),
-                    'section' => trim((string) ($row['section'] ?? '')),
-                    'pin' => (string) ($row['pin'] ?? ''),
-                    'gender' => $row['gender'] ?? null,
-                    'parent_email' => $parentEmail !== '' ? strtolower($parentEmail) : null,
-                ];
-            })
+            ->map(fn ($row) => $this->normalizeStudentRow($row))
             ->values()
             ->all();
 
@@ -389,6 +369,20 @@ class TeacherController extends Controller
         });
 
         return redirect()->back();
+    }
+
+    private function normalizeStudentRow(mixed $row): array
+    {
+        $parentEmail = trim((string) ($row['parent_email'] ?? ''));
+
+        return [
+            'fullName' => trim((string) ($row['fullName'] ?? '')),
+            'studentID' => trim((string) ($row['studentID'] ?? '')),
+            'section' => trim((string) ($row['section'] ?? '')),
+            'pin' => (string) ($row['pin'] ?? ''),
+            'gender' => $row['gender'] ?? null,
+            'parent_email' => $parentEmail !== '' ? strtolower($parentEmail) : null,
+        ];
     }
 
     private function persistStudent(array $data): User

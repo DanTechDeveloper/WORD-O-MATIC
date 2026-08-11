@@ -157,6 +157,23 @@ class AddStudentTest extends TestCase
             );
     }
 
+    public function test_students_list_can_sort_by_risk(): void
+    {
+        $low = User::factory()->create(['role' => 'student', 'name' => 'AA Low']);
+        $low->student()->create(['wordBlastAcc' => 10, 'storyQuestAcc' => 10]);
+
+        $high = User::factory()->create(['role' => 'student', 'name' => 'ZZ High']);
+        $high->student()->create(['wordBlastAcc' => 90, 'storyQuestAcc' => 90]);
+
+        $this->actingAs($this->teacher)
+            ->get('/teacher/students?sort=risk')
+            ->assertSuccessful()
+            ->assertInertia(fn ($page) => $page
+                ->component('Teacher/Students')
+                ->where('data.data.0.fullName', 'ZZ High')
+            );
+    }
+
     public function test_student_cannot_add_students(): void
     {
         $student = User::factory()->create(['role' => 'student']);

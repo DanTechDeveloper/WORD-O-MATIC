@@ -149,28 +149,38 @@ class StudentController extends Controller
 
     public function readModeLevels()
     {
-        $user = auth()->user();
+        return $this->levelsPage(auth()->user(), 'read');
+    }
+
+    private function levelsPage(User $user, string $mode)
+    {
         extract($this->tutorialState($user));
 
+        $tutModule = $mode === 'read' ? $tutWord : $tutPara;
+        $progressModel = $mode === 'read' ? StudentWordProgress::class : StudentParagraphProgress::class;
+        $progressColumn = $mode === 'read' ? 'word_module_id' : 'paragraph_module_id';
+
         if (! $user->student?->tutorial_completed_at) {
-            $progress = StudentWordProgress::where('user_id', $user->id)
-                ->where('word_module_id', $tutWord->id)->first();
+            $progress = $progressModel::where('user_id', $user->id)
+                ->where($progressColumn, $tutModule->id)->first();
             $modules = collect([[
-                'id' => $tutWord->id,
-                'level' => $tutWord->level,
-                'title' => $tutWord->title,
-                'total_points' => $tutWord->words()->count(),
+                'id' => $tutModule->id,
+                'level' => $tutModule->level,
+                'title' => $tutModule->title,
+                'total_points' => $tutModule->words()->count(),
                 'status' => $progress && $progress->status === 'completed' ? 'completed' : 'current',
                 'words_smashed' => $progress ? $progress->words_smashed : 0,
                 'is_tutorial' => true,
             ]]);
         } else {
-            $modules = $this->levelService->getWordModuleStatuses($user->id);
+            $modules = $mode === 'read'
+                ? $this->levelService->getWordModuleStatuses($user->id)
+                : $this->levelService->getSpeakModuleStatuses($user->id);
         }
 
         return Inertia::render('Student/LevelsPage', [
             'modules' => $modules,
-            'mode' => 'read',
+            'mode' => $mode,
             'tutorialComplete' => (bool) $user->student?->tutorial_completed_at,
             'wordTutorialDone' => $wordTutorialDone,
             'speakTutorialDone' => $speakTutorialDone,
@@ -179,54 +189,78 @@ class StudentController extends Controller
 
     public function gameplayReadMode($level)
     {
+        return $this->gameplayPage($level, 'word');
+    }
+
+    private function gameplayPage($level, string $type)
+    {
         $user = auth()->user();
+        $isWord = $type === 'word';
+        $moduleClass = $isWord ? WordModule::class : ParagraphModule::class;
+        $levelsRoute = $isWord ? 'student.readModeLevels' : 'student.speakModeLevels';
+        $page = $isWord ? 'Student/GameplayReadMode' : 'Student/GameplaySpeakMode';
 
         // Routes are level-based (the domain key — see saveWithWords), so the
         // tutorial is naturally /gameplayReadMode/0.
-        $module = WordModule::with('words')
-            ->select(['id', 'level', 'title', 'is_tutorial'])
+        $module = $moduleClass::with('words')
+            ->select($isWord
+                ? ['id', 'level', 'title', 'is_tutorial']
+                : ['id', 'level', 'title', 'content', 'is_tutorial'])
             ->where('level', $level)
             ->firstOrFail();
         $id = $module->id;
 
         if (! $module->is_tutorial && $this->reportService->cutoff()) {
-            return redirect()->route('student.readModeLevels');
+            return redirect()->route($levelsRoute);
         }
 
         // Onboarding lock: until the tutorial is completed, real level URLs
         // silently bounce back to the level picker — no error banner.
         if (! $user->student?->tutorial_completed_at && ! $module->is_tutorial) {
-            return redirect()->route('student.readModeLevels');
+            return redirect()->route($levelsRoute);
         }
 
-        if (! $this->levelService->isModuleAccessible($user->id, $id, 'word')) {
-            return redirect()->route('student.readModeLevels');
+        if (! $this->levelService->isModuleAccessible($user->id, $id, $type)) {
+            return redirect()->route($levelsRoute);
         }
 
-        $tutorialComplete = (bool) $user->student?->tutorial_completed_at;
-
-        return Inertia::render('Student/GameplayReadMode', [
+        $data = [
             'module' => $module,
-            'tutorialComplete' => $tutorialComplete,
-        ]);
+            'tutorialComplete' => (bool) $user->student?->tutorial_completed_at,
+        ];
+
+        if (! $isWord) {
+            $progress = StudentParagraphProgress::where('user_id', $user->id)
+                ->where('paragraph_module_id', $id)
+                ->first();
+            $data['userProgress'] = $progress ? $progress->words_smashed : 0;
+        }
+
+        return Inertia::render($page, $data);
     }
 
     public function saveWordProgress(Request $request)
     {
-        $request->validate([
-            'module_id' => 'required|exists:word_modules,id',
-            'words_smashed' => 'required|integer|min:0',
-            'words_processed' => 'required|integer|min:0',
-            'streak' => 'nullable|integer|min:0',
-        ]);
-
-        return $this->finishRound(auth()->user(), WordModule::findOrFail($request->module_id), $request, 'word');
+        return $this->saveProgress($request, 'word');
     }
 
     public function updateWordMastery(Request $request)
     {
+        return $this->updateMastery($request, 'word');
+    }
+
+    public function updateParagraphMastery(Request $request)
+    {
+        return $this->updateMastery($request, 'paragraph');
+    }
+
+    private function updateMastery(Request $request, string $type)
+    {
+        $idColumn = $type === 'word' ? 'word_id' : 'paragraph_word_id';
+        $model = $type === 'word' ? StudentWordMastery::class : StudentParagraphMastery::class;
+
         $request->validate([
-            'word_id' => 'required|exists:words,id',
+            $idColumn => ['required', 'exists:'.($type === 'word' ? 'words' : 'paragraph_words').',id'],
             'status' => 'required|in:mastered,training',
         ]);
 
@@ -237,43 +271,15 @@ class StudentController extends Controller
 
         // Mastery is sticky: a mastered word can never regress to training on replay,
         // matching the best-score-only invariant (see docs/CAVEATS.md BF2/BF4).
-        $existing = StudentWordMastery::where('user_id', auth()->id())
-            ->where('word_id', $request->word_id)
+        $existing = $model::where('user_id', auth()->id())
+            ->where($idColumn, $request->$idColumn)
             ->first();
         if ($existing && $existing->status === 'mastered' && $request->status === 'training') {
             return response()->noContent();
         }
 
-        StudentWordMastery::updateOrCreate(
-            ['user_id' => auth()->id(), 'word_id' => $request->word_id],
-            ['status' => $request->status]
-        );
-
-        return response()->noContent();
-    }
-
-    public function updateParagraphMastery(Request $request)
-    {
-        $request->validate([
-            'paragraph_word_id' => 'required|exists:paragraph_words,id',
-            'status' => 'required|in:mastered,training',
-        ]);
-
-        // Post-deadline rounds must not write mastery rows (BF7/BF10).
-        if ($this->reportService->cutoff()) {
-            return response()->noContent();
-        }
-
-        // Same sticky-mastery guard: mastered paragraph words cannot regress.
-        $existing = StudentParagraphMastery::where('user_id', auth()->id())
-            ->where('paragraph_word_id', $request->paragraph_word_id)
-            ->first();
-        if ($existing && $existing->status === 'mastered' && $request->status === 'training') {
-            return response()->noContent();
-        }
-
-        StudentParagraphMastery::updateOrCreate(
-            ['user_id' => auth()->id(), 'paragraph_word_id' => $request->paragraph_word_id],
+        $model::updateOrCreate(
+            ['user_id' => auth()->id(), $idColumn => $request->$idColumn],
             ['status' => $request->status]
         );
 
@@ -282,79 +288,31 @@ class StudentController extends Controller
 
     public function speakModeLevels()
     {
-        $user = auth()->user();
-        extract($this->tutorialState($user));
-
-        if (! $user->student?->tutorial_completed_at) {
-            $progress = StudentParagraphProgress::where('user_id', $user->id)
-                ->where('paragraph_module_id', $tutPara->id)->first();
-            $modules = collect([[
-                'id' => $tutPara->id,
-                'level' => $tutPara->level,
-                'title' => $tutPara->title,
-                'total_points' => $tutPara->words()->count(),
-                'status' => $progress && $progress->status === 'completed' ? 'completed' : 'current',
-                'words_smashed' => $progress ? $progress->words_smashed : 0,
-                'is_tutorial' => true,
-            ]]);
-        } else {
-            $modules = $this->levelService->getSpeakModuleStatuses($user->id);
-        }
-
-        return Inertia::render('Student/LevelsPage', [
-            'modules' => $modules,
-            'mode' => 'speak',
-            'tutorialComplete' => (bool) $user->student?->tutorial_completed_at,
-            'wordTutorialDone' => $wordTutorialDone,
-            'speakTutorialDone' => $speakTutorialDone,
-        ]);
+        return $this->levelsPage(auth()->user(), 'speak');
     }
 
     public function gameplaySpeakMode($level)
     {
-        $user = auth()->user();
-
-        $module = ParagraphModule::with('words')
-            ->select(['id', 'level', 'title', 'content', 'is_tutorial'])
-            ->where('level', $level)
-            ->firstOrFail();
-        $id = $module->id;
-
-        if (! $module->is_tutorial && $this->reportService->cutoff()) {
-            return redirect()->route('student.speakModeLevels');
-        }
-
-        // Onboarding lock: real level URLs silently bounce back.
-        if (! $user->student?->tutorial_completed_at && ! $module->is_tutorial) {
-            return redirect()->route('student.speakModeLevels');
-        }
-
-        if (! $this->levelService->isModuleAccessible($user->id, $id, 'paragraph')) {
-            return redirect()->route('student.speakModeLevels');
-        }
-
-        $progress = StudentParagraphProgress::where('user_id', $user->id)
-            ->where('paragraph_module_id', $id)
-            ->first();
-        $tutorialComplete = (bool) $user->student?->tutorial_completed_at;
-
-        return Inertia::render('Student/GameplaySpeakMode', [
-            'module' => $module,
-            'userProgress' => $progress ? $progress->words_smashed : 0,
-            'tutorialComplete' => $tutorialComplete,
-        ]);
+        return $this->gameplayPage($level, 'speak');
     }
 
     public function saveParagraphProgress(Request $request)
     {
+        return $this->saveProgress($request, 'paragraph');
+    }
+
+    private function saveProgress(Request $request, string $type)
+    {
         $request->validate([
-            'module_id' => 'required|exists:paragraph_modules,id',
+            'module_id' => ['required', 'exists:'.($type === 'word' ? 'word_modules' : 'paragraph_modules').',id'],
             'words_smashed' => 'required|integer|min:0',
             'words_processed' => 'required|integer|min:0',
             'streak' => 'nullable|integer|min:0',
         ]);
 
-        return $this->finishRound(auth()->user(), ParagraphModule::findOrFail($request->module_id), $request, 'paragraph');
+        $moduleClass = $type === 'word' ? WordModule::class : ParagraphModule::class;
+
+        return $this->finishRound(auth()->user(), $moduleClass::findOrFail($request->module_id), $request, $type);
     }
 
     private function finishRound(User $user, WordModule|ParagraphModule $module, Request $request, string $type): RedirectResponse

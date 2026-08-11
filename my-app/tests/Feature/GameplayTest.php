@@ -395,6 +395,46 @@ class GameplayTest extends TestCase
             ->assertSuccessful();
     }
 
+    public function test_levels_pages_render_tutorial_module_during_onboarding(): void
+    {
+        $tutorialWord = WordModule::create([
+            'level' => 0,
+            'title' => 'Tutorial',
+            'is_tutorial' => true,
+        ]);
+        Word::create([
+            'word_module_id' => $tutorialWord->id,
+            'word' => 'cat',
+            'position' => 1,
+        ]);
+
+        $tutorialPara = ParagraphModule::create([
+            'level' => 0,
+            'title' => 'Tutorial',
+            'content' => 'I see the cat.',
+            'is_tutorial' => true,
+        ]);
+        ParagraphWord::create([
+            'paragraph_module_id' => $tutorialPara->id,
+            'word' => 'I',
+            'position' => 1,
+        ]);
+
+        $this->actingAs($this->student)
+            ->get(route('student.readModeLevels'))
+            ->assertInertia(fn ($page) => $page
+                ->component('Student/LevelsPage')
+                ->where('mode', 'read')
+                ->where('modules.0.is_tutorial', true));
+
+        $this->actingAs($this->student)
+            ->get(route('student.speakModeLevels'))
+            ->assertInertia(fn ($page) => $page
+                ->component('Student/LevelsPage')
+                ->where('mode', 'speak')
+                ->where('modules.0.is_tutorial', true));
+    }
+
     public function test_speak_gameplay_page_redirects_when_deadline_passed(): void
     {
         $paraModule = ParagraphModule::create([
