@@ -35,7 +35,6 @@ export default function GameplayReadMode({ module, tutorialComplete = true }) {
         scoreEmphasize,
         feedbackType,
         feedbackMessage,
-        isWordReady,
         streakShake,
         countdownValue,
         targetWord,
@@ -45,6 +44,7 @@ export default function GameplayReadMode({ module, tutorialComplete = true }) {
         startGame,
         handleWordRecognized,
         handleMispronounce,
+        resetWordTimeout,
     } = useGameplayEngine({
         words: module?.words,
         totalWords: module?.words?.length ?? 0,
@@ -87,11 +87,12 @@ export default function GameplayReadMode({ module, tutorialComplete = true }) {
     }, [gameState, permissionState, requestPermission, startGame]);
 
     useSpeechRecognition({
-        isActive: gameState === "ACTIVE" && !isExploding && !isMispronounced && isWordReady,
+        isActive: gameState === "ACTIVE" && !isExploding && !isMispronounced,
         targetWord: targetWord,
         onWordRecognized: handleWordRecognized,
         onPermissionDenied: () => setGameState("DENIED"),
         onMispronounced: handleMispronounce,
+        onSpeechHeard: resetWordTimeout,
         onRecognitionError: (err) => console.error("Recognition error:", err),
     });
     const [guideStep, setGuideStep] = useState(0);
@@ -146,7 +147,6 @@ export default function GameplayReadMode({ module, tutorialComplete = true }) {
                 streak={currentStreak}
                 feedbackType={feedbackType}
                 feedbackMessage={feedbackMessage}
-                isWordReady={isWordReady}
                 streakShake={streakShake}
             />
             {isTutorial && !guideDone && bodyUrl && (
