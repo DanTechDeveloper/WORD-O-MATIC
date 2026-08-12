@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class GameSession extends Model
 {
@@ -36,10 +35,5 @@ class GameSession extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
-    }
-
-    public function module(): MorphTo
-    {
-        return $this->morphTo(null, 'module_type', 'module_id');
     }
 }

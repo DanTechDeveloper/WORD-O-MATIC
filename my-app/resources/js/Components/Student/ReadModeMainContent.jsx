@@ -174,27 +174,6 @@ const ReadModeMainContent = memo(function ReadModeMainContent({
                                     </span>
                                 )}
 
-                                {feedbackType === "correct" && (
-                                    <div className="flex items-center gap-1 bg-gradient-to-r from-cyan-500/20 to-emerald-600/20 backdrop-blur-sm rounded-full px-2.5 py-1 sm:px-3 sm:py-1.5 border border-cyan-400/40 shadow-lg shadow-cyan-500/20">
-                                        <span
-                                            className="material-symbols-outlined text-lg sm:text-xl"
-                                            style={{
-                                                color:
-                                                    streak >= 5
-                                                        ? "#ff44ff"
-                                                        : streak >= 3
-                                                          ? "#00f0ff"
-                                                          : "#44ff88",
-                                                filter: `drop-shadow(0 0 6px ${streak >= 5 ? "#ff44ff88" : streak >= 3 ? "#00f0ff88" : "#44ff8888"})`,
-                                            }}
-                                        >
-                                            bolt
-                                        </span>
-                                        <span className="text-base sm:text-lg md:text-xl font-black text-white">
-                                            {streak}
-                                        </span>
-                                    </div>
-                                )}
                             </div>
 
                             {isExploding && (
@@ -280,6 +259,30 @@ const ReadModeMainContent = memo(function ReadModeMainContent({
                         )}
                     </div>
 
+                    {feedbackType === "correct" && (
+                        <div className="absolute top-2 sm:top-3 left-1/2 z-20 animate-streak-bounce-in flex items-center gap-1.5 sm:gap-2 bg-gradient-to-r from-cyan-500/20 to-emerald-600/20 backdrop-blur-sm rounded-full px-3 sm:px-4 py-1.5 sm:py-2 border-2 border-cyan-400/40 shadow-lg shadow-cyan-500/20">
+                            <span
+                                className="material-symbols-outlined text-2xl sm:text-3xl"
+                                style={{
+                                    color:
+                                        streak >= 5
+                                            ? "#ff44ff"
+                                            : streak >= 3
+                                              ? "#00f0ff"
+                                              : "#44ff88",
+                                    filter: `drop-shadow(0 0 6px ${streak >= 5 ? "#ff44ff88" : streak >= 3 ? "#00f0ff88" : "#44ff8888"})`,
+                                }}
+                            >
+                                bolt
+                            </span>
+                            <span className="text-xs sm:text-sm font-black uppercase tracking-widest text-cyan-200/90">
+                                STREAK!
+                            </span>
+                            <span className="text-2xl sm:text-3xl md:text-4xl font-black text-white italic">
+                                {streak}
+                            </span>
+                        </div>
+                    )}
                 </>
             ) : null}
         </div>

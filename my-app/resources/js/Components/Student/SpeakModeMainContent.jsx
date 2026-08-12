@@ -78,9 +78,9 @@ const SpeakModeMainContent = memo(function SpeakModeMainContent({
                 </div>
             ) : (
                 <div className="flex-1 flex flex-col relative">
-                    <div className="flex-1 flex items-start sm:items-center justify-center overflow-y-auto px-4 sm:px-8 py-16">
-                        <div className="relative w-full max-w-7xl">
-                            <div className="sticky top-2 z-30 flex items-center justify-center gap-4 mb-4 min-h-[3.5rem]" />
+                    <div className="flex-1 flex items-start justify-center overflow-y-auto px-4 sm:px-8 pt-15 pb-16">
+                        <div className="relative w-full max-w-7xl my-auto">
+                            <div className="sticky top-2 z-30 flex items-center justify-center gap-4 mb-3 min-h-10" />
 
                             <div className={`font-headline-xl text-left leading-relaxed tracking-tight select-none text-4xl md:text-5xl lg:text-7xl flex flex-wrap gap-x-4 gap-y-8`}>
                                 {words.map((word, index) => (
@@ -99,7 +99,7 @@ const SpeakModeMainContent = memo(function SpeakModeMainContent({
                                     >
                                         {index === currentIndex && feedbackType && (
                                             <span
-                                                className={`absolute left-1/2 -translate-x-1/2 -top-10 sm:-top-12 z-30 flex items-center gap-2 font-black italic whitespace-nowrap text-xl sm:text-2xl md:text-3xl rounded-full px-3 py-1 border bg-slate-900/85 animate-feedback-pop ${
+                                                className={`absolute left-1/2 -translate-x-1/2 -top-8 sm:-top-10 z-30 flex items-center gap-2 font-black italic whitespace-nowrap text-xl sm:text-2xl md:text-3xl rounded-full px-3 py-1 border bg-slate-900/85 animate-feedback-pop ${
                                                     feedbackType === "correct"
                                                         ? "text-yellow-300 border-amber-400/60"
                                                         : "text-rose-400 border-rose-500/60"
@@ -113,9 +113,9 @@ const SpeakModeMainContent = memo(function SpeakModeMainContent({
                                             >
                                                 {feedbackMessage}
                                                 {feedbackType === "correct" && (
-                                                    <span className="flex items-center gap-1">
+                                                    <span className="flex items-center gap-1.5 sm:gap-2">
                                                         <span
-                                                            className="material-symbols-outlined text-lg sm:text-xl"
+                                                            className="material-symbols-outlined text-2xl sm:text-3xl"
                                                             style={{
                                                                 color:
                                                                     streak >= 5
@@ -128,7 +128,10 @@ const SpeakModeMainContent = memo(function SpeakModeMainContent({
                                                         >
                                                             local_fire_department
                                                         </span>
-                                                        <span className="text-base sm:text-lg md:text-xl font-black text-white">
+                                                        <span className="text-xs sm:text-sm font-black uppercase tracking-widest text-amber-200/90">
+                                                            STREAK!
+                                                        </span>
+                                                        <span className="text-2xl sm:text-3xl md:text-4xl font-black text-white">
                                                             {streak}
                                                         </span>
                                                     </span>

@@ -265,7 +265,7 @@ export function useGameplayEngine({
         if (gameState !== "ACTIVE") return;
         clearTimeout(wordTimeoutRef.current);
         wordTimeoutRef.current = setTimeout(
-            () => onMispronounceFnRef.current(),
+            () => onMispronounceFnRef.current(true),
             5000
         );
     }, [gameState]);

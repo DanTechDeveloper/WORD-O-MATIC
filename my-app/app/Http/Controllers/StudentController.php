@@ -45,7 +45,12 @@ class StudentController extends Controller
     public function dashboard()
     {
         $user = auth()->user();
-        extract($this->tutorialState($user));
+        [
+            'tutWord' => $tutWord,
+            'tutPara' => $tutPara,
+            'wordTutorialDone' => $wordTutorialDone,
+            'speakTutorialDone' => $speakTutorialDone,
+        ] = $this->tutorialState($user);
 
         $totalReadPoints = (int) Word::query()
             ->when($tutWord, fn ($q) => $q->where('word_module_id', '!=', $tutWord->id))
@@ -149,16 +154,21 @@ class StudentController extends Controller
 
     public function readModeLevels()
     {
-        return $this->levelsPage(auth()->user(), 'read');
+        return $this->levelsPage(auth()->user(), 'word');
     }
 
     private function levelsPage(User $user, string $mode)
     {
-        extract($this->tutorialState($user));
+        [
+            'tutWord' => $tutWord,
+            'tutPara' => $tutPara,
+            'wordTutorialDone' => $wordTutorialDone,
+            'speakTutorialDone' => $speakTutorialDone,
+        ] = $this->tutorialState($user);
 
-        $tutModule = $mode === 'read' ? $tutWord : $tutPara;
-        $progressModel = $mode === 'read' ? StudentWordProgress::class : StudentParagraphProgress::class;
-        $progressColumn = $mode === 'read' ? 'word_module_id' : 'paragraph_module_id';
+        $tutModule = $mode === 'word' ? $tutWord : $tutPara;
+        $progressModel = $mode === 'word' ? StudentWordProgress::class : StudentParagraphProgress::class;
+        $progressColumn = $mode === 'word' ? 'word_module_id' : 'paragraph_module_id';
 
         if (! $user->student?->tutorial_completed_at) {
             $progress = $progressModel::where('user_id', $user->id)
@@ -173,14 +183,14 @@ class StudentController extends Controller
                 'is_tutorial' => true,
             ]]);
         } else {
-            $modules = $mode === 'read'
+            $modules = $mode === 'word'
                 ? $this->levelService->getWordModuleStatuses($user->id)
                 : $this->levelService->getSpeakModuleStatuses($user->id);
         }
 
         return Inertia::render('Student/LevelsPage', [
             'modules' => $modules,
-            'mode' => $mode,
+            'mode' => $mode === 'word' ? 'read' : 'speak',
             'tutorialComplete' => (bool) $user->student?->tutorial_completed_at,
             'wordTutorialDone' => $wordTutorialDone,
             'speakTutorialDone' => $speakTutorialDone,
@@ -288,7 +298,7 @@ class StudentController extends Controller
 
     public function speakModeLevels()
     {
-        return $this->levelsPage(auth()->user(), 'speak');
+        return $this->levelsPage(auth()->user(), 'paragraph');
     }
 
     public function gameplaySpeakMode($level)
@@ -422,7 +432,10 @@ class StudentController extends Controller
 
     private function checkTutorialCompletion(User $user): ?array
     {
-        extract($this->tutorialState($user));
+        [
+            'wordTutorialDone' => $wordTutorialDone,
+            'speakTutorialDone' => $speakTutorialDone,
+        ] = $this->tutorialState($user);
 
         if ($wordTutorialDone && $speakTutorialDone) {
             if (! $user->student->tutorial_completed_at) {
