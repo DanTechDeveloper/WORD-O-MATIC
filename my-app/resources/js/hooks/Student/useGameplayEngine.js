@@ -266,7 +266,7 @@ export function useGameplayEngine({
         clearTimeout(wordTimeoutRef.current);
         wordTimeoutRef.current = setTimeout(
             () => onMispronounceFnRef.current(true),
-            5000
+            3000
         );
     }, [gameState]);
 

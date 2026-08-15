@@ -6,8 +6,8 @@
 
 | Layer | Role |
 |---|---|
-| Controllers | `UserController`, `StudentController`, `TeacherController` — thin, delegate to services |
-| Services | `ProgressService`, `BadgeService`, `LevelService` |
+| Controllers | `UserController`, `StudentController`, `TeacherController`, `ReportController` — thin, delegate to services |
+| Services | `ProgressService`, `BadgeService`, `LevelService`, `ReportService` |
 | Middleware | `HandleInertiaRequests` (global data), `EnsureUserRole` (role gate), `CheckStudentOnboarding` (avatar) |
 | Models | 14 Eloquent models |
 | Validation | Inline `$request->validate()` in controllers |

@@ -13,7 +13,7 @@
 | Accuracy | `words_smashed / total_words * 100` |
 | Update rule | Only on new best score (retries don't lower existing score) |
 | Mastery | Per-word: `mastered` or `training`, stored in `student_word_mastery` |
-| Routes | `/student/gameplayReadMode/{id}`, `/student/readModeLevels` |
+| Routes | `/student/gameplayReadMode/{level}`, `/student/readModeLevels` |
 
 ## Story Quest (Speak Mode)
 
@@ -25,7 +25,7 @@
 | Scoring | Speech recognition accuracy per word |
 | Update rule | Only on new best score |
 | Mastery | Per-word: `mastered` or `training`, stored in `student_paragraph_mastery` |
-| Routes | `/student/gameplaySpeakMode/{id}`, `/student/speakModeLevels` |
+| Routes | `/student/gameplaySpeakMode/{level}`, `/student/speakModeLevels` |
 
 ## Rules
 
@@ -35,7 +35,7 @@
 - Progress overwritten on new best score only.
 - Mastery toggles per word — mastered words can still appear in retries (spaced repetition).
 - Completed modules are replayable for practice (results "Again" + level card "PLAY AGAIN"); retries never lower best scores or award extra points.
-- Direct URL access to a locked module (`gameplayReadMode/{id}`, `gameplaySpeakMode/{id}`) is blocked: `LevelService::isModuleAccessible()` redirects to the level-select page with a flash error.
+- Direct URL access to a locked module (`gameplayReadMode/{level}`, `gameplaySpeakMode/{level}`) is blocked: `LevelService::isModuleAccessible()` redirects to the level-select page with a flash error.
 
 ## Tutorial
 
