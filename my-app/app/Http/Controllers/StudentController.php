@@ -126,9 +126,6 @@ class StudentController extends Controller
             $badge->threshold = $badge->threshold_score;
 
             if ($badge->threshold_score !== null) {
-                // Best streak/accuracy counts only sessions that weren't deadline-hit,
-                // so a post-deadline round can't inflate badge progress — sticky even
-                // if the deadline is later cleared.
                 $sessionQuery = GameSession::where('user_id', $user->id)
                     ->where('is_deadline_hit', false);
 

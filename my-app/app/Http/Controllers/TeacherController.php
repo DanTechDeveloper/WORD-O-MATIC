@@ -299,8 +299,6 @@ class TeacherController extends Controller
 
     public function store(Request $request)
     {
-        // Normalize before validate: the unique rule must see the trimmed ID,
-        // otherwise "2023-000001 " passes unique then collides after trim.
         $request->merge($this->normalizeStudentRow($request->all()));
 
         $request->validate([
