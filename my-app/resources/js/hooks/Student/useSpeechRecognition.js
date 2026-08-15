@@ -37,6 +37,43 @@ function buildFullSentence(transcript, interim) {
         .trim();
 }
 
+function armSentenceTimeout(target, full, stateRefs, timerRefs, timeoutRefs, propsRef) {
+    clearTimeout(timerRefs.current.sentence);
+    timeoutRefs.current.target = target;
+
+    timerRefs.current.sentence = setTimeout(() => {
+        if (
+            stateRefs.current.isMounted &&
+            propsRef.current.isActive &&
+            !stateRefs.current.hasMatched &&
+            timeoutRefs.current.target === target
+        ) {
+            if (!stateRefs.current.mispronouncedSentence) {
+                stateRefs.current.mispronouncedSentence = true;
+                propsRef.current.onMispronounced?.(full);
+            }
+        }
+    }, 5000);
+}
+
+function armWordTimeout(target, stateRefs, timerRefs, timeoutRefs, propsRef) {
+    clearTimeout(timerRefs.current.word);
+    timeoutRefs.current.target = target;
+
+    timerRefs.current.word = setTimeout(() => {
+        if (
+            stateRefs.current.isMounted &&
+            propsRef.current.isActive &&
+            !stateRefs.current.hasMatched &&
+            !stateRefs.current.mispronouncedInWord &&
+            timeoutRefs.current.target === target
+        ) {
+            stateRefs.current.mispronouncedInWord = true;
+            propsRef.current.onMispronounced?.();
+        }
+    }, 3000);
+}
+
 function processSentenceModeResult(
     event,
     target,
@@ -63,22 +100,7 @@ function processSentenceModeResult(
     stateRefs.current.interim = newInterim;
     const full = buildFullSentence(stateRefs.current.transcript, newInterim);
 
-    clearTimeout(timerRefs.current.sentence);
-    timeoutRefs.current.target = target;
-
-    timerRefs.current.sentence = setTimeout(() => {
-        if (
-            stateRefs.current.isMounted &&
-            propsRef.current.isActive &&
-            !stateRefs.current.hasMatched &&
-            timeoutRefs.current.target === target
-        ) {
-            if (!stateRefs.current.mispronouncedSentence) {
-                stateRefs.current.mispronouncedSentence = true;
-                propsRef.current.onMispronounced?.(full);
-            }
-        }
-    }, 5000);
+    armSentenceTimeout(target, full, stateRefs, timerRefs, timeoutRefs, propsRef);
 
     const spokenWordCount = full
         .split(/\s+/)
@@ -119,7 +141,7 @@ function processSentenceModeResult(
     }
 }
 
-function processWordModeResult(event, target, stateRefs, timerRefs, propsRef) {
+function processWordModeResult(event, target, stateRefs, timerRefs, timeoutRefs, propsRef) {
     for (let i = event.resultIndex; i < event.results.length; ++i) {
         if (i <= stateRefs.current.lastProcessed) continue;
 
@@ -137,7 +159,9 @@ function processWordModeResult(event, target, stateRefs, timerRefs, propsRef) {
             continue;
         }
 
-        propsRef.current.onSpeechHeard?.();
+        if (!stateRefs.current.mispronouncedInWord) {
+            armWordTimeout(target, stateRefs, timerRefs, timeoutRefs, propsRef);
+        }
 
         if (isFuzzyMatch(transcript, target)) {
             stateRefs.current.hasMatched = true;
@@ -243,7 +267,6 @@ export function useSpeechRecognition({
     onWordRecognized,
     onPermissionDenied,
     onMispronounced,
-    onSpeechHeard,
     onRecognitionError,
     onRestartFailed,
     matchMode = "word",
@@ -261,7 +284,6 @@ export function useSpeechRecognition({
             onWordRecognized,
             onPermissionDenied,
             onMispronounced,
-            onSpeechHeard,
             onRecognitionError,
             onRestartFailed,
         };
@@ -272,7 +294,6 @@ export function useSpeechRecognition({
         onWordRecognized,
         onPermissionDenied,
         onMispronounced,
-        onSpeechHeard,
         onRecognitionError,
         onRestartFailed,
     ]);
@@ -295,6 +316,7 @@ export function useSpeechRecognition({
         mispronounce: null,
         restart: null,
         sentence: null,
+        word: null,
     });
 
     const timeoutRefs = useRef({
@@ -339,6 +361,7 @@ export function useSpeechRecognition({
                         target,
                         stateRefs,
                         timerRefs,
+                        timeoutRefs,
                         propsRef,
                     );
                 } else {
@@ -402,6 +425,27 @@ export function useSpeechRecognition({
         timeoutRefs.current.graceEnd = Date.now() + 500;
         timeoutRefs.current.restartCount = 0;
         clearAllTimers(timerRefs.current);
+        if (propsRef.current.isActive) {
+            const activeTarget = normalizeTarget(propsRef.current.targetWord);
+            if (propsRef.current.isWordMode) {
+                armWordTimeout(
+                    activeTarget,
+                    stateRefs,
+                    timerRefs,
+                    timeoutRefs,
+                    propsRef,
+                );
+            } else {
+                armSentenceTimeout(
+                    activeTarget,
+                    stateRefs.current.transcript,
+                    stateRefs,
+                    timerRefs,
+                    timeoutRefs,
+                    propsRef,
+                );
+            }
+        }
         if (
             wasMatched &&
             recognitionRef.current &&
@@ -443,6 +487,25 @@ export function useSpeechRecognition({
                 recognition.start();
             } catch (e) {
                 console.debug("Speech recognition start failed:", e);
+            }
+            const activeTarget = normalizeTarget(propsRef.current.targetWord);
+            if (propsRef.current.isWordMode) {
+                armWordTimeout(
+                    activeTarget,
+                    stateRefs,
+                    timerRefs,
+                    timeoutRefs,
+                    propsRef,
+                );
+            } else {
+                armSentenceTimeout(
+                    activeTarget,
+                    stateRefs.current.transcript,
+                    stateRefs,
+                    timerRefs,
+                    timeoutRefs,
+                    propsRef,
+                );
             }
         } else {
             try {
