@@ -44,7 +44,6 @@ export default function GameplayReadMode({ module, tutorialComplete = true }) {
         startGame,
         handleWordRecognized,
         handleMispronounce,
-        resetWordTimeout,
     } = useGameplayEngine({
         words: module?.words,
         totalWords: module?.words?.length ?? 0,
@@ -92,7 +91,6 @@ export default function GameplayReadMode({ module, tutorialComplete = true }) {
         onWordRecognized: handleWordRecognized,
         onPermissionDenied: () => setGameState("DENIED"),
         onMispronounced: handleMispronounce,
-        onSpeechHeard: resetWordTimeout,
         onRecognitionError: (err) => console.error("Recognition error:", err),
     });
     const [guideStep, setGuideStep] = useState(0);
