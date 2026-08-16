@@ -93,8 +93,8 @@ const FEEDBACK_FILES = {
     "Nice Try!": "nice_try.wav",
 }
 
-function playAudio(path, volume = 1.0, { duck = true } = {}) {
-    if (duck) duck()
+function playAudio(path, volume = 1.0, { duck: shouldDuck = true } = {}) {
+    if (shouldDuck) duck()
     try {
         const audio = new Audio(path)
         audio.volume = volume
@@ -135,10 +135,11 @@ function playClickDebounced() {
 export function playClickSound() {
     if (!playClickDebounced()) return
     playAudio("/Sound Effects/BUTTON_CLICKED.mp3")
-    playAudio("/Sound Effects/BUTTON_CLICKED.mp3") // ponytail: media volume clamps at 1.0; double-play for perceived boost. Use AudioContext gain if this isn't enough.
+    playAudio("/Sound Effects/BUTTON_CLICKED.mp3")
 }
 
 export function playSoftBlip() {
     if (!playClickDebounced()) return
+    playAudio("/Sound Effects/BUTTON_CLICKED.mp3", 0.35, { duck: false }) ,
     playAudio("/Sound Effects/BUTTON_CLICKED.mp3", 0.35, { duck: false })
 }
