@@ -25,7 +25,7 @@ export default function DashboardLayout({ children }) {
     };
 
     const showDeadlineBanner = isDeadlineClosed;
-    const deadlineMessage = `The report deadline has passed. Gameplay is locked and all leaderboards, badges, and reports are now final. Module editing (Word Blast and Story Quest) is locked as well. Deadline was set to ${formatDeadline(deadline)}.`;
+    const deadlineMessage = `The report deadline has passed. Gameplay is locked and all leaderboards, badges, and reports are now final. Module editing is locked as well.`;
     const alerts = teacher
         ? [
               ...(!teacher.has_deadline
