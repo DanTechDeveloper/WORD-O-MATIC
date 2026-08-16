@@ -132,7 +132,9 @@ class StudentController extends Controller
                 $badge->current_value = match ($badge->metric) {
                     'total_points' => $student ? $student->points : 0,
                     'streak' => $sessionQuery->max('streak') ?? 0,
-                    'accuracy' => $sessionQuery->max('accuracy') ?? 0,
+                    // Same source as BadgeService::checkAllEligibleBadges so the page
+                    // shows the value the awarding logic actually checks (was session max).
+                    'accuracy' => $student ? max((float) $student->wordBlastAcc, (float) $student->storyQuestAcc) : 0,
                     'paragraph_completion' => $this->badgeService->calculateModuleCompletion($user, 'paragraph'),
                     'word_completion' => $this->badgeService->calculateModuleCompletion($user, 'word'),
                     default => 0,
@@ -397,16 +399,26 @@ class StudentController extends Controller
 
         if ($session->module_type === 'word') {
             $module = WordModule::withCount('words')->find($session->module_id);
-            $nextModule = WordModule::where('level', $module->level + 1)
-                ->where('is_tutorial', false)
-                ->first();
             $maxLevel = WordModule::where('is_tutorial', false)->max('level');
         } else {
             $module = ParagraphModule::withCount('words')->find($session->module_id);
+            $maxLevel = ParagraphModule::where('is_tutorial', false)->max('level');
+        }
+
+        // A deleted module must not 500 the results page (CAVEATS.md L2).
+        if (! $module) {
+            return redirect()->route('student.dashboard')
+                ->with('error', 'That session is no longer available.');
+        }
+
+        if ($session->module_type === 'word') {
+            $nextModule = WordModule::where('level', $module->level + 1)
+                ->where('is_tutorial', false)
+                ->first();
+        } else {
             $nextModule = ParagraphModule::where('level', $module->level + 1)
                 ->where('is_tutorial', false)
                 ->first();
-            $maxLevel = ParagraphModule::where('is_tutorial', false)->max('level');
         }
         $totalItems = $module->words_count;
 
