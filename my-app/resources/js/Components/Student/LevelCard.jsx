@@ -154,6 +154,7 @@ export default function LevelCard({ module, emoji, gameUrl, index, highlightTuto
                 href={`/${gameUrl}/${module.level}`}
                 className={wrapperClass}
                 style={{ animationDelay: `${index * 80}ms` }}
+                data-sfx="major"
             >
                 {cover}
                 {shimmer}

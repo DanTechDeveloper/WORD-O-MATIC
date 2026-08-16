@@ -154,23 +154,21 @@ export default function GameResults({
                         </div>
                     ) : (
                         <div className="flex gap-4">
-                            <button
-                                onClick={() =>
-                                    (window.location.href =
-                                        window.location.origin +
-                                        `/student/gameplay${session.module_type === "word" ? "Read" : "Speak"}Mode/${moduleLevel}`)
-                                }
-                                className="flex-1 bg-surface-container-high text-on-surface font-bold py-5 rounded-2xl border border-surface-variant/20 text-base uppercase tracking-wider active:scale-[0.97] transition-all hover:bg-surface-container-highest"
+                            <Link
+                                href={`/student/gameplay${session.module_type === "word" ? "Read" : "Speak"}Mode/${moduleLevel}`}
+                                data-sfx="major"
+                                className="flex-1 bg-surface-container-high text-on-surface font-bold py-5 rounded-2xl border border-surface-variant/20 text-base uppercase tracking-wider active:scale-[0.97] transition-all hover:bg-surface-container-highest text-center flex items-center justify-center"
                             >
                                 <span className="material-symbols-outlined mr-2">
                                     replay
                                 </span>
                                 Again
-                            </button>
+                            </Link>
                             {!isMaxLevel &&
                                 (nextModuleLevel ? (
                                     <Link
                                         href={`/student/gameplay${session.module_type === "word" ? "Read" : "Speak"}Mode/${nextModuleLevel}`}
+                                        data-sfx="major"
                                         className="flex-1 bg-primary text-on-primary font-bold py-5 rounded-2xl border border-surface-variant/20 text-base uppercase tracking-wider active:scale-[0.97] transition-all hover:brightness-110 text-center flex items-center justify-center"
                                     >
                                         <span className="material-symbols-outlined mr-2">

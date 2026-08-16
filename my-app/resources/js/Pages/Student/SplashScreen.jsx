@@ -118,6 +118,7 @@ export default function SplashScreen() {
                 onClick={handleStart}
                 disabled={starting}
                 aria-busy={starting}
+                data-sfx="major"
                 className="relative z-10 tactile-button flex items-center gap-3 border-2 border-surface-container-lowest bg-accent text-surface-container-lowest font-black text-2xl md:text-3xl uppercase tracking-wider px-12 py-5 rounded-xl transition-[transform,background-color] hover:bg-accent-hover hover:-translate-y-0.5 outline-none focus-visible:ring-4 focus-visible:ring-secondary-container focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-80 disabled:cursor-wait"
             >
                 <span className="material-symbols-outlined text-4xl" aria-hidden="true">

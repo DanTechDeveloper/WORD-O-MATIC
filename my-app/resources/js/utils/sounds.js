@@ -5,9 +5,14 @@ const BGM_STORAGE_KEY = "wordomaticBgm"
 let bgm = null
 let restoreTimer = null
 let micLive = false
+let bgmSilenced = false
 
 export function setMicLive(on) {
     micLive = on
+}
+
+export function setBgmSilenced(on) {
+    bgmSilenced = on
 }
 
 function saveBgmPosition() {
@@ -44,7 +49,7 @@ export function startBackgroundMusic() {
     }
     bgm = new Audio("/Sound Effects/BackgroundMusic.opus")
     bgm.loop = true
-    bgm.volume = 0.7
+    bgm.volume = 0.5
     let saved = null
     try {
         saved = JSON.parse(sessionStorage.getItem(BGM_STORAGE_KEY) || "null")
@@ -54,8 +59,14 @@ export function startBackgroundMusic() {
 }
 
 export function initStudentAudio() {
-    document.addEventListener("click", () => {
-        if (!micLive && location.pathname.startsWith("/student")) startBackgroundMusic()
+    document.addEventListener("click", (e) => {
+        if (!location.pathname.startsWith("/student")) return
+        if (micLive || bgmSilenced) return
+        startBackgroundMusic()
+        const el = e.target.closest("a, button, [role=button]")
+        if (!el) return
+        if (e.target.closest('[data-sfx="major"]')) playClickSound()
+        else playSoftBlip()
     })
     router.on("navigate", ({ detail }) => {
         if (!detail.page.url.startsWith("/student")) stopBackgroundMusic()
@@ -66,8 +77,8 @@ export function initStudentAudio() {
 function duck() {
     if (!bgm || bgm.paused) return
     clearTimeout(restoreTimer)
-    bgm.volume = 0.2
-    restoreTimer = setTimeout(() => (bgm.volume = 0.7), 500)
+    bgm.volume = 0.12
+    restoreTimer = setTimeout(() => (bgm.volume = 0.5), 500)
 }
 
 const FEEDBACK_FILES = {
@@ -82,11 +93,11 @@ const FEEDBACK_FILES = {
     "Nice Try!": "nice_try.wav",
 }
 
-function playAudio(path) {
-    duck()
+function playAudio(path, volume = 1.0, { duck = true } = {}) {
+    if (duck) duck()
     try {
         const audio = new Audio(path)
-        audio.volume = 1.0
+        audio.volume = volume
         audio.play()
     } catch (e) {
         // ignore
@@ -110,4 +121,24 @@ export function playFeedbackSound(message) {
     if (file) {
         playAudio("/Sound Effects/" + file)
     }
+}
+
+let lastClickSoundAt = 0
+
+function playClickDebounced() {
+    const now = Date.now()
+    if (now - lastClickSoundAt < 200) return false
+    lastClickSoundAt = now
+    return true
+}
+
+export function playClickSound() {
+    if (!playClickDebounced()) return
+    playAudio("/Sound Effects/BUTTON_CLICKED.mp3")
+    playAudio("/Sound Effects/BUTTON_CLICKED.mp3") // ponytail: media volume clamps at 1.0; double-play for perceived boost. Use AudioContext gain if this isn't enough.
+}
+
+export function playSoftBlip() {
+    if (!playClickDebounced()) return
+    playAudio("/Sound Effects/BUTTON_CLICKED.mp3", 0.35, { duck: false })
 }
