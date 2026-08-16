@@ -147,6 +147,7 @@ export default function Dashboard({
                                 key={m.mode}
                                 href={isDimmed ? undefined : m.href}
                                 as={isDimmed ? "div" : "a"}
+                                data-sfx="major"
                                 aria-label={`Play ${m.title}`}
                                 className={`group relative flex flex-col rounded-2xl bg-surface ${s.border} border-2 p-6 lg:p-8 ${isDimmed ? "opacity-40 pointer-events-none select-none" : "tactile-card transition-transform duration-150 hover:-translate-y-1 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-secondary-container motion-reduce:transition-none motion-reduce:hover:translate-y-0 z-10"} ${highlightClass}`}
                             >

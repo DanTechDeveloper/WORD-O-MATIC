@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { usePage } from "@inertiajs/react";
-import { playBadgeUnlockSound, pauseBackgroundMusic, startBackgroundMusic } from "@/utils/sounds";
+import { playBadgeUnlockSound, playClickSound, pauseBackgroundMusic, startBackgroundMusic, setBgmSilenced } from "@/utils/sounds";
 
 export default function BadgeUnlockModal({
     badge,
@@ -14,11 +14,18 @@ export default function BadgeUnlockModal({
     const deadlineClosed = auth?.deadline && new Date(auth.deadline) <= new Date();
 
     useEffect(() => {
-        if (show && badge) {
+        if (show) {
+            setBgmSilenced(true)
             pauseBackgroundMusic()
-            playBadgeUnlockSound()
+            return () => {
+                setBgmSilenced(false)
+                startBackgroundMusic()
+            }
         }
-        return () => startBackgroundMusic()
+    }, [show])
+
+    useEffect(() => {
+        if (show && badge) playBadgeUnlockSound()
     }, [show, badge])
 
     if (deadlineClosed || !show || !badge) return null;
@@ -111,7 +118,7 @@ export default function BadgeUnlockModal({
 
                 <button
                     type="button"
-                    onClick={onContinue}
+                    onClick={() => { playClickSound(); onContinue() }}
                     autoFocus
                     className="mt-10 tactile-button flex items-center justify-center bg-accent text-surface-container-lowest font-black px-10 py-4 rounded-xl border-2 border-surface-container-lowest text-xl uppercase tracking-[0.12em] transition-[transform,background-color] hover:bg-accent-hover"
                 >

@@ -101,6 +101,7 @@ export default function AvatarSelection() {
                         <button
                             onClick={handleConfirm}
                             disabled={isUpdating}
+                            data-sfx="major"
                             className="mt-12 bg-accent text-surface-container-lowest font-black px-10 py-4 rounded-xl border-4 border-surface-container-lowest text-xl uppercase tracking-widest tactile-button disabled:opacity-60 transition-all"
                         >
                             THIS ONE!
