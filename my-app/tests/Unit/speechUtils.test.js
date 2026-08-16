@@ -23,8 +23,8 @@ describe("isFuzzyMatch", () => {
             expect(isFuzzyMatch("hot", "hat")).toBe(true);
         });
  
-        test("returns true for cat and bat (1 substitution)", () => {
-            expect(isFuzzyMatch("cat", "bat")).toBe(true);
+        test("returns false for cat and bat (leading substitution)", () => {
+            expect(isFuzzyMatch("cat", "bat")).toBe(false);
         });
  
         test("returns true for read and red (1 deletion)", () => {
@@ -59,8 +59,8 @@ describe("isFuzzyMatch", () => {
     });
  
     describe("long words (>8 chars, 3 edit tolerance)", () => {
-        test("returns true for elephant and legphant (2 edits)", () => {
-            expect(isFuzzyMatch("elephant", "legphant")).toBe(true);
+        test("returns false for elephant and legphant (leading drop)", () => {
+            expect(isFuzzyMatch("elephant", "legphant")).toBe(false);
         });
  
         test("returns true for beautiful and beutiful (2 edits)", () => {
@@ -68,6 +68,59 @@ describe("isFuzzyMatch", () => {
         });
     });
  
+    describe("boundary leaks (leading/trailing drops and leading substitutions)", () => {
+        test("returns false for areful and careful (leading drop)", () => {
+            expect(isFuzzyMatch("areful", "careful")).toBe(false);
+        });
+
+        test("returns false for fareful and careful (leading substitution)", () => {
+            expect(isFuzzyMatch("fareful", "careful")).toBe(false);
+        });
+
+        test("returns false for member and remember (leading syllable drop)", () => {
+            expect(isFuzzyMatch("member", "remember")).toBe(false);
+        });
+
+        test("returns false for do and dog (trailing drop)", () => {
+            expect(isFuzzyMatch("do", "dog")).toBe(false);
+        });
+
+        test("returns false for tabl and table (trailing drop)", () => {
+            expect(isFuzzyMatch("tabl", "table")).toBe(false);
+        });
+
+        test("returns false for at and cat (leading consonant drop)", () => {
+            expect(isFuzzyMatch("at", "cat")).toBe(false);
+        });
+
+        test("returns false regardless of argument order", () => {
+            expect(isFuzzyMatch("careful", "areful")).toBe(false);
+            expect(isFuzzyMatch("dog", "do")).toBe(false);
+        });
+    });
+
+    describe("substitution tolerance preserved (ASR noise)", () => {
+        test("returns true for tablo and table (end vowel substitution)", () => {
+            expect(isFuzzyMatch("tablo", "table")).toBe(true);
+        });
+
+        test("returns true for carful and careful (medial schwa drop)", () => {
+            expect(isFuzzyMatch("carful", "careful")).toBe(true);
+        });
+
+        test("returns true for ct and cat (medial drop)", () => {
+            expect(isFuzzyMatch("ct", "cat")).toBe(true);
+        });
+
+        test("returns true for cot and cat (medial substitution)", () => {
+            expect(isFuzzyMatch("cot", "cat")).toBe(true);
+        });
+
+        test("returns true for dig and dog (trailing substitution)", () => {
+            expect(isFuzzyMatch("dig", "dog")).toBe(true);
+        });
+    });
+
     describe("multi-word matching (equal word count)", () => {
         test("returns true when all words match within tolerance", () => {
             expect(isFuzzyMatch("hat hot", "hot hat")).toBe(true);
@@ -83,8 +136,8 @@ describe("isFuzzyMatch", () => {
     });
  
     describe("multi-word matching (different word count)", () => {
-        test("returns true when target words all find matches", () => {
-            expect(isFuzzyMatch("the cat", "the hat cat")).toBe(true);
+        test("returns false when a spoken word only masks another (leading substitution)", () => {
+            expect(isFuzzyMatch("the cat", "the hat cat")).toBe(false);
         });
  
         test("returns false when target word has no match", () => {

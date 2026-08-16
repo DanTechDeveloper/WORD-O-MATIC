@@ -11,6 +11,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useGameplayEngine } from "@/hooks/Student/useGameplayEngine";
 import { useSpeechRecognition } from "@/hooks/Student/useSpeechRecognition";
 import { useMicrophonePermission } from "@/hooks/Student/useMicrophonePermission";
+import { pauseBackgroundMusic, setMicLive } from "@/utils/sounds";
 
 const GUIDE_STEPS = [
     { title: "READ THE SENTENCE", message: "Say the whole sentence clearly, not just one word!", emoji: "menu_book", color: "quest" },
@@ -90,6 +91,17 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true }) {
             startGame();
         }
     }, [gameState, permissionState, requestPermission, startGame]);
+
+    useEffect(() => {
+        if (gameState === "ACTIVE") {
+            pauseBackgroundMusic();
+            setMicLive(true);
+        }
+    }, [gameState]);
+
+    useEffect(() => {
+        return () => setMicLive(false);
+    }, []);
 
     useSpeechRecognition({
         isActive: gameState === "ACTIVE",

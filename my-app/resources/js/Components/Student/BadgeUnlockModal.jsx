@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { usePage } from "@inertiajs/react";
-import { playBadgeUnlockSound } from "@/utils/sounds";
+import { playBadgeUnlockSound, pauseBackgroundMusic, startBackgroundMusic } from "@/utils/sounds";
 
 export default function BadgeUnlockModal({
     badge,
@@ -15,8 +15,10 @@ export default function BadgeUnlockModal({
 
     useEffect(() => {
         if (show && badge) {
+            pauseBackgroundMusic()
             playBadgeUnlockSound()
         }
+        return () => startBackgroundMusic()
     }, [show, badge])
 
     if (deadlineClosed || !show || !badge) return null;

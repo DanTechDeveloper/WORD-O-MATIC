@@ -10,6 +10,7 @@ import axios from "axios";
 import { useGameplayEngine } from "@/hooks/Student/useGameplayEngine";
 import { useSpeechRecognition } from "@/hooks/Student/useSpeechRecognition";
 import { useMicrophonePermission } from "@/hooks/Student/useMicrophonePermission";
+import { pauseBackgroundMusic, setMicLive } from "@/utils/sounds";
 
 const GUIDE_STEPS = [
     { title: "READ THE WORD", message: "Say each word aloud into the mic. Read it right to BLAST it!", emoji: "campaign", color: "accent" },
@@ -84,6 +85,17 @@ export default function GameplayReadMode({ module, tutorialComplete = true }) {
             startGame();
         }
     }, [gameState, permissionState, requestPermission, startGame]);
+
+    useEffect(() => {
+        if (gameState === "ACTIVE") {
+            pauseBackgroundMusic();
+            setMicLive(true);
+        }
+    }, [gameState]);
+
+    useEffect(() => {
+        return () => setMicLive(false);
+    }, []);
 
     useSpeechRecognition({
         isActive: gameState === "ACTIVE" && !isExploding,
