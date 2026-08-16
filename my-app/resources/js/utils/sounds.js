@@ -140,6 +140,5 @@ export function playClickSound() {
 
 export function playSoftBlip() {
     if (!playClickDebounced()) return
-    playAudio("/Sound Effects/BUTTON_CLICKED.mp3", 0.35, { duck: false }) ,
-    playAudio("/Sound Effects/BUTTON_CLICKED.mp3", 0.35, { duck: false })
+    playAudio("/Sound Effects/BUTTON_CLICKED.mp3", 0.40, { duck: false }) 
 }

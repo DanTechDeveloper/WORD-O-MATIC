@@ -341,6 +341,7 @@ resources/
 - Leaderboards
 - Achievement badges
 - Word Blast / Story Quest session persistence
+- Background music + action-aware tap sounds (soft blip vs. loud commit SFX, mic-safe during gameplay)
 - Replayable completed levels (practice with best-score safety; disabled after report deadline)
 - Adaptive results screen with score-band headline and deadline/max-level/normal button rows; confetti on ≥80% accuracy
 
@@ -354,7 +355,7 @@ resources/
 
 ### 🌟 Highlights
 
-Laravel 13 + React 18 + Inertia.js &nbsp;•&nbsp; Best-score-only tracking &nbsp;•&nbsp; Gamified literacy &nbsp;•&nbsp; Teacher analytics &nbsp;•&nbsp; Badge & level system &nbsp;•&nbsp; Parent report emails &nbsp;•&nbsp; Responsive Tailwind UI &nbsp;•&nbsp; In-memory SQLite testing &nbsp;•&nbsp; Seeded demo environment
+Laravel 13 + React 18 + Inertia.js &nbsp;•&nbsp; Best-score-only tracking &nbsp;•&nbsp; Gamified literacy &nbsp;•&nbsp; Audio feedback (BGM + two-tier tap sounds) &nbsp;•&nbsp; Teacher analytics &nbsp;•&nbsp; Badge & level system &nbsp;•&nbsp; Parent report emails &nbsp;•&nbsp; Responsive Tailwind UI &nbsp;•&nbsp; In-memory SQLite testing &nbsp;•&nbsp; Seeded demo environment
 
 <br>
 

@@ -1,6 +1,6 @@
 # Architecture
 
-> Version 1.6
+> Version 1.7
 
 ## Backend
 
@@ -23,6 +23,7 @@
 | CSS | Tailwind 3 (`@tailwindcss/forms`) |
 | Charts | Recharts 3.8 |
 | HTTP | Inertia `router`/`useForm` for pages; axios for the 2 JSON mastery endpoints (`response()->noContent()`) |
+| Audio | Client-side BGM + SFX in `resources/js/utils/sounds.js` — see GAMEPLAY.md §Audio |
 | Pages | `resources/js/Pages/{Auth,Student,Teacher,Testing}/` |
 | Components | `resources/js/Components/` |
 | Hooks | `resources/js/hooks/` |
@@ -62,6 +63,10 @@ Axios JSON endpoints (mastery toggles) bypass Inertia and return `noContent()`.
 | Progress writes clamped at the service | `ProgressService::updateModuleProgress` clamps `processed ≥ 0`, `smashed ≤ processed`, `accuracy ∈ [0,100]` — the single choke point every caller routes through, because controller per-field rules can't cover cross-field lies (`smashed = total, processed = 0` point-farm) |
 | Zero-word module guard | A module with 0 words can never be `completed` (`$totalWords > 0`); paragraph content is validated non-empty at save so zero-word modules can't be created |
 | `words_processed` bounded by the module | `finishRound` rejects `words_processed > totalPossible` (ValidationException) before logging — closes the literal `processed=999` vector; the targeted claim (`processed = total`) is a documented open risk (CAVEATS H2) |
+| BGM autoplay workaround | BGM starts on the first interactive click on `/student` (browser autoplay policy); position persists to `sessionStorage.wordomaticBgm` on `pagehide` and resumes from there |
+| Mic-live audio silence | Gameplay `ACTIVE` pauses BGM + sets `micLive`; while `micLive` no SFX/BGM-resume runs, so the mic never records playback (echo protection) |
+| Badge-celebration silence | `BadgeUnlockModal` sets `bgmSilenced` and pauses BGM; BGM + tap sounds resume only on the last claimed badge |
+| Two-tier click SFX | `data-sfx="major"` actions get a loud click + BGM duck; un-tagged interactive elements get a soft blip (vol 0.35, no duck). Default is soft — a forgotten tag fails safely |
 
 ## Auth Flow
 

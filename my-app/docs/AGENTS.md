@@ -1,6 +1,6 @@
 # Word-O-Matic
 
-> Version 1.6 — Developer Guide
+> Version 1.7 — Developer Guide
 
 ## Design Context
 
@@ -142,6 +142,21 @@ recreates the module's words each save). `ParagraphInputModal.jsx` disables Save
 while content or title is empty and renders server validation errors in-modal
 (modals never close themselves on a failed save).
 
+## Audio & SFX (student)
+
+- All audio lives in `resources/js/utils/sounds.js`; `initStudentAudio()` is
+  called once in `app.jsx`. Route all SFX through `playAudio`/`playClickSound`/
+  `playSoftBlip` — never `new Audio()` inline.
+- BGM starts on the first `/student` click (autoplay policy), loops at 0.5,
+  ducks to 0.12 for 500ms on SFX, pauses on gameplay `ACTIVE` (mic live), and
+  resumes on any tap. Position persists to `sessionStorage.wordomaticBgm`.
+- `micLive` blocks all SFX/BGM-resume while the mic is open; `bgmSilenced`
+  blocks them while the badge modal is up. Both are module flags in sounds.js.
+- Click SFX is two-tier: tag real commit actions (`data-sfx="major"`) for the
+  loud + duck sound; everything else gets the soft blip automatically. The
+  default is soft, so a new button that forgets the tag just sounds soft (safe).
+- `playClickSound`/`playSoftBlip` share a 200ms debounce (double-click = one sound).
+
 ## Conventions
 
 - No comments unless explaining _why_.
@@ -155,6 +170,7 @@ while content or title is empty and renders server validation errors in-modal
 - New DB field: migration → `$fillable` → controller response array. (Fields missing from `$fillable` are silently dropped by mass-assignment, e.g., `report_sent_at` bug.)
 - Validation: inline `$request->validate()` in controllers (no Form Request pattern).
 - Auth: middleware-based (`EnsureUserRole`), no Policy files.
+- Don't name a destructured option after a module function — `playAudio(path, { duck })` shadowed the `duck()` helper and crashed every SFX call (`duck is not a function`, which also froze the 5s/3s word advance). Rename the option (`duck: shouldDuck`).
 
 ## Test Quirks
 

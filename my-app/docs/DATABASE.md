@@ -37,7 +37,7 @@ All migrations in `database/migrations/`. No raw SQL. All foreign keys on `user_
 
 | Table | Key Fields | Notes |
 |---|---|---|
-| `game_sessions` | `id, user_id, module_id, module_type, score, accuracy, streak, is_deadline_hit, created_at` | Polymorphic, append-only. Cascade on `user_id`. `is_deadline_hit` (boolean, default false) is sticky TRUE when the round was played after the report deadline closed — permanently excluded from badge/streak/accuracy metrics even if the deadline is later cleared. |
+| `game_sessions` | `id, user_id, module_id, module_type, score, accuracy, streak, is_deadline_hit, created_at` | Append-only. `module_id`/`module_type` are plain columns — no Eloquent relation (the morph map / `MorphTo` was removed 2026-08-13). Cascade on `user_id`. `is_deadline_hit` (boolean, default false) is sticky TRUE when the round was played after the report deadline closed — permanently excluded from badge/streak/accuracy metrics even if the deadline is later cleared. |
 
 ### Badges & Practice
 

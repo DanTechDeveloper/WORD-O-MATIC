@@ -1,6 +1,6 @@
 # Gameplay
 
-> Version 1.4
+> Version 1.5
 
 ## Word Blast (Read Mode)
 
@@ -49,26 +49,24 @@ Tutorial Complete badge flashes on Dashboard when both modes finished.
 
 ## Speech Recognition Timeout Rules
 
-Both Word Blast (read mode) and Story Quest (speak mode) have a 5-second timeout for recognizing speech:
+Timeouts are centralized in `useSpeechRecognition.js`: Word Blast (read mode) uses a 3-second per-word timeout, Story Quest (speak mode) a 5-second per-sentence timeout:
 
 | Mode | Timeout Behavior |
 |---|---|
-| **Word Mode** | If no word match is detected within 5 seconds of word display, the word is marked as mispronounced and advances to the next word. Internal 300ms/1200ms delays also verify target word identity before firing. |
-| **Sentence Mode** | Same 5-second timeout with additional synchronization. Timeout callbacks verify the target word hasn't changed before firing. This prevents the next word from being incorrectly marked as mispronounced when the 5s rule advances the game while speech results are still processing. |
+| **Word Mode** | If no word match is detected within 3 seconds of word display, the word is marked as mispronounced and advances to the next word. A transcript that finalizes without matching also mispronounces immediately — no delay. |
+| **Sentence Mode** | If no sentence match is detected within 5 seconds of sentence display, the sentence is marked as mispronounced. A full-length transcript that doesn't fuzzy-match also mispronounces, after a 500ms `graceEnd` guard (short feedback echoes inside the guard window are ignored). |
 
 ### Timer Synchronization
 
-All speech recognition timeouts use target word validation:
-- **`sentenceTimeoutRef` (5000ms)**: Stores target word at setup; only fires if current `targetWord` matches
-- **`mispronounceTimeoutRef` (200ms in word mode word-final)**: Validates target word before `onMispronounced` call
-- **`mispronounceTimeoutRef` (300ms in sentence mode)**: Validates target word identity before calling `onMispronounced`
-- **`mispronounceTimeoutRef` (1200ms in word mode result loop)**: Validates target word before calling `onMispronounced`
-- **`wordTimeoutRef` (5000ms in useGameplayEngine)**: Delegates to speech hook which validates target word
+All speech recognition timeouts are owned by `useSpeechRecognition.js` and validate the target word via `timeoutRefs.target` (stored at arm time; only fires if it still matches the current `targetWord`):
+- **`armSentenceTimeout` (5000ms)**: per-sentence fallback, re-armed on every transcript result
+- **`armWordTimeout` (3000ms)**: per-word fallback, re-armed on every transcript result and on `targetWord` change
+- **`graceEnd` (500ms, sentence mode)**: grace window before a full-length mismatch is judged mispronounced
 
 This prevents race conditions where:
-1. User speaks but doesn't complete word within 5s
-2. 5s word timeout fires → `handleMispronounce()` → `moveToNextWord()`
-3. Target word changes, but pending speech recognition timer would have fired with stale transcript
+1. User speaks but doesn't complete the word/sentence within the timeout
+2. The timeout fires → `onMispronounced` → `handleMispronounce()` → `moveToNextWord()`
+3. Target word changes, but a pending timer armed for the old target would fire with a stale transcript — the `timeoutRefs.target` check ignores it
 
 ### Mic Gating During Feedback (echo protection)
 
@@ -76,7 +74,7 @@ Mode-aware `isActive` gate in the two gameplay pages:
 
 | Mode | isActive | Why |
 |---|---|---|
-| Word Blast (read) | `gameState === "ACTIVE" && !isExploding && !isMispronounced` | Mic closes for two windows: (1) 500ms blast after correct match; (2) 800ms "Try Again!" after mispronounce. Echo feedback from those windows can't fuzzy-match the short target word. The word changes instantly (no fade-in prep window); a 5s `wordTimeoutRef` fallback in the engine (reset on every recognized speech via `onSpeechHeard`) catches silence. |
+| Word Blast (read) | `gameState === "ACTIVE" && !isExploding` | Mic closes only for the 500ms blast window after a correct match (echo feedback there can't fuzzy-match the short target word). The word changes instantly (no fade-in prep window); a 3s `armWordTimeout` in the hook (re-armed on every recognized transcript) catches silence. |
 | Story Quest (speak) | `gameState === "ACTIVE"` only | Mic stays live continuously — students read sentences back-to-back; stopping would clip the head of the next utterance. Full-sentence matching (full transcript, word count equality) makes feedback-echo mis-recapture negligible. |
 
 ## Results
@@ -96,3 +94,33 @@ Route: `/student/results/{id}`. Shows a scorecard, headline, call-to-action row,
 | Game closed (`isDeadlineClosed`) | Home |
 | Max level reached | Again · Home |
 | Normal | Again · Next Level · Home |
+
+**Again** is an Inertia `<Link>` (SPA navigation, not a page reload) so the BGM and
+click sound survive the transition; a fresh round mounts because the resume session
+is cleared at COMPLETED/GAMEOVER.
+
+## Audio & Sound Effects
+
+Client-side system in `resources/js/utils/sounds.js`, wired once in `app.jsx` via
+`initStudentAudio()`.
+
+- **BGM** (`BackgroundMusic.opus`, loop, vol 0.5) starts on the first interactive
+  click on `/student` (browser autoplay policy). Position persists to
+  `sessionStorage.wordomaticBgm` on `pagehide` and resumes from there on the next
+  click after a reload. Any tap on `/student` resumes it (single choke point:
+  the global click listener).
+- **Duck** — SFX duck the BGM to 0.12 for 500ms (restore to 0.5).
+- **Mic-live silence** — gameplay `ACTIVE` pauses BGM + sets `micLive`
+  (`GameplayReadMode.jsx` / `GameplaySpeakMode.jsx`); while `micLive`, no SFX and
+  no BGM resume, so the mic never records playback. BGM stays paused through
+  results; a tap on results resumes it.
+- **Badge-celebration silence** — `BadgeUnlockModal` sets `bgmSilenced` and
+  pauses BGM; the fanfare plays per claimed badge; BGM + tap sounds return only
+  on the last claimed badge (modal unmount).
+- **Two-tier click SFX** — every `a, button, [role=button]` on `/student` gets a
+  blip. Real commit actions are tagged `data-sfx="major"` (loud double-play +
+  duck: Splash Play, avatar "THIS ONE!", dashboard mode cards, `LevelCard`,
+  results Again/Next Level); everything else gets a soft blip (vol 0.35, no
+  duck). Shared 200ms debounce — a double-click plays once.
+- **Gameplay feedback** — `playSuccessSound` / `playMispronounceSound` /
+  `playFeedbackSound` still duck the BGM.
