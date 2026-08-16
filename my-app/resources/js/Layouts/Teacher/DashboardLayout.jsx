@@ -8,7 +8,6 @@ export default function DashboardLayout({ children }) {
     const [showNotifs, setShowNotifs] = useState(false);
     const notifRef = useRef();
 
-    const { url } = usePage();
     const { teacher } = usePage().props;
     const { auth } = usePage().props;
     const deadline = auth?.deadline;
@@ -25,13 +24,8 @@ export default function DashboardLayout({ children }) {
         });
     };
 
-    const onReportsPage = url === "/teacher/reports";
-    const showDeadlineBanner = onReportsPage ? !!deadline : isDeadlineClosed;
-    const deadlineMessage = onReportsPage
-        ? isDeadlineClosed
-            ? `The report deadline has passed. All report actions are now available. Deadline was set to ${formatDeadline(deadline)}.`
-            : `Reporting deadline not yet reached. Reports are set to be generated after ${formatDeadline(deadline)}. You may still proceed, but data may not be final.`
-        : "The report deadline has passed. Gameplay is locked and all leaderboards, badges, and reports are now final. Module editing (Word Blast and Story Quest) is locked as well.";
+    const showDeadlineBanner = isDeadlineClosed;
+    const deadlineMessage = `The report deadline has passed. Gameplay is locked and all leaderboards, badges, and reports are now final. Module editing (Word Blast and Story Quest) is locked as well. Deadline was set to ${formatDeadline(deadline)}.`;
     const alerts = teacher
         ? [
               ...(!teacher.has_deadline
