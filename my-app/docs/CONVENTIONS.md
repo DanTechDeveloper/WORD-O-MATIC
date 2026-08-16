@@ -1,6 +1,6 @@
 # Conventions
 
-> Version 1.3
+> Version 1.4
 
 ## PHP / Laravel
 
@@ -24,6 +24,7 @@
 - Forms: `router.post` / `router.put` (Inertia), `useForm` for modals.
 - `useForm.post(url, options)` sends the form's OWN data state — set it with `setData` before `post`; the options object is for callbacks only, never a payload.
 - JSON endpoints (`/student/updateWordMastery`, `/student/updateParagraphMastery`): axios + `response()->noContent()`.
+- Interactive elements on `/student` get an automatic click SFX (global listener in `initStudentAudio`). Tag real commit actions with `data-sfx="major"` (loud + BGM duck); un-tagged elements stay soft (vol 0.35, no duck). SFX via `utils/sounds.js` helpers, never `new Audio()` inline.
 
 ## Files
 
@@ -44,3 +45,4 @@
 
 - Extend before create.
 - After each task: list files changed + what changed + untouched + follow-up.
+- Never name a destructured option after a module-level function — `playAudio(path, { duck })` shadowed the `duck()` helper and crashed every SFX call (`duck is not a function`). Rename the option (`duck: shouldDuck`).

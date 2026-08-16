@@ -123,6 +123,19 @@ middleware aliases are registered in `bootstrap/app.php`.
   above the module's word count is rejected in `finishRound`, and
   `ProgressService` clamps `processed ≥ 0`, `smashed ≤ processed`, `accuracy
   ∈ [0,100]` — the client-trust model's remaining gap is CAVEATS.md H2.
+- **Student audio is a client-side system** (`resources/js/utils/sounds.js`,
+  wired once in `app.jsx`): BGM starts on the first `/student` click (autoplay
+  policy) and persists position in `sessionStorage.wordomaticBgm`; it pauses on
+  gameplay `ACTIVE` (mic live) and resumes on any tap. Route all SFX through the
+  `sounds.js` helpers — never `new Audio()` inline.
+- **Click SFX is two-tier**: tag real commit actions with `data-sfx="major"`
+  (loud + BGM duck); everything else gets a soft blip automatically. Default is
+  soft, so a new button that forgets the tag just sounds quiet (safe). Shared
+  200ms debounce — a double-click plays once.
+- **Never name a destructured option after a module function.** `playAudio(path,
+  { duck })` shadowed the `duck()` helper → `duck is not a function` on every
+  SFX, and the throw froze the 5s/3s word advance (`duck: shouldDuck` is the
+  fix). See CAVEATS.md BF19.
 
 ## Workflow conventions
 
