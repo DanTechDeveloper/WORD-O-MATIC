@@ -156,6 +156,55 @@ class TeacherLeaderboardsBadgesTest extends TestCase
                 ->where('mostEarnedBadge.slug', 'first-steps'));
     }
 
+    public function test_leaderboards_filter_by_section_and_search(): void
+    {
+        $this->makeStudent('Alice', ['section' => '7-G']);
+        $this->makeStudent('Abby', ['section' => 'Alpha']);
+        $this->makeStudent('Bob', ['section' => '7-G']);
+
+        $this->actingAs($this->teacher)
+            ->get(route('teacher.leaderboards', ['section' => '7-G']))
+            ->assertInertia(fn ($page) => $page
+                ->component('Teacher/Leaderboards')
+                ->has('leaderboard.points', 2)
+                ->where('filters.section', '7-G')
+                ->where('totalStudents', 3));
+
+        $this->actingAs($this->teacher)
+            ->get(route('teacher.leaderboards', ['search' => 'b']))
+            ->assertInertia(fn ($page) => $page
+                ->has('leaderboard.points', 2)
+                ->where('leaderboard.points.0.name', 'Abby')
+                ->where('filters.search', 'b'));
+
+        $this->actingAs($this->teacher)
+            ->get(route('teacher.leaderboards', ['search' => 'zzz']))
+            ->assertInertia(fn ($page) => $page->has('leaderboard.points', 0));
+    }
+
+    public function test_badges_page_filters_top_earners_by_section_and_search(): void
+    {
+        $this->seedBadges();
+        $this->makeStudent('Ava', ['section' => '7-G']);
+        $this->makeStudent('Aaron', ['section' => 'Alpha']);
+        $this->makeStudent('Bob', ['section' => '7-G']);
+
+        $this->actingAs($this->teacher)
+            ->get(route('teacher.badges', ['section' => '7-G']))
+            ->assertInertia(fn ($page) => $page
+                ->component('Teacher/Badges')
+                ->has('topEarners', 2)
+                ->where('filters.section', '7-G')
+                ->where('totalStudents', 3));
+
+        $this->actingAs($this->teacher)
+            ->get(route('teacher.badges', ['search' => 'aa']))
+            ->assertInertia(fn ($page) => $page
+                ->has('topEarners', 1)
+                ->where('topEarners.0.name', 'Aaron')
+                ->where('filters.search', 'aa'));
+    }
+
     public function test_paragraph_modules_page_lists_modules(): void
     {
         ParagraphModule::create(['level' => 1, 'title' => 'The Farm', 'content' => 'The cat sleeps.']);
