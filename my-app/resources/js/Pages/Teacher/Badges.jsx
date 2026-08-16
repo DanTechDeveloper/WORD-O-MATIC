@@ -1,5 +1,6 @@
 import DashboardLayout from "@/Layouts/Teacher/DashboardLayout";
-import { useState } from "react";
+import { router } from "@inertiajs/react";
+import { useRef } from "react";
 
 const RANK_COLORS = ["#fbbf24", "#94a3b8", "#d97706"];
 
@@ -11,10 +12,30 @@ export default function Badges({
     totalEarned,
     mostEarnedBadge,
     sections = [],
+    filters = {},
     auth,
 }) {
-    const [search, setSearch] = useState("");
-    const [selectedSection, setSelectedSection] = useState("");
+    const searchRef = useRef(null);
+    const debounceRef = useRef(null);
+
+    function navigate(params) {
+        router.get(
+            "/teacher/badges",
+            { ...filters, ...params },
+            { preserveState: true, preserveScroll: true },
+        );
+    }
+
+    function handleSearch(e) {
+        clearTimeout(debounceRef.current);
+        debounceRef.current = setTimeout(() => {
+            navigate({ search: e.target.value });
+        }, 300);
+    }
+
+    function handleSection(e) {
+        navigate({ section: e.target.value });
+    }
 
     const formatRelativeTime = (isoString) => {
         if (!isoString) return "—";
@@ -27,12 +48,7 @@ export default function Badges({
         return `${Math.round(diffHrs / 24)}d ago`;
     };
 
-    const filtered = (topEarners ?? [])
-        .filter((s) => !selectedSection || s.section === selectedSection)
-        .filter(
-            (s) =>
-                !search || s.name.toLowerCase().includes(search.toLowerCase()),
-        );
+    const filtered = topEarners ?? [];
 
     const summaryCards = [
         {
@@ -162,8 +178,8 @@ export default function Badges({
                     </h2>
                     <div className="flex gap-3 w-full md:w-auto">
                         <select
-                            value={selectedSection}
-                            onChange={(e) => setSelectedSection(e.target.value)}
+                            value={filters.section ?? ""}
+                            onChange={handleSection}
                             className="appearance-none bg-slate-950 border-2 border-slate-800 rounded-xl pl-4 pr-10 py-2 text-white font-black focus:outline-none focus:border-lime-500 cursor-pointer text-sm flex-1 md:flex-none"
                         >
                             <option value="">All Sections</option>
@@ -176,10 +192,11 @@ export default function Badges({
 
                         <div className="relative w-56">
                             <input
+                                ref={searchRef}
                                 type="text"
                                 placeholder="Search name..."
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
+                                defaultValue={filters.search ?? ""}
+                                onChange={handleSearch}
                                 className="w-full bg-slate-950 border-2 border-slate-800 rounded-xl pl-10 pr-4 py-2 text-white font-bold focus:outline-none focus:border-lime-500 text-sm"
                             />
                             <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-lg">

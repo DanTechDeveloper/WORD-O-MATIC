@@ -532,9 +532,12 @@ class TeacherController extends Controller
         return redirect()->back();
     }
 
-    public function leaderboards()
+    public function leaderboards(Request $request)
     {
-        $students = StudentProfile::join('users', 'users.id', '=', 'students.user_id')
+        $section = $request->input('section', '');
+        $search = $request->input('search', '');
+
+        $allStudents = StudentProfile::join('users', 'users.id', '=', 'students.user_id')
             ->where('users.role', 'student')
             ->select(
                 'students.user_id',
@@ -566,7 +569,18 @@ class TeacherController extends Controller
                 ];
             });
 
-        $sections = $students->pluck('section')->unique()->filter()->sort()->values();
+        $sections = $allStudents->pluck('section')->unique()->filter()->sort()->values();
+
+        $students = $allStudents;
+        if ($section) {
+            $students = $students->where('section', $section);
+        }
+
+        if ($search) {
+            $students = $students->filter(
+                fn ($s) => str_contains(strtolower($s['name']), strtolower($search))
+            );
+        }
 
         $isDeadlineClosed = (bool) $this->reportService->deadline()?->isPast();
 
@@ -576,13 +590,21 @@ class TeacherController extends Controller
                 'wordBlast' => $students->sortByDesc('wordBlastAcc')->values(),
                 'storyQuest' => $students->sortByDesc('storyQuestAcc')->values(),
             ],
+            'totalStudents' => $allStudents->count(),
             'sections' => $sections,
             'isDeadlineClosed' => $isDeadlineClosed,
+            'filters' => [
+                'section' => $section,
+                'search' => $search,
+            ],
         ]);
     }
 
-    public function badges()
+    public function badges(Request $request)
     {
+        $section = $request->input('section', '');
+        $search = $request->input('search', '');
+
         User::where('role', 'student')->get()
             ->each(fn ($u) => $this->badgeService->checkAllEligibleBadges($u));
 
@@ -621,8 +643,19 @@ class TeacherController extends Controller
                         ? $earnedBadges->first()->pivot->earned_at
                         : null,
                 ];
-            })
-            ->sortByDesc('badge_count')
+            });
+
+        if ($section) {
+            $students = $students->where('section', $section);
+        }
+
+        if ($search) {
+            $students = $students->filter(
+                fn ($s) => str_contains(strtolower($s['name']), strtolower($search))
+            );
+        }
+
+        $students = $students->sortByDesc('badge_count')
             ->values();
 
         $totalBadges = $badges->count();
@@ -641,6 +674,10 @@ class TeacherController extends Controller
             'mostEarnedBadge' => $mostEarnedBadge,
             'sections' => $sections,
             'isDeadlineClosed' => $isDeadlineClosed,
+            'filters' => [
+                'section' => $section,
+                'search' => $search,
+            ],
         ]);
     }
 

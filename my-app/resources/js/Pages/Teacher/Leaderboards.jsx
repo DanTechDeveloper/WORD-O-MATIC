@@ -1,10 +1,11 @@
 import DashboardLayout from "@/Layouts/Teacher/DashboardLayout";
-import { useState } from "react";
+import { router } from "@inertiajs/react";
+import { useRef, useState } from "react";
 
-export default function Leaderboards({ leaderboard, sections = [], auth }) {
+export default function Leaderboards({ leaderboard, totalStudents, sections = [], filters = {}, auth }) {
     const [activeTab, setActiveTab] = useState("points");
-    const [selectedSection, setSelectedSection] = useState("");
-    const [search, setSearch] = useState("");
+    const searchRef = useRef(null);
+    const debounceRef = useRef(null);
 
     const TAB_CONFIG = [
         { key: "points", label: "Points", icon: "military_tech" },
@@ -13,12 +14,25 @@ export default function Leaderboards({ leaderboard, sections = [], auth }) {
     ];
 
     const activeStudents = leaderboard?.[activeTab] ?? [];
-    const filtered = activeStudents
-        .filter((s) => !selectedSection || s.section === selectedSection)
-        .filter(
-            (s) =>
-                !search || s.name.toLowerCase().includes(search.toLowerCase()),
+
+    function navigate(params) {
+        router.get(
+            "/teacher/leaderboards",
+            { ...filters, ...params },
+            { preserveState: true, preserveScroll: true },
         );
+    }
+
+    function handleSearch(e) {
+        clearTimeout(debounceRef.current);
+        debounceRef.current = setTimeout(() => {
+            navigate({ search: e.target.value });
+        }, 300);
+    }
+
+    function handleSection(e) {
+        navigate({ section: e.target.value });
+    }
 
     const RANK_COLORS = ["#fbbf24", "#94a3b8", "#d97706"];
 
@@ -35,8 +49,8 @@ export default function Leaderboards({ leaderboard, sections = [], auth }) {
                     Leaderboards
                 </h1>
                 <p className="text-slate-500 font-black uppercase text-xs tracking-widest">
-                    {auth?.user?.name || "Teacher"} • {filtered.length} of{" "}
-                    {activeStudents.length} word-warriors
+                    {auth?.user?.name || "Teacher"} • {activeStudents.length} of{" "}
+                    {totalStudents} word-warriors
                 </p>
             </div>
 
@@ -62,8 +76,8 @@ export default function Leaderboards({ leaderboard, sections = [], auth }) {
 
                 <div className="flex gap-3 w-full sm:w-auto">
                     <select
-                        value={selectedSection}
-                        onChange={(e) => setSelectedSection(e.target.value)}
+                        value={filters.section ?? ""}
+                        onChange={handleSection}
                         className="appearance-none bg-slate-950 border-2 border-slate-800 rounded-xl pl-4 pr-10 py-3 text-white font-bold focus:outline-none focus:border-lime-500 cursor-pointer text-sm"
                     >
                         <option value="">All Sections</option>
@@ -76,10 +90,11 @@ export default function Leaderboards({ leaderboard, sections = [], auth }) {
 
                     <div className="relative w-64">
                         <input
+                            ref={searchRef}
                             type="text"
                             placeholder="Search name..."
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
+                            defaultValue={filters.search ?? ""}
+                            onChange={handleSearch}
                             className="w-full bg-slate-950 border-2 border-slate-800 rounded-xl pl-10 pr-4 py-3 text-white font-bold focus:outline-none focus:border-lime-500 transition-all text-sm"
                         />
                         <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-lg">
@@ -90,7 +105,7 @@ export default function Leaderboards({ leaderboard, sections = [], auth }) {
             </div>
 
             <div className="bg-slate-900 border-4 border-slate-800 rounded-[2.5rem] shadow-[8px_8px_0_0_#020617] overflow-hidden">
-                {filtered.length === 0 ? (
+                {activeStudents.length === 0 ? (
                     <div className="text-center py-16 text-slate-500">
                         <span className="material-symbols-outlined text-5xl mb-4 block">
                             rocket_launch
@@ -101,7 +116,7 @@ export default function Leaderboards({ leaderboard, sections = [], auth }) {
                     </div>
                 ) : (
                     <div className="divide-y-2 divide-slate-800/50">
-                        {filtered.map((s, i) => {
+                        {activeStudents.map((s, i) => {
                             const rank = i + 1;
                             const field = metricField[activeTab];
                             const metricValue = s[field];
