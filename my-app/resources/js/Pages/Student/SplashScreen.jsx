@@ -1,5 +1,6 @@
 import { router } from "@inertiajs/react";
 import { useEffect, useState } from "react";
+import { startBackgroundMusic } from "@/utils/sounds";
 
 const BG_WORDS = ["BLAST", "READ", "SPEAK", "QUEST", "LEARN", "HERO", "STAR", "LEVEL", "PLAY", "WIN"];
 const BG_COLORS = ["#d1bcff", "#7000ff", "#ff3bc0"];
@@ -92,6 +93,7 @@ export default function SplashScreen() {
     const handleStart = () => {
         if (starting) return;
         setStarting(true);
+        startBackgroundMusic();
         router.visit(route("student.avatarSelection"));
     };
 

@@ -27,6 +27,17 @@ function maxEdits(wordLength) {
     return 3;
 }
 
+// Boundary leak guard: near-matches that drop or swap the leading sound, or drop a
+// clean ending, are still mispronunciations (areful/fareful->careful, do->dog,
+// tabl->table). Medial edits and pure substitutions (tabel, cot, dig) stay tolerated.
+function boundaryLeak(a, b) {
+    if (Math.max(a.length, b.length) < 3) return false;
+    if (a[0] !== b[0]) return true;
+    const longer = a.length >= b.length ? a : b;
+    const shorter = a.length >= b.length ? b : a;
+    return longer.length > shorter.length && (longer.endsWith(shorter) || longer.startsWith(shorter));
+}
+
 export function isFuzzyMatch(spoken, target) {
     if (!spoken || !target) return false;
     const a = spoken.toLowerCase().trim();
@@ -40,6 +51,7 @@ export function isFuzzyMatch(spoken, target) {
     if (wordsA.length === wordsB.length) {
         return wordsA.every((word, i) => {
             if (word === wordsB[i]) return true;
+            if (boundaryLeak(word, wordsB[i])) return false;
             const limit = maxEdits(Math.max(word.length, wordsB[i].length));
             return standardLevenshtein(word, wordsB[i]) <= limit;
         });
@@ -48,6 +60,7 @@ export function isFuzzyMatch(spoken, target) {
     return wordsB.every((targetWord) =>
         wordsA.some((spokenWord) => {
             if (spokenWord === targetWord) return true;
+            if (boundaryLeak(spokenWord, targetWord)) return false;
             const limit = maxEdits(Math.max(spokenWord.length, targetWord.length));
             if (Math.abs(spokenWord.length - targetWord.length) > limit) return false;
             return standardLevenshtein(spokenWord, targetWord) <= limit;
