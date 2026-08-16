@@ -139,7 +139,7 @@ export function useGameplayEngine({
     }, [currentWordIndex, words]);
 
     const persistProgress = useCallback(() => {
-        if (!hasSaved.current) {
+        if (!hasSaved.current) {    
             hasSaved.current = true;
             router.post(
                 saveEndpoint,

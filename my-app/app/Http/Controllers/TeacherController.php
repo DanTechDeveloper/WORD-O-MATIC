@@ -66,6 +66,9 @@ class TeacherController extends Controller
             });
         }
 
+        // ponytail: level always asc — the frontend never sends a direction for
+        // level and the level view is a progression list; honor direction if a
+        // reverse ordering ever ships.
         $sortMap = [
             'name' => ['users.name', $direction],
             'level' => ['students.read_level', 'asc'],
@@ -284,7 +287,7 @@ class TeacherController extends Controller
 
     public function show($studentId)
     {
-        $user = User::with(['student'])->findOrFail($studentId);
+        $user = User::with(['student'])->where('role', 'student')->findOrFail($studentId);
 
         $cutoff = $this->reportService->cutoff();
 
@@ -643,7 +646,7 @@ class TeacherController extends Controller
 
     public function updateStudent(Request $request, $id)
     {
-        $user = User::findOrFail($id);
+        $user = User::where('role', 'student')->findOrFail($id);
 
         $request->validate([
             'fullName' => 'required',
@@ -693,7 +696,7 @@ class TeacherController extends Controller
 
     public function destroy($id)
     {
-        User::findOrFail($id)->delete();
+        User::where('role', 'student')->findOrFail($id)->delete();
 
         return redirect()->back()->with('success', 'Student deleted successfully.');
     }
