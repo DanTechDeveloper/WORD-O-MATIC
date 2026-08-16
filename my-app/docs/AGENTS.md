@@ -11,7 +11,7 @@ surfaces stay on-system:
   students; teachers secondary), positioning, brand personality (Playful,
   electric, bold), anti-references, and strategic design principles.
 - `DESIGN.md` — the "Tactile Arcade" Material 3 dark visual system: indigo-
-  black canvas (`#111125`), arcade-lime as the single action color, violet /
+  black canvas (`#0c0c1f`), arcade-lime as the single action color, violet /
   magenta / peach as chrome, hard offset tactile shadows, Lexend + Plus Jakarta
   Sans, Material Symbols Outlined. Build every surface from the named tokens in
   `tailwind.config.js` — never raw `zinc-*` / `slate-*` / `purple-*` defaults.
