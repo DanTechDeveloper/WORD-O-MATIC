@@ -133,12 +133,11 @@ function playClickDebounced() {
 }
 
 export function playClickSound() {
-    if (!playClickDebounced()) return
-    playAudio("/Sound Effects/BUTTON_CLICKED.mp3")
+    if (!playClickDebounced()) return;
     playAudio("/Sound Effects/BUTTON_CLICKED.mp3")
 }
 
 export function playSoftBlip() {
     if (!playClickDebounced()) return
-    playAudio("/Sound Effects/BUTTON_CLICKED.mp3", 0.40, { duck: false }) 
+    playAudio("/Sound Effects/BUTTON_CLICKED.mp3", 0.50, { duck: false }) 
 }

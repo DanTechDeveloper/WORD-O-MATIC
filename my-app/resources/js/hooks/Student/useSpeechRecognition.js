@@ -16,14 +16,7 @@ function clearAllTimers(timers) {
     });
 }
 
-function normalizeTarget(word) {
-    return (word ?? "")
-        .toLowerCase()
-        .replace(/[^\w\s]/g, "")
-        .trim();
-}
-
-function normalizeTranscript(text) {
+function normalizeText(text) {
     return (text ?? "")
         .toLowerCase()
         .replace(/[^\w\s]/g, "")
@@ -31,13 +24,17 @@ function normalizeTranscript(text) {
 }
 
 function buildFullSentence(transcript, interim) {
-    return (transcript + " " + interim)
-        .toLowerCase()
-        .replace(/[^\w\s]/g, "")
-        .trim();
+    return normalizeText(transcript + " " + interim);
 }
 
-function armSentenceTimeout(target, full, stateRefs, timerRefs, timeoutRefs, propsRef) {
+function armSentenceTimeout(
+    target,
+    full,
+    stateRefs,
+    timerRefs,
+    timeoutRefs,
+    propsRef,
+) {
     clearTimeout(timerRefs.current.sentence);
     timeoutRefs.current.target = target;
 
@@ -86,28 +83,42 @@ function processSentenceModeResult(
     let newInterim = "";
 
     for (let i = event.resultIndex; i < event.results.length; i++) {
+        if (i <= stateRefs.current.lastProcessedSentence) continue;
         const r = event.results[i];
-        if (r?.[0]) {
-            if (r.isFinal) {
-                newFinals += r[0].transcript + " ";
-            } else {
-                newInterim = r[0].transcript;
-            }
+        if (!r?.[0]) continue;
+        if (r.isFinal) {
+            newFinals += r[0].transcript + " ";
+            stateRefs.current.lastProcessedSentence = i;
+        } else {
+            newInterim = r[0].transcript;
         }
     }
 
-    stateRefs.current.transcript += " " + newFinals;
+    if (newFinals) {
+        stateRefs.current.transcript += " " + newFinals;
+    }
     stateRefs.current.interim = newInterim;
+
+    // Prevent memory leaks: keep only the recent words in memory
+    const targetWordCount = target.split(/\s+/).filter(Boolean).length;
+    const maxWords = targetWordCount + 5;
+    const words = stateRefs.current.transcript.split(/\s+/).filter(Boolean);
+    if (words.length > maxWords) {
+        stateRefs.current.transcript = words.slice(-maxWords).join(" ");
+    }
+
     const full = buildFullSentence(stateRefs.current.transcript, newInterim);
 
-    armSentenceTimeout(target, full, stateRefs, timerRefs, timeoutRefs, propsRef);
+    armSentenceTimeout(
+        target,
+        full,
+        stateRefs,
+        timerRefs,
+        timeoutRefs,
+        propsRef,
+    );
 
-    const spokenWordCount = full
-        .split(/\s+/)
-        .filter((w) => w.length > 0).length;
-    const targetWordCount = target
-        .split(/\s+/)
-        .filter((w) => w.length > 0).length;
+    const spokenWordCount = full.split(/\s+/).filter(Boolean).length;
     stateRefs.current.stoppedAt = Date.now();
 
     if (
@@ -128,6 +139,7 @@ function processSentenceModeResult(
     if (Date.now() < timeoutRefs.current.graceEnd) return;
 
     if (
+        !newInterim &&
         spokenWordCount >= targetWordCount &&
         isFuzzyMatch(full, target) === false
     ) {
@@ -136,20 +148,24 @@ function processSentenceModeResult(
             stateRefs.current.mispronouncedSentence = true;
             propsRef.current.onMispronounced?.(full);
         }
-        stateRefs.current.hasMatched = false;
-        stateRefs.current.mispronouncedInWord = false;
     }
 }
 
-function processWordModeResult(event, target, stateRefs, timerRefs, timeoutRefs, propsRef) {
+function processWordModeResult(
+    event,
+    target,
+    stateRefs,
+    timerRefs,
+    timeoutRefs,
+    propsRef,
+) {
     for (let i = event.resultIndex; i < event.results.length; ++i) {
         if (i <= stateRefs.current.lastProcessed) continue;
 
         const result = event.results[i];
         if (!result) continue;
 
-        const transcript = normalizeTranscript(result[0]?.transcript);
-
+        const transcript = normalizeText(result[0]?.transcript);
         if (!transcript) continue;
 
         stateRefs.current.stoppedAt = Date.now();
@@ -218,6 +234,7 @@ function handleRecognitionEnd(
 ) {
     clearAllTimers(timerRefs.current);
     stateRefs.current.lastProcessed = -1;
+    stateRefs.current.lastProcessedSentence = -1;
     stateRefs.current.hasMatched = false;
     stateRefs.current.transcript = "";
     stateRefs.current.interim = "";
@@ -249,6 +266,27 @@ function handleRecognitionEnd(
         try {
             stateRefs.current.isListening = true;
             recognitionRef.current?.start();
+
+            // Re-arm timeouts upon successful restart
+            const activeTarget = normalizeText(propsRef.current.targetWord);
+            if (propsRef.current.isWordMode) {
+                armWordTimeout(
+                    activeTarget,
+                    stateRefs,
+                    timerRefs,
+                    timeoutRefs,
+                    propsRef,
+                );
+            } else if (stateRefs.current.transcript) {
+                armSentenceTimeout(
+                    activeTarget,
+                    stateRefs.current.transcript,
+                    stateRefs,
+                    timerRefs,
+                    timeoutRefs,
+                    propsRef,
+                );
+            }
         } catch {
             const delay = Math.min(
                 500 * 2 ** timeoutRefs.current.restartCount,
@@ -302,6 +340,7 @@ export function useSpeechRecognition({
     const stateRefs = useRef({
         hasMatched: false,
         lastProcessed: -1,
+        lastProcessedSentence: -1,
         isMounted: false,
         stoppedAt: 0,
         mispronouncedInWord: false,
@@ -313,7 +352,6 @@ export function useSpeechRecognition({
 
     // Timers stored as plain values (not refs) to avoid nested hook violation
     const timerRefs = useRef({
-        mispronounce: null,
         restart: null,
         sentence: null,
         word: null,
@@ -353,7 +391,7 @@ export function useSpeechRecognition({
             recognition.onresult = (event) => {
                 if (!propsRef.current.isActive) return;
 
-                const target = normalizeTarget(propsRef.current.targetWord);
+                const target = normalizeText(propsRef.current.targetWord);
 
                 if (propsRef.current.isWordMode) {
                     processWordModeResult(
@@ -412,21 +450,24 @@ export function useSpeechRecognition({
         };
     }, []);
 
+    // Handle target word changes without restarting the engine
     useEffect(() => {
-        const wasMatched = stateRefs.current.hasMatched;
         stateRefs.current.hasMatched = false;
         stateRefs.current.mispronouncedInWord = false;
         stateRefs.current.mispronouncedSentence = false;
         stateRefs.current.lastProcessed = -1;
+        stateRefs.current.lastProcessedSentence = -1;
         stateRefs.current.transcript = "";
         stateRefs.current.interim = "";
         stateRefs.current.stoppedAt = 0;
         timeoutRefs.current.target = null;
         timeoutRefs.current.graceEnd = Date.now() + 500;
         timeoutRefs.current.restartCount = 0;
+
         clearAllTimers(timerRefs.current);
+
         if (propsRef.current.isActive) {
-            const activeTarget = normalizeTarget(propsRef.current.targetWord);
+            const activeTarget = normalizeText(propsRef.current.targetWord);
             if (propsRef.current.isWordMode) {
                 armWordTimeout(
                     activeTarget,
@@ -446,27 +487,6 @@ export function useSpeechRecognition({
                 );
             }
         }
-        if (
-            wasMatched &&
-            recognitionRef.current &&
-            propsRef.current.isActive &&
-            stateRefs.current.isListening &&
-            propsRef.current.isWordMode
-        ) {
-            try {
-                recognitionRef.current.stop();
-            } catch {}
-        }
-        if (
-            propsRef.current.isActive &&
-            recognitionRef.current &&
-            !stateRefs.current.isListening
-        ) {
-            try {
-                stateRefs.current.isListening = true;
-                recognitionRef.current.start();
-            } catch {}
-        }
     }, [targetWord]);
 
     useEffect(() => {
@@ -482,13 +502,18 @@ export function useSpeechRecognition({
             try {
                 stateRefs.current.hasMatched = false;
                 stateRefs.current.lastProcessed = -1;
+                stateRefs.current.lastProcessedSentence = -1;
                 clearAllTimers(timerRefs.current);
-                stateRefs.current.isListening = true;
-                recognition.start();
+
+                if (!stateRefs.current.isListening) {
+                    stateRefs.current.isListening = true;
+                    recognition.start();
+                }
             } catch (e) {
                 console.debug("Speech recognition start failed:", e);
             }
-            const activeTarget = normalizeTarget(propsRef.current.targetWord);
+
+            const activeTarget = normalizeText(propsRef.current.targetWord);
             if (propsRef.current.isWordMode) {
                 armWordTimeout(
                     activeTarget,
