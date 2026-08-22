@@ -106,6 +106,32 @@ Each tab displays a full ranked list (all students) with section filter dropdown
 
 Computed by `ProgressService::recalculateStatus()` based on `wordBlastAcc` and `storyQuestAcc` averages.
 
+## Word Attempt Analytics
+
+Per-word attempt tracking lives on `student_word_mastery` / `student_paragraph_mastery`
+(`failed_attempts`, default 0). Deliberately kept distinct from module/student Status —
+three concepts, never collapsed:
+
+| Concept | Answers | Where |
+|---|---|---|
+| Status | How is the student performing overall? | `students.status` (accuracy-based) |
+| Mastery | Has the student recognized this word at least once? | `student_*_mastery.status` (sticky) |
+| Attempts | Which words required repeated attempts? | `student_*_mastery.failed_attempts` |
+
+Semantics:
+
+- Every unsuccessful attempt (wrong transcript **or** ASR timeout) increments
+  `failed_attempts` while the word is still `training` (`StudentController::updateMastery`).
+- First mastery **freezes** the counter forever — it reads as "unsuccessful attempts
+  needed to master"; replays can never move it (same sticky guard).
+- The threshold is derived at display time, never stored (frontend const
+  `NEEDS_ATTENTION_ATTEMPTS = 3` in `StudentDetails.jsx`):
+  - `training` + ≥3 → **Needs Attention** (unresolved struggle — act)
+  - `mastered` + ≥3 → **Recovered** (was difficult, overcome — history only)
+  - else → no flag rendered (Normal is the absence of a flag, not a label)
+- Surfaced in the Word Analysis tables on `Teacher/StudentDetails.jsx` via the
+  additive `word_stats` key of `curriculumForUser()`; unseen words appear at 0.
+
 ## Student Deletion
 
 Deleting a student (Teacher → Students → Delete) cascade-removes all related records: progress, mastery, game sessions, badges, and profile. Irreversible.

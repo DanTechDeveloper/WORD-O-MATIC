@@ -1,6 +1,49 @@
 import DashboardLayout from "@/Layouts/Teacher/DashboardLayout";
 import { Link } from "@inertiajs/react";
 
+const NEEDS_ATTENTION_ATTEMPTS = 3;
+
+// Mastered words count their final successful attempt; training words
+// show unsuccessful attempts so far (counter is frozen once mastered).
+function attemptsShown(stat) {
+    return stat.mastery === "mastered"
+        ? stat.failed_attempts + 1
+        : stat.failed_attempts;
+}
+
+// Only surface the flag when it fires (≥3) — "Normal" is noise on a chip.
+// Resolution-cap rule: struggle flags expire once the word is mastered.
+function attentionMeta(stat) {
+    if (stat.failed_attempts < NEEDS_ATTENTION_ATTEMPTS) return null;
+    return stat.mastery === "mastered"
+        ? { label: "Recovered", cls: "text-emerald-400" }
+        : { label: "Needs Attention", cls: "text-red-500" };
+}
+
+// Inline Attempts/Attention meta under each word inside the Mastery/Training
+// zones; bare chip fallback when word_stats are unavailable.
+function WordChip({ word, stat, className }) {
+    const attention = stat ? attentionMeta(stat) : null;
+
+    return (
+        <span
+            className={`px-4 py-2 bg-slate-900 border-2 border-slate-800 font-black rounded-xl text-sm transition-colors cursor-default ${className}`}
+        >
+            {word}
+            {attention ? (
+                <span className="block mt-1 text-xs uppercase tracking-widest text-slate-500">
+                    Attempts: {attemptsShown(stat)},{" "}
+                    <span className={attention.cls}>{attention.label}</span>
+                </span>
+            ) : (
+                <span className="block mt-1 text-xs uppercase tracking-widest text-slate-500">
+                    Attempts: {attemptsShown(stat)}
+                </span>
+            )}
+        </span>
+    );
+}
+
 export default function StudentDetail({ data }) {
     const student = {
         id: data.student_id,
@@ -353,25 +396,29 @@ export default function StudentDetail({ data }) {
                             </h3>
                         </div>
                         <div className="bg-slate-950 rounded-[2.5rem] border-4 border-slate-800 p-8 shadow-[8px_8px_0_0_#020617] min-h-[400px] max-h-[600px] overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-slate-800 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-lime-400">
-                            {student.readCurriculum.map((level, i) => (
-                                <div key={i} className="mb-8 last:mb-0">
-                                    {level.mastered.length > 0 && (
-                                        <>
-                                            <div className="text-lime-400 font-black uppercase text-xs tracking-widest mb-4 flex items-center gap-2">
-                                                <div className="w-2 h-2 rounded-full bg-lime-400 shadow-[0_0_8px_#4ade80]"></div>
-                                                {level.level}
-                                            </div>
-                                            <div className="flex flex-wrap gap-2">
-                                                {level.mastered.map((word, j) => (
-                                                    <span key={j} className="px-4 py-2 bg-slate-900 border-2 border-slate-800 text-white font-black rounded-xl text-sm hover:border-lime-400 transition-colors cursor-default">
-                                                        {word}
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        </>
-                                    )}
-                                </div>
-                            ))}
+                            {student.readCurriculum.map((level, i) => {
+                                const stats = Object.fromEntries(
+                                    (level.word_stats ?? []).map((s) => [s.word, s]),
+                                );
+
+                                return (
+                                    <div key={i} className="mb-8 last:mb-0">
+                                        {level.mastered.length > 0 && (
+                                            <>
+                                                <div className="text-lime-400 font-black uppercase text-xs tracking-widest mb-4 flex items-center gap-2">
+                                                    <div className="w-2 h-2 rounded-full bg-lime-400 shadow-[0_0_8px_#4ade80]"></div>
+                                                    {level.level}
+                                                </div>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {level.mastered.map((word, j) => (
+                                                        <WordChip key={j} word={word} stat={stats[word]} className="text-white hover:border-lime-400" />
+                                                    ))}
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
 
@@ -385,28 +432,33 @@ export default function StudentDetail({ data }) {
                             </h3>
                         </div>
                         <div className="bg-slate-950 rounded-[2.5rem] border-4 border-slate-800 p-8 shadow-[8px_8px_0_0_#020617] min-h-[400px] max-h-[600px] overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-slate-800 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-orange-400">
-                            {student.readCurriculum.map((level, i) => (
-                                <div key={i} className="mb-8 last:mb-0">
-                                    {level.training.length > 0 && (
-                                        <>
-                                            <div className="text-orange-400 font-black uppercase text-xs tracking-widest mb-4 flex items-center gap-2">
-                                                <div className="w-2 h-2 rounded-full bg-orange-400 shadow-[0_0_8px_#fb923c]"></div>
-                                                {level.level}
-                                            </div>
-                                            <div className="flex flex-wrap gap-2">
-                                                {level.training.map((word, j) => (
-                                                    <span key={j} className="px-4 py-2 bg-slate-900 border-2 border-slate-800 text-slate-400 font-black rounded-xl text-sm hover:border-orange-400 transition-colors cursor-default">
-                                                        {word}
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        </>
-                                    )}
-                                </div>
-                            ))}
+                            {student.readCurriculum.map((level, i) => {
+                                const stats = Object.fromEntries(
+                                    (level.word_stats ?? []).map((s) => [s.word, s]),
+                                );
+
+                                return (
+                                    <div key={i} className="mb-8 last:mb-0">
+                                        {level.training.length > 0 && (
+                                            <>
+                                                <div className="text-orange-400 font-black uppercase text-xs tracking-widest mb-4 flex items-center gap-2">
+                                                    <div className="w-2 h-2 rounded-full bg-orange-400 shadow-[0_0_8px_#fb923c]"></div>
+                                                    {level.level}
+                                                </div>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {level.training.map((word, j) => (
+                                                        <WordChip key={j} word={word} stat={stats[word]} className="text-slate-400 hover:border-orange-400" />
+                                                    ))}
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
                 </div>
+
             </div>
 
             {/* Story Quest: Mastery & Training Zones */}
@@ -425,25 +477,29 @@ export default function StudentDetail({ data }) {
                             </h3>
                         </div>
                         <div className="bg-slate-950 rounded-[2.5rem] border-4 border-slate-800 p-8 shadow-[8px_8px_0_0_#020617] min-h-[400px] max-h-[600px] overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-slate-800 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-cyan-400">
-                            {student.speakCurriculum.map((level, i) => (
-                                <div key={i} className="mb-8 last:mb-0">
-                                    {level.mastered.length > 0 && (
-                                        <>
-                                            <div className="text-cyan-400 font-black uppercase text-xs tracking-widest mb-4 flex items-center gap-2">
-                                                <div className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_#22d3ee]"></div>
-                                                {level.level}
-                                            </div>
-                                            <div className="flex flex-wrap gap-2">
-                                                {level.mastered.map((word, j) => (
-                                                    <span key={j} className="px-4 py-2 bg-slate-900 border-2 border-slate-800 text-white font-black rounded-xl text-sm hover:border-cyan-400 transition-colors cursor-default">
-                                                        {word}
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        </>
-                                    )}
-                                </div>
-                            ))}
+                            {student.speakCurriculum.map((level, i) => {
+                                const stats = Object.fromEntries(
+                                    (level.word_stats ?? []).map((s) => [s.word, s]),
+                                );
+
+                                return (
+                                    <div key={i} className="mb-8 last:mb-0">
+                                        {level.mastered.length > 0 && (
+                                            <>
+                                                <div className="text-cyan-400 font-black uppercase text-xs tracking-widest mb-4 flex items-center gap-2">
+                                                    <div className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_#22d3ee]"></div>
+                                                    {level.level}
+                                                </div>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {level.mastered.map((word, j) => (
+                                                        <WordChip key={j} word={word} stat={stats[word]} className="text-white hover:border-cyan-400" />
+                                                    ))}
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
 
@@ -457,28 +513,33 @@ export default function StudentDetail({ data }) {
                             </h3>
                         </div>
                         <div className="bg-slate-950 rounded-[2.5rem] border-4 border-slate-800 p-8 shadow-[8px_8px_0_0_#020617] min-h-[400px] max-h-[600px] overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-slate-800 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-orange-400">
-                            {student.speakCurriculum.map((level, i) => (
-                                <div key={i} className="mb-8 last:mb-0">
-                                    {level.training.length > 0 && (
-                                        <>
-                                            <div className="text-orange-400 font-black uppercase text-xs tracking-widest mb-4 flex items-center gap-2">
-                                                <div className="w-2 h-2 rounded-full bg-orange-400 shadow-[0_0_8px_#fb923c]"></div>
-                                                {level.level}
-                                            </div>
-                                            <div className="flex flex-wrap gap-2">
-                                                {level.training.map((word, j) => (
-                                                    <span key={j} className="px-4 py-2 bg-slate-900 border-2 border-slate-800 text-slate-400 font-black rounded-xl text-sm hover:border-orange-400 transition-colors cursor-default">
-                                                        {word}
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        </>
-                                    )}
-                                </div>
-                            ))}
+                            {student.speakCurriculum.map((level, i) => {
+                                const stats = Object.fromEntries(
+                                    (level.word_stats ?? []).map((s) => [s.word, s]),
+                                );
+
+                                return (
+                                    <div key={i} className="mb-8 last:mb-0">
+                                        {level.training.length > 0 && (
+                                            <>
+                                                <div className="text-orange-400 font-black uppercase text-xs tracking-widest mb-4 flex items-center gap-2">
+                                                    <div className="w-2 h-2 rounded-full bg-orange-400 shadow-[0_0_8px_#fb923c]"></div>
+                                                    {level.level}
+                                                </div>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {level.training.map((word, j) => (
+                                                        <WordChip key={j} word={word} stat={stats[word]} className="text-slate-400 hover:border-orange-400" />
+                                                    ))}
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
                 </div>
+
             </div>
         </DashboardLayout>
     );

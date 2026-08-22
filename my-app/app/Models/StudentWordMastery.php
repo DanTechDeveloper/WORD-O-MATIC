@@ -12,6 +12,7 @@ class StudentWordMastery extends Model
         'user_id',
         'word_id',
         'status',
+        'failed_attempts',
     ];
 
     public function user()
