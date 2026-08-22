@@ -224,6 +224,7 @@ Two correctness guarantees are enforced as committed PHPUnit tests (`php artisan
 - **Status stickiness** — a `completed` module can never be downgraded to `in_progress` by a worse replay (`ProgressService`). Locked by `ProgressServiceTest::test_status_does_not_regress_to_in_progress_on_worse_replay`.
 - **Tutorial isolation** — tutorial (`is_tutorial=true`) rounds are excluded from the averaged `wordBlastAcc`/`storyQuestAcc` and never affect points/levels/badges. Locked by `ProgressServiceTest::test_tutorial_progress_does_not_pollute_accuracy`.
 - **Mastery immutability on replay** — replaying a completed module (Again button in `GameResults.jsx`, Play Again on `LevelsPage.jsx`) cannot demote an already-`mastered` word: `StudentController::updateWordMastery` / `updateParagraphMastery` reject `mastered → training` writes; `training → mastered` promotion still applies. `StudentDetails.jsx` mastery bars are a read-only view of `curriculumForUser`, so they reflect true best mastery and can't be corrupted by practice rounds. Locked by `CurriculumIsolationTest::test_existing_mastered_word_is_not_downgraded_on_mispronounce`.
+- **Attempt freeze at mastery** — per-word `failed_attempts` counts every unsuccessful attempt (wrong transcript or ASR timeout) while a word is still `training`, then freezes forever on first mastery — replays can never move the counter. Locked by `MasteryAttemptTest`.
 - **Streak integrity** — streak-based badges source `GameSession::max('streak')`, which never includes tutorial plays (tutorial rounds skip `GameSession::logSession` entirely), so tutorial-contaminated streaks are structurally impossible.
 - **Module access gating** — direct URL access to a locked module (`/student/gameplayReadMode/{level}`, `/student/gameplaySpeakMode/{level}`) is blocked by a `LevelService::isModuleAccessible()` check in `StudentController`; a locked module redirects back to the level-select page with a flash error banner. Locked by `StudentController::gameplayReadMode`, `StudentController::gameplaySpeakMode`, `LevelService::isModuleAccessible`.
 - **Atomic bulk roster creation** — a bulk student paste is created only if every row validates (same normalization rules as single-add; case/whitespace-insensitive intra-batch duplicate IDs rejected) and one bad row rejects the whole batch — no partial rosters. Locked by `AddStudentBulkTest` (22 cases: exact-50 boundary, dup handling, invalid gender/email, non-array input safety).
@@ -241,8 +242,8 @@ See `my-app/docs/CAVEATS.md` for the full tradeoff ledger (Bug fixes BF1–BF19)
 A guided, gated 3-step flow enforced by the `CheckStudentOnboarding` middleware. Incomplete students are redirected to the correct step.
 
 1. **Splash → Avatar Selection** — students pick a custom avatar (default avatars are rejected).
-2. **Greetings → Tutorial** — the "Word Buddy" greets the student, then a two-mode tutorial introduces **Word Blast** (read) and **Story Quest** (speak). Each mode uses dedicated practice modules (5 words / 1 paragraph, `is_tutorial=true`).
-3. **Tutorial Complete → Dashboard** — once both practices are finished and the tutorial is completed, the student proceeds to the dashboard. Tutorial plays do not affect points, leaderboards, or gameplay badges.
+2. **Dashboard → Guided Tutorial** — the avatar speech bubble guides students from the dashboard into a two-mode tutorial introducing **Word Blast** (read) and **Story Quest** (speak), each with a dedicated practice module (`is_tutorial=true`, level 0: 5 practice words / one short paragraph). A step-by-step guide overlay appears on first gameplay of each mode.
+3. **Tutorial Complete → Unlocked Dashboard** — finishing both practices sets `tutorial_completed_at` and unlocks normal progression. Tutorial plays do not affect points, leaderboards, mastery, or gameplay badges.
 
 </details>
 
@@ -336,7 +337,8 @@ resources/
   - Top Performing Students chart (switchable: Points / Word Blast / Story Quest)
   - Leaderboards (Points / Word Blast / Story Quest tabs)
   - Badge analytics (catalog, top earners)
-  - Student detail pages — **Overall Status panel**: colored status badge, per-status recommendation, Performance Summary (accuracy) + Curriculum Progress (completion %)
+   - Student detail pages — **Overall Status panel**: colored status badge, per-status recommendation, Performance Summary (accuracy) + Curriculum Progress (completion %)
+   - Word Attempt Analytics — per-word `failed_attempts` ("unsuccessful attempts needed to master", frozen at first mastery) with **Needs Attention** (still training, ≥3 fails) and **Recovered** (mastered after a rough start) flags
 
 </td>
 <td width="50%" valign="top">
