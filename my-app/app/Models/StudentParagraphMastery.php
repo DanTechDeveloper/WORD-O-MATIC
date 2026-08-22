@@ -12,6 +12,7 @@ class StudentParagraphMastery extends Model
         'user_id',
         'paragraph_word_id',
         'status',
+        'failed_attempts',
     ];
 
     public function user()

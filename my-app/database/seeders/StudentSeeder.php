@@ -61,6 +61,12 @@ class StudentSeeder extends Seeder
             return 1;
         };
 
+        // Word Analysis demo spread: low-accuracy students rack up more failed
+        // attempts, so seeded rosters exercise Normal / Needs Attention / Recovered.
+        $failedAttempts = fn (bool $mastered, float $acc): int => rand(0, 99) < $acc
+            ? rand($mastered ? 0 : 1, 2)
+            : rand(3, $mastered ? 5 : 8);
+
         for ($i = 0; $i < 100; $i++) {
             $section = $sections[$i % 3];
             $avatarChar = $avatarChars[$i % 6];
@@ -108,13 +114,15 @@ class StudentSeeder extends Seeder
 
                 StudentWordProgress::create([
                     'user_id' => $user->id, 'word_module_id' => $module->id,
-                    'status' => 'completed', 'words_smashed' => $smashed, 'accuracy' => $wAcc,
+                    'status' => 'completed', 'words_smashed' => $smashed, 'accuracy' => $totalPoints > 0 ? round(($smashed / $totalPoints) * 100, 2) : 0,
                 ]);
 
                 foreach (Word::where('word_module_id', $module->id)->get() as $word) {
+                    $mastered = rand(0, 99) < $wAcc;
                     StudentWordMastery::create([
                         'user_id' => $user->id, 'word_id' => $word->id,
-                        'status' => (rand(0, 99) < $wAcc) ? 'mastered' : 'training',
+                        'status' => $mastered ? 'mastered' : 'training',
+                        'failed_attempts' => $failedAttempts($mastered, $wAcc),
                     ]);
                 }
 
@@ -128,13 +136,15 @@ class StudentSeeder extends Seeder
 
                 StudentParagraphProgress::create([
                     'user_id' => $user->id, 'paragraph_module_id' => $module->id,
-                    'status' => 'completed', 'words_smashed' => $smashed, 'accuracy' => $sAcc,
+                    'status' => 'completed', 'words_smashed' => $smashed, 'accuracy' => $totalScore > 0 ? round(($smashed / $totalScore) * 100, 2) : 0,
                 ]);
 
                 foreach (ParagraphWord::where('paragraph_module_id', $module->id)->get() as $pw) {
+                    $mastered = rand(0, 99) < $sAcc;
                     StudentParagraphMastery::create([
                         'user_id' => $user->id, 'paragraph_word_id' => $pw->id,
-                        'status' => (rand(0, 99) < $sAcc) ? 'mastered' : 'training',
+                        'status' => $mastered ? 'mastered' : 'training',
+                        'failed_attempts' => $failedAttempts($mastered, $sAcc),
                     ]);
                 }
 

@@ -100,6 +100,15 @@ class WordModule extends Model
                 'training' => $module->words->filter(function ($word) use ($masteryProgress) {
                     return isset($masteryProgress[$word->id]) && $masteryProgress[$word->id][0]->status === 'training';
                 })->pluck('word')->values(),
+                'word_stats' => $module->words->map(function ($word) use ($masteryProgress) {
+                    $row = $masteryProgress[$word->id][0] ?? null;
+
+                    return [
+                        'word' => $word->word,
+                        'mastery' => $row?->status ?? 'unseen',
+                        'failed_attempts' => $row->failed_attempts ?? 0,
+                    ];
+                })->values()->all(),
             ];
         })->toArray();
     }

@@ -273,23 +273,33 @@ class StudentController extends Controller
             'status' => 'required|in:mastered,training',
         ]);
 
-        // Post-deadline rounds must not write mastery rows (BF7/BF10).
+        // Post-deadline rounds must not write mastery rows or counters (BF7/BF10).
         if ($this->reportService->cutoff()) {
             return response()->noContent();
         }
 
-        // Mastery is sticky: a mastered word can never regress to training on replay,
-        // matching the best-score-only invariant (see docs/CAVEATS.md BF2/BF4).
+        // Sticky: once mastered, both status and failed_attempts are frozen forever.
         $existing = $model::where('user_id', auth()->id())
             ->where($idColumn, $request->$idColumn)
             ->first();
-        if ($existing && $existing->status === 'mastered' && $request->status === 'training') {
+        if ($existing && $existing->status === 'mastered') {
             return response()->noContent();
         }
 
+        if ($request->status === 'training') {
+            // Unsuccessful attempt: wrong transcript OR timeout. Count up, never reset.
+            $row = $model::firstOrNew(['user_id' => auth()->id(), $idColumn => $request->$idColumn]);
+            $row->status = 'training';
+            $row->failed_attempts = $row->failed_attempts + 1;
+            $row->save();
+
+            return response()->noContent();
+        }
+
+        // First mastery: the counter freezes as-is = attempts needed to master.
         $model::updateOrCreate(
             ['user_id' => auth()->id(), $idColumn => $request->$idColumn],
-            ['status' => $request->status]
+            ['status' => 'mastered']
         );
 
         return response()->noContent();
