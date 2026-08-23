@@ -1,7 +1,5 @@
 import DashboardLayout from "@/Layouts/Teacher/DashboardLayout";
-import { Link } from "@inertiajs/react";
-
-const NEEDS_ATTENTION_ATTEMPTS = 3;
+import { Link, usePage } from "@inertiajs/react";
 
 // Mastered words count their final successful attempt; training words
 // show unsuccessful attempts so far (counter is frozen once mastered).
@@ -11,10 +9,10 @@ function attemptsShown(stat) {
         : stat.failed_attempts;
 }
 
-// Only surface the flag when it fires (≥3) — "Normal" is noise on a chip.
-// Resolution-cap rule: struggle flags expire once the word is mastered.
-function attentionMeta(stat) {
-    if (stat.failed_attempts < NEEDS_ATTENTION_ATTEMPTS) return null;
+// Only surface the flag when it fires (>= threshold) — "Normal" is noise on a
+// chip. Resolution-cap rule: struggle flags expire once the word is mastered.
+function attentionMeta(stat, threshold) {
+    if (stat.failed_attempts < threshold) return null;
     return stat.mastery === "mastered"
         ? { label: "Recovered", cls: "text-emerald-400" }
         : { label: "Needs Attention", cls: "text-red-500" };
@@ -22,8 +20,8 @@ function attentionMeta(stat) {
 
 // Inline Attempts/Attention meta under each word inside the Mastery/Training
 // zones; bare chip fallback when word_stats are unavailable.
-function WordChip({ word, stat, className }) {
-    const attention = stat ? attentionMeta(stat) : null;
+function WordChip({ word, stat, threshold, className }) {
+    const attention = stat ? attentionMeta(stat, threshold) : null;
 
     return (
         <span
@@ -45,6 +43,9 @@ function WordChip({ word, stat, className }) {
 }
 
 export default function StudentDetail({ data }) {
+    const attentionThreshold =
+        usePage().props.teacher?.attention_threshold ?? 3;
+
     const student = {
         id: data.student_id,
         section: data.student?.section,
@@ -411,7 +412,7 @@ export default function StudentDetail({ data }) {
                                                 </div>
                                                 <div className="flex flex-wrap gap-2">
                                                     {level.mastered.map((word, j) => (
-                                                        <WordChip key={j} word={word} stat={stats[word]} className="text-white hover:border-lime-400" />
+                                                        <WordChip key={j} word={word} stat={stats[word]} threshold={attentionThreshold} className="text-white hover:border-lime-400" />
                                                     ))}
                                                 </div>
                                             </>
@@ -447,7 +448,7 @@ export default function StudentDetail({ data }) {
                                                 </div>
                                                 <div className="flex flex-wrap gap-2">
                                                     {level.training.map((word, j) => (
-                                                        <WordChip key={j} word={word} stat={stats[word]} className="text-slate-400 hover:border-orange-400" />
+                                                        <WordChip key={j} word={word} stat={stats[word]} threshold={attentionThreshold} className="text-slate-400 hover:border-orange-400" />
                                                     ))}
                                                 </div>
                                             </>
@@ -492,7 +493,7 @@ export default function StudentDetail({ data }) {
                                                 </div>
                                                 <div className="flex flex-wrap gap-2">
                                                     {level.mastered.map((word, j) => (
-                                                        <WordChip key={j} word={word} stat={stats[word]} className="text-white hover:border-cyan-400" />
+                                                        <WordChip key={j} word={word} stat={stats[word]} threshold={attentionThreshold} className="text-white hover:border-cyan-400" />
                                                     ))}
                                                 </div>
                                             </>
@@ -528,7 +529,7 @@ export default function StudentDetail({ data }) {
                                                 </div>
                                                 <div className="flex flex-wrap gap-2">
                                                     {level.training.map((word, j) => (
-                                                        <WordChip key={j} word={word} stat={stats[word]} className="text-slate-400 hover:border-orange-400" />
+                                                        <WordChip key={j} word={word} stat={stats[word]} threshold={attentionThreshold} className="text-slate-400 hover:border-orange-400" />
                                                     ))}
                                                 </div>
                                             </>

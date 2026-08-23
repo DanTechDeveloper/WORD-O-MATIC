@@ -10,6 +10,10 @@ use Carbon\Carbon;
 
 class ReportService
 {
+    // Single source of truth for the struggle-flag threshold; shared to the
+    // teacher UI via HandleInertiaRequests and used to flag parent-email words.
+    public const NEEDS_ATTENTION_ATTEMPTS = 3;
+
     // Past-only by design: this feeds curriculum cutoffs, so a deadline that is
     // still in the future must behave like none at all.
     public function cutoff(): ?string
@@ -34,6 +38,27 @@ class ReportService
             WordModule::trainingWordsForUsers($studentIds, $cutoff),
             ParagraphModule::trainingWordsForUsers($studentIds, $cutoff),
         ];
+    }
+
+    // Pure projections of curriculumForUser() output — no queries.
+    // ["Level X: Title" => [words]]; empty levels skipped so payloads keep
+    // their legacy shape.
+    public function trainingGroupsFrom(array $curriculum): array
+    {
+        return collect($curriculum)
+            ->filter(fn ($level) => $level['training'] !== [])
+            ->mapWithKeys(fn ($level) => [$level['level'] => $level['training']])
+            ->all();
+    }
+
+    // Every still-training word with its recorded try count → [word => tries].
+    public function trainingAttemptsFrom(array $curriculum): array
+    {
+        return collect($curriculum)
+            ->flatMap(fn ($level) => $level['word_stats'])
+            ->filter(fn ($stat) => $stat['mastery'] === 'training')
+            ->pluck('failed_attempts', 'word')
+            ->all();
     }
 
     public function curriculumPercent(array $curriculum): int

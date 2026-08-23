@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Models\ParagraphModule;
 use App\Models\Setting;
 use App\Models\WordModule;
+use App\Services\ReportService;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -43,6 +44,7 @@ class HandleInertiaRequests extends Middleware
                     'has_deadline' => ! empty(Setting::getValue('report_deadline')),
                     'has_word_modules' => WordModule::exists(),
                     'has_paragraph_modules' => ParagraphModule::exists(),
+                    'attention_threshold' => ReportService::NEEDS_ATTENTION_ATTEMPTS,
                 ] : null,
         ];
     }

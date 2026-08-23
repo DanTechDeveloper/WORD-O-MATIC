@@ -101,9 +101,41 @@ export default function Reports({ grouped, flash, deadline, errors }) {
         );
     };
 
+    const toggleEmailEditor = (studentId) => {
+        setEmailEditId((prev) => (prev === studentId ? null : studentId));
+        setEmailValue("");
+    };
+
+    const saveParentEmail = (studentId) => {
+        if (!emailIsValid || savingEmail) return;
+        setSavingEmail(true);
+        router.put(
+            route("teacher.reports.parentEmail", studentId),
+            { parent_email: trimmedEmail },
+            {
+                preserveScroll: true,
+                preserveState: true,
+                onSuccess: () => {
+                    setEmailEditId(null);
+                    setEmailValue("");
+                },
+                onFinish: () => setSavingEmail(false),
+            }
+        );
+    };
+
     const [statusTab, setStatusTab] = useState("");
     const [searchQuery, setSearchQuery] = useState("");
     const [showSent, setShowSent] = useState(false);
+    const [emailEditId, setEmailEditId] = useState(null);
+    const [emailValue, setEmailValue] = useState("");
+    const [savingEmail, setSavingEmail] = useState(false);
+
+    const EMAIL_RE = /^\S+@\S+\.\S+$/;
+    const trimmedEmail = emailValue.trim();
+    const emailIsValid = trimmedEmail !== "" && EMAIL_RE.test(trimmedEmail);
+    const showEmailError =
+        emailEditId !== null && trimmedEmail !== "" && !EMAIL_RE.test(trimmedEmail);
 
     const statusTabs = [
         { value: "", label: "All" },
@@ -317,41 +349,118 @@ export default function Reports({ grouped, flash, deadline, errors }) {
 
                             <div className="divide-y divide-slate-700/30">
                                 {students.map((student) => (
-                                    <label
-                                        key={student.id}
-                                        className={`flex items-center gap-4 px-6 py-3 transition-colors ${
-                                            isPastDeadline ? "hover:bg-slate-800/50 cursor-pointer" : "cursor-default"
-                                        }`}
-                                    >
-                                        <input
-                                            type="checkbox"
-                                            checked={selectedIds.has(student.id)}
-                                            disabled={!isPastDeadline}
-                                            onChange={() => toggleStudent(student.id)}
-                                            className="w-5 h-5 rounded border-slate-600 bg-slate-800 text-purple-500 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                                        />
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-white font-bold truncate">
-                                                    {student.name}
-                                                </span>
-                                                {!student.parent_email && (
-                                                    <span className="text-xs text-rose-400 font-black uppercase shrink-0 border border-rose-500/50 px-2 py-0.5 rounded-full">
-                                                        No Email
+                                    <div key={student.id}>
+                                        <label
+                                            className={`flex items-center gap-4 px-6 py-3 transition-colors ${
+                                                isPastDeadline ? "hover:bg-slate-800/50 cursor-pointer" : "cursor-default"
+                                            }`}
+                                        >
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedIds.has(student.id)}
+                                                disabled={!isPastDeadline}
+                                                onChange={() => toggleStudent(student.id)}
+                                                className="w-5 h-5 rounded border-slate-600 bg-slate-800 text-purple-500 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            />
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-white font-bold truncate">
+                                                        {student.name}
                                                     </span>
-                                                )}
+                                                    {!student.parent_email && (
+                                                        <button
+                                                            type="button"
+                                                            title="Add parent email"
+                                                            onClick={(e) => {
+                                                                e.preventDefault();
+                                                                e.stopPropagation();
+                                                                toggleEmailEditor(student.id);
+                                                            }}
+                                                            className="text-xs text-rose-400 font-black uppercase shrink-0 border border-rose-500/50 px-2 py-0.5 rounded-full hover:bg-rose-500/20 transition-colors cursor-pointer"
+                                                        >
+                                                            No Email
+                                                        </button>
+                                                    )}
+                                                </div>
+                                                <div className="flex items-center gap-4 text-xs text-slate-500 font-semibold mt-0.5">
+                                                    <span>Word Blast: {student.wordBlastAcc ?? 0}%</span>
+                                                    <span>Story Quest: {student.storyQuestAcc ?? 0}%</span>
+                                                </div>
                                             </div>
-                                            <div className="flex items-center gap-4 text-xs text-slate-500 font-semibold mt-0.5">
-                                                <span>Word Blast: {student.wordBlastAcc ?? 0}%</span>
-                                                <span>Story Quest: {student.storyQuestAcc ?? 0}%</span>
+                                            <button
+                                                type="button"
+                                                title={student.parent_email ? "" : "Add parent email"}
+                                                onClick={(e) => {
+                                                    if (student.parent_email) return;
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    toggleEmailEditor(student.id);
+                                                }}
+                                                className={`shrink-0 ${
+                                                    student.parent_email
+                                                        ? "text-slate-600 cursor-default"
+                                                        : "text-slate-400 hover:text-lime-400 cursor-pointer transition-colors"
+                                                }`}
+                                            >
+                                                <span className="material-symbols-outlined text-lg">
+                                                    {student.parent_email ? "mail" : "mail_off"}
+                                                </span>
+                                            </button>
+                                        </label>
+
+                                        {emailEditId === student.id && (
+                                            <div className="pl-[3.75rem] pr-6 pb-4 flex items-start gap-3">
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="relative">
+                                                        <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-lime-400 pointer-events-none">
+                                                            mail
+                                                        </span>
+                                                        <input
+                                                            type="email"
+                                                            autoFocus
+                                                            value={emailValue}
+                                                            onChange={(e) => setEmailValue(e.target.value)}
+                                                            onKeyDown={(e) => {
+                                                                if (e.key === "Enter") saveParentEmail(student.id);
+                                                            }}
+                                                            placeholder="parent@email.com"
+                                                            className={`w-full bg-slate-950 border-2 rounded-xl pl-10 pr-4 py-2.5 text-white font-bold text-sm focus:outline-none transition-all ${
+                                                                showEmailError || errors?.parent_email
+                                                                    ? "border-rose-500"
+                                                                    : "border-slate-800 focus:border-lime-500"
+                                                            }`}
+                                                        />
+                                                    </div>
+                                                    {(showEmailError || errors?.parent_email) && (
+                                                        <p className="text-rose-400 text-xs font-bold mt-1.5">
+                                                            {showEmailError
+                                                                ? "Invalid email format."
+                                                                : errors.parent_email}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => saveParentEmail(student.id)}
+                                                    disabled={!emailIsValid || savingEmail}
+                                                    className={`px-5 py-2.5 rounded-xl font-black uppercase italic text-sm transition-all shrink-0 ${
+                                                        emailIsValid && !savingEmail
+                                                            ? "bg-lime-400 border-2 border-slate-950 text-slate-950 shadow-[3px_3px_0_0_#3f6212] hover:translate-x-[-1px] hover:translate-y-[-1px]"
+                                                            : "bg-slate-800 text-slate-600 cursor-not-allowed shadow-none"
+                                                    }`}
+                                                >
+                                                    {savingEmail ? "Saving..." : "Save"}
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => toggleEmailEditor(student.id)}
+                                                    className="px-4 py-2.5 rounded-xl font-black uppercase italic text-sm bg-slate-800 text-slate-400 border-2 border-slate-700 hover:text-white transition-all shrink-0"
+                                                >
+                                                    Cancel
+                                                </button>
                                             </div>
-                                        </div>
-                                        <div className="text-slate-600 shrink-0">
-                                            <span className="material-symbols-outlined text-lg">
-                                                {student.parent_email ? "mail" : "mail_off"}
-                                            </span>
-                                        </div>
-                                    </label>
+                                        )}
+                                    </div>
                                 ))}
                             </div>
                         </div>

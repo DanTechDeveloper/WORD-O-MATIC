@@ -6,10 +6,20 @@ use App\Exports\ClassReportSheet;
 use App\Exports\ReportsExport;
 use App\Exports\SkillsOverviewSheet;
 use App\Exports\SkillsWordsSheet;
+use App\Mail\StudentReportMail;
+use App\Models\ParagraphModule;
+use App\Models\ParagraphWord;
 use App\Models\Setting;
+use App\Models\StudentParagraphMastery;
 use App\Models\StudentProfile;
+use App\Models\StudentWordMastery;
 use App\Models\User;
+use App\Models\Word;
+use App\Models\WordModule;
+use App\Services\ReportService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class ReportTest extends TestCase
@@ -165,6 +175,462 @@ class ReportTest extends TestCase
         // 1 na-send (may email), 1 failed (walang email)
         $response->assertSessionHas('sent', 1);
         $response->assertSessionHas('failed', 1);
+    }
+
+    // ─── WORD ATTEMPT ANALYTICS ─────────────────────────────────────
+
+    private function seedWordMastery(string $text, int $fails, string $status = 'training'): void
+    {
+        $module = WordModule::create(['level' => 1, 'title' => 'Level 1']);
+        $word = Word::create(['word_module_id' => $module->id, 'word' => $text, 'position' => 1]);
+
+        StudentWordMastery::create([
+            'user_id' => $this->student->id,
+            'word_id' => $word->id,
+            'status' => $status,
+            'failed_attempts' => $fails,
+        ]);
+    }
+
+    public function test_training_groups_from_skips_empty_levels_and_keeps_labels(): void
+    {
+        $groups = (new ReportService())->trainingGroupsFrom([
+            ['level' => 'Level 1: Alpha', 'training' => ['CAT'], 'mastered' => [], 'words_count' => 2, 'word_stats' => []],
+            ['level' => 'Level 2: Beta', 'training' => [], 'mastered' => ['DOG'], 'words_count' => 1, 'word_stats' => []],
+        ]);
+
+        $this->assertSame(['Level 1: Alpha' => ['CAT']], $groups);
+    }
+
+    public function test_training_attempts_from_lists_every_training_word(): void
+    {
+        $attempts = (new ReportService())->trainingAttemptsFrom([
+            ['level' => 'Level 1: Alpha', 'word_stats' => [
+                ['word' => 'CAT', 'mastery' => 'training', 'failed_attempts' => 3],
+                ['word' => 'BAT', 'mastery' => 'training', 'failed_attempts' => 2],
+                ['word' => 'HAT', 'mastery' => 'mastered', 'failed_attempts' => 5],
+                ['word' => 'RAT', 'mastery' => 'unseen', 'failed_attempts' => 0],
+            ]],
+        ]);
+
+        $this->assertSame(['CAT' => 3, 'BAT' => 2], $attempts);
+    }
+
+    public function test_attention_words_flag_training_words_at_exact_threshold(): void
+    {
+        $this->seedWordMastery('CAT', 3);
+
+        // Story Quest side mirrors the same rule
+        $module = ParagraphModule::create(['level' => 1, 'title' => 'Level 1', 'content' => 'dog', 'is_tutorial' => false]);
+        $pWord = ParagraphWord::create(['paragraph_module_id' => $module->id, 'word' => 'dog', 'position' => 1]);
+        StudentParagraphMastery::create([
+            'user_id' => $this->student->id,
+            'paragraph_word_id' => $pWord->id,
+            'status' => 'training',
+            'failed_attempts' => 4,
+        ]);
+
+        $service = new ReportService();
+
+        $this->assertSame(
+            ['CAT' => 3],
+            $service->trainingAttemptsFrom(WordModule::curriculumForUser($this->student->id)),
+        );
+        $this->assertSame(
+            ['dog' => 4],
+            $service->trainingAttemptsFrom(ParagraphModule::curriculumForUser($this->student->id)),
+        );
+    }
+
+    public function test_training_attempts_include_words_below_threshold(): void
+    {
+        $this->seedWordMastery('CAT', ReportService::NEEDS_ATTENTION_ATTEMPTS - 1);
+
+        $service = new ReportService();
+
+        $this->assertSame(['CAT' => 2], $service->trainingAttemptsFrom(WordModule::curriculumForUser($this->student->id)));
+        $this->assertSame([], $service->trainingAttemptsFrom(ParagraphModule::curriculumForUser($this->student->id)));
+    }
+
+    public function test_attention_words_exclude_mastered_words(): void
+    {
+        // Recovered history stays teacher-facing; parents never see it.
+        $this->seedWordMastery('CAT', 5, 'mastered');
+
+        $service = new ReportService();
+
+        $this->assertSame([], $service->trainingAttemptsFrom(WordModule::curriculumForUser($this->student->id)));
+        $this->assertSame([], $service->trainingAttemptsFrom(ParagraphModule::curriculumForUser($this->student->id)));
+    }
+
+    public function test_attention_words_respect_report_cutoff(): void
+    {
+        Setting::setValue('report_deadline', now()->subDay()->format('Y-m-d\TH:i'));
+
+        $module = WordModule::create(['level' => 1, 'title' => 'Level 1']);
+        $old = Word::create(['word_module_id' => $module->id, 'word' => 'OLD', 'position' => 1]);
+        $new = Word::create(['word_module_id' => $module->id, 'word' => 'NEW', 'position' => 2]);
+
+        $oldRow = StudentWordMastery::create([
+            'user_id' => $this->student->id,
+            'word_id' => $old->id,
+            'status' => 'training',
+            'failed_attempts' => 3,
+        ]);
+        $oldRow->created_at = now()->subDays(2);
+        $oldRow->save();
+
+        // created after the cutoff — excluded even with 3 fails
+        StudentWordMastery::create([
+            'user_id' => $this->student->id,
+            'word_id' => $new->id,
+            'status' => 'training',
+            'failed_attempts' => 3,
+        ]);
+
+        $cutoff = (new ReportService())->cutoff();
+
+        $this->assertSame(
+            ['OLD' => 3],
+            (new ReportService())->trainingAttemptsFrom(WordModule::curriculumForUser($this->student->id, $cutoff)),
+        );
+    }
+
+    public function test_send_emails_payload_flags_attention_words(): void
+    {
+        Mail::fake();
+        Setting::setValue('report_deadline', now()->subDay()->format('Y-m-d\TH:i'));
+        $this->seedWordMastery('CAT', 3);
+
+        // backdate so the report cutoff includes the row
+        StudentWordMastery::where('user_id', $this->student->id)
+            ->update(['created_at' => now()->subDays(2)]);
+
+        $response = $this->actingAs($this->teacher)
+            ->post(route('teacher.reports.sendEmails'), [
+                'student_ids' => [$this->student->id],
+            ]);
+
+        Mail::assertQueued(StudentReportMail::class, function ($mail) {
+            return $mail->data['wordAttempts'] === ['CAT' => 3]
+                && $mail->data['paragraphWordAttempts'] === [];
+        });
+        $response->assertSessionHas('sent', 1);
+    }
+
+    // Cross-surface parity: the parent email and the StudentDetails page must
+    // be projections of the SAME curriculumForUser data. Expectations here are
+    // derived from what the JSX zones render (labels, training lists,
+    // word_stats flags) — never from the service helpers — so any divergence
+    // between show() and sendReportEmails() fails this test.
+    public function test_email_payload_matches_student_details_view_data(): void
+    {
+        Mail::fake();
+        Setting::setValue('report_deadline', now()->subDay()->format('Y-m-d\TH:i'));
+
+        // Word Blast: quiet training word, flagged word, Recovered word
+        $wbModule = WordModule::create(['level' => 1, 'title' => 'Phonics']);
+        foreach ([['CAT', 1, 'training'], ['SUN', 7, 'training'], ['HAT', 3, 'mastered']] as $i => [$text, $fails, $status]) {
+            $word = Word::create(['word_module_id' => $wbModule->id, 'word' => $text, 'position' => $i + 1]);
+            $this->backdatedMastery(StudentWordMastery::class, [
+                'user_id' => $this->student->id,
+                'word_id' => $word->id,
+                'status' => $status,
+                'failed_attempts' => $fails,
+            ]);
+        }
+
+        // Story Quest: flagged sentence words + a Recovered one
+        $sqModule = ParagraphModule::create(['level' => 1, 'title' => 'First Sentences', 'content' => 'The dog can run.', 'is_tutorial' => false]);
+        foreach ([['dog', 7, 'training'], ['run', 9, 'mastered'], ['The', 0, 'mastered']] as $i => [$text, $fails, $status]) {
+            $pWord = ParagraphWord::create(['paragraph_module_id' => $sqModule->id, 'word' => $text, 'position' => $i + 1]);
+            $this->backdatedMastery(StudentParagraphMastery::class, [
+                'user_id' => $this->student->id,
+                'paragraph_word_id' => $pWord->id,
+                'status' => $status,
+                'failed_attempts' => $fails,
+            ]);
+        }
+
+        // PATH A — exactly what TeacherController@show hands to StudentDetails.jsx
+        $details = null;
+        $this->actingAs($this->teacher)
+            ->get(route('teacher.studentDetails.show', $this->student))
+            ->assertInertia(function (Assert $page) use (&$details) {
+                $details = $page->toArray()['props']['data'] ?? null;
+            });
+
+        $readCur = $details['readCurriculum'];
+        $speakCur = $details['speakCurriculum'];
+
+        // The rendering contract of the JSX zones: non-empty levels only.
+        $zoneTrainingGroups = fn (array $curriculum) => collect($curriculum)
+            ->filter(fn ($level) => count($level['training']) > 0)
+            ->mapWithKeys(fn ($level) => [$level['level'] => $level['training']])
+            ->all();
+
+        // What the JSX chips would flag: training + >= threshold (Needs Attention).
+        $zoneAttention = fn (array $curriculum) => collect($curriculum)
+            ->flatMap(fn ($level) => $level['word_stats'])
+            ->filter(fn ($stat) => $stat['mastery'] === 'training'
+                && $stat['failed_attempts'] >= ReportService::NEEDS_ATTENTION_ATTEMPTS)
+            ->pluck('failed_attempts', 'word')
+            ->all();
+
+        // Recorded tries for EVERY still-training word, as the zones see them.
+        $zoneTries = fn (array $curriculum) => collect($curriculum)
+            ->flatMap(fn ($level) => $level['word_stats'])
+            ->filter(fn ($stat) => $stat['mastery'] === 'training')
+            ->pluck('failed_attempts', 'word')
+            ->all();
+
+        // PATH B — the queued parent email
+        $this->post(route('teacher.reports.sendEmails'), [
+            'student_ids' => [$this->student->id],
+        ]);
+
+        $mailData = null;
+        Mail::assertQueued(StudentReportMail::class, function ($mail) use (&$mailData) {
+            $mailData = $mail->data;
+
+            return true;
+        });
+
+        $this->assertSame($zoneTrainingGroups($readCur), $mailData['trainingWords']);
+        $this->assertSame($zoneTrainingGroups($speakCur), $mailData['paragraphTrainingWords']);
+        $this->assertSame($zoneTries($readCur), $mailData['wordAttempts']);
+        $this->assertSame($zoneTries($speakCur), $mailData['paragraphWordAttempts']);
+
+        // The >=threshold slice of the email attempts must equal the flags the
+        // JSX chips would show (Needs Attention / Needs More Practice).
+        $mailNeedsWb = array_filter(
+            $mailData['wordAttempts'],
+            fn ($tries) => $tries >= ReportService::NEEDS_ATTENTION_ATTEMPTS,
+        );
+        $mailNeedsSq = array_filter(
+            $mailData['paragraphWordAttempts'],
+            fn ($tries) => $tries >= ReportService::NEEDS_ATTENTION_ATTEMPTS,
+        );
+        $this->assertSame($zoneAttention($readCur), $mailNeedsWb);
+        $this->assertSame($zoneAttention($speakCur), $mailNeedsSq);
+
+        // Recovered words stay in the teacher's zones but never reach parents.
+        $hatStat = collect($readCur)->flatMap(fn ($level) => $level['word_stats'])->firstWhere('word', 'HAT');
+        $this->assertSame(3, $hatStat['failed_attempts']);
+        $this->assertArrayNotHasKey('HAT', $mailData['wordAttempts']);
+        $this->assertArrayNotHasKey('run', $mailData['paragraphWordAttempts']);
+
+        // Progress % parity: JSX calcOverallProgress ≡ PHP curriculumPercent.
+        $jsProgress = fn (array $curriculum) => collect($curriculum)->sum('words_count') > 0
+            ? (int) round(collect($curriculum)->sum(fn ($level) => count($level['mastered']))
+                / collect($curriculum)->sum('words_count') * 100)
+            : 0;
+
+        $this->assertSame($jsProgress($readCur), $mailData['wordBlastProg']);
+        $this->assertSame($jsProgress($speakCur), $mailData['storyQuestProg']);
+    }
+
+    private function backdatedMastery(string $model, array $attrs): void
+    {
+        $row = $model::create($attrs);
+        $row->created_at = now()->subDays(2);
+        $row->save();
+    }
+
+    public function test_report_email_renders_training_attention_and_status_sections(): void
+    {
+        $html = (new StudentReportMail([
+            'name' => 'Test Student',
+            'section' => '7-G',
+            'wordBlastAcc' => 85,
+            'storyQuestAcc' => 90,
+            'read_level' => 1,
+            'speak_level' => 1,
+            'wordBlastProg' => 50,
+            'storyQuestProg' => 40,
+            'status' => 'in_progress',
+            'latestBadge' => [],
+            'trainingWords' => ['Level 1: Alpha' => ['CAT', 'BAT']],
+            'paragraphTrainingWords' => ['Level 1: Stories' => ['dog']],
+            'wordAttempts' => ['CAT' => 3, 'BAT' => 1],
+            'paragraphWordAttempts' => ['dog' => 2],
+            'reported_at' => 'August 23, 2026 at 9:00 AM',
+        ]))->render();
+
+        $this->assertStringContainsString('Training Zone', $html);
+        $this->assertStringContainsString('Words that are not mastered yet', $html);
+        $this->assertStringContainsString('recorded practice history', $html);
+
+        // Two-tier grouping: BAT (below threshold) vs CAT (>= threshold)
+        $this->assertStringContainsString('Still Practicing', $html);
+        $this->assertStringContainsString('Needs More Practice', $html);
+        $this->assertStringContainsString('1 recorded attempt', $html);
+        $this->assertStringContainsString('3 recorded attempts', $html);
+        $this->assertStringContainsString('Not yet mastered', $html);
+        $this->assertStringContainsString('#f59e0b', $html);
+
+        // in_progress banner (user-redesigned recommendation copy)
+        $this->assertStringContainsString('Progress is underway. Completing both reading and speaking activities will advance the student through the curriculum.', $html);
+    }
+
+    public function test_report_email_renders_not_started_banner_without_training_sections(): void
+    {
+        $html = (new StudentReportMail([
+            'name' => 'Test Student',
+            'section' => '7-G',
+            'wordBlastAcc' => 0,
+            'storyQuestAcc' => 0,
+            'read_level' => 1,
+            'speak_level' => 1,
+            'wordBlastProg' => 0,
+            'storyQuestProg' => 0,
+            'status' => 'notStarted',
+            'latestBadge' => [],
+            'trainingWords' => [],
+            'paragraphTrainingWords' => [],
+            'wordAttempts' => [],
+            'paragraphWordAttempts' => [],
+            'reported_at' => 'August 23, 2026 at 9:00 AM',
+        ]))->render();
+
+        $this->assertStringContainsString('Encourage the student to begin Word Blast and Story Quest activities.', $html);
+        $this->assertStringNotContainsString('Training Zone', $html);
+        $this->assertStringNotContainsString('recorded attempt', $html);
+    }
+
+    public function test_attention_words_ignore_tutorial_modules(): void
+    {
+        $module = WordModule::create(['level' => 99, 'title' => 'Tutorial', 'is_tutorial' => true]);
+        $word = Word::create(['word_module_id' => $module->id, 'word' => 'GHOST', 'position' => 1]);
+        StudentWordMastery::create([
+            'user_id' => $this->student->id,
+            'word_id' => $word->id,
+            'status' => 'training',
+            'failed_attempts' => 9,
+        ]);
+
+        $this->assertSame(
+            [],
+            (new ReportService())->trainingAttemptsFrom(WordModule::curriculumForUser($this->student->id)),
+        );
+    }
+
+    public function test_attention_words_skip_unseen_words(): void
+    {
+        // word in the module but the student never touched it — no row, no flag
+        $module = WordModule::create(['level' => 1, 'title' => 'Level 1']);
+        Word::create(['word_module_id' => $module->id, 'word' => 'GHOST', 'position' => 1]);
+
+        $this->assertSame(
+            [],
+            (new ReportService())->trainingAttemptsFrom(WordModule::curriculumForUser($this->student->id)),
+        );
+    }
+
+    public function test_attention_words_aggregate_across_modules_and_levels(): void
+    {
+        foreach ([['level' => 1, 'title' => 'Alpha', 'text' => 'BAT'], ['level' => 2, 'title' => 'Beta', 'text' => 'RAT']] as $seed) {
+            $module = WordModule::create(['level' => $seed['level'], 'title' => $seed['title']]);
+            $word = Word::create(['word_module_id' => $module->id, 'word' => $seed['text'], 'position' => 1]);
+            StudentWordMastery::create([
+                'user_id' => $this->student->id,
+                'word_id' => $word->id,
+                'status' => 'training',
+                'failed_attempts' => $seed['level'] * 3,
+            ]);
+        }
+
+        $this->assertSame(
+            ['BAT' => 3, 'RAT' => 6],
+            (new ReportService())->trainingAttemptsFrom(WordModule::curriculumForUser($this->student->id)),
+        );
+    }
+
+    public function test_attention_words_are_isolated_per_student(): void
+    {
+        $flagged = User::factory()->create(['role' => 'student']);
+        $clean = User::factory()->create(['role' => 'student']);
+
+        $module = WordModule::create(['level' => 1, 'title' => 'Level 1']);
+        $word = Word::create(['word_module_id' => $module->id, 'word' => 'CAT', 'position' => 1]);
+        StudentWordMastery::create([
+            'user_id' => $flagged->id,
+            'word_id' => $word->id,
+            'status' => 'training',
+            'failed_attempts' => 3,
+        ]);
+
+        $service = new ReportService();
+
+        $this->assertSame(['CAT' => 3], $service->trainingAttemptsFrom(WordModule::curriculumForUser($flagged->id)));
+        $this->assertSame([], $service->trainingAttemptsFrom(WordModule::curriculumForUser($clean->id)));
+    }
+
+    public function test_attention_threshold_is_shared_to_teachers_only(): void
+    {
+        $this->actingAs($this->teacher)
+            ->get(route('teacher.reports'))
+            ->assertInertia(fn ($page) => $page
+                ->component('Teacher/Reports')
+                ->where('teacher.attention_threshold', ReportService::NEEDS_ATTENTION_ATTEMPTS)
+            );
+
+        // avatar-complete students land on the dashboard; splashScreen bounces them
+        $this->student->student->update(['avatar' => 'https://example.com/a.png']);
+
+        $this->actingAs($this->student)
+            ->get(route('student.dashboard'))
+            ->assertInertia(fn ($page) => $page
+                ->where('teacher', null)
+            );
+    }
+
+    // ─── PARENT EMAIL ───────────────────────────────────────────────
+
+    public function test_teacher_can_update_parent_email(): void
+    {
+        $this->actingAs($this->teacher);
+
+        $noEmailStudent = User::factory()->create(['role' => 'student']);
+        StudentProfile::factory()->for($noEmailStudent)->create([
+            'parent_email' => null,
+        ]);
+
+        $response = $this->put(route('teacher.reports.parentEmail', $noEmailStudent->id), [
+            'parent_email' => 'NewParent@Email.com',
+        ]);
+
+        $response->assertRedirect();
+        $this->assertDatabaseHas('students', [
+            'user_id' => $noEmailStudent->id,
+            'parent_email' => 'newparent@email.com',
+        ]);
+    }
+
+    public function test_update_parent_email_rejects_invalid_email(): void
+    {
+        $this->actingAs($this->teacher);
+
+        $response = $this->put(route('teacher.reports.parentEmail', $this->student->id), [
+            'parent_email' => 'not-an-email',
+        ]);
+
+        $response->assertSessionHasErrors('parent_email');
+        $this->assertDatabaseHas('students', [
+            'user_id' => $this->student->id,
+            'parent_email' => 'parent@email.com',
+        ]);
+    }
+
+    public function test_update_parent_email_404s_for_non_student_id(): void
+    {
+        $this->actingAs($this->teacher);
+
+        $response = $this->put(route('teacher.reports.parentEmail', $this->teacher->id), [
+            'parent_email' => 'x@y.com',
+        ]);
+
+        $response->assertStatus(404);
     }
 
     // ─── EXCEL EXPORT ────────────────────────────────────────────────

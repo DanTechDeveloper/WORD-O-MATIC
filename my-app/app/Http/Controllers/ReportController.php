@@ -96,7 +96,6 @@ class ReportController extends Controller
             ->whereIn('id', $request->student_ids)
             ->get();
 
-        [$wordTraining, $paraTraining] = $this->reportService->trainingWordsFor($request->student_ids);
         $cutoff = $this->reportService->cutoff();
 
         $sent = 0;
@@ -111,6 +110,11 @@ class ReportController extends Controller
                 continue;
             }
 
+            // One curriculum read per mode feeds progress %, training groups,
+            // and attention flags — a single source of truth per student.
+            $wbCurriculum = WordModule::curriculumForUser($user->id, $cutoff);
+            $sqCurriculum = ParagraphModule::curriculumForUser($user->id, $cutoff);
+
             Mail::to($parentEmail)->queue(new StudentReportMail([
                 'name' => $user->name,
                 'section' => $user->student?->section ?? '',
@@ -118,12 +122,14 @@ class ReportController extends Controller
                 'storyQuestAcc' => $user->student?->storyQuestAcc ?? 0,
                 'read_level' => $user->student?->read_level ?? 1,
                 'speak_level' => $user->student?->speak_level ?? 1,
-                'wordBlastProg' => $this->reportService->curriculumPercent(WordModule::curriculumForUser($user->id, $cutoff)),
-                'storyQuestProg' => $this->reportService->curriculumPercent(ParagraphModule::curriculumForUser($user->id, $cutoff)),
+                'wordBlastProg' => $this->reportService->curriculumPercent($wbCurriculum),
+                'storyQuestProg' => $this->reportService->curriculumPercent($sqCurriculum),
                 'status' => $user->student?->status ?? 'notStarted',
                 'latestBadge' => $this->reportService->latestBadge($user->id),
-                'trainingWords' => $wordTraining[$user->id] ?? [],
-                'paragraphTrainingWords' => $paraTraining[$user->id] ?? [],
+                'trainingWords' => $this->reportService->trainingGroupsFrom($wbCurriculum),
+                'paragraphTrainingWords' => $this->reportService->trainingGroupsFrom($sqCurriculum),
+                'wordAttempts' => $this->reportService->trainingAttemptsFrom($wbCurriculum),
+                'paragraphWordAttempts' => $this->reportService->trainingAttemptsFrom($sqCurriculum),
                 'reported_at' => $deadlineTs->format('F j, Y \a\t g:i A'),
             ]));
 
@@ -136,6 +142,22 @@ class ReportController extends Controller
             ->with('sent', $sent)
             ->with('failed', $failed)
             ->with('reported_at', $deadlineTs->format('F j, Y \a\t g:i A'));
+    }
+
+    public function updateParentEmail(Request $request, $id)
+    {
+        $data = $request->validate([
+            'parent_email' => 'nullable|email|max:255',
+        ]);
+
+        $user = User::where('role', 'student')->findOrFail($id);
+        $user->student()->update([
+            'parent_email' => $data['parent_email'] !== null
+                ? strtolower($data['parent_email'])
+                : null,
+        ]);
+
+        return redirect()->back();
     }
 
     public function exportReports(Request $request)
