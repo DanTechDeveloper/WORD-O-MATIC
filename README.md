@@ -190,6 +190,8 @@ The application contains **14 Eloquent models**, including:
 
 - Deadline/cutoff resolution (`deadline()`, `cutoff()`)
 - `trainingWordsFor()` / `curriculumPercent()` / `latestBadge()`
+- Pure projections of `curriculumForUser()`: `trainingGroupsFrom()`, `trainingAttemptsFrom()`
+- `NEEDS_ATTENTION_ATTEMPTS = 3` — single-source threshold shared to the teacher UI and used to group parent-email Training Zones (Still Practicing / Needs More Practice)
 - Powers `ReportController` (reports, send-emails, deadline, export)
 
 </td>
