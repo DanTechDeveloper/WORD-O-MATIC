@@ -41,6 +41,7 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/reports', [ReportController::class, 'reports'])->name('reports');
             Route::post('/reports/send-emails', [ReportController::class, 'sendReportEmails'])->name('reports.sendEmails');
             Route::post('/reports/deadline', [ReportController::class, 'saveDeadline'])->name('reports.deadline');
+            Route::put('/reports/parent-email/{id}', [ReportController::class, 'updateParentEmail'])->name('reports.parentEmail');
             Route::get('/reports/export', [ReportController::class, 'exportReports'])->name('reports.export');
             Route::get('/leaderboards', [TeacherController::class, 'leaderboards'])->name('leaderboards');
             Route::get('/badges', [TeacherController::class, 'badges'])->name('badges');

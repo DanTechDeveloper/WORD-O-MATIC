@@ -40,24 +40,12 @@ class ParagraphModule extends Model
 
     public static function trainingWordsForUsers(array $userIds, ?string $cutoff = null): Collection
     {
-        $modules = self::with('words')->where('is_tutorial', false)->orderBy('level')->get();
-
-        $masteryByUser = self::masteryQuery($userIds, $cutoff)->get()->groupBy('user_id');
-
-        return collect($userIds)->mapWithKeys(fn ($id) => [
-            $id => self::buildStatusWords($modules, 'training', ($masteryByUser->get($id) ?? collect())->keyBy('paragraph_word_id')),
-        ]);
+        return self::statusGroups($userIds, 'training', $cutoff);
     }
 
     public static function masteredWordsForUsers(array $userIds, ?string $cutoff = null): Collection
     {
-        $modules = self::with('words')->where('is_tutorial', false)->orderBy('level')->get();
-
-        $masteryByUser = self::masteryQuery($userIds, $cutoff)->get()->groupBy('user_id');
-
-        return collect($userIds)->mapWithKeys(fn ($id) => [
-            $id => self::buildStatusWords($modules, 'mastered', ($masteryByUser->get($id) ?? collect())->keyBy('paragraph_word_id')),
-        ]);
+        return self::statusGroups($userIds, 'mastered', $cutoff);
     }
 
     private static function masteryQuery(array $userIds, ?string $cutoff = null)
@@ -71,45 +59,29 @@ class ParagraphModule extends Model
         return $query;
     }
 
-    private static function buildStatusWords($modules, $status, $mastery): array
+    private static function modules(): Collection
     {
-        $words = [];
-        foreach ($modules as $module) {
-            $moduleWords = $module->words->filter(fn ($w) => isset($mastery[$w->id]) && $mastery[$w->id]->status === $status
-            )->pluck('word')->values();
-            if ($moduleWords->isNotEmpty()) {
-                $words["Level {$module->level}: {$module->title}"] = $moduleWords->toArray();
-            }
-        }
-
-        return $words;
+        return self::with('words')->where('is_tutorial', false)->orderBy('level')->get();
     }
 
-    public static function curriculumForUser(int $userId, ?string $cutoff = null): array
+    // The single traversal over modules × mastery that every public reader
+    // projects from — curriculumForUser and the batched wrappers alike.
+    // Mastery rows are keyed by paragraph_word_id; one row per user+word by design.
+    private static function buildLevels($modules, $mastery): array
     {
-        $modules = self::with('words')->where('is_tutorial', false)->orderBy('level', 'asc')->get();
-
-        $query = DB::table('student_paragraph_mastery')->where('user_id', $userId);
-
-        if ($cutoff) {
-            $query->where('created_at', '<=', Carbon::parse($cutoff)->format('Y-m-d H:i:s'));
-        }
-
-        $masteryProgress = $query->get()->groupBy('paragraph_word_id');
-
-        return $modules->map(function ($module) use ($masteryProgress) {
+        return $modules->map(function ($module) use ($mastery) {
             return [
                 'level' => "Level {$module->level}: {$module->title}",
                 'level_num' => $module->level,
                 'words_count' => $module->words->count(),
-                'mastered' => $module->words->filter(function ($word) use ($masteryProgress) {
-                    return isset($masteryProgress[$word->id]) && $masteryProgress[$word->id][0]->status === 'mastered';
-                })->pluck('word')->values(),
-                'training' => $module->words->filter(function ($word) use ($masteryProgress) {
-                    return isset($masteryProgress[$word->id]) && $masteryProgress[$word->id][0]->status === 'training';
-                })->pluck('word')->values(),
-                'word_stats' => $module->words->map(function ($word) use ($masteryProgress) {
-                    $row = $masteryProgress[$word->id][0] ?? null;
+                'mastered' => $module->words->filter(function ($word) use ($mastery) {
+                    return isset($mastery[$word->id]) && $mastery[$word->id]->status === 'mastered';
+                })->pluck('word')->values()->all(),
+                'training' => $module->words->filter(function ($word) use ($mastery) {
+                    return isset($mastery[$word->id]) && $mastery[$word->id]->status === 'training';
+                })->pluck('word')->values()->all(),
+                'word_stats' => $module->words->map(function ($word) use ($mastery) {
+                    $row = $mastery[$word->id] ?? null;
 
                     return [
                         'word' => $word->word,
@@ -119,6 +91,30 @@ class ParagraphModule extends Model
                 })->values()->all(),
             ];
         })->toArray();
+    }
+
+    // Batched multi-user read; projects one status out of buildLevels().
+    private static function statusGroups(array $userIds, string $status, ?string $cutoff): Collection
+    {
+        $masteryByUser = self::masteryQuery($userIds, $cutoff)->get()->groupBy('user_id');
+
+        return collect($userIds)->mapWithKeys(fn ($id) => [
+            $id => collect(self::buildLevels(self::modules(), ($masteryByUser->get($id) ?? collect())->keyBy('paragraph_word_id')))
+                ->filter(fn ($level) => $level[$status] !== [])
+                ->mapWithKeys(fn ($level) => [$level['level'] => $level[$status]])
+                ->all(),
+        ]);
+    }
+
+    public static function curriculumForUser(int $userId, ?string $cutoff = null): array
+    {
+        $query = DB::table('student_paragraph_mastery')->where('user_id', $userId);
+
+        if ($cutoff) {
+            $query->where('created_at', '<=', Carbon::parse($cutoff)->format('Y-m-d H:i:s'));
+        }
+
+        return self::buildLevels(self::modules(), $query->get()->keyBy('paragraph_word_id'));
     }
 
     public static function saveWithContent(array $data): void
