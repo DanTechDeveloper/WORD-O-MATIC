@@ -124,13 +124,21 @@ Semantics:
   `failed_attempts` while the word is still `training` (`StudentController::updateMastery`).
 - First mastery **freezes** the counter forever — it reads as "unsuccessful attempts
   needed to master"; replays can never move it (same sticky guard).
-- The threshold is derived at display time, never stored (frontend const
-  `NEEDS_ATTENTION_ATTEMPTS = 3` in `StudentDetails.jsx`):
+- The threshold lives server-side as `ReportService::NEEDS_ATTENTION_ATTEMPTS = 3`
+  (single source of truth, no DB storage); the teacher UI receives it via the
+  `teacher.attention_threshold` shared prop (`HandleInertiaRequests`, JSX falls
+  back to 3):
   - `training` + ≥3 → **Needs Attention** (unresolved struggle — act)
   - `mastered` + ≥3 → **Recovered** (was difficult, overcome — history only)
   - else → no flag rendered (Normal is the absence of a flag, not a label)
 - Surfaced in the Word Analysis tables on `Teacher/StudentDetails.jsx` via the
   additive `word_stats` key of `curriculumForUser()`; unseen words appear at 0.
+- Also surfaced in parent emails: the Training Zones group training words into
+  **Still Practicing** (< threshold) and **Needs More Practice** (≥ threshold,
+  amber, "Not yet mastered") with `N recorded attempt(s)` metas — counts framed
+  as recorded history, not recommended repetitions. Recovered stays teacher-only;
+  email ↔ StudentDetails parity locked by
+  `ReportTest::test_email_payload_matches_student_details_view_data`.
 
 ## Student Deletion
 

@@ -1,6 +1,6 @@
 # Reports
 
-> Version 1.6
+> Version 1.7
 
 ## Dashboard
 
@@ -35,11 +35,18 @@ The teacher deadline banner is a single source of truth in `DashboardLayout.jsx`
 - `reported_at` = deadline timestamp (not current time).
 - Flash data (`sent`, `failed`, `reported_at`) exposed to frontend via `HandleInertiaRequests`.
 
-**Email content** (`student-report.blade.php`) mirrors the teacher `StudentDetails` readout:
+**Email content** (`student-report.blade.php`, v1.7 redesign) is a projection of the **same `curriculumForUser()` data** that powers `StudentDetails` — parity locked by `ReportTest::test_email_payload_matches_student_details_view_data`:
 
-- **6-tile grid** (3 rows): `Word Blast` / `Story Quest` accuracy, `Word Blast Level` / `Story Quest Level` (relabeled from Read/Speak Level), and `Word Blast Progress` / `Story Quest Progress` (curriculum completion %, `wordBlastProg` / `storyQuestProg`).
-- `wordBlastProg` / `storyQuestProg` are computed via `ReportService::curriculumPercent()` — `round(Σmastered / Σwords_count × 100)` per skill, the same percentage the frontend computes from `curriculumForUser`. Kept as two implementations by decision (see CAVEATS).
-- The per-status recommendation block (`onTrack` / `needsSupport` / `support` / `atRisk`) uses the exact copy from the `StudentDetails.jsx` `recommendations` map — that JSX map is the single source of that wording. `notStarted` / `in_progress` have no banner block (same as before).
+- **Header**: student name, sector, status pill (all five statuses render a colored pill).
+- **Performance Overview**: Word Blast / Story Quest accuracy tiles.
+- **Curriculum Progress**: per-mode completion % (`wordBlastProg` / `storyQuestProg` via `ReportService::curriculumPercent()` — same math as the frontend's `calcOverallProgress`, parity asserted by test) rendered as progress bars + level line.
+- **Latest Achievement**: latest badge card (or empty state).
+- **Training Zone × 2** (Word Blast / Story Quest): every still-training word grouped by recorded tries against the shared threshold `ReportService::NEEDS_ATTENTION_ATTEMPTS = 3`:
+  - **Still Practicing** — training words below the threshold; chips show `N recorded attempt(s)`.
+  - **Needs More Practice** — training words at/above it; amber chips with `N recorded attempts · Not yet mastered`.
+  - Disclaimer copy states counts are recorded history, not recommended repetitions.
+  - Payload: `wordAttempts` / `paragraphWordAttempts` from `ReportService::trainingAttemptsFrom()`. Recovered words (mastered + ≥3) stay teacher-only.
+- **Recommendation**: banner for **all five statuses** (including `notStarted` / `in_progress`). Copy is template-local wording — deliberately no longer mirrored from the `StudentDetails.jsx` `recommendations` map.
 
 ## Sent Tracking
 

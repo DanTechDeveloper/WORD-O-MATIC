@@ -74,7 +74,7 @@ which also bounces avatar-complete students away from `splashScreen`/`avatarSele
 | `ProgressService` | Update word/paragraph progress (best score only), recalculate status. Clamps client-reported inputs at the service boundary — `words_processed ≥ 0`, `words_smashed ≤ words_processed`, `accuracy ∈ [0,100]` — and never completes a module with 0 words (`$totalWords > 0` guard). |
 | `BadgeService` | Award badges, check thresholds. `calculateModuleCompletion()` computes paragraph/word completion % from `words_smashed`. `checkAllEligibleBadges()` also runs at student login (avatar set). |
 | `LevelService` | Module lock/current/completed status per student |
-| `ReportService` | Deadline/cutoff resolution (`deadline()`, `cutoff()`), `trainingWordsFor()`, `curriculumPercent()`, `latestBadge()` — powers `ReportController` (routes `reports`, `reports.sendEmails`, `reports.deadline`, `reports.export`). |
+| `ReportService` | Deadline/cutoff resolution (`deadline()`, `cutoff()`), `trainingWordsFor()`, pure projections of `curriculumForUser()` (`trainingGroupsFrom()`, `trainingAttemptsFrom()`), `curriculumPercent()`, `latestBadge()`, and the `NEEDS_ATTENTION_ATTEMPTS` threshold const shared to the teacher UI — powers `ReportController` (routes `reports`, `reports.sendEmails`, `reports.deadline`, `reports.export`). |
 | `TeacherController::dashboardStats()` | Teacher dashboard stats (private method, no service class). Returns `topStudents`, `chartCounts`, `sectionPerformance`, and a per-student `students` list (id, name, section, wordBlastAcc, storyQuestAcc, status) powering the class-health drill-down table. |
 
 Session logging done via `GameSession::logSession()` static method on the model (no service class).
@@ -194,7 +194,7 @@ HandleInertiaRequests::share() ← session flash + auth
               Inertia Response → React $page.props
 ```
 
-Global data shared via `HandleInertiaRequests`: `auth.user`, `flash` (success, error, new_badges, sent, failed, reported_at), `teacher` flags.
+Global data shared via `HandleInertiaRequests`: `auth.user`, `flash` (success, error, new_badges, sent, failed, reported_at), `teacher` flags (incl. `attention_threshold` = `ReportService::NEEDS_ATTENTION_ATTEMPTS`).
 
 ## Gameplay Resume (client-side) — See `docs/resume-and-timer.md`
 - Do not re-add a private timer to `GameplayHeader`; use the `timeLeft` prop from `useGameplayEngine`.
