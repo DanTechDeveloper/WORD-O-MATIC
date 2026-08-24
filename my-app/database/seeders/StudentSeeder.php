@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Models\Word;
 use App\Models\WordModule;
 use App\Services\BadgeService;
+use App\Services\ProgressService;
 use Illuminate\Database\Seeder;
 
 class StudentSeeder extends Seeder
@@ -74,26 +75,25 @@ class StudentSeeder extends Seeder
 
             $roll = $i % 10;
             if ($roll < 2) {
-                $status = 'notStarted';
                 $wAcc = 0.0;
                 $sAcc = 0.0;
             } elseif ($roll < 3) {
-                $status = 'in_progress';
                 $wAcc = round(rand(20, 90) + rand(0, 99) / 100, 2);
                 $sAcc = 0.0;
             } elseif ($roll < 5) {
-                $status = 'atRisk';
                 $wAcc = round(rand(1, 55) + rand(0, 99) / 100, 2);
                 $sAcc = round(rand(1, 55) + rand(0, 99) / 100, 2);
             } elseif ($roll < 7) {
-                $status = 'support';
                 $wAcc = round(rand(55, 78) + rand(0, 99) / 100, 2);
                 $sAcc = round(rand(55, 78) + rand(0, 99) / 100, 2);
             } else {
-                $status = 'onTrack';
                 $wAcc = round(rand(78, 100) + rand(0, 99) / 100, 2);
                 $sAcc = round(rand(78, 100) + rand(0, 99) / 100, 2);
             }
+
+            // Derive via the shared classifier so seeded rows always agree with
+            // what recalculateStatus would compute from the same accuracies.
+            $status = ProgressService::classify($wAcc, $sAcc);
 
             $num = str_pad($i + 1, 3, '0', STR_PAD_LEFT);
             $wLevels = $completedLevels($wAcc);

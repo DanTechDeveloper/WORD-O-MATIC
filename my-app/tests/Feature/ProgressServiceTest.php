@@ -509,6 +509,59 @@ class ProgressServiceTest extends TestCase
         $this->assertSame(0.0, (float) $this->student->student->wordBlastAcc);
     }
 
+    // Post-onboarding tutorial replay: finishRound drops the isTutorial flag,
+    // so the service sees a normal play on the tutorial module. Progress rows
+    // may record it, but students.points must never move.
+    public function test_unflagged_tutorial_replay_records_progress_without_awarding_points(): void
+    {
+        $tutorial = WordModule::create(['level' => 0, 'title' => 'Tutorial', 'is_tutorial' => true]);
+        foreach (['a', 'i', 'see', 'my', 'the'] as $i => $word) {
+            Word::create(['word_module_id' => $tutorial->id, 'word' => strtoupper($word), 'position' => $i + 1]);
+        }
+
+        $this->progressService->updateWordProgress(
+            $this->student->student, $tutorial,
+            wordsSmashed: 5, wordsProcessed: 5, accuracy: 100
+        );
+
+        $record = StudentWordProgress::where('user_id', $this->student->id)
+            ->where('word_module_id', $tutorial->id)
+            ->first();
+
+        $this->assertSame(5, $record->words_smashed);
+
+        $this->student->refresh();
+        $this->assertEquals(0, $this->student->student->points);
+        // No non-tutorial row exists to average — stored accuracy stays put.
+        $this->assertSame(0.0, (float) $this->student->student->wordBlastAcc);
+    }
+
+    public function test_points_recompute_excludes_tutorial_rows(): void
+    {
+        $tutorial = WordModule::create(['level' => 0, 'title' => 'Tutorial', 'is_tutorial' => true]);
+        foreach (['a', 'i', 'see'] as $i => $word) {
+            Word::create(['word_module_id' => $tutorial->id, 'word' => strtoupper($word), 'position' => $i + 1]);
+        }
+
+        // Legacy/replay row on the tutorial carrying a real smash count.
+        StudentWordProgress::create([
+            'user_id' => $this->student->id,
+            'word_module_id' => $tutorial->id,
+            'status' => 'completed',
+            'words_smashed' => 7,
+            'accuracy' => 70,
+        ]);
+
+        $this->progressService->updateWordProgress(
+            $this->student->student, $this->wordModule,
+            wordsSmashed: 4, wordsProcessed: 4, accuracy: 80
+        );
+
+        $this->student->refresh();
+        // Completion recompute must match the dashboard formula: 4, not 11.
+        $this->assertEquals(4, $this->student->student->points);
+    }
+
     public function test_accuracy_rounded_to_two_decimals(): void
     {
         $this->progressService->updateWordProgress(

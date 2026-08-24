@@ -330,6 +330,52 @@ class GameplayTest extends TestCase
         $this->assertDatabaseMissing('game_sessions', ['user_id' => $this->student->id]);
     }
 
+    // Post-onboarding tutorial replay: with tutorial_completed_at set,
+    // finishRound drops the isTutorial flag and runs the NORMAL gameplay path
+    // (game session gets logged). The round may record progress, but points
+    // and accuracy must stay flat — the dashboard will never show them.
+    public function test_tutorial_replay_after_onboarding_does_not_award_points(): void
+    {
+        Setting::where('key', 'report_deadline')->delete();
+
+        $tutorialModule = WordModule::create([
+            'level' => 0,
+            'title' => 'Tutorial',
+            'is_tutorial' => true,
+        ]);
+        Word::create([
+            'word_module_id' => $tutorialModule->id,
+            'word' => 'cat',
+            'position' => 1,
+        ]);
+
+        $this->student->student->update(['tutorial_completed_at' => now()]);
+
+        $this->actingAs($this->student)
+            ->post(route('student.saveWordProgress'), [
+                'module_id' => $tutorialModule->id,
+                'words_smashed' => 1,
+                'words_processed' => 1,
+            ])
+            ->assertRedirect();
+
+        // Proves the fallthrough happened: a real game session was logged.
+        $this->assertDatabaseHas('game_sessions', [
+            'user_id' => $this->student->id,
+            'module_id' => $tutorialModule->id,
+        ]);
+
+        $this->assertDatabaseHas('student_word_progress', [
+            'user_id' => $this->student->id,
+            'word_module_id' => $tutorialModule->id,
+            'words_smashed' => 1,
+        ]);
+
+        $this->student->refresh();
+        $this->assertEquals(0, $this->student->student->points);
+        $this->assertSame(0.0, (float) $this->student->student->wordBlastAcc);
+    }
+
     public function test_pre_deadline_mastery_write_is_accepted(): void
     {
         $word = Word::where('word_module_id', $this->module->id)->first();

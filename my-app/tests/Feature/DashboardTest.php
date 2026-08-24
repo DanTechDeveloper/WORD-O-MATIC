@@ -52,7 +52,7 @@ class DashboardTest extends TestCase
             ->where('students.0.status', 'onTrack')
             ->where('students.0.wordBlastAcc', 85)
             ->where('students.0.storyQuestAcc', 90)
-            ->where('students.1.status', 'needsSupport')
+            ->where('students.1.status', 'support')
             ->where('students.2.status', 'atRisk')
             ->where('students.3.status', 'in_progress')
             ->where('students.4.status', 'notStarted')
@@ -78,7 +78,7 @@ class DashboardTest extends TestCase
                 'notStarted' => 2,
                 'in_progress' => 1,
                 'atRisk' => 1,
-                'needsSupport' => 1,
+                'support' => 1,
                 'onTrack' => 2,
             ])
         );

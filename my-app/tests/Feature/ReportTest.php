@@ -457,6 +457,11 @@ class ReportTest extends TestCase
             'reported_at' => 'August 23, 2026 at 9:00 AM',
         ]))->render();
 
+        // The blade puts the try count and its label on separate template
+        // lines, so rendered HTML carries newlines inside phrases like
+        // "1\n recorded attempt". Collapse whitespace before substring checks.
+        $html = preg_replace('/\s+/', ' ', $html);
+
         $this->assertStringContainsString('Training Zone', $html);
         $this->assertStringContainsString('Words that are not mastered yet', $html);
         $this->assertStringContainsString('recorded practice history', $html);

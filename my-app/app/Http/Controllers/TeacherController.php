@@ -9,6 +9,7 @@ use App\Models\StudentWordMastery;
 use App\Models\User;
 use App\Models\WordModule;
 use App\Services\BadgeService;
+use App\Services\ProgressService;
 use App\Services\ReportService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -29,11 +30,6 @@ class TeacherController extends Controller
         return Inertia::render('Teacher/Dashboard',
             $this->dashboardStats()
         );
-    }
-
-    public function classes()
-    {
-        return Inertia::render('Teacher/Classes');
     }
 
     public function students(Request $request)
@@ -174,19 +170,22 @@ class TeacherController extends Controller
 
         $sections = $allStudents->pluck('section')->unique()->filter();
 
-        $sectionPerformance = $sections->map(function ($section) use ($allStudents) {
+        // Same thresholds as per-student status via the shared classifier,
+        // translated to display labels for the section cards.
+        $statusLabels = [
+            'onTrack' => 'On Track',
+            'support' => 'Needs Support',
+            'atRisk' => 'At Risk',
+            'in_progress' => 'In Progress',
+            'notStarted' => 'Not Started',
+        ];
+
+        $sectionPerformance = $sections->map(function ($section) use ($allStudents, $statusLabels) {
             $sectionStudents = $allStudents->where('section', $section);
             $avgRead = $sectionStudents->avg('wordBlastAcc');
             $avgSpeak = $sectionStudents->avg('storyQuestAcc');
 
-            if (! $avgRead && ! $avgSpeak) {
-                $status = 'Not Started';
-            } elseif (! $avgRead || ! $avgSpeak) {
-                $status = 'In Progress';
-            } else {
-                $overallAvg = (($avgRead ?? 0) + ($avgSpeak ?? 0)) / 2;
-                $status = $overallAvg >= 80 ? 'On Track' : ($overallAvg >= 60 ? 'Needs Support' : 'At Risk');
-            }
+            $status = $statusLabels[ProgressService::classify((float) ($avgRead ?? 0), (float) ($avgSpeak ?? 0))];
 
             return [
                 'section' => $section,
@@ -198,37 +197,21 @@ class TeacherController extends Controller
             ];
         })->values();
 
-        $atRisk = 0;
-        $needsSupport = 0;
-        $onTrack = 0;
-        $notStarted = 0;
-        $inProgress = 0;
+        $counts = [
+            'notStarted' => 0,
+            'in_progress' => 0,
+            'atRisk' => 0,
+            'support' => 0,
+            'onTrack' => 0,
+        ];
 
         $students = [];
         foreach ($allStudents as $student) {
-            $wordBlast = (float) $student->wordBlastAcc;
-            $storyQuest = (float) $student->storyQuestAcc;
-
-            if (! $wordBlast && ! $storyQuest) {
-                $status = 'notStarted';
-                $notStarted++;
-            } elseif (! $wordBlast || ! $storyQuest) {
-                $status = 'in_progress';
-                $inProgress++;
-            } else {
-                $overallAvg = ($wordBlast + $storyQuest) / 2;
-
-                if ($overallAvg >= 80) {
-                    $status = 'onTrack';
-                    $onTrack++;
-                } elseif ($overallAvg >= 60) {
-                    $status = 'needsSupport';
-                    $needsSupport++;
-                } else {
-                    $status = 'atRisk';
-                    $atRisk++;
-                }
-            }
+            $status = ProgressService::classify(
+                (float) $student->wordBlastAcc,
+                (float) $student->storyQuestAcc,
+            );
+            $counts[$status]++;
 
             $students[] = [
                 'id' => $student->user_id,
@@ -263,13 +246,7 @@ class TeacherController extends Controller
             'totalClassPoints' => $totalClassPoints,
             'sectionPerformance' => $sectionPerformance,
             'students' => $students,
-            'chartCounts' => [
-                'notStarted' => $notStarted,
-                'in_progress' => $inProgress,
-                'atRisk' => $atRisk,
-                'needsSupport' => $needsSupport,
-                'onTrack' => $onTrack,
-            ],
+            'chartCounts' => $counts,
         ];
     }
 
@@ -451,7 +428,9 @@ class TeacherController extends Controller
         }
 
         $request->validate([
-            'level' => 'required|integer',
+            // min:1 — level 0 is the tutorial module; saveWithWords upserts by
+            // level and would wipe its words via words()->delete().
+            'level' => 'required|integer|min:1',
             'title' => 'required|string|max:255',
             'words' => 'required|array|size:10',
             'words.*.word' => 'required|string|max:20',
@@ -522,7 +501,8 @@ class TeacherController extends Controller
         $request->merge(['content' => trim((string) $request->input('content', ''))]);
 
         $request->validate([
-            'level' => 'required|integer',
+            // Same guard as updateWordModule: level 0 is the tutorial row.
+            'level' => 'required|integer|min:1',
             'title' => 'required|string|max:255',
             'content' => 'required|string',
         ]);

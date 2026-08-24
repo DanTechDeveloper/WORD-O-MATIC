@@ -108,15 +108,15 @@ export default function StudentDetail({ data }) {
     const modes = [
         {
             name: "Word Blast",
-            level: `${readMastered}`,
-            sub: readTotal > 0 ? `out of ${readTotal} Words` : "No words",
+            level: `LV ${data.student?.read_level ?? 1}`,
+            sub: readTotal > 0 ? `${readMastered} of ${readTotal} Words Mastered` : "No words yet",
             progress: calcOverallProgress(student.readCurriculum),
             color: "bg-lime-400",
         },
         {
             name: "Story Quest",
-            level: `${speakMastered}`,
-            sub: speakTotal > 0 ? `out of ${speakTotal} Items` : "No items",
+            level: `LV ${data.student?.speak_level ?? 1}`,
+            sub: speakTotal > 0 ? `${speakMastered} of ${speakTotal} Items Mastered` : "No items yet",
             progress: calcOverallProgress(student.speakCurriculum),
             color: "bg-cyan-400",
         },
