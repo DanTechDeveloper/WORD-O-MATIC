@@ -100,6 +100,15 @@ middleware aliases are registered in `bootstrap/app.php`.
   `students`, not from the progress/mastery tables.
 - **Progress is best-score-only.** `ProgressService` does not overwrite on a
   worse play.
+- **Status thresholds live once in `ProgressService::classify()`** — runtime
+  recalculation, `TeacherController::dashboardStats`, and `StudentSeeder` all
+  call it; the vocabulary is the DB's (`support`, not a separate
+  `needsSupport` key) (BF22).
+- **Tutorial plays never move `students.points`.** Flagged plays early-return;
+  post-onboarding replays (`finishRound` drops the flag once
+  `tutorial_completed_at` is set) hit a delta gate plus recompute sums that
+  exclude tutorial rows (BF24). Module editors reject `level < 1` for the
+  same isolation reason (BF23).
 - **Frontend pages resolve as `./Pages/{name}.jsx`** under `resources/js/`.
   `@` alias (`jsconfig.json`) = `resources/js`; `@/` alias (vitest) too.
 - **UI must follow design tokens.** `resources/js/**/*.jsx` classes should come
@@ -112,13 +121,14 @@ middleware aliases are registered in `bootstrap/app.php`.
   invisibly (the bulk-add student bug).
 - **Word module edits are strictly validated** (PHP-normalized): all 10 slots
   required, no intra-module dups, no reuse of a word from another level (incl.
-  tutorial), `max:20`, stored uppercase; `has_progress` triggers a reset
+  tutorial), `max:20`, stored uppercase; `level` validated `min:1` (0 is the
+  tutorial row, BF23); `has_progress` triggers a reset
   `confirm()`. See `docs/MODULES.md`.
 - **Paragraph module content is trimmed + required** — empty/whitespace content
   is rejected on save (a zero-word module can never complete: `ProgressService`
   guards completion with `$totalWords > 0`). Words stored case-as-entered via
-  `ParagraphModule::saveWithContent` (unlike Word Blast's uppercase). See
-  `docs/MODULES.md`.
+  `ParagraphModule::saveWithContent` (unlike Word Blast's uppercase); level
+  likewise requires ≥ 1. See `docs/MODULES.md`.
 - **Gameplay progress inputs are clamped at the service**: `words_processed`
   above the module's word count is rejected in `finishRound`, and
   `ProgressService` clamps `processed ≥ 0`, `smashed ≤ processed`, `accuracy
