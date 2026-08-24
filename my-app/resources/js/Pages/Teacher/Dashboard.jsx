@@ -75,7 +75,7 @@ export default function Dashboard({
         { key: "notStarted", label: "Not Started", countKey: "notStarted", color: "#64748b", icon: "hourglass_empty" },
         { key: "in_progress", label: "In Progress", countKey: "in_progress", color: "#38bdf8", icon: "progress_activity" },
         { key: "atRisk", label: "At Risk", countKey: "atRisk", color: "#fb7185", icon: "error" },
-        { key: "needsSupport", label: "Needs Support", countKey: "needsSupport", color: "#fbbf24", icon: "tips_and_updates" },
+        { key: "support", label: "Needs Support", countKey: "support", color: "#fbbf24", icon: "tips_and_updates" },
         { key: "onTrack", label: "On Track", countKey: "onTrack", color: "#a3e635", icon: "check_circle" },
     ];
 
@@ -103,7 +103,7 @@ export default function Dashboard({
 
     const STATUS_BADGE = {
         onTrack: "bg-green-900/50 text-green-400 border-green-500",
-        needsSupport: "bg-amber-900/50 text-amber-400 border-amber-500",
+        support: "bg-amber-900/50 text-amber-400 border-amber-500",
         notStarted: "bg-slate-800/50 text-slate-500 border-slate-700",
         atRisk: "bg-rose-900/50 text-rose-400 border-rose-500",
         in_progress: "bg-sky-900/50 text-sky-400 border-sky-500",
