@@ -1,6 +1,6 @@
 # Modules
 
-> Version 1.3
+> Version 1.4
 
 ## Structure
 
@@ -27,6 +27,10 @@ Tutorial modules (`is_tutorial=true`, `level=0`) seeded via `CurriculumSeeder`. 
 
 `updateWordModule()` enforces (normalized in PHP — MySQL ci collation differs from SQLite):
 
+- Level must be ≥ 1 (`min:1`) — level 0 IS the tutorial module row, and
+  `saveWithWords` upserts by level, so a `level=0` save would wipe and replace
+  every onboarding word while the row stayed flagged `is_tutorial=true`
+  (locked by `TutorialSaveGuardScenarioTest`).
 - Exactly 10 word slots, all required (`required|string|max:20`); a blank slot fails with "Every word must be filled in.".
 - No intra-module duplicates (case-insensitive; error points at the first slot): `"X" is duplicated in this module.`
 - No cross-module reuse — a word already used in another level (incl. the tutorial module, level 0) fails: `"X" is already used in Level N.` The module being edited is excluded, so resaving its own words is allowed.
@@ -38,6 +42,8 @@ Tutorial modules (`is_tutorial=true`, `level=0`) seeded via `CurriculumSeeder`. 
 
 `updateParagraphModule()` enforces:
 
+- Level must be ≥ 1 (`min:1`) — same reason as word modules:
+  `saveWithContent` upserts by level, and level 0 is the tutorial row.
 - Content is trimmed then required (`required|string`) — empty or whitespace-only
   content is rejected with a validation error. A zero-word paragraph module is
   invalid: `ProgressService` never completes a module with 0 words (`$totalWords >

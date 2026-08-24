@@ -71,7 +71,7 @@ which also bounces avatar-complete students away from `splashScreen`/`avatarSele
 
 | Service | Responsibility |
 |---|---|
-| `ProgressService` | Update word/paragraph progress (best score only), recalculate status. Clamps client-reported inputs at the service boundary — `words_processed ≥ 0`, `words_smashed ≤ words_processed`, `accuracy ∈ [0,100]` — and never completes a module with 0 words (`$totalWords > 0` guard). |
+| `ProgressService` | Update word/paragraph progress (best score only), recalculate status. Status thresholds live in the static `classify()` (single source of truth — also called by `TeacherController::dashboardStats` and `StudentSeeder`). Tutorial plays — including post-onboarding replays, where `finishRound()` drops the isTutorial flag — never move `students.points` (recompute sums exclude tutorial rows; the delta path is gated on `! $module->is_tutorial`). Clamps client-reported inputs at the service boundary — `words_processed ≥ 0`, `words_smashed ≤ words_processed`, `accuracy ∈ [0,100]` — and never completes a module with 0 words (`$totalWords > 0` guard). |
 | `BadgeService` | Award badges, check thresholds. `calculateModuleCompletion()` computes paragraph/word completion % from `words_smashed`. `checkAllEligibleBadges()` also runs at student login (avatar set). |
 | `LevelService` | Module lock/current/completed status per student |
 | `ReportService` | Deadline/cutoff resolution (`deadline()`, `cutoff()`), `trainingWordsFor()`, pure projections of `curriculumForUser()` (`trainingGroupsFrom()`, `trainingAttemptsFrom()`), `curriculumPercent()`, `latestBadge()`, and the `NEEDS_ATTENTION_ATTEMPTS` threshold const shared to the teacher UI — powers `ReportController` (routes `reports`, `reports.sendEmails`, `reports.deadline`, `reports.export`). |
@@ -116,6 +116,10 @@ row: role `student`, bcrypt-only PIN, default avatar by gender, zeros):
 (lowercase for checks, uppercase for storage via `WordModule::saveWithWords`).
 Rules:
 
+- Level is validated `required|integer|min:1` — level 0 IS the tutorial row,
+  and `saveWithWords` upserts by level, so a `level=0` request would delete and
+  replace every onboarding word (locked by `TutorialSaveGuardScenarioTest`).
+
 - Exactly 10 word slots, all required (`required|string|max:20`); blanks fail
   ("Every word must be filled in.").
 - No intra-module duplicates — case-insensitive, error points at the first
@@ -138,7 +142,9 @@ so a zero-word paragraph module can never be created (a zero-word module would
 strand students: `ProgressService` refuses to complete a module with 0 words —
 `$totalWords > 0` guard, see CAVEATS.md BF13). Words are split on whitespace and
 stored case-as-entered via `ParagraphModule::saveWithContent` (deletes +
-recreates the module's words each save). `ParagraphInputModal.jsx` disables Save
+recreates the module's words each save). `level` is likewise validated
+`min:1` for the same reason as word modules (`saveWithContent` upserts by
+level; 0 is the tutorial row). `ParagraphInputModal.jsx` disables Save
 while content or title is empty and renders server validation errors in-modal
 (modals never close themselves on a failed save).
 
@@ -182,7 +188,8 @@ while content or title is empty and renders server validation errors in-modal
   session-wide). For per-key absence use
   `assertArrayNotHasKey($key, session('errors')->getBag('default')->messages())`.
 - Student/word-module validation hardening lives in `AddStudentBulkTest.php`
-  (22 cases) and `ModuleCrudTest.php` (dup/blank/length/deadline/has_progress).
+  (22 cases), `ModuleCrudTest.php` (dup/blank/length/deadline/has_progress),
+  and `TutorialSaveGuardScenarioTest.php` (level ≥ 1 tutorial-wipe guard).
 
 ## Data Flow
 
