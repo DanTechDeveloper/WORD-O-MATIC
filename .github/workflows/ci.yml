@@ -5,6 +5,7 @@ on:
     branches: ["main", "master"]
   pull_request:
     branches: ["main", "master"]
+  workflow_dispatch: # manual runs: enables the gated Railway migration step
 
 defaults:
   run:
@@ -15,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -39,9 +40,9 @@ jobs:
         run: php artisan migrate --force
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Install & Build Frontend
         run: |
@@ -51,8 +52,10 @@ jobs:
       - name: Run Tests
         run: php artisan test
 
-      # STEP 2: Kapag nakapasa sa test, i-inject ang live Railway credentials at mag-migrate
+      # STEP 2: Manual-only while Railway is paused (expired trial) — restore
+      # the DB + secrets, then run this workflow via workflow_dispatch.
       - name: Run Live Production Migration on Railway
+        if: github.event_name == 'workflow_dispatch'
         env:
           DB_CONNECTION: mysql
           DB_HOST: ${{ secrets.RAILWAY_DB_HOST }}
