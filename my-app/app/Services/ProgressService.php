@@ -54,13 +54,6 @@ class ProgressService
         if (! $student) {
             return;
         }
-
-        // CAVEATS M3 mitigation: serialize concurrent round commits (double-tap /
-        // multi-tab) so a second request can't read the same previous best and
-        // double-award points. Lock-first: the locking read must be the
-        // transaction's first statement, otherwise MySQL's REPEATABLE READ
-        // snapshot would serve stale rows after waiting on the lock. SQLite
-        // (tests) ignores lock clauses; behavior there is unchanged.
         DB::transaction(function () use (
             $student, $module, $wordsSmashed, $wordsProcessed, $accuracy,
             $progressClass, $moduleKey, $moduleClass,
