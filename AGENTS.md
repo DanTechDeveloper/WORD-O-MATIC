@@ -53,8 +53,9 @@ middleware aliases are registered in `bootstrap/app.php`.
   `CACHE_STORE=array`, `SESSION_DRIVER=array`.
 - **CI only runs PHP tests.** `.github/workflows/ci.yml` runs from `my-app/`,
   PHP 8.3, SQLite `:memory:`, then `php artisan test`. No JS/vitest, no Pint,
-  no typecheck. On pass it runs `php artisan migrate --force` against Railway
-  MySQL using GitHub secrets. No `setup` step in CI (deps cached/installed directly).
+  no typecheck. The Railway live-migration step is **manual-only**
+  (`workflow_dispatch` gate) while the Railway instance is paused — push/PR
+  runs end after tests. No `setup` step in CI (deps cached/installed directly).
 - **No global lint/typecheck script exists.** `composer.json` has only setup/dev/test.
 - **`php artisan migrate` and DB writes require explicit approval** (see
   `opencode.json` permission rules: `php artisan migrate*` and `php artisan db:*`
