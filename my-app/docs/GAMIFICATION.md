@@ -133,6 +133,13 @@ Semantics:
   - else → no flag rendered (Normal is the absence of a flag, not a label)
 - Surfaced in the Word Analysis tables on `Teacher/StudentDetails.jsx` via the
   additive `word_stats` key of `curriculumForUser()`; unseen words appear at 0.
+- Duplicate texts within a level (natural in sentences — "I see a cat. The cat
+  is big") render as ONE chip: `failed_attempts` summed across occurrences and
+  the worst mastery shown (`training` beats `unseen` beats `mastered`) so a
+  Needs Attention flag survives merging. Grouping normalizes casing and
+  trailing punctuation (`Cat.` ≡ `cat` ≡ `THE`). The rule is mirrored
+  identically page-side (`aggregateZoneRows` in StudentDetails.jsx) and
+  email-side (`ReportService::aggregateWordStats`) — locked by the parity test.
 - Also surfaced in parent emails: the Training Zones group training words into
   **Still Practicing** (< threshold) and **Needs More Practice** (≥ threshold,
   amber, "Not yet mastered") with `N recorded attempt(s)` metas — counts framed

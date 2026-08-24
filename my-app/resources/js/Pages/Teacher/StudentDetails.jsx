@@ -18,6 +18,45 @@ function attentionMeta(stat, threshold) {
         : { label: "Needs Attention", cls: "text-red-500" };
 }
 
+// Merge duplicate word texts within a level into ONE chip: summed
+// failed_attempts, worst mastery wins (training > unseen > mastered).
+// Normalization mirrors ReportService::aggregateWordStats so the page and
+// the parent email always agree (BF25).
+function aggregateZoneRows(wordStats) {
+    const rank = { mastered: 0, unseen: 1, training: 2 };
+    const normalize = (w) =>
+        (w || "").trim().replace(/[^\p{L}\p{N}]+$/u, "").toLowerCase();
+    const merged = new Map();
+
+    for (const stat of wordStats || []) {
+        const key = normalize(stat.word);
+        if (!key) continue;
+
+        const current = merged.get(key);
+        if (!current) {
+            merged.set(key, {
+                word: stat.word,
+                mastery: stat.mastery,
+                failed_attempts: Number(stat.failed_attempts || 0),
+            });
+            continue;
+        }
+
+        current.failed_attempts += Number(stat.failed_attempts || 0);
+        if ((rank[stat.mastery] ?? 0) > (rank[current.mastery] ?? 0)) {
+            current.mastery = stat.mastery;
+        }
+    }
+
+    const rows = [...merged.values()];
+
+    return {
+        mastered: rows.filter((r) => r.mastery === "mastered"),
+        training: rows.filter((r) => r.mastery === "training"),
+        rows,
+    };
+}
+
 // Inline Attempts/Attention meta under each word inside the Mastery/Training
 // zones; bare chip fallback when word_stats are unavailable.
 function WordChip({ word, stat, threshold, className }) {
@@ -398,21 +437,19 @@ export default function StudentDetail({ data }) {
                         </div>
                         <div className="bg-slate-950 rounded-[2.5rem] border-4 border-slate-800 p-8 shadow-[8px_8px_0_0_#020617] min-h-[400px] max-h-[600px] overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-slate-800 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-lime-400">
                             {student.readCurriculum.map((level, i) => {
-                                const stats = Object.fromEntries(
-                                    (level.word_stats ?? []).map((s) => [s.word, s]),
-                                );
+                                const zone = aggregateZoneRows(level.word_stats);
 
                                 return (
                                     <div key={i} className="mb-8 last:mb-0">
-                                        {level.mastered.length > 0 && (
+                                        {zone.mastered.length > 0 && (
                                             <>
                                                 <div className="text-lime-400 font-black uppercase text-xs tracking-widest mb-4 flex items-center gap-2">
                                                     <div className="w-2 h-2 rounded-full bg-lime-400 shadow-[0_0_8px_#4ade80]"></div>
                                                     {level.level}
                                                 </div>
                                                 <div className="flex flex-wrap gap-2">
-                                                    {level.mastered.map((word, j) => (
-                                                        <WordChip key={j} word={word} stat={stats[word]} threshold={attentionThreshold} className="text-white hover:border-lime-400" />
+                                                    {zone.mastered.map((row) => (
+                                                        <WordChip key={row.word} word={row.word} stat={row} threshold={attentionThreshold} className="text-white hover:border-lime-400" />
                                                     ))}
                                                 </div>
                                             </>
@@ -434,21 +471,19 @@ export default function StudentDetail({ data }) {
                         </div>
                         <div className="bg-slate-950 rounded-[2.5rem] border-4 border-slate-800 p-8 shadow-[8px_8px_0_0_#020617] min-h-[400px] max-h-[600px] overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-slate-800 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-orange-400">
                             {student.readCurriculum.map((level, i) => {
-                                const stats = Object.fromEntries(
-                                    (level.word_stats ?? []).map((s) => [s.word, s]),
-                                );
+                                const zone = aggregateZoneRows(level.word_stats);
 
                                 return (
                                     <div key={i} className="mb-8 last:mb-0">
-                                        {level.training.length > 0 && (
+                                        {zone.training.length > 0 && (
                                             <>
                                                 <div className="text-orange-400 font-black uppercase text-xs tracking-widest mb-4 flex items-center gap-2">
                                                     <div className="w-2 h-2 rounded-full bg-orange-400 shadow-[0_0_8px_#fb923c]"></div>
                                                     {level.level}
                                                 </div>
                                                 <div className="flex flex-wrap gap-2">
-                                                    {level.training.map((word, j) => (
-                                                        <WordChip key={j} word={word} stat={stats[word]} threshold={attentionThreshold} className="text-slate-400 hover:border-orange-400" />
+                                                    {zone.training.map((row) => (
+                                                        <WordChip key={row.word} word={row.word} stat={row} threshold={attentionThreshold} className="text-slate-400 hover:border-orange-400" />
                                                     ))}
                                                 </div>
                                             </>
@@ -479,21 +514,19 @@ export default function StudentDetail({ data }) {
                         </div>
                         <div className="bg-slate-950 rounded-[2.5rem] border-4 border-slate-800 p-8 shadow-[8px_8px_0_0_#020617] min-h-[400px] max-h-[600px] overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-slate-800 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-cyan-400">
                             {student.speakCurriculum.map((level, i) => {
-                                const stats = Object.fromEntries(
-                                    (level.word_stats ?? []).map((s) => [s.word, s]),
-                                );
+                                const zone = aggregateZoneRows(level.word_stats);
 
                                 return (
                                     <div key={i} className="mb-8 last:mb-0">
-                                        {level.mastered.length > 0 && (
+                                        {zone.mastered.length > 0 && (
                                             <>
                                                 <div className="text-cyan-400 font-black uppercase text-xs tracking-widest mb-4 flex items-center gap-2">
                                                     <div className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_#22d3ee]"></div>
                                                     {level.level}
                                                 </div>
                                                 <div className="flex flex-wrap gap-2">
-                                                    {level.mastered.map((word, j) => (
-                                                        <WordChip key={j} word={word} stat={stats[word]} threshold={attentionThreshold} className="text-white hover:border-cyan-400" />
+                                                    {zone.mastered.map((row) => (
+                                                        <WordChip key={row.word} word={row.word} stat={row} threshold={attentionThreshold} className="text-white hover:border-cyan-400" />
                                                     ))}
                                                 </div>
                                             </>
@@ -515,21 +548,19 @@ export default function StudentDetail({ data }) {
                         </div>
                         <div className="bg-slate-950 rounded-[2.5rem] border-4 border-slate-800 p-8 shadow-[8px_8px_0_0_#020617] min-h-[400px] max-h-[600px] overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-slate-800 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-orange-400">
                             {student.speakCurriculum.map((level, i) => {
-                                const stats = Object.fromEntries(
-                                    (level.word_stats ?? []).map((s) => [s.word, s]),
-                                );
+                                const zone = aggregateZoneRows(level.word_stats);
 
                                 return (
                                     <div key={i} className="mb-8 last:mb-0">
-                                        {level.training.length > 0 && (
+                                        {zone.training.length > 0 && (
                                             <>
                                                 <div className="text-orange-400 font-black uppercase text-xs tracking-widest mb-4 flex items-center gap-2">
                                                     <div className="w-2 h-2 rounded-full bg-orange-400 shadow-[0_0_8px_#fb923c]"></div>
                                                     {level.level}
                                                 </div>
                                                 <div className="flex flex-wrap gap-2">
-                                                    {level.training.map((word, j) => (
-                                                        <WordChip key={j} word={word} stat={stats[word]} threshold={attentionThreshold} className="text-slate-400 hover:border-orange-400" />
+                                                    {zone.training.map((row) => (
+                                                        <WordChip key={row.word} word={row.word} stat={row} threshold={attentionThreshold} className="text-slate-400 hover:border-orange-400" />
                                                     ))}
                                                 </div>
                                             </>
