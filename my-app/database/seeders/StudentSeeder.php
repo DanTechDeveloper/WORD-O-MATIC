@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\GameSession;
 use App\Models\ParagraphModule;
 use App\Models\ParagraphWord;
 use App\Models\StudentParagraphMastery;
@@ -68,6 +69,19 @@ class StudentSeeder extends Seeder
             ? rand($mastered ? 0 : 1, 2)
             : rand(3, $mastered ? 5 : 8);
 
+        // Mirrors finishRound: score is a word count derived from accuracy,
+        // accuracy recomputed from that count, streak capped at the count.
+        $logSession = function (User $user, $moduleId, string $type, int $totalPossible, float $acc) {
+            $smashedWords = (int) round($totalPossible * $acc / 100);
+            GameSession::create([
+                'user_id' => $user->id, 'module_id' => $moduleId, 'module_type' => $type,
+                'score' => $smashedWords,
+                'accuracy' => $totalPossible > 0 ? round(($smashedWords / $totalPossible) * 100, 2) : 0,
+                'streak' => $smashedWords,
+                'is_deadline_hit' => rand(0, 9) === 0,
+            ]);
+        };
+
         for ($i = 0; $i < 100; $i++) {
             $section = $sections[$i % 3];
             $avatarChar = $avatarChars[$i % 6];
@@ -127,6 +141,7 @@ class StudentSeeder extends Seeder
                 }
 
                 $totalWordsSmashed += $smashed;
+                $logSession($user, $module->id, 'word', 10, $wAcc);
             }
 
             for ($lvl = 1; $lvl <= $sLevels; $lvl++) {
@@ -149,6 +164,7 @@ class StudentSeeder extends Seeder
                 }
 
                 $totalWordsSmashed += $smashed;
+                $logSession($user, $module->id, 'paragraph', ParagraphWord::where('paragraph_module_id', $module->id)->count(), $sAcc);
             }
 
             $user->student()->create([

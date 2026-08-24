@@ -710,4 +710,34 @@ class GameplayTest extends TestCase
             ->max('streak');
         $this->assertNull($streak);
     }
+
+    // ─── ROUND-COMMIT RACE (M3 mitigation) ────────────────────────────
+
+    public function test_duplicate_round_commit_awards_points_once(): void
+    {
+        // Double-tap / multi-tab replay of the exact same round. PHPUnit runs
+        // sequentially so this cannot prove the lock itself — it pins the
+        // delta gate the students-row lock relies on once requests serialize:
+        // second commit sees the new best and awards nothing.
+        Setting::where('key', 'report_deadline')->delete();
+
+        $payload = [
+            'module_id' => $this->module->id,
+            'words_smashed' => 7,
+            'words_processed' => 10,
+        ];
+
+        foreach ([1, 2] as $round) {
+            $this->actingAs($this->student)
+                ->post(route('student.saveWordProgress'), $payload)
+                ->assertRedirect();
+        }
+
+        $this->student->refresh();
+        $this->assertEquals(7, $this->student->student->points);
+        $this->assertEquals(70, $this->student->student->wordBlastAcc);
+        // One session row per committed round is correct log behavior —
+        // deduping rows was never the goal, protecting points/stats was.
+        $this->assertEquals(2, GameSession::where('user_id', $this->student->id)->count());
+    }
 }

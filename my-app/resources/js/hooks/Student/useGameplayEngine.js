@@ -125,8 +125,10 @@ export function useGameplayEngine({
 
     useEffect(() => {
         if (gameState === "COMPLETED" || gameState === "GAMEOVER") {
+            // Note: hasSaved stays true here — the save is still in flight and
+            // the page unmounts on the results redirect. Resetting it now would
+            // let a stray second persistProgress double-post the round.
             clearResume();
-            hasSaved.current = false;
         }
     }, [gameState, clearResume]);
 
@@ -289,6 +291,9 @@ export function useGameplayEngine({
     const countdownValue = useCountdown(gameState, () => setGameState("ACTIVE"));
 
     const startGame = useCallback(() => {
+        // Fresh round: re-arm the one-shot save guard (fresh mounts start false;
+        // this covers any reuse of the hook without a remount).
+        hasSaved.current = false;
         setGameState((prev) => (prev === "IDLE" ? "COUNTDOWN" : prev));
     }, []);
 
