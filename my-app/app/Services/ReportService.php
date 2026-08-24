@@ -40,25 +40,98 @@ class ReportService
         ];
     }
 
+    // Display/report normalization: the same spoken word collapses to one
+    // entry regardless of casing or trailing punctuation ("Cat." ≡ "cat" ≡
+    // "THE"). Applied only at report boundaries — storage stays untouched.
+    public static function normalizeWord(string $word): string
+    {
+        return mb_strtolower(preg_replace('/[^\p{L}\p{N}]+$/u', '', trim($word)));
+    }
+
+    // Merge duplicate word texts into one stat row: summed failed_attempts,
+    // worst mastery wins (training > unseen > mastered) so struggle flags
+    // survive the merge (BF25).
+    public static function aggregateWordStats(array $wordStats): array
+    {
+        $rank = ['mastered' => 0, 'unseen' => 1, 'training' => 2];
+        $merged = [];
+
+        foreach ($wordStats as $stat) {
+            $key = self::normalizeWord((string) ($stat['word'] ?? ''));
+
+            if ($key === '') {
+                continue;
+            }
+
+            if (! isset($merged[$key])) {
+                $merged[$key] = [
+                    'word' => $stat['word'],
+                    'mastery' => $stat['mastery'],
+                    'failed_attempts' => (int) ($stat['failed_attempts'] ?? 0),
+                ];
+
+                continue;
+            }
+
+            $merged[$key]['failed_attempts'] += (int) ($stat['failed_attempts'] ?? 0);
+
+            if (($rank[$stat['mastery']] ?? 0) > ($rank[$merged[$key]['mastery']] ?? 0)) {
+                $merged[$key]['mastery'] = $stat['mastery'];
+            }
+        }
+
+        return array_values($merged);
+    }
+
+    // Global pass first so every surface agrees on ONE display casing per
+    // normalized word (first occurrence seen wins).
+    private function aggregatedWordStats(array $curriculum): array
+    {
+        return self::aggregateWordStats(
+            collect($curriculum)->flatMap(fn ($level) => $level['word_stats'])->all()
+        );
+    }
+
     // Pure projections of curriculumForUser() output — no queries.
     // ["Level X: Title" => [words]]; empty levels skipped so payloads keep
-    // their legacy shape.
+    // their legacy shape. Duplicate texts are collapsed to one entry (BF25).
     public function trainingGroupsFrom(array $curriculum): array
     {
+        $display = [];
+
+        foreach ($this->aggregatedWordStats($curriculum) as $stat) {
+            $display[self::normalizeWord($stat['word'])] = $stat['word'];
+        }
+
         return collect($curriculum)
-            ->filter(fn ($level) => $level['training'] !== [])
-            ->mapWithKeys(fn ($level) => [$level['level'] => $level['training']])
+            ->mapWithKeys(function ($level) use ($display) {
+                $words = [];
+
+                foreach (self::aggregateWordStats($level['word_stats'] ?? []) as $stat) {
+                    if ($stat['mastery'] === 'training') {
+                        $words[] = $display[self::normalizeWord($stat['word'])];
+                    }
+                }
+
+                return [$level['level'] => $words];
+            })
+            ->filter(fn ($words) => $words !== [])
             ->all();
     }
 
     // Every still-training word with its recorded try count → [word => tries].
+    // Duplicate texts are summed into one entry instead of overwriting (BF25).
     public function trainingAttemptsFrom(array $curriculum): array
     {
-        return collect($curriculum)
-            ->flatMap(fn ($level) => $level['word_stats'])
-            ->filter(fn ($stat) => $stat['mastery'] === 'training')
-            ->pluck('failed_attempts', 'word')
-            ->all();
+        $attempts = [];
+
+        foreach ($this->aggregatedWordStats($curriculum) as $stat) {
+            if ($stat['mastery'] === 'training') {
+                $attempts[$stat['word']] = $stat['failed_attempts'];
+            }
+        }
+
+        return $attempts;
     }
 
     public function curriculumPercent(array $curriculum): int

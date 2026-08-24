@@ -194,8 +194,11 @@ class ReportTest extends TestCase
 
     public function test_training_groups_from_skips_empty_levels_and_keeps_labels(): void
     {
+        // Real curriculum shape: a non-empty training list always has matching
+        // word_stats rows (both project from the same words).
         $groups = (new ReportService())->trainingGroupsFrom([
-            ['level' => 'Level 1: Alpha', 'training' => ['CAT'], 'mastered' => [], 'words_count' => 2, 'word_stats' => []],
+            ['level' => 'Level 1: Alpha', 'training' => ['CAT'], 'mastered' => [], 'words_count' => 2,
+             'word_stats' => [['word' => 'CAT', 'mastery' => 'training', 'failed_attempts' => 1]]],
             ['level' => 'Level 2: Beta', 'training' => [], 'mastered' => ['DOG'], 'words_count' => 1, 'word_stats' => []],
         ]);
 
@@ -261,6 +264,48 @@ class ReportTest extends TestCase
 
         $this->assertSame([], $service->trainingAttemptsFrom(WordModule::curriculumForUser($this->student->id)));
         $this->assertSame([], $service->trainingAttemptsFrom(ParagraphModule::curriculumForUser($this->student->id)));
+    }
+
+    public function test_training_attempts_sum_duplicate_texts_within_a_level(): void
+    {
+        // "cat" occurs twice in one paragraph module — two mastery rows, one
+        // summed email entry instead of the second overwriting the first.
+        $module = WordModule::create(['level' => 1, 'title' => 'Dupes']);
+        foreach ([1, 2] as $i => $fails) {
+            $word = Word::create(['word_module_id' => $module->id, 'word' => 'cat', 'position' => $i + 1]);
+            StudentWordMastery::create([
+                'user_id' => $this->student->id,
+                'word_id' => $word->id,
+                'status' => 'training',
+                'failed_attempts' => $fails,
+            ]);
+        }
+
+        $this->assertSame(
+            ['cat' => 3],
+            (new ReportService())->trainingAttemptsFrom(WordModule::curriculumForUser($this->student->id)),
+        );
+    }
+
+    public function test_training_attempts_merge_casing_and_trailing_punctuation(): void
+    {
+        // Natural sentence tokens: "Cat." (sentence-final) vs "cat" vs "CAT"
+        // are the same spoken word for reporting purposes.
+        $module = WordModule::create(['level' => 1, 'title' => 'Casing']);
+        foreach ([['Cat.', 2], ['cat', 1], ['CAT', 4]] as $i => [$text, $fails]) {
+            $word = Word::create(['word_module_id' => $module->id, 'word' => $text, 'position' => $i + 1]);
+            StudentWordMastery::create([
+                'user_id' => $this->student->id,
+                'word_id' => $word->id,
+                'status' => 'training',
+                'failed_attempts' => $fails,
+            ]);
+        }
+
+        $this->assertSame(
+            ['Cat.' => 7],
+            (new ReportService())->trainingAttemptsFrom(WordModule::curriculumForUser($this->student->id)),
+        );
     }
 
     public function test_attention_words_respect_report_cutoff(): void
@@ -363,25 +408,42 @@ class ReportTest extends TestCase
         $readCur = $details['readCurriculum'];
         $speakCur = $details['speakCurriculum'];
 
-        // The rendering contract of the JSX zones: non-empty levels only.
+        // Display normalization: case- and trailing-punctuation-insensitive
+        // grouping — mirrors ReportService::normalizeWord (BF25).
+        $normalize = fn (string $word) => mb_strtolower(preg_replace('/[^\p{L}\p{N}]+$/u', '', trim($word)));
+
+        // Display normalization: case- and trailing-punctuation-insensitive
+        // grouping — mirrors ReportService::normalizeWord (BF25).
+        $normalize = fn (string $word) => mb_strtolower(preg_replace('/[^\p{L}\p{N}]+$/u', '', trim($word)));
+
+        // The rendering contract of the JSX zones: non-empty levels only,
+        // duplicate texts merged (normalize + SUM — mirrors aggregateZoneRows).
         $zoneTrainingGroups = fn (array $curriculum) => collect($curriculum)
-            ->filter(fn ($level) => count($level['training']) > 0)
-            ->mapWithKeys(fn ($level) => [$level['level'] => $level['training']])
+            ->mapWithKeys(function ($level) use ($normalize) {
+                $rows = collect($level['word_stats'] ?? [])
+                    ->filter(fn ($stat) => $stat['mastery'] === 'training')
+                    ->groupBy(fn ($stat) => $normalize($stat['word']));
+
+                return [$level['level'] => $rows->map(fn ($group) => $group->first()['word'])->values()->all()];
+            })
+            ->filter(fn ($words) => $words !== [])
             ->all();
 
         // What the JSX chips would flag: training + >= threshold (Needs Attention).
         $zoneAttention = fn (array $curriculum) => collect($curriculum)
             ->flatMap(fn ($level) => $level['word_stats'])
-            ->filter(fn ($stat) => $stat['mastery'] === 'training'
-                && $stat['failed_attempts'] >= ReportService::NEEDS_ATTENTION_ATTEMPTS)
-            ->pluck('failed_attempts', 'word')
+            ->filter(fn ($stat) => $stat['mastery'] === 'training')
+            ->groupBy(fn ($stat) => $normalize($stat['word']))
+            ->filter(fn ($rows) => $rows->sum('failed_attempts') >= ReportService::NEEDS_ATTENTION_ATTEMPTS)
+            ->mapWithKeys(fn ($rows, $key) => [$rows->first()['word'] => $rows->sum('failed_attempts')])
             ->all();
 
         // Recorded tries for EVERY still-training word, as the zones see them.
         $zoneTries = fn (array $curriculum) => collect($curriculum)
             ->flatMap(fn ($level) => $level['word_stats'])
             ->filter(fn ($stat) => $stat['mastery'] === 'training')
-            ->pluck('failed_attempts', 'word')
+            ->groupBy(fn ($stat) => $normalize($stat['word']))
+            ->mapWithKeys(fn ($rows, $key) => [$rows->first()['word'] => $rows->sum('failed_attempts')])
             ->all();
 
         // PATH B — the queued parent email
