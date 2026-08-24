@@ -9,6 +9,7 @@ use App\Models\StudentProfile;
 use App\Models\StudentWordMastery;
 use App\Models\StudentWordProgress;
 use App\Models\WordModule;
+use Illuminate\Support\Facades\DB;
 
 class ProgressService
 {
@@ -54,77 +55,91 @@ class ProgressService
             return;
         }
 
-        $wordsProcessed = max(0, $wordsProcessed);
-        $wordsSmashed = max(0, min($wordsSmashed, $wordsProcessed));
-        $accuracy = max(0, min(100, (float) $accuracy));
+        // CAVEATS M3 mitigation: serialize concurrent round commits (double-tap /
+        // multi-tab) so a second request can't read the same previous best and
+        // double-award points. Lock-first: the locking read must be the
+        // transaction's first statement, otherwise MySQL's REPEATABLE READ
+        // snapshot would serve stale rows after waiting on the lock. SQLite
+        // (tests) ignores lock clauses; behavior there is unchanged.
+        DB::transaction(function () use (
+            $student, $module, $wordsSmashed, $wordsProcessed, $accuracy,
+            $progressClass, $moduleKey, $moduleClass,
+            $accColumn, $levelColumn, $progressColumn, $isTutorial,
+        ) {
+            StudentProfile::where('id', $student->id)->lockForUpdate()->first();
 
-        $progress = $progressClass::firstOrNew([
-            'user_id' => $student->user_id,
-            $moduleKey => $module->id,
-        ]);
+            $wordsProcessed = max(0, $wordsProcessed);
+            $wordsSmashed = max(0, min($wordsSmashed, $wordsProcessed));
+            $accuracy = max(0, min(100, (float) $accuracy));
 
-        $previousBest = $progress->exists ? $progress->words_smashed : 0;
-
-        $isNewBest = ! $progress->exists || $wordsSmashed > $progress->words_smashed;
-
-        if ($isNewBest) {
-            $progress->words_smashed = $wordsSmashed;
-            $progress->accuracy = $accuracy;
-        }
-
-        $totalWords = $module->words()->count();
-        // Status is sticky: a worse replay must not regress a completed module,
-        // since LevelsPage now allows replaying completed levels (regression guard).
-        $progress->status = ($progress->status === 'completed' || ($totalWords > 0 && $wordsProcessed >= $totalWords))
-            ? 'completed'
-            : 'in_progress';
-        $progress->save();
-
-        if ($isTutorial) {
-            return;
-        }
-
-        if ($isNewBest) {
-            $tutorialModule = $moduleClass::where('is_tutorial', true)->first();
-            $avgAccuracy = $progressClass::where('user_id', $student->user_id)
-                ->when($tutorialModule, fn ($q) => $q->where($moduleKey, '!=', $tutorialModule->id))
-                ->avg('accuracy');
-
-            // A tutorial replay as the very first play leaves no non-tutorial
-            // rows to average — keep the stored accuracy instead of crashing
-            // on round(null).
-            if ($avgAccuracy !== null) {
-                $student->update([$accColumn => round($avgAccuracy, 2)]);
-            }
-            $this->recalculateStatus($student);
-        }
-
-        if ($progress->status === 'completed' && $module->level >= $student->{$levelColumn}) {
-            // Mirror StudentController::dashboard(): tutorial plays never count
-            // as earned points. Without these exclusions, a post-onboarding
-            // tutorial replay inflates students.points while the dashboard
-            // (which excludes tutorial modules) stays flat — silent drift.
-            $tutWordId = WordModule::where('is_tutorial', true)->value('id');
-            $tutParaId = ParagraphModule::where('is_tutorial', true)->value('id');
-
-            $student->update([
-                $levelColumn => $module->level + 1,
-                $progressColumn => $progressClass::where('user_id', $student->user_id)->where('status', 'completed')->count(),
-                'points' => StudentWordProgress::where('user_id', $student->user_id)
-                        ->when($tutWordId, fn ($q) => $q->where('word_module_id', '!=', $tutWordId))
-                        ->sum('words_smashed') +
-                    StudentParagraphProgress::where('user_id', $student->user_id)
-                        ->when($tutParaId, fn ($q) => $q->where('paragraph_module_id', '!=', $tutParaId))
-                        ->sum('words_smashed'),
+            $progress = $progressClass::firstOrNew([
+                'user_id' => $student->user_id,
+                $moduleKey => $module->id,
             ]);
-        } elseif ($isNewBest && ! $module->is_tutorial) {
-            // Same rule for the delta path: an unflagged tutorial replay must
-            // not award points the dashboard will never show.
-            $delta = max(0, $wordsSmashed - $previousBest);
-            if ($delta > 0) {
-                $student->increment('points', $delta);
+
+            $previousBest = $progress->exists ? $progress->words_smashed : 0;
+
+            $isNewBest = ! $progress->exists || $wordsSmashed > $progress->words_smashed;
+
+            if ($isNewBest) {
+                $progress->words_smashed = $wordsSmashed;
+                $progress->accuracy = $accuracy;
             }
-        }
+
+            $totalWords = $module->words()->count();
+            // Status is sticky: a worse replay must not regress a completed module,
+            // since LevelsPage now allows replaying completed levels (regression guard).
+            $progress->status = ($progress->status === 'completed' || ($totalWords > 0 && $wordsProcessed >= $totalWords))
+                ? 'completed'
+                : 'in_progress';
+            $progress->save();
+
+            if ($isTutorial) {
+                return;
+            }
+
+            if ($isNewBest) {
+                $tutorialModule = $moduleClass::where('is_tutorial', true)->first();
+                $avgAccuracy = $progressClass::where('user_id', $student->user_id)
+                    ->when($tutorialModule, fn ($q) => $q->where($moduleKey, '!=', $tutorialModule->id))
+                    ->avg('accuracy');
+
+                // A tutorial replay as the very first play leaves no non-tutorial
+                // rows to average — keep the stored accuracy instead of crashing
+                // on round(null).
+                if ($avgAccuracy !== null) {
+                    $student->update([$accColumn => round($avgAccuracy, 2)]);
+                }
+                $this->recalculateStatus($student);
+            }
+
+            if ($progress->status === 'completed' && $module->level >= $student->{$levelColumn}) {
+                // Mirror StudentController::dashboard(): tutorial plays never count
+                // as earned points. Without these exclusions, a post-onboarding
+                // tutorial replay inflates students.points while the dashboard
+                // (which excludes tutorial modules) stays flat — silent drift.
+                $tutWordId = WordModule::where('is_tutorial', true)->value('id');
+                $tutParaId = ParagraphModule::where('is_tutorial', true)->value('id');
+
+                $student->update([
+                    $levelColumn => $module->level + 1,
+                    $progressColumn => $progressClass::where('user_id', $student->user_id)->where('status', 'completed')->count(),
+                    'points' => StudentWordProgress::where('user_id', $student->user_id)
+                            ->when($tutWordId, fn ($q) => $q->where('word_module_id', '!=', $tutWordId))
+                            ->sum('words_smashed') +
+                        StudentParagraphProgress::where('user_id', $student->user_id)
+                            ->when($tutParaId, fn ($q) => $q->where('paragraph_module_id', '!=', $tutParaId))
+                            ->sum('words_smashed'),
+                ]);
+            } elseif ($isNewBest && ! $module->is_tutorial) {
+                // Same rule for the delta path: an unflagged tutorial replay must
+                // not award points the dashboard will never show.
+                $delta = max(0, $wordsSmashed - $previousBest);
+                if ($delta > 0) {
+                    $student->increment('points', $delta);
+                }
+            }
+        });
     }
 
     // Single source of truth for student risk status. Callers must pass floats:
