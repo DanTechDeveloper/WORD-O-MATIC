@@ -21,7 +21,8 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: "8.3"
-          extensions: mbstring, xml, ctype, iconv, mysql, bcmath, sqlite, pdo_sqlite
+          # zip + gd: required by maatwebsite/excel (phpspreadsheet)
+          extensions: mbstring, xml, ctype, iconv, mysql, bcmath, sqlite, pdo_sqlite, zip, gd
 
       - name: Install Composer Dependencies
         run: composer install --no-interaction --prefer-dist
