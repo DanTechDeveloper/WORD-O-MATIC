@@ -3,10 +3,8 @@
 namespace App\Services;
 
 use App\Models\ParagraphModule;
-use App\Models\StudentParagraphMastery;
 use App\Models\StudentParagraphProgress;
 use App\Models\StudentProfile;
-use App\Models\StudentWordMastery;
 use App\Models\StudentWordProgress;
 use App\Models\WordModule;
 use Illuminate\Support\Facades\DB;
@@ -17,7 +15,6 @@ class ProgressService
     {
         $this->updateModuleProgress($student, $module, $wordsSmashed, $wordsProcessed, $accuracy,
             StudentWordProgress::class, 'word_module_id',
-            StudentWordMastery::class, 'word_id',
             WordModule::class,
             'wordBlastAcc', 'read_level', 'read_progress',
             isTutorial: $isTutorial,
@@ -28,7 +25,6 @@ class ProgressService
     {
         $this->updateModuleProgress($student, $module, $wordsSmashed, $wordsProcessed, $accuracy,
             StudentParagraphProgress::class, 'paragraph_module_id',
-            StudentParagraphMastery::class, 'paragraph_word_id',
             ParagraphModule::class,
             'storyQuestAcc', 'speak_level', 'speak_progress',
             isTutorial: $isTutorial,
@@ -43,8 +39,6 @@ class ProgressService
         float $accuracy,
         string $progressClass,
         string $moduleKey,
-        string $masteryClass,
-        string $wordKey,
         string $moduleClass,
         string $accColumn,
         string $levelColumn,
