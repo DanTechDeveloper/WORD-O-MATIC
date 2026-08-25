@@ -79,7 +79,7 @@ Mode-aware `isActive` gate in the two gameplay pages:
 
 ## Results
 
-Route: `/student/results/{id}`. Shows a scorecard, headline, call-to-action row, and badges.
+Route: `/student/results/{id}`. Shows a scorecard, headline, call-to-action row, and badges. The id is not addressable history — a stale id (anything but the student's newest session) redirects to the newest round's results; foreign sessions redirect to the dashboard ("Access denied").
 
 **Scorecard** — two tiles: Score ("Score" label, or **"You played"** when the round was deadline-hit) and Words (item count). On a deadline-hit round a "Points not counted — deadline passed" note and an amber DeadlineBanner are shown; NextBadge is hidden.
 
