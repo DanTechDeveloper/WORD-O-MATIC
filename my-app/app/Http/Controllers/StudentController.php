@@ -407,6 +407,15 @@ class StudentController extends Controller
                 ->with('error', 'Access denied.');
         }
 
+        // /results/{id} means "my newest round", not addressable history — no
+        // past-rounds UI exists, so stale ids bounce forward instead of
+        // rendering an old scorecard. Ownership check must stay first so a
+        // foreign session still reads as Access denied, not a silent swap.
+        $latestId = GameSession::where('user_id', auth()->id())->max('id');
+        if ((int) $id !== (int) $latestId) {
+            return redirect()->route('student.results', ['id' => $latestId]);
+        }
+
         if ($session->module_type === 'word') {
             $module = WordModule::withCount('words')->find($session->module_id);
             $maxLevel = WordModule::where('is_tutorial', false)->max('level');
