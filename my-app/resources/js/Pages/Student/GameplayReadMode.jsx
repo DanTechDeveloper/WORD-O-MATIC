@@ -21,6 +21,7 @@ const GUIDE_STEPS = [
 export default function GameplayReadMode({ module, tutorialComplete = true }) {
     const { auth } = usePage().props;
     const isTutorial = !!module?.is_tutorial && !tutorialComplete;
+    const isTutorialModule = !!module?.is_tutorial;
 
     const {
         totalWords,
@@ -51,19 +52,19 @@ export default function GameplayReadMode({ module, tutorialComplete = true }) {
         moduleId: module?.id,
         saveEndpoint: "/student/saveWordProgress",
         onWordRecognized: (wordObj) => {
-            if (wordObj && !isTutorial) {
+            if (wordObj && !isTutorialModule) {
                 axios.post("/student/updateWordMastery", {
                     word_id: wordObj.id,
                     status: "mastered",
-                });
+                }).catch(console.warn);
             }
         },
         onMispronounce: (wordObj) => {
-            if (wordObj && !isTutorial) {
+            if (wordObj && !isTutorialModule) {
                 axios.post("/student/updateWordMastery", {
                     word_id: wordObj.id,
                     status: "training",
-                });
+                }).catch(console.warn);
             }
         },
     });

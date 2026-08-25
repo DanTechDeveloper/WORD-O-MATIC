@@ -22,6 +22,7 @@ const GUIDE_STEPS = [
 export default function GameplaySpeakMode({ module, tutorialComplete = true }) {
     const { auth } = usePage().props;
     const isTutorial = !!module?.is_tutorial && !tutorialComplete;
+    const isTutorialModule = !!module?.is_tutorial;
     const speechRecognitionWords = useMemo(() => module?.words?.map((w) => w.word) ?? [], [module?.words]);
 
     const {
@@ -53,19 +54,19 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true }) {
         moduleId: module?.id,
         saveEndpoint: "/student/saveParagraphProgress",
         onWordRecognized: (wordObj) => {
-            if (wordObj && !isTutorial) {
+            if (wordObj && !isTutorialModule) {
                 axios.post("/student/updateParagraphMastery", {
                     paragraph_word_id: wordObj.id,
                     status: "mastered",
-                });
+                }).catch(console.warn);
             }
         },
         onMispronounce: (wordObj) => {
-            if (wordObj && !isTutorial) {
+            if (wordObj && !isTutorialModule) {
                 axios.post("/student/updateParagraphMastery", {
                     paragraph_word_id: wordObj.id,
                     status: "training",
-                });
+                }).catch(console.warn);
             }
         },
     });
