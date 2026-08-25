@@ -2,6 +2,7 @@
 
 namespace App\Exports;
 
+use App\Services\ReportService;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -22,59 +23,73 @@ class SkillsWordsSheet implements FromCollection, WithColumnWidths, WithHeadings
     {
         return [
             'Student Name',
-            'Word Blast Mastered',
-            'Word Blast Training',
-            'Story Quest Mastered',
-            'Story Quest Training',
+            'Student ID',
+            'Section',
+            'Mode',
+            'Level',
+            'Word',
+            'Attempts',
         ];
     }
 
     public function collection()
     {
         return collect($this->students)->flatMap(function ($s) {
-            $row = [
-                $s['name'] ?? '',
-                $this->formatWords($s['masteredWords'] ?? []),
-                $this->formatWords($s['trainingWords'] ?? []),
-                $this->formatWords($s['paragraphMasteredWords'] ?? []),
-                $this->formatWords($s['paragraphTrainingWords'] ?? []),
-            ];
-
-            return array_merge([$row], [['', '', '', '', '']]);
+            return collect($s['struggleRows'] ?? [])
+                ->map(fn ($row) => [
+                    $s['name'] ?? '',
+                    $s['student_id'] ?? '',
+                    $s['section'] ?? '',
+                    $row['mode'],
+                    $row['level'],
+                    $row['word'],
+                    $row['attempts'],
+                ])
+                ->all();
         });
-    }
-
-    private function formatWords(array $wordsByLevel): string
-    {
-        $lines = [];
-
-        foreach ($wordsByLevel as $moduleLabel => $words) {
-            $levelLabel = preg_replace('/:.*$/', '', $moduleLabel);
-            $lines[] = $levelLabel.' - '.implode(', ', $words);
-        }
-
-        return implode("\n", $lines);
     }
 
     public function styles(Worksheet $sheet)
     {
-        return [
+        $styles = [
             1 => [
                 'font' => ['bold' => true],
                 'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '475569']],
                 'fontColor' => ['rgb' => 'FFFFFF'],
             ],
         ];
+
+        // Red-flag rows at/over the shared struggle threshold — the same band
+        // the parent email's "Needs More Practice" section uses. Rows arrive
+        // pre-sorted attempts-desc from the controller; +1 offsets the heading.
+        $row = 2;
+
+        foreach ($this->students as $s) {
+            foreach ($s['struggleRows'] ?? [] as $r) {
+                if ($r['attempts'] >= ReportService::NEEDS_ATTENTION_ATTEMPTS) {
+                    $styles[$row] = [
+                        'font' => ['bold' => true],
+                        'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'FEE2E2']],
+                    ];
+                }
+
+                $row++;
+            }
+        }
+
+        return $styles;
     }
 
     public function columnWidths(): array
     {
         return [
             'A' => 25,
-            'B' => 45,
-            'C' => 45,
-            'D' => 45,
-            'E' => 45,
+            'B' => 14,
+            'C' => 14,
+            'D' => 16,
+            'E' => 22,
+            'F' => 16,
+            'G' => 10,
         ];
     }
 }

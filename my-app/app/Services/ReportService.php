@@ -134,6 +134,37 @@ class ReportService
         return $attempts;
     }
 
+    // Flat drill-down rows for the Excel export: one entry per still-training
+    // word. Merge/dedupe is per level with global display casing — the exact
+    // semantics of trainingGroupsFrom — plus the attempt count the email shows.
+    // Pure projection of curriculumForUser() output — no queries.
+    public function struggleRowsFrom(array $curriculum): array
+    {
+        $display = [];
+
+        foreach ($this->aggregatedWordStats($curriculum) as $stat) {
+            $display[self::normalizeWord($stat['word'])] = $stat['word'];
+        }
+
+        $rows = [];
+
+        foreach ($curriculum as $level) {
+            foreach (self::aggregateWordStats($level['word_stats'] ?? []) as $stat) {
+                if ($stat['mastery'] !== 'training') {
+                    continue;
+                }
+
+                $rows[] = [
+                    'level' => $level['level'],
+                    'word' => $display[self::normalizeWord($stat['word'])],
+                    'attempts' => (int) $stat['failed_attempts'],
+                ];
+            }
+        }
+
+        return $rows;
+    }
+
     public function curriculumPercent(array $curriculum): int
     {
         $mastered = 0;
