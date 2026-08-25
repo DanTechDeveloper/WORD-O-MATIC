@@ -27,6 +27,7 @@ class SkillsOverviewSheet implements FromCollection, WithColumnWidths, WithHeadi
             'Final Status',
             'Word Blast',
             'Story Quest',
+            'Top Struggle',
         ];
     }
 
@@ -39,6 +40,7 @@ class SkillsOverviewSheet implements FromCollection, WithColumnWidths, WithHeadi
             $s['status'] ?? 'notStarted',
             ($s['wordBlastAcc'] ?? 0).'% ('.($s['wbLevelLabel'] ?? "Level {$s['read_level']}").')',
             ($s['storyQuestAcc'] ?? 0).'% ('.($s['sqLevelLabel'] ?? "Level {$s['speak_level']}").')',
+            $s['topStruggle'] ?? '',
         ]);
     }
 
@@ -62,6 +64,7 @@ class SkillsOverviewSheet implements FromCollection, WithColumnWidths, WithHeadi
             'D' => 18,
             'E' => 42,
             'F' => 42,
+            'G' => 30,
         ];
     }
 }

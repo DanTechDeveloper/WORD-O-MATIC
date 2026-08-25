@@ -20,6 +20,7 @@ use App\Services\ReportService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Inertia\Testing\AssertableInertia as Assert;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use Tests\TestCase;
 
 class ReportTest extends TestCase
@@ -744,7 +745,7 @@ class ReportTest extends TestCase
         $this->assertCount(3, $sheets);
         $this->assertArrayHasKey('Class Summary', $sheets);
         $this->assertArrayHasKey('Student Progress Summary', $sheets);
-        $this->assertArrayHasKey('Mastered & Training Words', $sheets);
+        $this->assertArrayHasKey('Words Needing Practice', $sheets);
     }
 
     public function test_skills_overview_sheet_has_correct_headings(): void
@@ -763,10 +764,7 @@ class ReportTest extends TestCase
             'sqLevelLabel' => 'Level 2 - Farm Animals',
             'parent_email' => 'test@test.com',
             'report_sent_at' => null,
-            'trainingWords' => [],
-            'paragraphTrainingWords' => [],
-            'masteredWords' => [],
-            'paragraphMasteredWords' => [],
+            'topStruggle' => 'WB: CAT ×4 · SQ: the ×3',
         ];
 
         $sheet = new SkillsOverviewSheet([$student]);
@@ -778,6 +776,7 @@ class ReportTest extends TestCase
             'Final Status',
             'Word Blast',
             'Story Quest',
+            'Top Struggle',
         ], $sheet->headings());
 
         $collection = $sheet->collection();
@@ -790,48 +789,51 @@ class ReportTest extends TestCase
         $this->assertEquals('onTrack', $row[3]);
         $this->assertEquals('85% (Level 3 - Phonics Fundamentals)', $row[4]);
         $this->assertEquals('90% (Level 2 - Farm Animals)', $row[5]);
+        $this->assertEquals('WB: CAT ×4 · SQ: the ×3', $row[6]);
     }
 
     public function test_skills_words_sheet_has_correct_headings(): void
     {
         $student = [
-            'id' => 1,
             'name' => 'Test Student',
+            'student_id' => 'S7-002',
             'section' => 'Section B',
-            'status' => 'atRisk',
-            'wordBlastAcc' => 40,
-            'storyQuestAcc' => 60,
-            'read_level' => 1,
-            'speak_level' => 1,
-            'parent_email' => 'test2@test.com',
-            'report_sent_at' => null,
-            'trainingWords' => ['Level 3: Around Town' => ['bird', 'zoo']],
-            'paragraphTrainingWords' => ['Level 1: Stories' => ['word3', 'word4', 'word5']],
-            'masteredWords' => ['Level 1: Farm Animals' => ['cat', 'dog']],
-            'paragraphMasteredWords' => ['Level 2: Seasons' => ['rainy', 'sunny']],
+            'struggleRows' => [
+                ['mode' => 'Word Blast', 'level' => 'Level 3: Around Town', 'word' => 'bird', 'attempts' => 4],
+                ['mode' => 'Word Blast', 'level' => 'Level 3: Around Town', 'word' => 'zoo', 'attempts' => 1],
+                ['mode' => 'Story Quest', 'level' => 'Level 1: Stories', 'word' => 'word3', 'attempts' => 3],
+            ],
         ];
 
         $sheet = new SkillsWordsSheet([$student]);
 
         $this->assertEquals([
             'Student Name',
-            'Word Blast Mastered',
-            'Word Blast Training',
-            'Story Quest Mastered',
-            'Story Quest Training',
+            'Student ID',
+            'Section',
+            'Mode',
+            'Level',
+            'Word',
+            'Attempts',
         ], $sheet->headings());
 
         $collection = $sheet->collection();
-        $row = $collection->first();
 
-        $this->assertNotNull($row);
-        $this->assertCount(2, $collection);
-        $this->assertEquals('Test Student', $row[0]);
-        $this->assertEquals("Level 1 - cat, dog", $row[1]);
-        $this->assertEquals("Level 3 - bird, zoo", $row[2]);
-        $this->assertEquals("Level 2 - rainy, sunny", $row[3]);
-        $this->assertEquals("Level 1 - word3, word4, word5", $row[4]);
-        $this->assertEquals(['', '', '', '', ''], $collection[1]);
+        $this->assertCount(3, $collection);
+        $this->assertEquals('Test Student', $collection[0][0]);
+        $this->assertEquals('S7-002', $collection[0][1]);
+        $this->assertEquals('Section B', $collection[0][2]);
+        $this->assertEquals('Word Blast', $collection[0][3]);
+        $this->assertEquals('Level 3: Around Town', $collection[0][4]);
+        $this->assertEquals('bird', $collection[0][5]);
+        $this->assertEquals(4, $collection[0][6]);
+
+        // Rows at/over NEEDS_ATTENTION_ATTEMPTS get the red flag; sub-threshold
+        // rows stay plain. +1 offsets the heading row.
+        $styles = $sheet->styles(new Worksheet);
+        $this->assertArrayHasKey(2, $styles);
+        $this->assertArrayHasKey(4, $styles);
+        $this->assertArrayNotHasKey(3, $styles);
     }
 
     public function test_class_report_sheet_has_correct_headings(): void

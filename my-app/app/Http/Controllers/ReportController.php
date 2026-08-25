@@ -27,8 +27,6 @@ class ReportController extends Controller
             ->orderBy('name', 'asc')
             ->get();
 
-        [$wordTraining, $paraTraining] = $this->reportService->trainingWordsFor($students->pluck('id')->all());
-
         $students = $students->map(fn ($user) => [
             'id' => $user->id,
             'name' => $user->name,
@@ -40,8 +38,6 @@ class ReportController extends Controller
             'status' => $user->student?->status ?? 'notStarted',
             'parent_email' => $user->student?->parent_email,
             'report_sent_at' => $user->student?->report_sent_at,
-            'trainingWords' => $wordTraining[$user->id] ?? [],
-            'paragraphTrainingWords' => $paraTraining[$user->id] ?? [],
         ]);
 
         $grouped = [
@@ -177,18 +173,29 @@ class ReportController extends Controller
             ->orderBy('name', 'asc')
             ->get();
 
-        $studentIds = $students->pluck('id')->all();
         $cutoff = $this->reportService->cutoff();
-        [$wordTraining, $paraTraining] = $this->reportService->trainingWordsFor($studentIds);
-        $wordMastered = WordModule::masteredWordsForUsers($studentIds, $cutoff);
-        $paraMastered = ParagraphModule::masteredWordsForUsers($studentIds, $cutoff);
 
         $wordTitles = WordModule::where('is_tutorial', false)->pluck('title', 'level');
         $paraTitles = ParagraphModule::where('is_tutorial', false)->pluck('title', 'level');
 
-        $formattedStudents = $students->map(function ($user) use ($wordTraining, $paraTraining, $wordMastered, $paraMastered, $wordTitles, $paraTitles) {
+        $formattedStudents = $students->map(function ($user) use ($cutoff, $wordTitles, $paraTitles) {
             $readLevel = $user->student?->read_level ?? 1;
             $speakLevel = $user->student?->speak_level ?? 1;
+
+            // Same single-source-per-student read as sendReportEmails(): one
+            // curriculum per mode feeds Top Struggle and the drill-down rows,
+            // so the export can never disagree with the emailed report.
+            $rows = array_merge(
+                $this->struggleRows('Word Blast', WordModule::curriculumForUser($user->id, $cutoff)),
+                $this->struggleRows('Story Quest', ParagraphModule::curriculumForUser($user->id, $cutoff)),
+            );
+
+            usort($rows, fn ($a, $b) => $b['attempts'] <=> $a['attempts']);
+
+            $topStruggle = implode(' · ', array_map(
+                fn ($row) => ($row['mode'] === 'Word Blast' ? 'WB' : 'SQ').': '.$row['word'].' ×'.$row['attempts'],
+                array_slice($rows, 0, 2),
+            ));
 
             return [
                 'name' => $user->name,
@@ -203,13 +210,19 @@ class ReportController extends Controller
                 'sqLevelLabel' => "Level {$speakLevel} - ".($paraTitles[$speakLevel] ?? ''),
                 'parent_email' => $user->student?->parent_email,
                 'report_sent_at' => $user->student?->report_sent_at,
-                'trainingWords' => $wordTraining[$user->id] ?? [],
-                'paragraphTrainingWords' => $paraTraining[$user->id] ?? [],
-                'masteredWords' => $wordMastered[$user->id] ?? [],
-                'paragraphMasteredWords' => $paraMastered[$user->id] ?? [],
+                'struggleRows' => $rows,
+                'topStruggle' => $topStruggle,
             ];
         })->toArray();
 
         return Excel::download(new ReportsExport($formattedStudents), 'class-report.xlsx');
+    }
+
+    private function struggleRows(string $mode, array $curriculum): array
+    {
+        return array_map(
+            fn ($row) => ['mode' => $mode] + $row,
+            $this->reportService->struggleRowsFrom($curriculum),
+        );
     }
 }
