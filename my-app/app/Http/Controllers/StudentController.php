@@ -223,8 +223,6 @@ class StudentController extends Controller
             return redirect()->route($levelsRoute);
         }
 
-        // Onboarding lock: until the tutorial is completed, real level URLs
-        // silently bounce back to the level picker — no error banner.
         if (! $user->student?->tutorial_completed_at && ! $module->is_tutorial) {
             return redirect()->route($levelsRoute);
         }
@@ -416,10 +414,6 @@ class StudentController extends Controller
                 ->with('error', 'Access denied.');
         }
 
-        // /results/{id} means "my newest round", not addressable history — no
-        // past-rounds UI exists, so stale ids bounce forward instead of
-        // rendering an old scorecard. Ownership check must stay first so a
-        // foreign session still reads as Access denied, not a silent swap.
         $latestId = GameSession::where('user_id', auth()->id())->max('id');
         if ((int) $id !== (int) $latestId) {
             return redirect()->route('student.results', ['id' => $latestId]);
