@@ -1,6 +1,6 @@
 # Reports
 
-> Version 1.7
+> Version 1.8
 
 ## Dashboard
 
@@ -57,9 +57,9 @@ The teacher deadline banner is a single source of truth in `DashboardLayout.jsx`
 ## Exports
 
 Excel (`.xlsx`) export via `ReportsExport` is available after deadline passes.
-- **Class Summary Sheet**: Contains student details, status breakdown summary, and two embedded native Excel charts:
-  - **Class Health Distribution** (Pie Chart): Visualizes student status distribution (On Track, Needs Support, At Risk, In Progress, Not Started).
-  - **Student Accuracy Comparison** (Bar/Column Chart): Compares Word Blast and Story Quest accuracies per student.
+- **Class Summary Sheet** (tab name `Class Summary`): One row per student with identity + Word Blast % + Story Quest % + that student's **own status category** in column D. Below the roster is a **Class Health Summary** block (status category + count, 5 rows) that feeds the pie. Two embedded native Excel charts sit on this same tab in columns N–V (scroll past column M):
+  - **Class Health Distribution** (Pie Chart, anchored `N2:V16`): Visualizes the Class Health Summary block — student status distribution (On Track, Needs Support, At Risk, In Progress, Not Started) by count.
+  - **Student Accuracy Comparison** (Bar/Column Chart, anchored `N18:V35`): Compares each student's Word Blast and Story Quest accuracy (columns A–C).
 - **Student Progress Summary Sheet**: One row per student with identity + status + per-mode progress:
   - Student Name, Student ID, Section, Final Status, Word Blast (accuracy + level combined, e.g. `78% (Level 3 - Phonics Fundamentals)`), Story Quest (accuracy + level combined, e.g. `90% (Level 2 - Farm Animals)`), Top Struggle (up to two worst training words by attempts, e.g. `WB: CAT ×4 · SQ: the ×3`; empty when none)
 - **Words Needing Practice Sheet**: Flat drill-down, one row per student-word still in training (sorted attempts-desc within each student):
