@@ -880,17 +880,19 @@ class ReportTest extends TestCase
         $sheet = new ClassReportSheet([$student]);
         $collection = $sheet->collection();
 
-        $this->assertCount(5, $collection);
+        $this->assertCount(8, $collection);
 
         $studentRow = $collection[0];
         $this->assertEquals('Test Student', $studentRow[0]);
         $this->assertEquals(85, $studentRow[1]);
         $this->assertEquals(90, $studentRow[2]);
+        $this->assertEquals('On Track', $studentRow[3]);
+        $this->assertEquals('', $studentRow[4]);
 
-        $statusRow = $collection[4];
-        $this->assertEquals('', $statusRow[0]);
-        $this->assertEquals('Not Started', $statusRow[3]);
-        $this->assertEquals(0, $statusRow[4]);
+        $onTrackSummary = $collection->first(fn ($row) => $row[3] === 'On Track' && is_numeric($row[4]));
+        $this->assertEquals(1, $onTrackSummary[4]);
+        $notStartedSummary = $collection->first(fn ($row) => $row[3] === 'Not Started' && is_numeric($row[4]));
+        $this->assertEquals(0, $notStartedSummary[4]);
     }
 
     public function test_class_report_sheet_maps_support_status_to_needs_support_count(): void
@@ -901,8 +903,11 @@ class ReportTest extends TestCase
         ]);
         $collection = $sheet->collection();
 
-        $needsSupport = $collection->first(fn ($row) => $row[3] === 'Needs Support');
-        $onTrack = $collection->first(fn ($row) => $row[3] === 'On Track');
+        // Counts live in the summary block (rows with a numeric Count column),
+        // not in the per-student roster rows.
+        $summary = $collection->filter(fn ($row) => is_numeric($row[4]) && $row[4] !== '');
+        $needsSupport = $summary->first(fn ($row) => $row[3] === 'Needs Support');
+        $onTrack = $summary->first(fn ($row) => $row[3] === 'On Track');
 
         $this->assertEquals(1, $needsSupport[4]);
         $this->assertEquals(1, $onTrack[4]);

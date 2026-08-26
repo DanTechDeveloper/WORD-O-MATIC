@@ -38,12 +38,12 @@ class ClassReportSheet implements FromCollection, WithCharts, WithColumnWidths, 
 
     public function collection()
     {
-        $summaryCategories = [
-            ['label' => 'On Track', 'key' => 'onTrack'],
-            ['label' => 'Needs Support', 'key' => 'support'],
-            ['label' => 'At Risk', 'key' => 'atRisk'],
-            ['label' => 'In Progress', 'key' => 'in_progress'],
-            ['label' => 'Not Started', 'key' => 'notStarted'],
+        $labelByKey = [
+            'onTrack' => 'On Track',
+            'support' => 'Needs Support',
+            'atRisk' => 'At Risk',
+            'in_progress' => 'In Progress',
+            'notStarted' => 'Not Started',
         ];
 
         $statusCounts = [
@@ -56,26 +56,36 @@ class ClassReportSheet implements FromCollection, WithCharts, WithColumnWidths, 
 
         foreach ($this->students as $s) {
             $st = $s['status'] ?? 'notStarted';
-            if (isset($statusCounts[$st])) {
-                $statusCounts[$st]++;
-            } else {
-                $statusCounts['notStarted']++;
+            if (! isset($labelByKey[$st])) {
+                $st = 'notStarted';
             }
+            $statusCounts[$st]++;
         }
 
+        // Per-student roster: each row shows the student's own status category.
         $rows = [];
-        $maxRows = max(count($this->students), count($summaryCategories));
-
-        for ($i = 0; $i < $maxRows; $i++) {
-            $student = $this->students[$i] ?? null;
-            $summary = $summaryCategories[$i] ?? null;
-
+        foreach ($this->students as $s) {
+            $st = $s['status'] ?? 'notStarted';
             $rows[] = [
-                $student ? ($student['name'] ?? '') : '',
-                $student ? ($student['wordBlastAcc'] ?? 0) : '',
-                $student ? ($student['storyQuestAcc'] ?? 0) : '',
-                $summary ? $summary['label'] : '',
-                $summary ? ($statusCounts[$summary['key']] ?? 0) : '',
+                $s['name'] ?? '',
+                $s['wordBlastAcc'] ?? 0,
+                $s['storyQuestAcc'] ?? 0,
+                $labelByKey[$st] ?? 'Not Started',
+                '', // Count applies only to the summary block below
+            ];
+        }
+
+        // Class-health summary block (feeds the pie chart), placed below the roster.
+        $rows[] = ['', '', '', '', ''];
+        $rows[] = ['Class Health Summary', '', '', '', ''];
+
+        foreach (['onTrack', 'support', 'atRisk', 'in_progress', 'notStarted'] as $key) {
+            $rows[] = [
+                '',
+                '',
+                '',
+                $labelByKey[$key],
+                $statusCounts[$key],
             ];
         }
 
@@ -108,13 +118,17 @@ class ClassReportSheet implements FromCollection, WithCharts, WithColumnWidths, 
     {
         $studentCount = max(count($this->students), 1);
         $studentEndRow = $studentCount + 1;
+        // Summary block sits below the roster: a spacer + header row push the
+        // 5 category rows to Excel rows $studentCount+4 .. +8 (feeds the pie).
+        $summaryStart = $studentCount + 4;
+        $summaryEnd = $summaryStart + 4;
 
-        // 1. Pie Chart for Class Health Distribution (K2:L6 summary)
+        // 1. Pie Chart for Class Health Distribution (summary block below roster)
         $categoriesPie = [
-            new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_STRING, "'Class Report'!\$D\$2:\$D\$6", null, 5),
+            new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_STRING, "'Class Summary'!\$D\$" . $summaryStart . ':$D$' . $summaryEnd, null, 5),
         ];
         $valuesPie = [
-            new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_NUMBER, "'Class Report'!\$E\$2:\$E\$6", null, 5),
+            new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_NUMBER, "'Class Summary'!\$E\$" . $summaryStart . ':$E$' . $summaryEnd, null, 5),
         ];
 
         $seriesPie = new DataSeries(
@@ -136,15 +150,15 @@ class ClassReportSheet implements FromCollection, WithCharts, WithColumnWidths, 
 
         // 2. Bar (Column) Chart for Student Accuracies (A2:A{N} vs D2:D{N} & E2:E{N})
         $categoriesBar = [
-            new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_STRING, "'Class Report'!\$A\$2:\$A\$".$studentEndRow, null, $studentCount),
+            new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_STRING, "'Class Summary'!\$A\$2:\$A\$".$studentEndRow, null, $studentCount),
         ];
         $labelsBar = [
-            new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_STRING, "'Class Report'!\$B\$1", null, 1),
-            new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_STRING, "'Class Report'!\$C\$1", null, 1),
+            new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_STRING, "'Class Summary'!\$B\$1", null, 1),
+            new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_STRING, "'Class Summary'!\$C\$1", null, 1),
         ];
         $valuesBar = [
-            new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_NUMBER, "'Class Report'!\$B\$2:\$B\$".$studentEndRow, null, $studentCount),
-            new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_NUMBER, "'Class Report'!\$C\$2:\$C\$".$studentEndRow, null, $studentCount),
+            new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_NUMBER, "'Class Summary'!\$B\$2:\$B\$".$studentEndRow, null, $studentCount),
+            new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_NUMBER, "'Class Summary'!\$C\$2:\$C\$".$studentEndRow, null, $studentCount),
         ];
 
         $seriesBar = new DataSeries(
