@@ -99,6 +99,7 @@ export default function LevelsPage({ modules, mode, tutorialComplete = true, wor
                             tutorialColor={isRead ? "accent" : "quest"}
                             hasResume={resumeModules.includes(module.id)}
                             isDeadlineClosed={isDeadlineClosed}
+                            disabled={isTutorial && !guideDone}
                         />
                     ))}
                 </div>

@@ -16,7 +16,7 @@ const LEVEL_ICONS = [
     "local_pizza", "music_note", "sports_soccer", "pets", "auto_awesome", "eco",
 ]
 
-export default function LevelCard({ module, emoji, gameUrl, index, highlightTutorial, tutorialColor, hasResume, isDeadlineClosed = false }) {
+export default function LevelCard({ module, emoji, gameUrl, index, highlightTutorial, tutorialColor, hasResume, isDeadlineClosed = false, disabled = false }) {
     const totalPoints = module.total_points || 0
     const wordsSmashed = module.words_smashed || 0
     const progress =
@@ -144,9 +144,10 @@ export default function LevelCard({ module, emoji, gameUrl, index, highlightTuto
         ${isCurrent ? "border-secondary-container ring-2 ring-secondary-container/50" : ""}
         ${isPlayable && !isCurrent && !isCompleted ? "border-surface-variant/30 hover:border-secondary-container/50" : ""}
         ${isPlayable || isCompleted ? "hover:scale-[1.03] hover:-translate-y-1 active:scale-[1.01] cursor-pointer" : "cursor-default"}
+        ${disabled ? "opacity-50 cursor-not-allowed" : ""}
         ${highlightRing}`
 
-    const isClickable = !isDeadlineClosed && (isPlayable || isCompleted)
+    const isClickable = !disabled && !isDeadlineClosed && (isPlayable || isCompleted)
 
     return (
         isClickable ? (
