@@ -75,7 +75,7 @@ export default function BadgeUnlockModal({
                         }}
                     />
                     <span
-                        className="material-symbols-outlined text-[10rem] leading-none block relative badge-pop"
+                        className="material-symbols-outlined text-accent text-[10rem] leading-none block relative badge-pop"
                         aria-hidden="true"
                     >
                         {badge.icon}

@@ -71,6 +71,9 @@ export default function GameplayReadMode({ module, tutorialComplete = true }) {
 
     const { permissionState, requestPermission } = useMicrophonePermission();
 
+    const [guideStep, setGuideStep] = useState(0);
+    const [guideDone, setGuideDone] = useState(!isTutorial);
+
     useEffect(() => {
         if (permissionState === "denied") {
             setGameState("DENIED");
@@ -78,6 +81,7 @@ export default function GameplayReadMode({ module, tutorialComplete = true }) {
     }, [permissionState, setGameState]);
 
     const handleMicrophoneClick = useCallback(async () => {
+        if (isTutorial && !guideDone) return;
         if (gameState === "IDLE") {
             if (permissionState === "prompt") {
                 const granted = await requestPermission();
@@ -85,7 +89,7 @@ export default function GameplayReadMode({ module, tutorialComplete = true }) {
             }
             startGame();
         }
-    }, [gameState, permissionState, requestPermission, startGame]);
+    }, [isTutorial, guideDone, gameState, permissionState, requestPermission, startGame]);
 
     useEffect(() => {
         if (gameState === "ACTIVE") {
@@ -106,10 +110,29 @@ export default function GameplayReadMode({ module, tutorialComplete = true }) {
         onMispronounced: handleMispronounce,
         onRecognitionError: (err) => console.error("Recognition error:", err),
     });
-    const [guideStep, setGuideStep] = useState(0);
-    const [guideDone, setGuideDone] = useState(!isTutorial);
     const avatarUrl = auth?.user?.student?.avatar;
     const bodyUrl = avatarUrl?.replace("/head.png", "/body.png");
+
+    const [coachActive, setCoachActive] = useState(false);
+    const [coachLeaving, setCoachLeaving] = useState(false);
+
+    useEffect(() => {
+        if (isTutorial && isMispronounced) {
+            setCoachLeaving(false);
+            setCoachActive(true);
+        }
+    }, [isTutorial, isMispronounced]);
+
+    useEffect(() => {
+        if (feedbackType === "correct" && coachActive) {
+            setCoachLeaving(true);
+            const t = setTimeout(() => {
+                setCoachActive(false);
+                setCoachLeaving(false);
+            }, 300);
+            return () => clearTimeout(t);
+        }
+    }, [feedbackType, coachActive]);
 
     const advanceGuide = () => {
         if (guideStep < GUIDE_STEPS.length - 1) {
@@ -170,6 +193,17 @@ export default function GameplayReadMode({ module, tutorialComplete = true }) {
                     onClick={advanceGuide}
                     position="bottom-right"
                     footerText={guideStep < GUIDE_STEPS.length - 1 ? "Tap here to continue →" : "Tap to finish!"}
+                />
+            )}
+            {isTutorial && coachActive && bodyUrl && (
+                <AvatarSpeechBubble
+                    emoji="sentiment_very_satisfied"
+                    title="NICE TRY!"
+                    message="That's okay — you're doing great!"
+                    bodyUrl={bodyUrl}
+                    color="accent"
+                    position="bottom-right"
+                    className={coachLeaving ? "opacity-0 transition-opacity duration-300" : ""}
                 />
             )}
             {gameState === "IDLE" && guideDone && !isResume && (

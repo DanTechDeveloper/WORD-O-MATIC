@@ -56,6 +56,10 @@ export default function Dashboard({
     const avatarUrl = auth?.user?.student?.avatar;
     const bodyUrl = avatarUrl?.replace("/head.png", "/body.png");
     const newBadges = flash?.new_badges ?? [];
+    const [showTutorialCongrats, setShowTutorialCongrats] = useState(false);
+    const hasTutorialBadge = newBadges.some(
+        (b) => b?.slug === "tutorial-complete" || b?.name === "Tutorial Complete"
+    );
     const showGuide = !tutorialComplete && bodyUrl;
     const showGuideBubble = showGuide && !guideDone;
     const highlightRead = showGuide && !wordTutorialDone;
@@ -104,7 +108,13 @@ export default function Dashboard({
     return (
         <>
             {newBadges.length > 0 && (
-                <BadgeUnlockFlow badges={newBadges} markNewBadge={false} />
+                <BadgeUnlockFlow
+                    badges={newBadges}
+                    markNewBadge={false}
+                    onDone={() => {
+                        if (hasTutorialBadge) setShowTutorialCongrats(true);
+                    }}
+                />
             )}
             <DashboardLayout disableNav={showGuide}>
                 <div className="flex flex-col justify-center py-10 lg:py-14 space-y-8">
@@ -132,6 +142,19 @@ export default function Dashboard({
                     />
                 )}
 
+                {showTutorialCongrats && bodyUrl && (
+                    <AvatarSpeechBubble
+                        emoji="celebration"
+                        title="YOU DID IT!"
+                        message="Tutorial complete — you're ready to play!"
+                        bodyUrl={bodyUrl}
+                        color="accent"
+                        onClick={() => setShowTutorialCongrats(false)}
+                        position="bottom-right"
+                        footerText="Tap to continue →"
+                    />
+                )}
+
                 <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {MODES.map((m) => {
                         const s = MODE_STYLES[m.mode];
@@ -141,15 +164,16 @@ export default function Dashboard({
                             (m.mode === "read" && wordTutorialDone) ||
                             (m.mode === "speak" && !wordTutorialDone)
                         );
+                        const blockTarget = showGuide && !guideDone;
                         const highlightClass = ringClass(m.mode);
                         return (
                             <Link
                                 key={m.mode}
-                                href={isDimmed ? undefined : m.href}
-                                as={isDimmed ? "div" : "a"}
+                                href={isDimmed || blockTarget ? undefined : m.href}
+                                as={isDimmed || blockTarget ? "div" : "a"}
                                 data-sfx="major"
                                 aria-label={`Play ${m.title}`}
-                                className={`group relative flex flex-col rounded-2xl bg-surface ${s.border} border-2 p-6 lg:p-8 ${isDimmed ? "opacity-40 pointer-events-none select-none" : "tactile-card transition-transform duration-150 hover:-translate-y-1 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-secondary-container motion-reduce:transition-none motion-reduce:hover:translate-y-0 z-10"} ${highlightClass}`}
+                                className={`group relative flex flex-col rounded-2xl bg-surface ${s.border} border-2 p-6 lg:p-8 ${isDimmed || blockTarget ? "opacity-40 pointer-events-none select-none" : "tactile-card transition-transform duration-150 hover:-translate-y-1 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-secondary-container motion-reduce:transition-none motion-reduce:hover:translate-y-0 z-10"} ${highlightClass}`}
                             >
                                 <div className="flex items-center gap-5">
                                     <div className={`w-20 h-20 lg:w-24 lg:h-24 shrink-0 rounded-2xl bg-background/40 border-2 ${s.border} flex items-center justify-center`}>
