@@ -247,7 +247,10 @@ export default function Reports({ grouped, flash, deadline, errors }) {
 
     const allStudentsFlat = Object.values(grouped).flat();
     const sentIds = new Set(allStudentsFlat.filter((s) => s.report_sent_at).map((s) => s.id));
-    const sentStudents = allStudentsFlat.filter((s) => s.report_sent_at);
+    // Newest send first; "T" swap keeps Safari happy with Laravel's datetime format
+    const sentStudents = allStudentsFlat
+        .filter((s) => s.report_sent_at)
+        .sort((a, b) => new Date(b.report_sent_at.replace(" ", "T")) - new Date(a.report_sent_at.replace(" ", "T")));
 
     const renderSentSection = () => {
         if (sentStudents.length === 0) return null;
