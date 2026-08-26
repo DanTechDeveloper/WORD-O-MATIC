@@ -1,22 +1,6 @@
 import DashboardLayout from "@/Layouts/Teacher/DashboardLayout";
 import { Link, usePage } from "@inertiajs/react";
-
-// Mastered words count their final successful attempt; training words
-// show unsuccessful attempts so far (counter is frozen once mastered).
-function attemptsShown(stat) {
-    return stat.mastery === "mastered"
-        ? stat.failed_attempts + 1
-        : stat.failed_attempts;
-}
-
-// Only surface the flag when it fires (>= threshold) — "Normal" is noise on a
-// chip. Resolution-cap rule: struggle flags expire once the word is mastered.
-function attentionMeta(stat, threshold) {
-    if (stat.failed_attempts < threshold) return null;
-    return stat.mastery === "mastered"
-        ? { label: "Recovered", cls: "text-emerald-400" }
-        : { label: "Needs Attention", cls: "text-red-500" };
-}
+import { attentionMeta, attemptsShown } from "@/utils/masteryLabels.js";
 
 // Merge duplicate word texts within a level into ONE chip: summed
 // failed_attempts, worst mastery wins (training > unseen > mastered).

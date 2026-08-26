@@ -144,6 +144,129 @@ class MasteryAttemptTest extends TestCase
         ]);
     }
 
+    public function test_first_training_creates_row_at_one(): void
+    {
+        $word = $this->makeWord();
+
+        $this->postWordMastery($word, 'training');
+
+        $row = StudentWordMastery::where('user_id', $this->student->id)
+            ->where('word_id', $word->id)->first();
+        $this->assertSame('training', $row->status);
+        $this->assertSame(1, $row->failed_attempts);
+    }
+
+    public function test_mastery_preserves_accumulated_failed_attempts(): void
+    {
+        $word = $this->makeWord();
+
+        $this->postWordMastery($word, 'training');
+        $this->postWordMastery($word, 'training');
+        $this->postWordMastery($word, 'training');
+        $this->postWordMastery($word, 'mastered');
+
+        $row = StudentWordMastery::where('user_id', $this->student->id)
+            ->where('word_id', $word->id)->first();
+        $this->assertSame('mastered', $row->status);
+        $this->assertSame(3, $row->failed_attempts);
+    }
+
+    public function test_training_after_mastery_never_clobbers_sticky_row(): void
+    {
+        // Simulates the race the atomic WHERE closes: a mastered row already
+        // exists when a training request lands. The create branch must detect
+        // the mastered row and write nothing.
+        $word = $this->makeWord();
+        StudentWordMastery::create([
+            'user_id' => $this->student->id,
+            'word_id' => $word->id,
+            'status' => 'mastered',
+            'failed_attempts' => 4,
+        ]);
+
+        $this->postWordMastery($word, 'training');
+
+        $row = StudentWordMastery::where('user_id', $this->student->id)
+            ->where('word_id', $word->id)->first();
+        $this->assertSame('mastered', $row->status);
+        $this->assertSame(4, $row->failed_attempts);
+    }
+
+    public function test_sticky_mastery_is_idempotent_on_repeated_mastery(): void
+    {
+        $word = $this->makeWord();
+
+        $this->postWordMastery($word, 'training');
+        $this->postWordMastery($word, 'mastered');
+        $this->postWordMastery($word, 'mastered');
+
+        $row = StudentWordMastery::where('user_id', $this->student->id)
+            ->where('word_id', $word->id)->first();
+        $this->assertSame('mastered', $row->status);
+        $this->assertSame(1, $row->failed_attempts);
+    }
+
+    public function test_student_isolation_no_cross_leak(): void
+    {
+        $other = User::factory()->create(['role' => 'student']);
+        StudentProfile::factory()->for($other)->create();
+        $word = $this->makeWord();
+
+        $this->postWordMastery($word, 'training');
+        $this->postWordMastery($word, 'training');
+
+        $this->assertDatabaseMissing('student_word_mastery', [
+            'user_id' => $other->id,
+        ]);
+        $this->assertSame(2, StudentWordMastery::where('user_id', $this->student->id)
+            ->where('word_id', $word->id)->first()->failed_attempts);
+    }
+
+    public function test_invalid_status_is_rejected(): void
+    {
+        $word = $this->makeWord();
+
+        $this->actingAs($this->student, 'web')
+            ->postJson('/student/updateWordMastery', ['word_id' => $word->id, 'status' => 'foo'])
+            ->assertStatus(422);
+
+        $this->assertDatabaseMissing('student_word_mastery', [
+            'user_id' => $this->student->id,
+            'word_id' => $word->id,
+        ]);
+    }
+
+    public function test_missing_word_id_is_rejected(): void
+    {
+        $this->actingAs($this->student, 'web')
+            ->postJson('/student/updateWordMastery', ['status' => 'training'])
+            ->assertStatus(422);
+    }
+
+    public function test_unknown_word_id_is_rejected(): void
+    {
+        $this->actingAs($this->student, 'web')
+            ->postJson('/student/updateWordMastery', ['word_id' => 99999, 'status' => 'training'])
+            ->assertStatus(422);
+    }
+
+    public function test_paragraph_first_training_creates_row_at_one(): void
+    {
+        $word = $this->makeParagraphWord();
+
+        $this->actingAs($this->student, 'web')
+            ->post('/student/updateParagraphMastery', [
+                'paragraph_word_id' => $word->id,
+                'status' => 'training',
+            ])
+            ->assertStatus(204);
+
+        $row = \App\Models\StudentParagraphMastery::where('user_id', $this->student->id)
+            ->where('paragraph_word_id', $word->id)->first();
+        $this->assertSame('training', $row->status);
+        $this->assertSame(1, $row->failed_attempts);
+    }
+
     public function test_student_details_word_stats_include_unseen_words_at_zero(): void
     {
         $module = WordModule::create(['level' => 1, 'title' => 'Level 1']);
@@ -171,5 +294,51 @@ class MasteryAttemptTest extends TestCase
                 ->where('data.readCurriculum.0.word_stats.2.mastery', 'unseen')
                 ->where('data.readCurriculum.0.word_stats.2.failed_attempts', 0)
             );
+    }
+
+    public function test_four_training_then_mastery_drives_recovered_data(): void
+    {
+        // 4 failed attempts, then mastered on the 5th call. failed_attempts is
+        // frozen at 4; the frontend turns (mastered, >=3) into "Recovered".
+        $word = $this->makeWord();
+
+        foreach ([1, 2, 3, 4] as $_) {
+            $this->postWordMastery($word, 'training');
+        }
+        $this->postWordMastery($word, 'mastered');
+
+        $row = StudentWordMastery::where('user_id', $this->student->id)
+            ->where('word_id', $word->id)->first();
+        $this->assertSame('mastered', $row->status);
+        $this->assertSame(4, $row->failed_attempts);
+    }
+
+    public function test_three_training_without_mastery_drives_needs_attention_data(): void
+    {
+        // 3 failed attempts, still training -> frontend shows "Needs Attention".
+        $word = $this->makeWord();
+
+        foreach ([1, 2, 3] as $_) {
+            $this->postWordMastery($word, 'training');
+        }
+
+        $row = StudentWordMastery::where('user_id', $this->student->id)
+            ->where('word_id', $word->id)->first();
+        $this->assertSame('training', $row->status);
+        $this->assertSame(3, $row->failed_attempts);
+    }
+
+    public function test_two_training_without_mastery_is_below_threshold(): void
+    {
+        // 2 failed attempts stays under NEEDS_ATTENTION_ATTEMPTS -> no label.
+        $word = $this->makeWord();
+
+        $this->postWordMastery($word, 'training');
+        $this->postWordMastery($word, 'training');
+
+        $row = StudentWordMastery::where('user_id', $this->student->id)
+            ->where('word_id', $word->id)->first();
+        $this->assertSame('training', $row->status);
+        $this->assertSame(2, $row->failed_attempts);
     }
 }
