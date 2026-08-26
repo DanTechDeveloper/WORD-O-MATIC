@@ -61,10 +61,11 @@ Excel (`.xlsx`) export via `ReportsExport` is available after deadline passes.
   - **Class Health Distribution** (Pie Chart): Visualizes student status distribution (On Track, Needs Support, At Risk, In Progress, Not Started).
   - **Student Accuracy Comparison** (Bar/Column Chart): Compares Word Blast and Story Quest accuracies per student.
 - **Student Progress Summary Sheet**: One row per student with identity + status + per-mode progress:
-  - Student Name, Student ID, Section, Final Status, Word Blast (accuracy + level combined, e.g. `78% (Level 3 - Phonics Fundamentals)`), Story Quest (accuracy + level combined, e.g. `90% (Level 2 - Farm Animals)`)
-- **Mastered & Training Words Sheet**: One row per student with the actual mastered/training words per mode:
-  - Student Name, Word Blast Mastered, Word Blast Training, Story Quest Mastered, Story Quest Training
-  - Each cell lists words grouped per level, e.g. `Level 1 - cat, dog` (one group per line)
+  - Student Name, Student ID, Section, Final Status, Word Blast (accuracy + level combined, e.g. `78% (Level 3 - Phonics Fundamentals)`), Story Quest (accuracy + level combined, e.g. `90% (Level 2 - Farm Animals)`), Top Struggle (up to two worst training words by attempts, e.g. `WB: CAT ×4 · SQ: the ×3`; empty when none)
+- **Words Needing Practice Sheet**: Flat drill-down, one row per student-word still in training (sorted attempts-desc within each student):
+  - Student Name, Student ID, Section, Mode, Level, Word, Attempts
+  - Same normalized projection as the parent email (`ReportService::struggleRowsFrom`, per-level merge + global display casing); rows at/over `NEEDS_ATTENTION_ATTEMPTS` are red-filled
+  - Export reads per-student `curriculumForUser` — identical data source as the emailed report
 
 ## Student Details
 
