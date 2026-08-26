@@ -1,6 +1,6 @@
 # Word-O-Matic
 
-> Version 1.7 — Developer Guide
+> Version 1.8 — Developer Guide
 
 ## Design Context
 
@@ -63,9 +63,13 @@ Tutorial uses dedicated modules (`is_tutorial=true`, `level=0`):
 - Word Blast: 5 practice words (a, I, see, my, the)
 - Story Quest: "I see a cat." paragraph
 Tutorial plays skip GameSession, mastery, points, leaderboard, and gameplay badges.
-Tutorial Complete badge awarded when both modes are done via `BadgeService::awardOnboardingBadge('tutorial-complete')`.
-Guided by AvatarSpeechBubble on Dashboard + guide overlay on first gameplay. Enforced by `CheckStudentOnboarding` middleware,
-which also bounces avatar-complete students away from `splashScreen`/`avatarSelection` (no re-entry).
+Tutorial Complete badge awarded when both modes are done via `BadgeService::awardOnboardingBadge('tutorial-complete')`;
+dismissing it shows a congrats `AvatarSpeechBubble` on the Dashboard (gated by the `tutorial-complete` flash badge).
+Guided by AvatarSpeechBubble on Dashboard + guide overlay on first gameplay. The guide's TAP TO CONTINUE must be finished
+before play unlocks — enforced as `!isTutorial || guideDone` at every entry point (Dashboard `blockTarget`, LevelsPage
+`LevelCard disabled`, gameplay `handleMicrophoneClick` early-return). During tutorial gameplay, a cheer-only `AvatarSpeechBubble`
+coach shows on each mispronounce (`GameplayReadMode`/`GameplaySpeakMode` `coachActive` state) and fades on a correct hit.
+Enforced by `CheckStudentOnboarding` middleware, which also bounces avatar-complete students away from `splashScreen`/`avatarSelection` (no re-entry).
 
 ## Services
 

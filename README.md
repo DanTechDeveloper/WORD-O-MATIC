@@ -246,8 +246,8 @@ See `my-app/docs/CAVEATS.md` for the full tradeoff ledger (Bug fixes BF1–BF24)
 A guided, gated 3-step flow enforced by the `CheckStudentOnboarding` middleware. Incomplete students are redirected to the correct step.
 
 1. **Splash → Avatar Selection** — students pick a custom avatar (default avatars are rejected).
-2. **Dashboard → Guided Tutorial** — the avatar speech bubble guides students from the dashboard into a two-mode tutorial introducing **Word Blast** (read) and **Story Quest** (speak), each with a dedicated practice module (`is_tutorial=true`, level 0: 5 practice words / one short paragraph). A step-by-step guide overlay appears on first gameplay of each mode.
-3. **Tutorial Complete → Unlocked Dashboard** — finishing both practices sets `tutorial_completed_at` and unlocks normal progression. Tutorial plays do not affect points, leaderboards, mastery, or gameplay badges.
+2. **Dashboard → Guided Tutorial** — the avatar speech bubble guides students from the dashboard into a two-mode tutorial introducing **Word Blast** (read) and **Story Quest** (speak), each with a dedicated practice module (`is_tutorial=true`, level 0: 5 practice words / one short paragraph). A step-by-step guide overlay appears on first gameplay of each mode, and a cheer-only coach bubble encourages the student on each mispronunciation. The guide's **TAP TO CONTINUE** must be completed before the play action unlocks.
+3. **Tutorial Complete → Unlocked Dashboard** — finishing both practices sets `tutorial_completed_at`, flashes the "Tutorial Complete" badge, and (after dismissing it) shows a congratulations bubble. Normal progression unlocks. Tutorial plays do not affect points, leaderboards, mastery, or gameplay badges.
 
 </details>
 

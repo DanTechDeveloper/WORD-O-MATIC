@@ -1,6 +1,6 @@
 # Gameplay
 
-> Version 1.5
+> Version 1.6
 
 ## Word Blast (Read Mode)
 
@@ -46,6 +46,31 @@ Dedicated tutorial modules (`is_tutorial=true`, `level=0`) seeded in `Curriculum
 Tutorial plays bypass GameSession, mastery, points, leaderboard, and gameplay badge tracking.
 Progress is saved but does not affect accuracy/status calculations on `students` table.
 Tutorial Complete badge flashes on Dashboard when both modes finished.
+
+### Guide gating (TAP TO CONTINUE before play)
+The avatar guide board (`AvatarSpeechBubble`) must be completed — the student taps TAP TO
+CONTINUE through every step — before the play action becomes available. Enforced as
+`!isTutorial || guideDone` at every play entry point:
+- **Dashboard** — the highlighted Play link is blocked (`blockTarget`) until `guideDone`.
+- **LevelsPage** — the tutorial `LevelCard` is `disabled` via a `disabled` prop until `guideDone`.
+- **Gameplay pages** — `handleMicrophoneClick` early-returns while `isTutorial && !guideDone`,
+  so the mic can't start the round until the guide is finished (the `TapToStartOverlay` was
+  already gated on `guideDone`).
+
+### Mistake coach (cheer-only)
+During tutorial gameplay, a mispronunciation shows a reusable `AvatarSpeechBubble` that
+**cheers only** — no correction and no retry loop. `GameplayReadMode.jsx` /
+`GameplaySpeakMode.jsx` hold a `coachActive` / `coachLeaving` state driven by the engine's
+`isMispronounced` / `feedbackType`: the bubble appears on each mistake, **stays** through
+repeated mistakes, and fades (300ms opacity transition) only when the word is hit correct.
+Rendered `bottom-left`, no `onClick`. The engine, speech hook, and `MainContent` components
+are untouched — the bubble is pure reuse. Non-tutorial sessions never render it.
+
+### Completion congrats
+After both modes are done, the "Tutorial Complete" badge flashes on the Dashboard
+(`BadgeUnlockFlow`). When the student dismisses the last badge, `Dashboard.jsx` shows a
+congratulations `AvatarSpeechBubble` ("YOU DID IT!"). Gated by the `tutorial-complete` badge
+being in `flash.new_badges`, so it fires only at completion, not on later visits.
 
 ## Speech Recognition Timeout Rules
 

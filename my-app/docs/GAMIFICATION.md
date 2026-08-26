@@ -25,6 +25,7 @@ Tutorial play (`is_tutorial=true` modules) is isolated from real game tracking:
 - No `GameSession` logged
 - No leaderboard impact
 - Only "Tutorial Complete" badge can be earned (not gameplay badges)
+- On completion the badge flashes via `BadgeUnlockFlow`; dismissing it shows a congratulations `AvatarSpeechBubble` on the Dashboard (gated by the `tutorial-complete` flash badge)
 
 ## Badges
 
