@@ -238,12 +238,6 @@ class StudentController extends Controller
             'tutorialComplete' => (bool) $user->student?->tutorial_completed_at,
         ];
 
-        if (! $isWord) {
-            $progress = StudentParagraphProgress::where('user_id', $user->id)
-                ->where('paragraph_module_id', $id)
-                ->first();
-            $data['userProgress'] = $progress ? $progress->words_smashed : 0;
-        }
 
         return Inertia::render($page, $data);
     }
@@ -288,10 +282,25 @@ class StudentController extends Controller
 
         if ($request->status === 'training') {
             // Unsuccessful attempt: wrong transcript OR timeout. Count up, never reset.
-            $row = $model::firstOrNew(['user_id' => auth()->id(), $idColumn => $request->$idColumn]);
-            $row->status = 'training';
-            $row->failed_attempts = $row->failed_attempts + 1;
-            $row->save();
+            // Atomic: the WHERE status != 'mastered' is evaluated at write time, so a
+            // row that got mastered by a concurrent request is never bumped (DB-enforced
+            // sticky, no TOCTOU). ponytail: relies on the unique (user_id, id) index.
+            $affected = $model::where('user_id', auth()->id())
+                ->where($idColumn, $request->$idColumn)
+                ->where('status', '!=', 'mastered')
+                ->increment('failed_attempts');
+
+            if ($affected === 0) {
+                // Row is either missing (first training attempt) or already mastered.
+                if (! $model::where('user_id', auth()->id())->where($idColumn, $request->$idColumn)->exists()) {
+                    $model::create([
+                        'user_id' => auth()->id(),
+                        $idColumn => $request->$idColumn,
+                        'status' => 'training',
+                        'failed_attempts' => 1,
+                    ]);
+                }
+            }
 
             return response()->noContent();
         }

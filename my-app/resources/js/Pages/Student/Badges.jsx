@@ -6,15 +6,6 @@ import PageHeader from "@/Components/Student/PageHeader";
 import ProgressBar from "@/Components/Student/ProgressBar";
 import useDeadlineStatus from "@/hooks/Student/useDeadlineStatus";
 
-const METRIC_LABELS = {
-    total_points: "Points",
-    streak: "Streak",
-    accuracy: "Accuracy",
-    action: "Action",
-    paragraph_completion: "Completion",
-    word_completion: "Completion",
-};
-
 const PALETTE = {
     accent: { bg: "bg-accent", text: "text-slate-950", border: "border-accent", title: "text-accent" },
     quest: { bg: "bg-quest", text: "text-slate-950", border: "border-quest", title: "text-quest" },
