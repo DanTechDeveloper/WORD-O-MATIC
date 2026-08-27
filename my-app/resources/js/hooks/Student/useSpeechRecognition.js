@@ -7,7 +7,7 @@ const IRRECOVERABLE_ERRORS = new Set([
     "aborted",
 ]);
 
-function clearAllTimers(timers) {
+export function clearAllTimers(timers) {
     Object.keys(timers).forEach((key) => {
         if (timers[key]) {
             clearTimeout(timers[key]);
@@ -16,7 +16,7 @@ function clearAllTimers(timers) {
     });
 }
 
-function normalizeText(text) {
+export function normalizeText(text) {
     return (text ?? "")
         .toLowerCase()
         .replace(/[^\w\s]/g, "")
@@ -27,7 +27,7 @@ function buildFullSentence(transcript, interim) {
     return normalizeText(transcript + " " + interim);
 }
 
-function armSentenceTimeout(
+export function armSentenceTimeout(
     _target,
     _full,
     stateRefs,
@@ -62,7 +62,7 @@ function armSentenceTimeout(
     timerRefs.current.sentence = setTimeout(tick, 1000);
 }
 
-function armWordTimeout(target, stateRefs, timerRefs, timeoutRefs, propsRef) {
+export function armWordTimeout(target, stateRefs, timerRefs, timeoutRefs, propsRef) {
     clearTimeout(timerRefs.current.word);
     timeoutRefs.current.target = target;
 
@@ -77,10 +77,10 @@ function armWordTimeout(target, stateRefs, timerRefs, timeoutRefs, propsRef) {
             stateRefs.current.mispronouncedInWord = true;
             propsRef.current.onMispronounced?.();
         }
-    }, 3000);
+    }, 5000);
 }
 
-function processSentenceModeResult(
+export function processSentenceModeResult(
     event,
     target,
     stateRefs,
@@ -164,7 +164,7 @@ function processSentenceModeResult(
     }
 }
 
-function processWordModeResult(
+export function processWordModeResult(
     event,
     target,
     stateRefs,
@@ -172,6 +172,7 @@ function processWordModeResult(
     timeoutRefs,
     propsRef,
 ) {
+    if (Date.now() < timeoutRefs.current.graceEnd) return;
     for (let i = event.resultIndex; i < event.results.length; ++i) {
         if (i <= stateRefs.current.lastProcessed) continue;
 
@@ -196,6 +197,21 @@ function processWordModeResult(
             stateRefs.current.hasMatched = true;
             stateRefs.current.lastProcessed = i;
             propsRef.current.onWordRecognized?.();
+        } else if (!stateRefs.current.mispronouncedInWord) {
+            // Speech settled on a non-matching word → mispronounce promptly
+            // instead of waiting for (flaky) is_final or the 5s timeout.
+            clearTimeout(timerRefs.current.wordSettle);
+            timerRefs.current.wordSettle = setTimeout(() => {
+                if (
+                    stateRefs.current.isMounted &&
+                    propsRef.current.isActive &&
+                    !stateRefs.current.hasMatched &&
+                    !stateRefs.current.mispronouncedInWord
+                ) {
+                    stateRefs.current.mispronouncedInWord = true;
+                    propsRef.current.onMispronounced?.(transcript);
+                }
+            }, 900);
         }
 
         if (result.isFinal) {

@@ -72,6 +72,7 @@ export function useGameplayEngine({
     const wordsRef = useRef(words);
     const wordRecognizedGuardRef = useRef(false);
     const maxStreakRef = useRef(maxStreak);
+    const gameStateRef = useRef(gameState);
 
     useEffect(() => {
         onWordRecognizedRef.current = onWordRecognized;
@@ -82,6 +83,10 @@ export function useGameplayEngine({
         wordsRef.current = words;
         currentStreakRef.current = currentStreak;
     }, [onWordRecognized, onMispronounce, currentWordIndex, wordsSmashed, maxStreak, words, currentStreak]);
+
+    useEffect(() => {
+        gameStateRef.current = gameState;
+    }, [gameState]);
 
     useEffect(() => {
         if (typeof window === "undefined" || !moduleId || gameState !== "ACTIVE") {
@@ -167,18 +172,21 @@ export function useGameplayEngine({
     }, [currentWordIndex, totalWords, gameState]);
 
     const handleWordRecognized = useCallback(() => {
+        if (gameStateRef.current !== "ACTIVE") return;
         if (wordRecognizedGuardRef.current) return;
         wordRecognizedGuardRef.current = true;
 
         clearTimeout(mispronounceTimerRef.current);
         mispronounceGuardRef.current = false;
-        playSuccessSound();
 
         const wordObj = wordsRef.current[currentWordIndexRef.current];
         if (!wordObj) {
             wordRecognizedGuardRef.current = false;
             return;
         }
+
+        setIsExploding(true);
+        playSuccessSound();
         onWordRecognizedRef.current?.(wordObj);
 
         const points = 1;
@@ -210,7 +218,6 @@ export function useGameplayEngine({
         }
 
         setIsMispronounced(false);
-        setIsExploding(true);
         wordRecognizedTimerRef.current = setTimeout(() => {
             setIsExploding(false);
             moveToNextWord();
@@ -219,6 +226,7 @@ export function useGameplayEngine({
     }, [moveToNextWord]);
 
     const handleMispronounce = useCallback(() => {
+        if (gameStateRef.current !== "ACTIVE") return;
         if (mispronounceGuardRef.current) return;
         mispronounceGuardRef.current = true;
 
@@ -273,6 +281,20 @@ export function useGameplayEngine({
         }
     }, [persistProgress, totalWords, clearResume]);
 
+    const handleFatalError = useCallback(() => {
+        clearAllTimers({
+            mispronounceTimer: mispronounceTimerRef.current,
+            wordRecognizedTimer: wordRecognizedTimerRef.current,
+            feedbackTimer: feedbackTimerRef.current,
+            pointsFeedbackTimer: pointsFeedbackTimerRef.current,
+            scoreEmphasizeTimer: scoreEmphasizeTimerRef.current,
+            streakShakeTimer: streakShakeTimerRef.current,
+        });
+        persistProgress();
+        clearResume();
+        setGameState("GAMEOVER");
+    }, [persistProgress, clearResume]);
+
     useEffect(() => {
         if (gameState !== "ACTIVE") return;
         const id = setInterval(() => {
@@ -294,6 +316,8 @@ export function useGameplayEngine({
         // Fresh round: re-arm the one-shot save guard (fresh mounts start false;
         // this covers any reuse of the hook without a remount).
         hasSaved.current = false;
+        wordRecognizedGuardRef.current = false;
+        mispronounceGuardRef.current = false;
         setGameState((prev) => (prev === "IDLE" ? "COUNTDOWN" : prev));
     }, []);
 
@@ -321,5 +345,6 @@ export function useGameplayEngine({
         startGame,
         handleWordRecognized,
         handleMispronounce,
+        handleFatalError,
     };
 }

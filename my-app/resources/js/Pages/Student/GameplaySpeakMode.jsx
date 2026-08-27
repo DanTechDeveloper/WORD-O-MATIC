@@ -9,7 +9,7 @@ import TapToStartOverlay from "@/Components/Student/TapToStartOverlay";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { useGameplayEngine } from "@/hooks/Student/useGameplayEngine";
-import { useSpeechRecognition } from "@/hooks/Student/useSpeechRecognition";
+import { useDeepgramRecognition } from "@/hooks/Student/useDeepgramRecognition";
 import { useMicrophonePermission } from "@/hooks/Student/useMicrophonePermission";
 import { pauseBackgroundMusic, setMicLive } from "@/utils/sounds";
 
@@ -48,6 +48,7 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true }) {
         startGame,
         handleWordRecognized,
         handleMispronounce,
+        handleFatalError,
     } = useGameplayEngine({
         words: module?.words,
         totalWords: module?.words?.length ?? 0,
@@ -108,13 +109,15 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true }) {
         return () => setMicLive(false);
     }, []);
 
-    useSpeechRecognition({
+    useDeepgramRecognition({
         isActive: gameState === "ACTIVE",
+        preload: gameState === "COUNTDOWN" || gameState === "ACTIVE",
         targetWord: targetWord,
         onWordRecognized: handleWordRecognized,
         onPermissionDenied: handlePermissionDenied,
         onMispronounced: handleMispronounce,
         onRecognitionError: undefined,
+        onRestartFailed: handleFatalError,
         matchMode: "sentence",
     });
     const avatarUrl = auth?.user?.student?.avatar;

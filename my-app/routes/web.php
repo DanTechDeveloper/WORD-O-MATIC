@@ -70,5 +70,6 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/updateWordMastery', [StudentController::class, 'updateWordMastery'])->name('updateWordMastery');
             Route::post('/updateParagraphMastery', [StudentController::class, 'updateParagraphMastery'])->name('updateParagraphMastery');
             Route::get('/results/{id}', [StudentController::class, 'results'])->name('results');
+            Route::get('/deepgram-token', [StudentController::class, 'deepgramToken'])->name('deepgramToken');
         });
 });
