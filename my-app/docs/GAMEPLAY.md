@@ -72,21 +72,24 @@ After both modes are done, the "Tutorial Complete" badge flashes on the Dashboar
 congratulations `AvatarSpeechBubble` ("YOU DID IT!"). Gated by the `tutorial-complete` badge
 being in `flash.new_badges`, so it fires only at completion, not on later visits.
 
-## Speech Recognition Timeout Rules
+## Speech Recognition (Deepgram)
 
-Timeouts are centralized in `useSpeechRecognition.js`: Word Blast (read mode) uses a 3-second per-word timeout, Story Quest (speak mode) a 5-second per-sentence timeout:
+Recognition uses **Deepgram streaming ASR** (`useDeepgramRecognition.js`, model `nova-3`); the pure transcript-processing logic (fuzzy match, timeout arming, `graceEnd`) lives in `useSpeechRecognition.js` and is driven by Deepgram events. A browser token is fetched from `StudentController::deepgramToken()`.
+
+### Timeout Rules
 
 | Mode | Timeout Behavior |
 |---|---|
-| **Word Mode** | If no word match is detected within 3 seconds of word display, the word is marked as mispronounced and advances to the next word. A transcript that finalizes without matching also mispronounces immediately — no delay. |
-| **Sentence Mode** | If no speech is detected for 5 **continuous** seconds (silence watchdog), the sentence is marked as mispronounced. The watchdog tracks `lastSpeechAt` (reset on recognition start and on every spoken result) and survives engine restarts, so a silent student is always caught even though continuous STT ends frequently. A full-length transcript that doesn't fuzzy-match also mispronounces, after a 500ms `graceEnd` guard (short feedback echoes inside the guard window are ignored). |
+| **Word Mode** | After speech settles on a transcript that doesn't fuzzy-match the target (no new result for ~900ms), the word is marked mispronounced immediately — no fixed wait. `is_final` is also a fast-path. A 5s `armWordTimeout` remains as the no-speech fallback (catches a silent student). A 500ms `graceEnd` guard after a word switch suppresses stray finals. |
+| **Sentence Mode** | If no speech is detected for 5 **continuous** seconds (silence watchdog), the sentence is marked as mispronounced. The watchdog tracks `lastSpeechAt`, which is re-based to ACTIVE at game start so countdown silence isn't counted. A full-length transcript that doesn't fuzzy-match also mispronounces, after a 500ms `graceEnd` guard. |
 
 ### Timer Synchronization
 
-All speech recognition timeouts are owned by `useSpeechRecognition.js` and validate the target word via `timeoutRefs.target` (stored at arm time; only fires if it still matches the current `targetWord`):
- - **`armSentenceTimeout`**: 1s self-rescheduling silence watchdog (fires `onMispronounced` at `>=5s` of continuous silence via `lastSpeechAt`). It is re-armed on recognition start, on every spoken result, and on every natural restart — so it is *not* cleared by the frequent `onend` events of continuous STT (the old per-transcript 5000ms `setTimeout` was dropped on every natural end and never re-armed for an empty transcript, leaving silent attempts stuck).
- - **`armWordTimeout` (3000ms)**: per-word fallback, re-armed on every transcript result and on `targetWord` change
-- **`graceEnd` (500ms, sentence mode)**: grace window before a full-length mismatch is judged mispronounced
+All speech recognition timeouts are owned by `useSpeechRecognition.js` (processors) and validate the target via `timeoutRefs.target` (stored at arm time; only fires if it still matches the current `targetWord`):
+ - **`armSentenceTimeout`**: 1s self-rescheduling silence watchdog (fires `onMispronounced` at `>=5s` of continuous silence via `lastSpeechAt`). Re-based at ACTIVE so the countdown pre-warm silence isn't miscounted.
+ - **`armWordTimeout` (5000ms)**: per-word no-speech fallback, re-armed on every transcript result and on `targetWord` change.
+ - **`wordSettle` (~900ms)**: fires mispronounce once speech settles on a non-matching transcript (independent of `is_final` — Deepgram finals for low-confidence/wrong words often arrive with empty transcripts and were previously dropped, leaving only the 5s fallback).
+ - **`graceEnd` (500ms, both modes)**: grace window after a target switch / before a full-length mismatch is judged mispronounced.
 
 This prevents race conditions where:
 1. User speaks but doesn't complete the word/sentence within the timeout
@@ -99,7 +102,7 @@ Mode-aware `isActive` gate in the two gameplay pages:
 
 | Mode | isActive | Why |
 |---|---|---|
-| Word Blast (read) | `gameState === "ACTIVE" && !isExploding` | Mic closes only for the 500ms blast window after a correct match (echo feedback there can't fuzzy-match the short target word). The word changes instantly (no fade-in prep window); a 3s `armWordTimeout` in the hook (re-armed on every recognized transcript) catches silence. |
+| Word Blast (read) | `gameState === "ACTIVE" && !isExploding` | Mic is muted via the Deepgram `muted` prop during the 500ms blast window after a correct match (set before `playSuccessSound`, so echo feedback can't fuzzy-match the short target word). The word changes instantly; a ~900ms utterance-settle timer + 5s `armWordTimeout` fallback in the hook (re-armed on every recognized transcript) catch wrong/silent speech. |
 | Story Quest (speak) | `gameState === "ACTIVE"` only | Mic stays live continuously — students read sentences back-to-back; stopping would clip the head of the next utterance. Full-sentence matching (full transcript, word count equality) makes feedback-echo mis-recapture negligible. |
 
 ## Results

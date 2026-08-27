@@ -43,6 +43,7 @@ Speaking-focused storytelling activity<br>
 |:------|:-----------|
 | **Backend** | PHP 8.3, Laravel 13 (session-based auth via `UserController`) |
 | **Frontend** | React 18, Inertia.js v2, Tailwind CSS v3 |
+| **Speech Recognition** | Deepgram streaming ASR (nova-3) via `useDeepgramRecognition.js` |
 | **Database** | MySQL (Production), SQLite `:memory:` (Testing) |
 | **Charts** | Recharts (BarChart on Web) · Native Excel Charts (Pie Chart & Bar Chart on Excel export) |
 | **HTTP** | Inertia router/useForm for pages · axios for JSON mastery endpoints |
@@ -234,7 +235,7 @@ Two correctness guarantees are enforced as committed PHPUnit tests (`php artisan
 - **Atomic bulk roster creation** — a bulk student paste is created only if every row validates (same normalization rules as single-add; case/whitespace-insensitive intra-batch duplicate IDs rejected) and one bad row rejects the whole batch — no partial rosters. Locked by `AddStudentBulkTest` (22 cases: exact-50 boundary, dup handling, invalid gender/email, non-array input safety).
 - **Deadline data freeze** — once the report deadline passes, gameplay is blocked server-side: `finishRound()` logs the `GameSession` but skips all `ProgressService` updates, so teacher reports cannot drift after the deadline — post-deadline plays write zero progress/mastery rows, so `LevelService` level status can never advance after the deadline. PLAY AGAIN is disabled and completed level cards are non-clickable, with an amber banner on `LevelsPage.jsx`. Post-deadline sessions are permanently flagged `is_deadline_hit=true` — excluded from streak/accuracy badge metrics and shown with the non-scoring "TIME'S UP!" results view ("You played", no badges) even if the teacher later clears the deadline. The teacher-facing deadline banner is a single source of truth in `DashboardLayout.jsx` (page-aware message: deadline-specific copy on Reports, gameplay-locked copy elsewhere). No deadline set → gameplay fully open. Locked by `GameplayTest::test_round_logs_session_but_skips_progress_when_deadline_passed`, `GameplayTest::test_round_saves_progress_when_no_deadline_is_set`, `GameplayTest::test_deadline_hit_session_stays_excluded_after_deadline_cleared`.
 
-See `my-app/docs/CAVEATS.md` for the full tradeoff ledger (Bug fixes BF1–BF25).
+See `my-app/docs/CAVEATS.md` for the full tradeoff ledger (Bug fixes BF1–BF26).
 
 </details>
 
