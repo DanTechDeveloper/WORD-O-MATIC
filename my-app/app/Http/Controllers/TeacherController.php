@@ -162,6 +162,10 @@ class TeacherController extends Controller
         $allStudents = StudentProfile::join('users', 'users.id', '=', 'students.user_id')
             ->where('users.role', 'student')
             ->select(['students.*', 'users.name'])
+            ->withCount([
+                'wordProgress' => fn ($q) => $q->whereHas('wordModule', fn ($m) => $m->has('words')),
+                'paragraphProgress' => fn ($q) => $q->whereHas('paragraphModule', fn ($m) => $m->has('words')),
+            ])
             ->get();
 
         $avgReadAccuracy = $allStudents->avg('wordBlastAcc') ?? 0;
@@ -185,7 +189,12 @@ class TeacherController extends Controller
             $avgRead = $sectionStudents->avg('wordBlastAcc');
             $avgSpeak = $sectionStudents->avg('storyQuestAcc');
 
-            $status = $statusLabels[ProgressService::classify((float) ($avgRead ?? 0), (float) ($avgSpeak ?? 0))];
+            $status = $statusLabels[ProgressService::classify(
+                (float) ($avgRead ?? 0),
+                (float) ($avgSpeak ?? 0),
+                ($avgRead ?? 0) != 0,
+                ($avgSpeak ?? 0) != 0,
+            )];
 
             return [
                 'section' => $section,
@@ -210,6 +219,8 @@ class TeacherController extends Controller
             $status = ProgressService::classify(
                 (float) $student->wordBlastAcc,
                 (float) $student->storyQuestAcc,
+                ($student->wordBlastAcc > 0) || ($student->word_progress_count ?? 0) > 0,
+                ($student->storyQuestAcc > 0) || ($student->paragraph_progress_count ?? 0) > 0,
             );
             $counts[$status]++;
 

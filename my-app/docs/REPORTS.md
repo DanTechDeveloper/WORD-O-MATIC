@@ -8,12 +8,12 @@ Route: `GET /teacher/reports` → `ReportController@reports`. Charts classify st
 
 | Category | Meaning |
 |---|---|
-| Not Started | No game sessions (accuracy null/0) |
+| Not Started | No progress rows in either skill (`started` flag false for both) — a 0% best score from a real play is NOT "not started" (CAVEATS BF26) |
 | At Risk | Average accuracy < 60% |
 | Needs Support | Average accuracy 60-80% |
 | On Track | Average accuracy ≥ 80% |
 
-Classification formula: `wordBlastAcc` and `storyQuestAcc` averaged.
+Classification formula: `wordBlastAcc` and `storyQuestAcc` averaged. The displayed status (dashboard, emailed report, Excel export, Reports.jsx) is the single stored `students.status` column written by `ProgressService::recalculateStatus()` — none recompute it, so they cannot diverge (CAVEATS BF26).
 
 ## Deadline
 
