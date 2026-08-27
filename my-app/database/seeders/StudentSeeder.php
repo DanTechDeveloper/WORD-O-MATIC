@@ -107,7 +107,7 @@ class StudentSeeder extends Seeder
 
             // Derive via the shared classifier so seeded rows always agree with
             // what recalculateStatus would compute from the same accuracies.
-            $status = ProgressService::classify($wAcc, $sAcc);
+            $status = ProgressService::classify($wAcc, $sAcc, $wAcc != 0, $sAcc != 0);
 
             $num = str_pad($i + 1, 3, '0', STR_PAD_LEFT);
             $wLevels = $completedLevels($wAcc);

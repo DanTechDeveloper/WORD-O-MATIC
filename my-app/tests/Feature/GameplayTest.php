@@ -124,6 +124,45 @@ class GameplayTest extends TestCase
         $this->assertEquals('notStarted', $this->student->student->status);
     }
 
+    public function test_status_is_in_progress_when_both_played_but_zero_accuracy(): void
+    {
+        // Student played both modes and scored 0% (Training Zone exists, but
+        // accuracy averages to 0.00). Must NOT be classified as "Not Started".
+        $this->progressService->updateWordProgress(
+            $this->student->student,
+            $this->module,
+            wordsSmashed: 0,
+            wordsProcessed: 10,
+            accuracy: 0
+        );
+
+        $paraModule = ParagraphModule::create([
+            'level' => 1,
+            'title' => 'Test Paragraph',
+            'content' => 'The cat is big and fat.',
+        ]);
+        $words = ['The', 'cat', 'is', 'big', 'and', 'fat'];
+        foreach ($words as $pos => $w) {
+            ParagraphWord::create([
+                'paragraph_module_id' => $paraModule->id,
+                'word' => $w,
+                'position' => $pos + 1,
+            ]);
+        }
+
+        $this->progressService->updateParagraphProgress(
+            $this->student->student,
+            $paraModule,
+            wordsSmashed: 0,
+            wordsProcessed: 6,
+            accuracy: 0
+        );
+
+        $this->student->refresh();
+
+        $this->assertEquals('in_progress', $this->student->student->status);
+    }
+
     // ─── DEADLINE GATE ─────────────────────────────────────────────
 
     public function test_round_saves_progress_when_no_deadline_is_set(): void

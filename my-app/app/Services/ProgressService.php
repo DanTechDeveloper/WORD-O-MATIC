@@ -112,8 +112,8 @@ class ProgressService
                     $levelColumn => $module->level + 1,
                     $progressColumn => $progressClass::where('user_id', $student->user_id)->where('status', 'completed')->count(),
                     'points' => StudentWordProgress::where('user_id', $student->user_id)
-                            ->when($tutWordId, fn ($q) => $q->where('word_module_id', '!=', $tutWordId))
-                            ->sum('words_smashed') +
+                        ->when($tutWordId, fn ($q) => $q->where('word_module_id', '!=', $tutWordId))
+                        ->sum('words_smashed') +
                         StudentParagraphProgress::where('user_id', $student->user_id)
                             ->when($tutParaId, fn ($q) => $q->where('paragraph_module_id', '!=', $tutParaId))
                             ->sum('words_smashed'),
@@ -129,16 +129,23 @@ class ProgressService
         });
     }
 
-    // Single source of truth for student risk status. Callers must pass floats:
-    // DECIMAL columns come back as strings ("0.00" is truthy in PHP, which would
-    // misclassify a one-skill student as atRisk instead of in_progress).
-    public static function classify(float $wordBlastAcc, float $storyQuestAcc): string
-    {
-        if (! $wordBlastAcc && ! $storyQuestAcc) {
+    // Single source of truth for student risk status. Callers must pass floats
+    // plus whether each skill has any non-tutorial progress rows. A 0.00 accuracy
+    // is ambiguous (never played vs played and scored zero), so "started" is
+    // decided by progress-row existence, never by the accuracy value alone.
+    // DECIMAL columns still come back as strings ("0.00" is truthy in PHP), which
+    // is why the accuracies are cast to float by every caller.
+    public static function classify(
+        float $wordBlastAcc,
+        float $storyQuestAcc,
+        bool $wordStarted,
+        bool $storyStarted,
+    ): string {
+        if (! $wordStarted && ! $storyStarted) {
             return 'notStarted';
         }
 
-        if (! $wordBlastAcc || ! $storyQuestAcc) {
+        if (! $wordStarted || ! $storyStarted || $wordBlastAcc == 0 || $storyQuestAcc == 0) {
             return 'in_progress';
         }
 
@@ -151,7 +158,31 @@ class ProgressService
     {
         $fresh = $student->fresh();
 
-        $status = self::classify((float) $fresh->wordBlastAcc, (float) $fresh->storyQuestAcc);
+        // "Started" = the skill has a real (non-empty) best score. A 0% play still
+        // counts (progress row with words_processed > 0); an empty-module play does
+        // not. Accuracy > 0 alone also counts, covering direct column sets. This is
+        // what fixes the both-zero collision without regressing empty-module plays.
+        $tutWordId = WordModule::where('is_tutorial', true)->value('id');
+        $tutParaId = ParagraphModule::where('is_tutorial', true)->value('id');
+
+        $hasWordProgress = (float) $fresh->wordBlastAcc > 0
+            || StudentWordProgress::where('user_id', $fresh->user_id)
+                ->when($tutWordId, fn ($q) => $q->where('word_module_id', '!=', $tutWordId))
+                ->whereHas('wordModule', fn ($m) => $m->has('words'))
+                ->exists();
+
+        $hasParagraphProgress = (float) $fresh->storyQuestAcc > 0
+            || StudentParagraphProgress::where('user_id', $fresh->user_id)
+                ->when($tutParaId, fn ($q) => $q->where('paragraph_module_id', '!=', $tutParaId))
+                ->whereHas('paragraphModule', fn ($m) => $m->has('words'))
+                ->exists();
+
+        $status = self::classify(
+            (float) $fresh->wordBlastAcc,
+            (float) $fresh->storyQuestAcc,
+            $hasWordProgress,
+            $hasParagraphProgress,
+        );
 
         if ($fresh->status !== $status) {
             $student->update(['status' => $status]);

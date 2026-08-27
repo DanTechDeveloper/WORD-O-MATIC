@@ -101,10 +101,12 @@ middleware aliases are registered in `bootstrap/app.php`.
   `students`, not from the progress/mastery tables.
 - **Progress is best-score-only.** `ProgressService` does not overwrite on a
   worse play.
-- **Status thresholds live once in `ProgressService::classify()`** — runtime
-  recalculation, `TeacherController::dashboardStats`, and `StudentSeeder` all
-  call it; the vocabulary is the DB's (`support`, not a separate
-  `needsSupport` key) (BF22).
+- **Status thresholds live once in `ProgressService::classify(float $wordBlastAcc, float $storyQuestAcc, bool $wordStarted, bool $storyStarted)`** —
+  `recalculateStatus()`, `TeacherController::dashboardStats` (per-student loop +
+  sectionPerformance), and `StudentSeeder` all call it; `started` = `accuracy > 0`
+  OR a progress row on a real (non-empty) module exists, resolving the both-zero
+  `notStarted` collision (BF26). The vocabulary is the DB's (`support`, not a
+  separate `needsSupport` key) (BF22).
 - **Tutorial plays never move `students.points`.** Flagged plays early-return;
   post-onboarding replays (`finishRound` drops the flag once
   `tutorial_completed_at` is set) hit a delta gate plus recompute sums that
