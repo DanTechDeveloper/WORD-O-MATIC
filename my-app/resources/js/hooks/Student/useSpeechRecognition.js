@@ -28,29 +28,38 @@ function buildFullSentence(transcript, interim) {
 }
 
 function armSentenceTimeout(
-    target,
-    full,
+    _target,
+    _full,
     stateRefs,
     timerRefs,
-    timeoutRefs,
+    _timeoutRefs,
     propsRef,
 ) {
     clearTimeout(timerRefs.current.sentence);
-    timeoutRefs.current.target = target;
 
-    timerRefs.current.sentence = setTimeout(() => {
+    // ponytail: 1s self-rescheduling watchdog measures CONTINUOUS silence via
+    // lastSpeechAt (survives engine restarts); fires onMispronounced at >=5s.
+    const tick = () => {
+        const s = stateRefs.current;
         if (
-            stateRefs.current.isMounted &&
-            propsRef.current.isActive &&
-            !stateRefs.current.hasMatched &&
-            timeoutRefs.current.target === target
+            !s.isMounted ||
+            !propsRef.current.isActive ||
+            s.hasMatched ||
+            s.mispronouncedSentence
         ) {
-            if (!stateRefs.current.mispronouncedSentence) {
-                stateRefs.current.mispronouncedSentence = true;
-                propsRef.current.onMispronounced?.(full);
-            }
+            timerRefs.current.sentence = null;
+            return;
         }
-    }, 5000);
+        if (Date.now() - s.lastSpeechAt >= 5000) {
+            s.mispronouncedSentence = true;
+            propsRef.current.onMispronounced?.(s.transcript);
+            timerRefs.current.sentence = null;
+            return;
+        }
+        timerRefs.current.sentence = setTimeout(tick, 1000);
+    };
+
+    timerRefs.current.sentence = setTimeout(tick, 1000);
 }
 
 function armWordTimeout(target, stateRefs, timerRefs, timeoutRefs, propsRef) {
@@ -98,6 +107,10 @@ function processSentenceModeResult(
         stateRefs.current.transcript += " " + newFinals;
     }
     stateRefs.current.interim = newInterim;
+
+    if (newFinals || newInterim) {
+        stateRefs.current.lastSpeechAt = Date.now();
+    }
 
     // Prevent memory leaks: keep only the recent words in memory
     const targetWordCount = target.split(/\s+/).filter(Boolean).length;
@@ -277,7 +290,7 @@ function handleRecognitionEnd(
                     timeoutRefs,
                     propsRef,
                 );
-            } else if (stateRefs.current.transcript) {
+            } else {
                 armSentenceTimeout(
                     activeTarget,
                     stateRefs.current.transcript,
@@ -348,6 +361,7 @@ export function useSpeechRecognition({
         transcript: "",
         interim: "",
         isListening: false,
+        lastSpeechAt: Date.now(),
     });
 
     // Timers stored as plain values (not refs) to avoid nested hook violation
@@ -460,6 +474,7 @@ export function useSpeechRecognition({
         stateRefs.current.transcript = "";
         stateRefs.current.interim = "";
         stateRefs.current.stoppedAt = 0;
+        stateRefs.current.lastSpeechAt = Date.now();
         timeoutRefs.current.target = null;
         timeoutRefs.current.graceEnd = Date.now() + 500;
         timeoutRefs.current.restartCount = 0;
@@ -509,6 +524,7 @@ export function useSpeechRecognition({
                     stateRefs.current.isListening = true;
                     recognition.start();
                 }
+                stateRefs.current.lastSpeechAt = Date.now();
             } catch (e) {
                 console.debug("Speech recognition start failed:", e);
             }
