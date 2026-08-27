@@ -394,6 +394,8 @@ class TeacherController extends Controller
             'avatar' => $defaultAvatar,
             'read_progress' => 0,
             'speak_progress' => 0,
+            'read_level' => 0,
+            'speak_level' => 0,
             'status' => 'notStarted',
             'wordBlastAcc' => 0.0,
             'storyQuestAcc' => 0.0,

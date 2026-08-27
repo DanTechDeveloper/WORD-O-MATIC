@@ -81,11 +81,11 @@ class ProgressService
                 : 'in_progress';
             $progress->save();
 
-            if ($isTutorial) {
-                return;
-            }
-
-            if ($isNewBest) {
+            // Tutorial plays never count toward accuracy/points/status, but they
+            // still advance the student out of level 0 (0 -> 1) so the tutorial
+            // is reflected as the starting level (mirrors CurriculumSeeder's
+            // level-0 tutorial module). Non-tutorial behavior is unchanged below.
+            if (! $isTutorial && $isNewBest) {
                 $tutorialModule = $moduleClass::where('is_tutorial', true)->first();
                 $avgAccuracy = $progressClass::where('user_id', $student->user_id)
                     ->when($tutorialModule, fn ($q) => $q->where($moduleKey, '!=', $tutorialModule->id))
@@ -100,7 +100,9 @@ class ProgressService
                 $this->recalculateStatus($student);
             }
 
-            if ($progress->status === 'completed' && $module->level >= $student->{$levelColumn}) {
+            // Tutorial modules advance the student out of level 0; a flagged
+            // tutorial replay on a non-tutorial module must not (BF24).
+            if ($progress->status === 'completed' && $module->level >= $student->{$levelColumn} && (! $isTutorial || $module->is_tutorial)) {
                 // Mirror StudentController::dashboard(): tutorial plays never count
                 // as earned points. Without these exclusions, a post-onboarding
                 // tutorial replay inflates students.points while the dashboard

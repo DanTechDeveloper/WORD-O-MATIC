@@ -46,6 +46,46 @@ class ProgressServiceTest extends TestCase
         }
     }
 
+    public function test_tutorial_completion_bumps_level_from_zero(): void
+    {
+        // Mirror a freshly created student (persistStudent now seeds level 0).
+        $this->student->student->update(['read_level' => 0, 'speak_level' => 0]);
+
+        $tutWord = WordModule::create(['level' => 0, 'title' => 'Tut Word', 'is_tutorial' => true]);
+        Word::create(['word_module_id' => $tutWord->id, 'word' => 'a', 'position' => 1]);
+
+        $tutPara = ParagraphModule::create([
+            'level' => 0, 'title' => 'Tut Para', 'content' => 'I see a cat.', 'is_tutorial' => true,
+        ]);
+        foreach (['I', 'see', 'a', 'cat'] as $i => $w) {
+            ParagraphWord::create(['paragraph_module_id' => $tutPara->id, 'word' => $w, 'position' => $i + 1]);
+        }
+
+        $this->progressService->updateWordProgress(
+            $this->student->student, $tutWord,
+            wordsSmashed: 1, wordsProcessed: 1, accuracy: 100, isTutorial: true
+        );
+        $this->progressService->updateParagraphProgress(
+            $this->student->student, $tutPara,
+            wordsSmashed: 4, wordsProcessed: 4, accuracy: 100, isTutorial: true
+        );
+
+        $this->student->student->refresh();
+        $this->assertEquals(1, $this->student->student->read_level);
+        $this->assertEquals(1, $this->student->student->speak_level);
+        // Tutorial plays must not inflate accuracy or points (BF24).
+        $this->assertEquals(0.0, $this->student->student->wordBlastAcc);
+        $this->assertEquals(0, $this->student->student->points);
+
+        // A post-onboarding tutorial replay must not re-bump the level.
+        $this->progressService->updateWordProgress(
+            $this->student->student, $tutWord,
+            wordsSmashed: 1, wordsProcessed: 1, accuracy: 100, isTutorial: true
+        );
+        $this->student->student->refresh();
+        $this->assertEquals(1, $this->student->student->read_level);
+    }
+
     public function test_level_up_on_completion(): void
     {
         $this->progressService->updateWordProgress(
