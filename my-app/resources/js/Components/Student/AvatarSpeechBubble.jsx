@@ -55,9 +55,11 @@ export default function AvatarSpeechBubble({
                 <p className="text-lg font-bold text-on-surface-variant mt-2 leading-snug">
                     {message}
                 </p>
-                <p className={`text-sm font-black uppercase tracking-wider ${accent.text} mt-4`}>
-                    {footerText || "Tap here to continue →"}
-                </p>
+                {footerText !== null && (
+                    <p className={`text-sm font-black uppercase tracking-wider ${accent.text} mt-4`}>
+                        {footerText || "Tap here to continue →"}
+                    </p>
+                )}
             </button>
             {bodyUrl && (
                 <img

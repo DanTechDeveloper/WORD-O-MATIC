@@ -74,7 +74,7 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true }) {
     const { permissionState, requestPermission } = useMicrophonePermission();
 
     const [guideStep, setGuideStep] = useState(0);
-    const [guideDone, setGuideDone] = useState(!isTutorial);
+    const [guideDone, setGuideDone] = useState(() => !isTutorial || isResume);
 
     useEffect(() => {
         if (permissionState === "denied") {
@@ -185,7 +185,7 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true }) {
                     color="quest"
                     onClick={advanceGuide}
                     position="bottom-right"
-                    footerText={guideStep < GUIDE_STEPS.length - 1 ? "Tap here to continue →" : "Tap to finish!"}
+                    footerText={coachActive ? null : (guideStep < GUIDE_STEPS.length - 1 ? "Tap here to continue →" : "Tap to finish!")}
                 />
             )}
             {isTutorial && coachActive && bodyUrl && (
@@ -196,6 +196,7 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true }) {
                     bodyUrl={bodyUrl}
                     color="quest"
                     position="bottom-right"
+                    footerText={null}
                     className={coachLeaving ? "opacity-0 transition-opacity duration-300" : ""}
                 />
             )}
