@@ -22,6 +22,8 @@ Run commands from `my-app/`.
 
 Laravel 13 + React 18 + Inertia v2 + Tailwind v3 + MySQL (SQLite in-memory for tests).
 
+Speech recognition: Deepgram streaming ASR (nova-3) via `useDeepgramRecognition.js`; pure transcript processors (fuzzy match, timeout arming, `graceEnd`) live in `useSpeechRecognition.js` and are driven by Deepgram events (token from `StudentController::deepgramToken`).
+
 ## Commands
 
 | Action | Command |
@@ -182,7 +184,7 @@ while content or title is empty and renders server validation errors in-modal
 - New DB field: migration → `$fillable` → controller response array. (Fields missing from `$fillable` are silently dropped by mass-assignment, e.g., `report_sent_at` bug.)
 - Validation: inline `$request->validate()` in controllers (no Form Request pattern).
 - Auth: middleware-based (`EnsureUserRole`), no Policy files.
-- Don't name a destructured option after a module function — `playAudio(path, { duck })` shadowed the `duck()` helper and crashed every SFX call (`duck is not a function`, which also froze the 5s/3s word advance). Rename the option (`duck: shouldDuck`).
+- Don't name a destructured option after a module function — `playAudio(path, { duck })` shadowed the `duck()` helper and crashed every SFX call (`duck is not a function`, which also froze the word/sentence auto-advance). Rename the option (`duck: shouldDuck`).
 
 ## Test Quirks
 
