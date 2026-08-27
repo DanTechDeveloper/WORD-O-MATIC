@@ -8,7 +8,7 @@ import { useEffect, useCallback, useState } from "react";
 import { usePage } from "@inertiajs/react";
 import axios from "axios";
 import { useGameplayEngine } from "@/hooks/Student/useGameplayEngine";
-import { useSpeechRecognition } from "@/hooks/Student/useSpeechRecognition";
+import { useDeepgramRecognition } from "@/hooks/Student/useDeepgramRecognition";
 import { useMicrophonePermission } from "@/hooks/Student/useMicrophonePermission";
 import { pauseBackgroundMusic, setMicLive } from "@/utils/sounds";
 
@@ -46,6 +46,7 @@ export default function GameplayReadMode({ module, tutorialComplete = true }) {
         startGame,
         handleWordRecognized,
         handleMispronounce,
+        handleFatalError,
     } = useGameplayEngine({
         words: module?.words,
         totalWords: module?.words?.length ?? 0,
@@ -102,13 +103,16 @@ export default function GameplayReadMode({ module, tutorialComplete = true }) {
         return () => setMicLive(false);
     }, []);
 
-    useSpeechRecognition({
-        isActive: gameState === "ACTIVE" && !isExploding,
+    useDeepgramRecognition({
+        isActive: gameState === "ACTIVE",
+        preload: gameState === "COUNTDOWN" || gameState === "ACTIVE",
+        muted: isExploding,
         targetWord: targetWord,
         onWordRecognized: handleWordRecognized,
         onPermissionDenied: () => setGameState("DENIED"),
         onMispronounced: handleMispronounce,
         onRecognitionError: (err) => console.error("Recognition error:", err),
+        onRestartFailed: handleFatalError,
     });
     const avatarUrl = auth?.user?.student?.avatar;
     const bodyUrl = avatarUrl?.replace("/head.png", "/body.png");

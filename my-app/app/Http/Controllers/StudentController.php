@@ -21,6 +21,7 @@ use App\Services\ReportService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Http;
 use Inertia\Inertia;
 
 class StudentController extends Controller
@@ -492,5 +493,45 @@ class StudentController extends Controller
             'speakTutorialDone' => $tutPara && StudentParagraphProgress::where('user_id', $user->id)
                 ->where('paragraph_module_id', $tutPara->id)->where('status', 'completed')->exists(),
         ];
+    }
+
+    public function deepgramToken(Request $request)
+    {
+        $key = config('services.deepgram.key');
+        if (!$key) {
+            abort(500, 'Deepgram not configured');
+        }
+
+        try {
+            $resp = Http::withHeaders([
+                'Authorization' => 'Token ' . $key,
+                'Accept' => 'application/json',
+            ])->post('https://api.deepgram.com/v1/auth/grant', [
+                'ttl_seconds' => 3600,
+            ]);
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            \Log::error('Deepgram grant connection failed', ['error' => $e->getMessage()]);
+            return response()->json([
+                'error' => 'deepgram_grant_connection_failed',
+                'detail' => $e->getMessage(),
+            ], 502);
+        }
+
+        if (!$resp->successful()) {
+            \Log::error('Deepgram grant failed', [
+                'status' => $resp->status(),
+                'body' => $resp->body(),
+            ]);
+            return response()->json([
+                'error' => 'deepgram_grant_failed',
+                'status' => $resp->status(),
+                'detail' => $resp->body(),
+            ], 502);
+        }
+
+        return response()->json([
+            'token' => $resp->json('access_token'),
+            'expires_in' => $resp->json('expires_in'),
+        ])->withHeaders(['Cache-Control' => 'no-store']);
     }
 }
