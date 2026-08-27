@@ -79,13 +79,13 @@ Timeouts are centralized in `useSpeechRecognition.js`: Word Blast (read mode) us
 | Mode | Timeout Behavior |
 |---|---|
 | **Word Mode** | If no word match is detected within 3 seconds of word display, the word is marked as mispronounced and advances to the next word. A transcript that finalizes without matching also mispronounces immediately — no delay. |
-| **Sentence Mode** | If no sentence match is detected within 5 seconds of sentence display, the sentence is marked as mispronounced. A full-length transcript that doesn't fuzzy-match also mispronounces, after a 500ms `graceEnd` guard (short feedback echoes inside the guard window are ignored). |
+| **Sentence Mode** | If no speech is detected for 5 **continuous** seconds (silence watchdog), the sentence is marked as mispronounced. The watchdog tracks `lastSpeechAt` (reset on recognition start and on every spoken result) and survives engine restarts, so a silent student is always caught even though continuous STT ends frequently. A full-length transcript that doesn't fuzzy-match also mispronounces, after a 500ms `graceEnd` guard (short feedback echoes inside the guard window are ignored). |
 
 ### Timer Synchronization
 
 All speech recognition timeouts are owned by `useSpeechRecognition.js` and validate the target word via `timeoutRefs.target` (stored at arm time; only fires if it still matches the current `targetWord`):
-- **`armSentenceTimeout` (5000ms)**: per-sentence fallback, re-armed on every transcript result
-- **`armWordTimeout` (3000ms)**: per-word fallback, re-armed on every transcript result and on `targetWord` change
+ - **`armSentenceTimeout`**: 1s self-rescheduling silence watchdog (fires `onMispronounced` at `>=5s` of continuous silence via `lastSpeechAt`). It is re-armed on recognition start, on every spoken result, and on every natural restart — so it is *not* cleared by the frequent `onend` events of continuous STT (the old per-transcript 5000ms `setTimeout` was dropped on every natural end and never re-armed for an empty transcript, leaving silent attempts stuck).
+ - **`armWordTimeout` (3000ms)**: per-word fallback, re-armed on every transcript result and on `targetWord` change
 - **`graceEnd` (500ms, sentence mode)**: grace window before a full-length mismatch is judged mispronounced
 
 This prevents race conditions where:

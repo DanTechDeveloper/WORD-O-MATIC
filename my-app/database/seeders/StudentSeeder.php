@@ -105,9 +105,8 @@ class StudentSeeder extends Seeder
                 $sAcc = round(rand(78, 100) + rand(0, 99) / 100, 2);
             }
 
-            // Derive via the shared classifier so seeded rows always agree with
-            // what recalculateStatus would compute from the same accuracies.
-            $status = ProgressService::classify($wAcc, $sAcc, $wAcc != 0, $sAcc != 0);
+            // $status is derived after the progress rows are written (below) so it
+            // matches the cached accuracy columns produced from those rows.
 
             $num = str_pad($i + 1, 3, '0', STR_PAD_LEFT);
             $wLevels = $completedLevels($wAcc);
@@ -166,6 +165,13 @@ class StudentSeeder extends Seeder
                 $totalWordsSmashed += $smashed;
                 $logSession($user, $module->id, 'paragraph', ParagraphWord::where('paragraph_module_id', $module->id)->count(), $sAcc);
             }
+
+            // Recompute the cached accuracy columns from the rows just written so
+            // wordBlastAcc/storyQuestAcc equal the true module average (per-module
+            // accuracy is integer-rounded, so the random target never matched).
+            $wAcc = round(StudentWordProgress::where('user_id', $user->id)->avg('accuracy') ?? 0, 2);
+            $sAcc = round(StudentParagraphProgress::where('user_id', $user->id)->avg('accuracy') ?? 0, 2);
+            $status = ProgressService::classify($wAcc, $sAcc, $wAcc != 0, $sAcc != 0);
 
             $user->student()->create([
                 'points' => $totalWordsSmashed,

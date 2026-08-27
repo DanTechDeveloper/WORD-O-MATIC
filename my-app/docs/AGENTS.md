@@ -87,7 +87,9 @@ Session logging done via `GameSession::logSession()` static method on the model 
 
 Two creation paths, both routed through the same rules and the shared private
 `TeacherController::persistStudent()` (writes the `users` row + `students`
-row: role `student`, bcrypt-only PIN, default avatar by gender, zeros):
+row: role `student`, bcrypt-only PIN, default avatar by gender, zeroed stats, and
+`read_level`/`speak_level` seeded to `0` — the tutorial level; completing the
+tutorial module in each mode bumps them to `1` via `ProgressService`):
 
 - **Single add** — `POST /teacher/addStudent` → `store()`. `store()` and
   `Students()` share `existingStudentIds` (pluck of `student_id`) so the modal

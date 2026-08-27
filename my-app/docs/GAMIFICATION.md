@@ -15,7 +15,12 @@
 | `read_level` | Word module progression |
 | `speak_level` | Paragraph module progression |
 
-Sequential — must complete level N for N+1. 10 levels each.
+Sequential — must complete level N for N+1. 10 levels each (levels 1–10 are real
+content; `level = 0` is the tutorial module). New students are created at
+`read_level = 0` / `speak_level = 0` (the tutorial level) via
+`TeacherController::persistStudent()`. Completing the tutorial module in a mode
+advances that track to `1` through `ProgressService` (the tutorial module is the
+only level-0 module, so the bump is `0 + 1 = 1`).
 
 ## Tutorial Isolation
 
