@@ -50,7 +50,7 @@ function armSentenceTimeout(
             timerRefs.current.sentence = null;
             return;
         }
-        if (Date.now() - s.lastSpeechAt >= 5000) {
+        if (Date.now() - s.lastSpeechAt >= 3000) {
             s.mispronouncedSentence = true;
             propsRef.current.onMispronounced?.(s.transcript);
             timerRefs.current.sentence = null;
