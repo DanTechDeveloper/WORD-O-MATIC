@@ -178,7 +178,7 @@ class StudentSeeder extends Seeder
                 'avatar' => "/images/avatars/{$avatarChar}/head.png",
                 'gender' => $i % 2 === 0 ? 'male' : 'female',
                 'read_progress' => $wLevels, 'speak_progress' => $sLevels,
-                'read_level' => $wLevels, 'speak_level' => $sLevels,
+                'read_level' => $wLevels + 1, 'speak_level' => $sLevels + 1,
                 'status' => $status, 'wordBlastAcc' => $wAcc, 'storyQuestAcc' => $sAcc,
                 'section' => $section,
                 'parent_email' => $hasEmail ? "parent.stu{$num}@email.com" : null,

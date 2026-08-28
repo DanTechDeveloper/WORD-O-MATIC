@@ -1,5 +1,6 @@
 import { isFuzzyMatch } from "@/lib/speechUtils.js";
- 
+import { processSentenceModeResult } from "@/hooks/Student/useSpeechRecognition.js";
+
 describe("isFuzzyMatch", () => {
     describe("exact match", () => {
         test("returns true for identical words", () => {
@@ -170,8 +171,121 @@ describe("isFuzzyMatch", () => {
             expect(isFuzzyMatch("cat", "")).toBe(false);
         });
  
-        test("returns false for both empty strings", () => {
-            expect(isFuzzyMatch("", "")).toBe(false);
-        });
+    test("returns false for both empty strings", () => {
+        expect(isFuzzyMatch("", "")).toBe(false);
     });
+});
+
+describe("processSentenceModeResult (unified with word mode)", () => {
+    const makeRefs = () => {
+        const stateRefs = {
+            current: {
+                hasMatched: false,
+                lastProcessedSentence: -1,
+                isMounted: true,
+                stoppedAt: 0,
+                mispronouncedSentence: false,
+                mispronouncedInWord: false,
+                transcript: "",
+                interim: "",
+                lastSpeechAt: Date.now(),
+            },
+        };
+        const timeoutRefs = { current: { graceEnd: 0, restartCount: 0, target: null } };
+        const timerRefs = {
+            current: { restart: null, sentence: null, word: null, settle: null, sentenceSettle: null },
+        };
+        const propsRef = {
+            current: {
+                isActive: true,
+                onWordRecognized: vi.fn(),
+                onMispronounced: vi.fn(),
+                onProgress: vi.fn(),
+                onPermissionDenied: vi.fn(),
+                onRecognitionError: vi.fn(),
+                onRestartFailed: vi.fn(),
+            },
+        };
+        return { stateRefs, timeoutRefs, timerRefs, propsRef };
+    };
+
+    const makeEvent = (results) => ({ resultIndex: 0, results });
+
+    test("recognizes a sentence when all target words are present plus a filler (no strict word-count gate)", () => {
+        const { stateRefs, timeoutRefs, timerRefs, propsRef } = makeRefs();
+        const target = "i see a cat";
+        const event = makeEvent([{ isFinal: true, 0: { transcript: "i see a cat um" } }]);
+        processSentenceModeResult(event, target, stateRefs, timeoutRefs, timerRefs, propsRef);
+        expect(propsRef.current.onWordRecognized).toHaveBeenCalled();
+    });
+
+    test("mispronounces on an empty settled final (Deepgram low-confidence / wrong word)", () => {
+        const { stateRefs, timeoutRefs, timerRefs, propsRef } = makeRefs();
+        const target = "i see a cat";
+        const event = makeEvent([{ isFinal: true, 0: { transcript: "" } }]);
+        processSentenceModeResult(event, target, stateRefs, timeoutRefs, timerRefs, propsRef);
+        expect(propsRef.current.onMispronounced).toHaveBeenCalled();
+    });
+
+    test("mispronounces on a settled final that does not match the target", () => {
+        const { stateRefs, timeoutRefs, timerRefs, propsRef } = makeRefs();
+        const target = "i see a cat";
+        const event = makeEvent([{ isFinal: true, 0: { transcript: "the dog ran" } }]);
+        processSentenceModeResult(event, target, stateRefs, timeoutRefs, timerRefs, propsRef);
+        expect(propsRef.current.onMispronounced).toHaveBeenCalled();
+    });
+
+    test("arms a ~2s await-final timer and mispronounces once a wrong interim settles", () => {
+        vi.useFakeTimers();
+        const { stateRefs, timeoutRefs, timerRefs, propsRef } = makeRefs();
+        const target = "i see a cat";
+        const event = makeEvent([{ isFinal: false, 0: { transcript: "the dog" } }]);
+        processSentenceModeResult(event, target, stateRefs, timeoutRefs, timerRefs, propsRef);
+        expect(propsRef.current.onMispronounced).not.toHaveBeenCalled();
+        vi.advanceTimersByTime(2000);
+        expect(propsRef.current.onMispronounced).toHaveBeenCalled();
+        vi.useRealTimers();
+    });
+
+    test("emits live per-word progress for a partial interim (student-first)", () => {
+        vi.useFakeTimers();
+        const { stateRefs, timeoutRefs, timerRefs, propsRef } = makeRefs();
+        const target = "the cat sat";
+        const event = makeEvent([{ isFinal: false, 0: { transcript: "the cat" } }]);
+        processSentenceModeResult(event, target, stateRefs, timeoutRefs, timerRefs, propsRef);
+        expect(propsRef.current.onProgress).toHaveBeenCalledWith(2);
+        expect(propsRef.current.onMispronounced).not.toHaveBeenCalled();
+        vi.clearAllTimers();
+        vi.useRealTimers();
+    });
+
+    test("defers verdict: partial interim then late authoritative final recognizes (verify-later)", () => {
+        vi.useFakeTimers();
+        const { stateRefs, timeoutRefs, timerRefs, propsRef } = makeRefs();
+        const target = "the cat sat";
+        const results = [];
+        results.push({ isFinal: false, 0: { transcript: "the cat" } });
+        processSentenceModeResult({ resultIndex: 0, results }, target, stateRefs, timeoutRefs, timerRefs, propsRef);
+        expect(propsRef.current.onWordRecognized).not.toHaveBeenCalled();
+        expect(propsRef.current.onMispronounced).not.toHaveBeenCalled();
+        results.push({ isFinal: true, speechFinal: true, 0: { transcript: "the cat sat" } });
+        processSentenceModeResult({ resultIndex: 1, results }, target, stateRefs, timeoutRefs, timerRefs, propsRef);
+        expect(propsRef.current.onWordRecognized).toHaveBeenCalledTimes(1);
+        expect(propsRef.current.onMispronounced).not.toHaveBeenCalled();
+        vi.clearAllTimers();
+        vi.useRealTimers();
+    });
+
+    test("treats speech_final as authoritative and mispronounces immediately on a non-match", () => {
+        vi.useFakeTimers();
+        const { stateRefs, timeoutRefs, timerRefs, propsRef } = makeRefs();
+        const target = "the cat sat";
+        const event = makeEvent([{ isFinal: false, speechFinal: true, 0: { transcript: "the dog ran" } }]);
+        processSentenceModeResult(event, target, stateRefs, timeoutRefs, timerRefs, propsRef);
+        expect(propsRef.current.onMispronounced).toHaveBeenCalledTimes(1);
+        vi.clearAllTimers();
+        vi.useRealTimers();
+    });
+});
+
 });
