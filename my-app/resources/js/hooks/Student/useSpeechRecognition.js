@@ -131,16 +131,23 @@ export function processSentenceModeResult(
         propsRef,
     );
 
-    const spokenWordCount = full.split(/\s+/).filter(Boolean).length;
     stateRefs.current.stoppedAt = Date.now();
 
+    // Unified with word mode: success = fuzzy match (no strict word-count gate —
+    // isFuzzyMatch already requires every target word to be present). Mispronounce
+    // is only declared after the ~900ms settle window (never instantly), so a late
+    // correct recognition can't clash with the wrong-word SFX. Deepgram often sends
+    // empty finals for low-confidence speech, so we no longer require a non-empty
+    // `full` to judge.
     if (
         !stateRefs.current.hasMatched &&
-        isFuzzyMatch(full, target) &&
-        spokenWordCount === targetWordCount
+        !stateRefs.current.mispronouncedSentence &&
+        isFuzzyMatch(full, target)
     ) {
         stateRefs.current.hasMatched = true;
         propsRef.current.onWordRecognized?.();
+        clearAllTimers(timerRefs.current);
+        return;
     }
 
     if (stateRefs.current.hasMatched) {
@@ -148,20 +155,25 @@ export function processSentenceModeResult(
         return;
     }
 
-    if (!full) return;
     if (Date.now() < timeoutRefs.current.graceEnd) return;
+    if (stateRefs.current.mispronouncedSentence) return;
 
-    if (
-        !newInterim &&
-        spokenWordCount >= targetWordCount &&
-        isFuzzyMatch(full, target) === false
-    ) {
-        clearAllTimers(timerRefs.current);
-        if (!stateRefs.current.mispronouncedSentence) {
+    // ponytail: one settle window for every settled (final or interim) result —
+    // never fire mispronounce instantly, so a late correct recognition can't
+    // clash with the wrong-word SFX.
+    clearTimeout(timerRefs.current.sentenceSettle);
+    timerRefs.current.sentenceSettle = setTimeout(() => {
+        if (
+            stateRefs.current.isMounted &&
+            propsRef.current.isActive &&
+            !stateRefs.current.hasMatched &&
+            !stateRefs.current.mispronouncedSentence
+        ) {
             stateRefs.current.mispronouncedSentence = true;
             propsRef.current.onMispronounced?.(full);
+            clearAllTimers(timerRefs.current);
         }
-    }
+    }, 900);
 }
 
 export function processWordModeResult(
@@ -193,7 +205,7 @@ export function processWordModeResult(
             armWordTimeout(target, stateRefs, timerRefs, timeoutRefs, propsRef);
         }
 
-        if (isFuzzyMatch(transcript, target)) {
+        if (!stateRefs.current.mispronouncedInWord && isFuzzyMatch(transcript, target)) {
             stateRefs.current.hasMatched = true;
             stateRefs.current.lastProcessed = i;
             propsRef.current.onWordRecognized?.();
@@ -216,13 +228,6 @@ export function processWordModeResult(
 
         if (result.isFinal) {
             stateRefs.current.lastProcessed = i;
-            if (
-                !stateRefs.current.hasMatched &&
-                !stateRefs.current.mispronouncedInWord
-            ) {
-                stateRefs.current.mispronouncedInWord = true;
-                propsRef.current.onMispronounced?.(transcript);
-            }
         }
     }
 

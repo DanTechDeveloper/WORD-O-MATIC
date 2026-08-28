@@ -13,8 +13,6 @@ import {
 const MODEL = "nova-3";
 const LANGUAGE = "en";
 
-// ponytail: Deepgram keeps the WS open; we reconnect once on unexpected close,
-// no exponential-backoff restart loop (that was Web Speech flakiness glue).
 export function useDeepgramRecognition({
     isActive,
     preload = false,
@@ -70,7 +68,7 @@ export function useDeepgramRecognition({
         lastSpeechAt: Date.now(),
     });
 
-    const timerRefs = useRef({ restart: null, sentence: null, word: null, settle: null });
+    const timerRefs = useRef({ restart: null, sentence: null, word: null, settle: null, sentenceSettle: null });
     const timeoutRefs = useRef({
         graceEnd: Date.now() + 500,
         restartCount: 0,
@@ -262,10 +260,9 @@ export function useDeepgramRecognition({
                 if (!data || data.type !== "Results") return;
                 if (!propsRef.current?.isActive) return;
                 if (propsRef.current?.muted) return;
-                const transcript = data.channel?.alternatives?.[0]?.transcript;
-                if (!transcript) return;
-
                 const isFinal = !!data.is_final;
+                const transcript = data.channel?.alternatives?.[0]?.transcript ?? "";
+                if (!transcript && !isFinal) return;
                 const resultIndex = resultsRef.current.length;
                 resultsRef.current.push({ isFinal, 0: { transcript } });
                 const event = {

@@ -81,7 +81,7 @@ Recognition uses **Deepgram streaming ASR** (`useDeepgramRecognition.js`, model 
 | Mode | Timeout Behavior |
 |---|---|
 | **Word Mode** | After speech settles on a transcript that doesn't fuzzy-match the target (no new result for ~900ms), the word is marked mispronounced immediately — no fixed wait. `is_final` is also a fast-path. A 5s `armWordTimeout` remains as the no-speech fallback (catches a silent student). A 500ms `graceEnd` guard after a word switch suppresses stray finals. |
-| **Sentence Mode** | If no speech is detected for 5 **continuous** seconds (silence watchdog), the sentence is marked as mispronounced. The watchdog tracks `lastSpeechAt`, which is re-based to ACTIVE at game start so countdown silence isn't counted. A full-length transcript that doesn't fuzzy-match also mispronounces, after a 500ms `graceEnd` guard. |
+| **Sentence Mode** | If no speech is detected for 5 **continuous** seconds (silence watchdog), the sentence is marked as mispronounced. The watchdog tracks `lastSpeechAt`, which is re-based to ACTIVE at game start so countdown silence isn't counted. A full-length transcript that doesn't fuzzy-match also mispronounces, after a 500ms `graceEnd` guard. The match transcript (`full`) is taken from the latest cumulative interim when present, else the accumulated finals — Deepgram partials are cumulative, so stacking them double-counts words (BF28). |
 
 ### Timer Synchronization
 
