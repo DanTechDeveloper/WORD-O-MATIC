@@ -37,6 +37,7 @@ return [
 
     'deepgram' => [
         'key' => env('DEEPGRAM_API_KEY'),
+        'region' => env('DEEPGRAM_REGION', 'global'),
     ],
 
 ];

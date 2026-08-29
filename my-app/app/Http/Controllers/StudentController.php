@@ -502,11 +502,18 @@ class StudentController extends Controller
             abort(500, 'Deepgram not configured');
         }
 
+        $region = config('services.deepgram.region', 'global');
+        $host = match ($region) {
+            'eu' => 'api.eu.deepgram.com',
+            'au' => 'api.au.deepgram.com',
+            default => 'api.deepgram.com',
+        };
+
         try {
             $resp = Http::withHeaders([
                 'Authorization' => 'Token ' . $key,
                 'Accept' => 'application/json',
-            ])->post('https://api.deepgram.com/v1/auth/grant', [
+            ])->post("https://{$host}/v1/auth/grant", [
                 'ttl_seconds' => 3600,
             ]);
         } catch (\Illuminate\Http\Client\ConnectionException $e) {
@@ -532,6 +539,7 @@ class StudentController extends Controller
         return response()->json([
             'token' => $resp->json('access_token'),
             'expires_in' => $resp->json('expires_in'),
+            'baseUrl' => "https://{$host}",
         ])->withHeaders(['Cache-Control' => 'no-store']);
     }
 }

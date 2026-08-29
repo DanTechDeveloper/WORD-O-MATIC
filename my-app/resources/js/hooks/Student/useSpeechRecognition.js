@@ -132,13 +132,6 @@ export function processSentenceModeResult(
     );
 
     stateRefs.current.stoppedAt = Date.now();
-
-    // Unified with word mode: success = fuzzy match (no strict word-count gate —
-    // isFuzzyMatch already requires every target word to be present). Mispronounce
-    // is only declared after the ~900ms settle window (never instantly), so a late
-    // correct recognition can't clash with the wrong-word SFX. Deepgram often sends
-    // empty finals for low-confidence speech, so we no longer require a non-empty
-    // `full` to judge.
     if (
         !stateRefs.current.hasMatched &&
         !stateRefs.current.mispronouncedSentence &&
@@ -157,10 +150,6 @@ export function processSentenceModeResult(
 
     if (Date.now() < timeoutRefs.current.graceEnd) return;
     if (stateRefs.current.mispronouncedSentence) return;
-
-    // ponytail: one settle window for every settled (final or interim) result —
-    // never fire mispronounce instantly, so a late correct recognition can't
-    // clash with the wrong-word SFX.
     clearTimeout(timerRefs.current.sentenceSettle);
     timerRefs.current.sentenceSettle = setTimeout(() => {
         if (

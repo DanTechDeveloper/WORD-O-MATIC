@@ -12,6 +12,7 @@ import {
 
 const MODEL = "nova-3";
 const LANGUAGE = "en";
+const DEBUG_ASR = false;
 
 export function useDeepgramRecognition({
     isActive,
@@ -68,7 +69,13 @@ export function useDeepgramRecognition({
         lastSpeechAt: Date.now(),
     });
 
-    const timerRefs = useRef({ restart: null, sentence: null, word: null, settle: null, sentenceSettle: null });
+    const timerRefs = useRef({
+        restart: null,
+        sentence: null,
+        word: null,
+        settle: null,
+        sentenceSettle: null,
+    });
     const timeoutRefs = useRef({
         graceEnd: Date.now() + 500,
         restartCount: 0,
@@ -124,7 +131,13 @@ export function useDeepgramRecognition({
         stateRefs.current.lastSpeechAt = Date.now();
         const activeTarget = normalizeText(propsRef.current.targetWord);
         if (propsRef.current.isWordMode) {
-            armWordTimeout(activeTarget, stateRefs, timerRefs, timeoutRefs, propsRef);
+            armWordTimeout(
+                activeTarget,
+                stateRefs,
+                timerRefs,
+                timeoutRefs,
+                propsRef,
+            );
         } else {
             armSentenceTimeout(
                 activeTarget,
@@ -144,8 +157,9 @@ export function useDeepgramRecognition({
         )
             return;
 
-        let token;
+        let token, baseUrl;
         try {
+            if (DEBUG_ASR) window.__dgTokenStart = performance.now();
             const resp = await fetch("/student/deepgram-token", {
                 headers: { Accept: "application/json" },
             });
@@ -153,7 +167,10 @@ export function useDeepgramRecognition({
                 propsRef.current.onRecognitionError?.("token_failed");
                 return;
             }
-            token = (await resp.json()).token;
+            const json = await resp.json();
+            token = json.token;
+            baseUrl = json.baseUrl;
+            if (DEBUG_ASR) console.debug("[ASR] token RTT", performance.now() - window.__dgTokenStart, "ms");
         } catch {
             propsRef.current.onRecognitionError?.("token_failed");
             return;
@@ -164,7 +181,7 @@ export function useDeepgramRecognition({
             const AudioCtx = window.AudioContext || window.webkitAudioContext;
             const audioCtx = new AudioCtx({ sampleRate: 16000 });
             audioCtxRef.current = audioCtx;
-            const dg = new DeepgramClient({ accessToken: token });
+            const dg = new DeepgramClient({ accessToken: token, baseUrl });
             const conn = await dg.listen.v1.connect({
                 model: MODEL,
                 language: LANGUAGE,
@@ -181,8 +198,9 @@ export function useDeepgramRecognition({
             }
             connRef.current = conn;
 
-            conn.on("open", async () => {
-                if (
+    conn.on("open", async () => {
+        if (DEBUG_ASR) window.__dgOpenAt = performance.now();
+        if (
                     !stateRefs.current.isMounted ||
                     (!propsRef.current.isActive && !propsRef.current.preload)
                 ) {
@@ -191,6 +209,13 @@ export function useDeepgramRecognition({
                 }
                 stateRefs.current.isListening = true;
                 stateRefs.current.lastSpeechAt = Date.now();
+                stateRefs.current.hasMatched = false;
+                stateRefs.current.mispronouncedInWord = false;
+                stateRefs.current.mispronouncedSentence = false;
+                stateRefs.current.lastProcessed = -1;
+                stateRefs.current.lastProcessedSentence = -1;
+                stateRefs.current.transcript = "";
+                stateRefs.current.interim = "";
                 if (propsRef.current.isActive) armForCurrentTarget();
 
                 let stream;
@@ -199,10 +224,16 @@ export function useDeepgramRecognition({
                         audio: { channelCount: 1 },
                     });
                 } catch (e) {
-                    if (e && (e.name === "NotAllowedError" || e.name === "SecurityError")) {
+                    if (
+                        e &&
+                        (e.name === "NotAllowedError" ||
+                            e.name === "SecurityError")
+                    ) {
                         propsRef.current.onPermissionDenied?.();
                     } else {
-                        propsRef.current.onRecognitionError?.(e?.name || "mic_error");
+                        propsRef.current.onRecognitionError?.(
+                            e?.name || "mic_error",
+                        );
                     }
                     conn.close();
                     return;
@@ -241,7 +272,10 @@ export function useDeepgramRecognition({
                         await audioCtx.resume();
                     }
                     await audioCtx.audioWorklet.addModule("/pcm-processor.js");
-                    const node = new AudioWorkletNode(audioCtx, "pcm-processor");
+                    const node = new AudioWorkletNode(
+                        audioCtx,
+                        "pcm-processor",
+                    );
                     node.port.onmessage = (ev) => pushPcm(ev.data);
                     processor = node;
                 } catch {
@@ -251,20 +285,34 @@ export function useDeepgramRecognition({
                 }
                 sourceNodeRef.current = source;
                 scriptNodeRef.current = processor;
-
+                const sink = audioCtx.createGain();
+                sink.gain.value = 0;
                 source.connect(processor);
-                processor.connect(audioCtx.destination);
+                processor.connect(sink);
+                sink.connect(audioCtx.destination);
             });
 
             conn.on("message", (data) => {
                 if (!data || data.type !== "Results") return;
                 if (!propsRef.current?.isActive) return;
                 if (propsRef.current?.muted) return;
+                if (DEBUG_ASR && window.__dgOpenAt && !stateRefs.current.__firstResultLogged) {
+                    stateRefs.current.__firstResultLogged = true;
+                    console.debug("[ASR] first result", performance.now() - window.__dgOpenAt, "ms from connection open");
+                }
                 const isFinal = !!data.is_final;
-                const transcript = data.channel?.alternatives?.[0]?.transcript ?? "";
+                const transcript =
+                    data.channel?.alternatives?.[0]?.transcript ?? "";
                 if (!transcript && !isFinal) return;
                 const resultIndex = resultsRef.current.length;
                 resultsRef.current.push({ isFinal, 0: { transcript } });
+                const MAX_RESULTS = 128;
+                if (resultsRef.current.length > MAX_RESULTS) {
+                    const drop = resultsRef.current.length - MAX_RESULTS;
+                    resultsRef.current.splice(0, drop);
+                    stateRefs.current.lastProcessed -= drop;
+                    stateRefs.current.lastProcessedSentence -= drop;
+                }
                 const event = {
                     resultIndex,
                     results: resultsRef.current,
@@ -293,12 +341,15 @@ export function useDeepgramRecognition({
 
             conn.on("error", (err) => {
                 console.error("Deepgram error:", err);
-                propsRef.current.onRecognitionError?.(String(err?.message || err));
+                propsRef.current.onRecognitionError?.(
+                    String(err?.message || err),
+                );
             });
 
             conn.on("close", () => {
                 connRef.current = null;
-                if (!stateRefs.current.isMounted || !propsRef.current.isActive) return;
+                if (!stateRefs.current.isMounted || !propsRef.current.isActive)
+                    return;
                 if (timeoutRefs.current.restartCount < 1) {
                     timeoutRefs.current.restartCount++;
                     timerRefs.current.restart = setTimeout(() => {
@@ -315,7 +366,9 @@ export function useDeepgramRecognition({
             console.error("Deepgram connect failed:", e);
             audioCtxRef.current?.close();
             audioCtxRef.current = null;
-            propsRef.current.onRecognitionError?.(e?.message || "connect_failed");
+            propsRef.current.onRecognitionError?.(
+                e?.message || "connect_failed",
+            );
         }
     };
 
@@ -353,12 +406,11 @@ export function useDeepgramRecognition({
         timeoutRefs.current.graceEnd = Date.now() + 500;
         timeoutRefs.current.restartCount = 0;
     }, []);
-
-    // Arm mispronounce timers when the game actually goes ACTIVE — covers the
-    // countdown-preload case where the socket opened during COUNTDOWN.
     useEffect(() => {
         if (propsRef.current?.isActive && connRef.current) {
             armForCurrentTarget();
+        } else if (!propsRef.current?.isActive) {
+            clearAllTimers(timerRefs.current);
         }
     }, [isActive]);
 
