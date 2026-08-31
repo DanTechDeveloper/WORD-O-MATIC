@@ -12,6 +12,7 @@ import { useGameplayEngine } from "@/hooks/Student/useGameplayEngine";
 import { useDeepgramRecognition } from "@/hooks/Student/useDeepgramRecognition";
 import { useMicrophonePermission } from "@/hooks/Student/useMicrophonePermission";
 import { pauseBackgroundMusic, setMicLive } from "@/utils/sounds";
+import { normalizeText } from "@/lib/speechUtils";
 
 const GUIDE_STEPS = [
     { title: "READ THE SENTENCE", message: "Say the whole sentence clearly, not just one word!", emoji: "menu_book", color: "quest" },
@@ -109,10 +110,17 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true }) {
         return () => setMicLive(false);
     }, []);
 
+    // ponytail: YAGNI — keyterm batch only (sentence words at open, no reconnect per word)
+    const speakKeyterms = useMemo(
+        () => [...new Set((module?.words ?? []).map((w) => normalizeText(w.word)).filter(Boolean))].slice(0, 10),
+        [module?.words],
+    );
+
     useDeepgramRecognition({
         isActive: gameState === "ACTIVE",
         preload: gameState === "COUNTDOWN" || gameState === "ACTIVE",
         targetWord: targetWord,
+        keyterms: speakKeyterms,
         onWordRecognized: handleWordRecognized,
         onPermissionDenied: handlePermissionDenied,
         onMispronounced: handleMispronounce,

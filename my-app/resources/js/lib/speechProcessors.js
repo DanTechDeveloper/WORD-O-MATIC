@@ -165,35 +165,9 @@ export function processSentenceModeResult(
         return;
     }
 
-    // Interim non-match → settle timer (silence-gated via stoppedAt freshness)
-    clearTimeout(timerRefs.current.sentenceSettle);
-    timerRefs.current.sentenceSettle = setTimeout(() => {
-        const s = stateRefs.current;
-        const currentFull = buildFullSentence(s.transcript, s.interim);
-        if (
-            s.isMounted &&
-            propsRef.current.isActive &&
-            !s.hasMatched &&
-            !s.mispronouncedSentence &&
-            timeoutRefs.current.graceEnd <= Date.now()
-        ) {
-            // Silence-gated: if still speaking (last result <600ms ago) reschedule
-            if (Date.now() - s.stoppedAt < 600) {
-                timerRefs.current.sentenceSettle = setTimeout(() => {
-                    if (s.isMounted && propsRef.current.isActive && !s.hasMatched && !s.mispronouncedSentence) {
-                        s.mispronouncedSentence = true;
-                        propsRef.current.onMispronounced?.(buildFullSentence(s.transcript, s.interim));
-                        clearAllTimers(timerRefs.current);
-                    }
-                }, 600);
-                return;
-            }
-            if (isFuzzyMatch(currentFull, target)) return;
-            s.mispronouncedSentence = true;
-            propsRef.current.onMispronounced?.(currentFull);
-            clearAllTimers(timerRefs.current);
-        }
-    }, 900);
+    // ponytail: no settle timer — rely on Deepgram isFinal/speechFinal for a wrong
+    // verdict and the 5s armSentenceTimeout for total silence. Removes the 900ms
+    // false-kill of slow-but-correct readers (Story Quest only; Word Blast untouched).
 }
 
 export function processWordModeResult(
@@ -232,10 +206,15 @@ export function processWordModeResult(
         return;
     }
 
+    // ponytail: no eager isFinal mispronounce — Deepgram finals a single word
+    // prematurely OR with a wrong transcript, judging an incomplete utterance
+    // "wrong" before the child finishes. wordSettle (below) re-arms on every
+    // result, so it naturally waits for completion and reads the latest state.
+    // A correct word is always recognized first via isWordMatch (850ms window),
+    // clearing the settle, so recognition wins over a stale settle — no false
+    // mispronounce, and no punish of a let-down/partial utterance (both "a"+"b").
     if (!stateRefs.current.mispronouncedInWord) {
-        // Speech settled on a non-matching word → mispronounce promptly
-        // instead of waiting for (flaky) is_final or the 5s timeout.
-        // ponytail: capture target at arm time, recompute staleness at fire.
+        // Ponytail: captured at arm time, rechecked at fire.
         const settleTarget = target;
         const settleTranscript = transcript;
         clearTimeout(timerRefs.current.wordSettle);
@@ -248,7 +227,6 @@ export function processWordModeResult(
                 !s.mispronouncedInWord &&
                 timeoutRefs.current.target === settleTarget
             ) {
-                // Silence-gated: if still mid-utterance reschedule
                 if (Date.now() - s.stoppedAt < 600) {
                     timerRefs.current.wordSettle = setTimeout(() => {
                         if (s.isMounted && propsRef.current.isActive && !s.hasMatched && !s.mispronouncedInWord && timeoutRefs.current.target === settleTarget) {
@@ -261,7 +239,7 @@ export function processWordModeResult(
                 s.mispronouncedInWord = true;
                 propsRef.current.onMispronounced?.(settleTranscript);
             }
-        }, 900);
+        }, 850);
     }
 
     if (result.isFinal) {
