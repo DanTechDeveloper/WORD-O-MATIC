@@ -13,7 +13,8 @@ class CurriculumSeeder extends Seeder
     public function run(): void
     {
         $wordsByModule = [
-            1 => ['cat', 'dog', 'sun', 'hat', 'run', 'big', 'red', 'cup', 'box', 'pen'],
+            // ponytail: L1 replaced — Levenshtein-safe (d<=1 alone). Old cat/dog/sun/hat/run/big/red/cup/box/pen had 9+ d=1 real neighbors (cat→bat/cot/mat). New 4-letter set has ≤1 neighbor, so Levenshtein alone is not over-permissive. If a word still not pabor, replace again and keep d<=1.
+            1 => ['fish', 'bird', 'book', 'lamp', 'jump', 'farm', 'chip', 'desk', 'moon', 'gold'],
             2 => ['cake', 'tree', 'kite', 'road', 'cube', 'rain', 'boat', 'seed', 'lime', 'bone'],
             3 => ['star', 'drum', 'frog', 'milk', 'nest', 'sand', 'belt', 'fist', 'golf', 'hand'],
             4 => ['grass', 'train', 'plate', 'broom', 'snake', 'grape', 'trail', 'flame', 'clamp', 'brick'],
