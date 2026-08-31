@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { DeepgramClient } from "@deepgram/sdk";
 import { normalizeText } from "@/lib/speechUtils";
+import { applyNoiseGate } from "@/lib/audioGate";
 import {
     clearAllTimers,
     armWordTimeout,
@@ -99,6 +100,7 @@ export function useDeepgramRecognition({
     const sourceNodeRef = useRef(null);
     const scriptNodeRef = useRef(null);
     const permissionDeniedRef = useRef(false);
+    const gateStateRef = useRef({ isOpen: false });
 
     const stopAll = () => {
         clearAllTimers(timerRefs.current);
@@ -242,28 +244,60 @@ export function useDeepgramRecognition({
                 stateRefs.current.mispronouncedSentence = false;
                 stateRefs.current.transcript = "";
                 stateRefs.current.interim = "";
+                gateStateRef.current.isOpen = false;
                 if (propsRef.current.isActive) armForCurrentTarget();
 
                 let stream;
+                // ponytail: browser AEC/noise-suppression/AGC for cleaner ASR; native
+                // constraints vary by device, so fall back to baseline on OverconstrainedError.
                 try {
                     stream = await navigator.mediaDevices.getUserMedia({
-                        audio: { channelCount: 1 },
+                        audio: {
+                            channelCount: 1,
+                            echoCancellation: true,
+                            noiseSuppression: true,
+                            autoGainControl: true,
+                        },
                     });
                 } catch (e) {
-                    if (
+                    if (e?.name === "OverconstrainedError") {
+                        try {
+                            stream =
+                                await navigator.mediaDevices.getUserMedia({
+                                    audio: { channelCount: 1 },
+                                });
+                        } catch (e2) {
+                            if (
+                                e2 &&
+                                (e2.name === "NotAllowedError" ||
+                                    e2.name === "SecurityError")
+                            ) {
+                                permissionDeniedRef.current = true;
+                                propsRef.current.onPermissionDenied?.();
+                            } else {
+                                propsRef.current.onRecognitionError?.(
+                                    e2?.name || "mic_error",
+                                );
+                            }
+                            conn.close();
+                            return;
+                        }
+                    } else if (
                         e &&
                         (e.name === "NotAllowedError" ||
                             e.name === "SecurityError")
                     ) {
                         permissionDeniedRef.current = true;
                         propsRef.current.onPermissionDenied?.();
+                        conn.close();
+                        return;
                     } else {
                         propsRef.current.onRecognitionError?.(
                             e?.name || "mic_error",
                         );
+                        conn.close();
+                        return;
                     }
-                    conn.close();
-                    return;
                 }
 
                 if (!stateRefs.current.isMounted) {
@@ -278,9 +312,10 @@ export function useDeepgramRecognition({
 
                 const pushPcm = (float32) => {
                     if (propsRef.current?.muted) return;
-                    const int16 = new Int16Array(float32.length);
-                    for (let i = 0; i < float32.length; i++) {
-                        const s = Math.max(-1, Math.min(1, float32[i]));
+                    const gated = applyNoiseGate(float32, gateStateRef.current);
+                    const int16 = new Int16Array(gated.length);
+                    for (let i = 0; i < gated.length; i++) {
+                        const s = Math.max(-1, Math.min(1, gated[i]));
                         int16[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
                     }
                     const c = connRef.current;
@@ -425,6 +460,7 @@ export function useDeepgramRecognition({
         timeoutRefs.current.target = null;
         timeoutRefs.current.graceEnd = Date.now() + 500;
         timeoutRefs.current.restartCount = 0;
+        gateStateRef.current.isOpen = false;
         clearAllTimers(timerRefs.current);
 
         if (propsRef.current?.isActive && connRef.current) {
@@ -456,6 +492,7 @@ export function useDeepgramRecognition({
                 timeoutRefs.current.graceEnd = Date.now() + 500;
                 timeoutRefs.current.restartCount = 0;
                 permissionDeniedRef.current = false;
+                gateStateRef.current.isOpen = false;
                 clearAllTimers(timerRefs.current);
                 if (connRef.current) return;
                 startConnection();
