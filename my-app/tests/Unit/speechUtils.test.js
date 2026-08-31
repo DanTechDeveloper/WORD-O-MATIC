@@ -250,7 +250,6 @@ describe("processSentenceModeResult (Story Quest — withinRatio + boundaryLeak)
         const stateRefs = {
             current: {
                 hasMatched: false,
-                lastProcessedSentence: -1,
                 isMounted: true,
                 stoppedAt: 0,
                 mispronouncedSentence: false,
@@ -277,7 +276,7 @@ describe("processSentenceModeResult (Story Quest — withinRatio + boundaryLeak)
         };
         return { stateRefs, timeoutRefs, timerRefs, propsRef };
     };
-    const makeEvent = (results) => ({ resultIndex: 0, results });
+    const makeEvent = (results) => results[0];
     test("recognizes a sentence when all target words are present plus a filler", () => {
         const { stateRefs, timeoutRefs, timerRefs, propsRef } = makeRefs();
         const target = "i see a cat";
@@ -326,13 +325,10 @@ describe("processSentenceModeResult (Story Quest — withinRatio + boundaryLeak)
         vi.useFakeTimers();
         const { stateRefs, timeoutRefs, timerRefs, propsRef } = makeRefs();
         const target = "the cat sat";
-        const results = [];
-        results.push({ isFinal: false, 0: { transcript: "the cat" } });
-        processSentenceModeResult({ resultIndex: 0, results }, target, stateRefs, timeoutRefs, timerRefs, propsRef);
+        processSentenceModeResult({ isFinal: false, 0: { transcript: "the cat" } }, target, stateRefs, timeoutRefs, timerRefs, propsRef);
         expect(propsRef.current.onWordRecognized).not.toHaveBeenCalled();
         expect(propsRef.current.onMispronounced).not.toHaveBeenCalled();
-        results.push({ isFinal: true, speechFinal: true, 0: { transcript: "the cat sat" } });
-        processSentenceModeResult({ resultIndex: 1, results }, target, stateRefs, timeoutRefs, timerRefs, propsRef);
+        processSentenceModeResult({ isFinal: true, speechFinal: true, 0: { transcript: "the cat sat" } }, target, stateRefs, timeoutRefs, timerRefs, propsRef);
         expect(propsRef.current.onWordRecognized).toHaveBeenCalledTimes(1);
         expect(propsRef.current.onMispronounced).not.toHaveBeenCalled();
         vi.clearAllTimers();
@@ -355,7 +351,6 @@ describe("processWordModeResult (Word Blast — Levenshtein d<=1)", () => {
         const stateRefs = {
             current: {
                 hasMatched: false,
-                lastProcessed: -1,
                 isMounted: true,
                 stoppedAt: 0,
                 mispronouncedSentence: false,
@@ -382,7 +377,7 @@ describe("processWordModeResult (Word Blast — Levenshtein d<=1)", () => {
         };
         return { stateRefs, timeoutRefs, timerRefs, propsRef };
     };
-    const makeEvent = (transcript, isFinal = false) => ({ results: [{ isFinal, 0: { transcript } }] });
+    const makeEvent = (transcript, isFinal = false) => ({ isFinal, 0: { transcript } });
     test("recognizes exact word", () => {
         const { stateRefs, timeoutRefs, timerRefs, propsRef } = makeRefs();
         processWordModeResult(makeEvent("fish"), "fish", stateRefs, timerRefs, timeoutRefs, propsRef);
@@ -422,7 +417,7 @@ describe("processWordModeResult (Word Blast — Levenshtein d<=1)", () => {
         // grip is new word, fist→fish was d=1 but fist→grip d=4
         expect(standardLevenshtein("fist", "grip")).toBe(4);
     });
-    test("no eager isFinal mispronounce: lets a partial/let-down word settle before judging", () => {
+    test("authoritative isFinal non-match → immediate mispronounce (no settle wait)", () => {
         vi.useFakeTimers();
         const { stateRefs, timeoutRefs, timerRefs, propsRef } = makeRefs();
         const target = "fish";
@@ -430,13 +425,10 @@ describe("processWordModeResult (Word Blast — Levenshtein d<=1)", () => {
         processWordModeResult(makeEvent("dog"), target, stateRefs, timerRefs, timeoutRefs, propsRef);
         expect(propsRef.current.onMispronounced).not.toHaveBeenCalled();
         expect(propsRef.current.onWordRecognized).not.toHaveBeenCalled();
-        // isFinal=true on a non-matching word: STILL no immediate mispronounce
-        // (Deepgram finals prematurely + wrong — don't punish before completion).
+        // isFinal=true on a non-matching word → immediate mispronounce (authoritative)
         processWordModeResult(makeEvent("fur", true), target, stateRefs, timerRefs, timeoutRefs, propsRef);
-        expect(propsRef.current.onMispronounced).not.toHaveBeenCalled();
-        // Only the 850ms wordSettle commits the wrong verdict (stoppedAt stale >600ms)
-        vi.advanceTimersByTime(900);
         expect(propsRef.current.onMispronounced).toHaveBeenCalledTimes(1);
+        expect(propsRef.current.onWordRecognized).not.toHaveBeenCalled();
         vi.useRealTimers();
     });
     test("partial prefix + complete correct word finishes: recognize wins, no false mispronounce", () => {
@@ -458,7 +450,7 @@ describe("processWordModeResult (Word Blast — Levenshtein d<=1)", () => {
         vi.useFakeTimers();
         const { stateRefs, timeoutRefs, timerRefs, propsRef } = makeRefs();
         // transcript empty → if(!transcript) return; no wordSettle armed here, no fast mispronounce
-        processWordModeResult({ results: [{ isFinal: true, 0: { transcript: "" } }] }, "cat", stateRefs, timerRefs, timeoutRefs, propsRef);
+        processWordModeResult({ isFinal: true, 0: { transcript: "" } }, "cat", stateRefs, timerRefs, timeoutRefs, propsRef);
         expect(propsRef.current.onMispronounced).not.toHaveBeenCalled();
         vi.useRealTimers();
     });

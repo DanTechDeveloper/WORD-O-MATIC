@@ -48,7 +48,13 @@ export function armSentenceTimeout(
     timerRefs.current.sentence = setTimeout(tick, 1000);
 }
 
-export function armWordTimeout(target, stateRefs, timerRefs, timeoutRefs, propsRef) {
+export function armWordTimeout(
+    target,
+    stateRefs,
+    timerRefs,
+    timeoutRefs,
+    propsRef,
+) {
     clearTimeout(timerRefs.current.word);
     timeoutRefs.current.target = target;
 
@@ -67,7 +73,7 @@ export function armWordTimeout(target, stateRefs, timerRefs, timeoutRefs, propsR
 }
 
 export function processSentenceModeResult(
-    event,
+    result,
     target,
     stateRefs,
     timeoutRefs,
@@ -80,16 +86,13 @@ export function processSentenceModeResult(
     let newInterim = "";
     let hasAuthoritative = false;
 
-    const r = event.results?.at(-1);
-    if (r?.[0]) {
-        const isAuthoritative = !!(r.isFinal || r.speechFinal);
+    if (result?.[0]) {
+        const isAuthoritative = !!(result.isFinal || result.speechFinal);
         if (isAuthoritative) hasAuthoritative = true;
-        if (r.isFinal) {
-            newFinals = r[0].transcript + " ";
-            stateRefs.current.lastProcessedSentence = event.results.length - 1;
+        if (result.isFinal) {
+            newFinals = result[0].transcript + " ";
         } else {
-            newInterim = r[0].transcript;
-            if (r.speechFinal) stateRefs.current.lastProcessedSentence = event.results.length - 1;
+            newInterim = result[0].transcript;
         }
     }
 
@@ -146,7 +149,11 @@ export function processSentenceModeResult(
         const targetWords = target.split(/\s+/).filter(Boolean);
         const fullWords = full.split(/\s+/).filter(Boolean);
         let prefixMatched = 0;
-        for (let i = 0; i < Math.min(targetWords.length, fullWords.length); i++) {
+        for (
+            let i = 0;
+            i < Math.min(targetWords.length, fullWords.length);
+            i++
+        ) {
             const fw = normalizeText(fullWords[i]);
             const tw = normalizeText(targetWords[i]);
             if (fw === tw || isFuzzyMatch(fw, tw)) prefixMatched++;
@@ -171,7 +178,7 @@ export function processSentenceModeResult(
 }
 
 export function processWordModeResult(
-    event,
+    result,
     target,
     stateRefs,
     timerRefs,
@@ -179,8 +186,6 @@ export function processWordModeResult(
     propsRef,
 ) {
     if (Date.now() < timeoutRefs.current.graceEnd) return;
-    // ponytail: Deepgram = one result per message; for loop was native batch dead code.
-    const result = event.results?.at(-1);
     if (!result) return;
 
     const transcript = normalizeText(result[0]?.transcript);
@@ -188,18 +193,17 @@ export function processWordModeResult(
 
     stateRefs.current.stoppedAt = Date.now();
 
-    if (stateRefs.current.hasMatched) {
-        stateRefs.current.lastProcessed = event.results.length - 1;
-        return;
-    }
+    if (stateRefs.current.hasMatched) return;
 
     if (!stateRefs.current.mispronouncedInWord) {
         armWordTimeout(target, stateRefs, timerRefs, timeoutRefs, propsRef);
     }
 
-    if (!stateRefs.current.mispronouncedInWord && isWordMatch(transcript, target)) {
+    if (
+        !stateRefs.current.mispronouncedInWord &&
+        isWordMatch(transcript, target)
+    ) {
         stateRefs.current.hasMatched = true;
-        stateRefs.current.lastProcessed = event.results.length - 1;
         propsRef.current.onWordRecognized?.();
         clearAllTimers(timerRefs.current);
         return;
@@ -210,7 +214,6 @@ export function processWordModeResult(
     // by the 900ms wordSettle firing on the stale interim — causing false mispronounce.
     if (!stateRefs.current.mispronouncedInWord && result.isFinal) {
         stateRefs.current.mispronouncedInWord = true;
-        stateRefs.current.lastProcessed = event.results.length - 1;
         clearAllTimers(timerRefs.current);
         propsRef.current.onMispronounced?.(transcript);
         return;
@@ -234,9 +237,5 @@ export function processWordModeResult(
                 propsRef.current.onMispronounced?.(settleTranscript);
             }
         }, 850);
-    }
-
-    if (result.isFinal) {
-        stateRefs.current.lastProcessed = event.results.length - 1;
     }
 }
