@@ -32,9 +32,10 @@ describe("applyNoiseGate — peek-level + hysteresis", () => {
     test("hysteresis: stays open between close and open levels after opening", () => {
         const state = { isOpen: false };
         applyNoiseGate(at(0.3), state); // open
-        const out = applyNoiseGate(at(0.015), state); // between C and O
+        const between = (O + C) / 2; // 0.014, between close and open
+        const out = applyNoiseGate(at(between), state);
         expect(state.isOpen).toBe(true); // does NOT flip back
-        expect(Array.from(out)).toEqual(Array.from(at(0.015)));
+        expect(Array.from(out)).toEqual(Array.from(at(between)));
     });
 
     test("closes only when level falls to or below close threshold", () => {
