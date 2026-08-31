@@ -1,14 +1,13 @@
 import { useEffect, useRef } from "react";
 import { DeepgramClient } from "@deepgram/sdk";
-import { isFuzzyMatch } from "@/lib/speechUtils";
+import { normalizeText } from "@/lib/speechUtils";
 import {
-    normalizeText,
     clearAllTimers,
     armWordTimeout,
     armSentenceTimeout,
     processWordModeResult,
     processSentenceModeResult,
-} from "@/hooks/Student/useSpeechRecognition";
+} from "@/lib/speechProcessors";
 
 const MODEL = "nova-3";
 const LANGUAGE = "en";
@@ -27,7 +26,18 @@ export function useDeepgramRecognition({
     muted = false,
 }) {
     const isWordMode = matchMode === "word";
-    const propsRef = useRef(null);
+    const propsRef = useRef({
+        isActive,
+        preload,
+        isWordMode,
+        targetWord,
+        muted,
+        onWordRecognized,
+        onPermissionDenied,
+        onMispronounced,
+        onRecognitionError,
+        onRestartFailed,
+    });
 
     useEffect(() => {
         propsRef.current = {
@@ -75,13 +85,13 @@ export function useDeepgramRecognition({
         word: null,
         settle: null,
         sentenceSettle: null,
+        wordSettle: null,
     });
     const timeoutRefs = useRef({
         graceEnd: Date.now() + 500,
         restartCount: 0,
         target: null,
     });
-    const lastErrorRef = useRef(null);
 
     const connRef = useRef(null);
     const streamRef = useRef(null);
@@ -89,6 +99,7 @@ export function useDeepgramRecognition({
     const sourceNodeRef = useRef(null);
     const scriptNodeRef = useRef(null);
     const resultsRef = useRef([]);
+    const permissionDeniedRef = useRef(false);
 
     const stopAll = () => {
         clearAllTimers(timerRefs.current);
@@ -130,6 +141,7 @@ export function useDeepgramRecognition({
     const armForCurrentTarget = () => {
         stateRefs.current.lastSpeechAt = Date.now();
         const activeTarget = normalizeText(propsRef.current.targetWord);
+        if (!activeTarget) return;
         if (propsRef.current.isWordMode) {
             armWordTimeout(
                 activeTarget,
@@ -153,7 +165,8 @@ export function useDeepgramRecognition({
     const startConnection = async () => {
         if (
             !stateRefs.current.isMounted ||
-            (!propsRef.current.isActive && !propsRef.current.preload)
+            (!propsRef.current.isActive && !propsRef.current.preload) ||
+            connRef.current
         )
             return;
 
@@ -170,7 +183,12 @@ export function useDeepgramRecognition({
             const json = await resp.json();
             token = json.token;
             baseUrl = json.baseUrl;
-            if (DEBUG_ASR) console.debug("[ASR] token RTT", performance.now() - window.__dgTokenStart, "ms");
+            if (DEBUG_ASR)
+                console.debug(
+                    "[ASR] token RTT",
+                    performance.now() - window.__dgTokenStart,
+                    "ms",
+                );
         } catch {
             propsRef.current.onRecognitionError?.("token_failed");
             return;
@@ -198,15 +216,16 @@ export function useDeepgramRecognition({
             }
             connRef.current = conn;
 
-    conn.on("open", async () => {
-        if (DEBUG_ASR) window.__dgOpenAt = performance.now();
-        if (
+            conn.on("open", async () => {
+                if (DEBUG_ASR) window.__dgOpenAt = performance.now();
+                if (
                     !stateRefs.current.isMounted ||
                     (!propsRef.current.isActive && !propsRef.current.preload)
                 ) {
                     conn.close();
                     return;
                 }
+                permissionDeniedRef.current = false;
                 stateRefs.current.isListening = true;
                 stateRefs.current.lastSpeechAt = Date.now();
                 stateRefs.current.hasMatched = false;
@@ -229,6 +248,7 @@ export function useDeepgramRecognition({
                         (e.name === "NotAllowedError" ||
                             e.name === "SecurityError")
                     ) {
+                        permissionDeniedRef.current = true;
                         propsRef.current.onPermissionDenied?.();
                     } else {
                         propsRef.current.onRecognitionError?.(
@@ -296,23 +316,42 @@ export function useDeepgramRecognition({
                 if (!data || data.type !== "Results") return;
                 if (!propsRef.current?.isActive) return;
                 if (propsRef.current?.muted) return;
-                if (DEBUG_ASR && window.__dgOpenAt && !stateRefs.current.__firstResultLogged) {
+                if (
+                    DEBUG_ASR &&
+                    window.__dgOpenAt &&
+                    !stateRefs.current.__firstResultLogged
+                ) {
                     stateRefs.current.__firstResultLogged = true;
-                    console.debug("[ASR] first result", performance.now() - window.__dgOpenAt, "ms from connection open");
+                    console.debug(
+                        "[ASR] first result",
+                        performance.now() - window.__dgOpenAt,
+                        "ms from connection open",
+                    );
                 }
                 const isFinal = !!data.is_final;
+                const speechFinal = !!(data.speech_final ?? data.speechFinal);
                 const transcript =
                     data.channel?.alternatives?.[0]?.transcript ?? "";
-                if (!transcript && !isFinal) return;
-                const resultIndex = resultsRef.current.length;
-                resultsRef.current.push({ isFinal, 0: { transcript } });
+                if (!transcript && !isFinal && !speechFinal) return;
+                resultsRef.current.push({
+                    isFinal,
+                    speechFinal,
+                    0: { transcript },
+                });
                 const MAX_RESULTS = 128;
                 if (resultsRef.current.length > MAX_RESULTS) {
                     const drop = resultsRef.current.length - MAX_RESULTS;
                     resultsRef.current.splice(0, drop);
-                    stateRefs.current.lastProcessed -= drop;
-                    stateRefs.current.lastProcessedSentence -= drop;
+                    stateRefs.current.lastProcessed = Math.max(
+                        -1,
+                        stateRefs.current.lastProcessed - drop,
+                    );
+                    stateRefs.current.lastProcessedSentence = Math.max(
+                        -1,
+                        stateRefs.current.lastProcessedSentence - drop,
+                    );
                 }
+                const resultIndex = resultsRef.current.length - 1;
                 const event = {
                     resultIndex,
                     results: resultsRef.current,
@@ -350,11 +389,16 @@ export function useDeepgramRecognition({
                 connRef.current = null;
                 if (!stateRefs.current.isMounted || !propsRef.current.isActive)
                     return;
-                if (timeoutRefs.current.restartCount < 1) {
+                if (permissionDeniedRef.current) return;
+                if (timeoutRefs.current.restartCount < 3) {
                     timeoutRefs.current.restartCount++;
+                    const delay = Math.min(
+                        500 * 2 ** timeoutRefs.current.restartCount,
+                        3000,
+                    );
                     timerRefs.current.restart = setTimeout(() => {
                         startConnection();
-                    }, 500);
+                    }, delay);
                 } else {
                     propsRef.current.onRestartFailed?.();
                 }
@@ -407,6 +451,7 @@ export function useDeepgramRecognition({
         timeoutRefs.current.restartCount = 0;
     }, []);
     useEffect(() => {
+        timeoutRefs.current.graceEnd = Date.now() + 500;
         if (propsRef.current?.isActive && connRef.current) {
             armForCurrentTarget();
         } else if (!propsRef.current?.isActive) {
@@ -417,17 +462,29 @@ export function useDeepgramRecognition({
     useEffect(() => {
         if (preload) {
             try {
+                // Full reset mirrors targetWord effect (prevents stale mispronounced flags)
                 stateRefs.current.hasMatched = false;
+                stateRefs.current.mispronouncedInWord = false;
+                stateRefs.current.mispronouncedSentence = false;
                 stateRefs.current.lastProcessed = -1;
                 stateRefs.current.lastProcessedSentence = -1;
+                stateRefs.current.transcript = "";
+                stateRefs.current.interim = "";
+                stateRefs.current.stoppedAt = 0;
                 stateRefs.current.lastSpeechAt = Date.now();
+                timeoutRefs.current.target = null;
+                timeoutRefs.current.graceEnd = Date.now() + 500;
+                timeoutRefs.current.restartCount = 0;
+                permissionDeniedRef.current = false;
                 resultsRef.current = [];
                 clearAllTimers(timerRefs.current);
+                if (connRef.current) return;
                 startConnection();
             } catch (e) {
                 console.debug("Deepgram start failed:", e);
             }
         } else {
+            permissionDeniedRef.current = false;
             stopAll();
         }
     }, [preload]);

@@ -1,4 +1,4 @@
-function standardLevenshtein(a, b) {
+export function standardLevenshtein(a, b) {
     const m = a.length, n = b.length;
     if (m === 0) return n;
     if (n === 0) return m;
@@ -18,18 +18,13 @@ function standardLevenshtein(a, b) {
     return dp[m * w + n];
 }
 
-// Hybrid: strict for short words (1 edit tolerance: hat/hot), forgiving for longer ones
-// (tolerate ASR noise). Symmetric via max length so matching doesn't depend on which side
-// is spoken vs target.
-function maxEdits(wordLength) {
-    if (wordLength <= 5) return 1;
-    if (wordLength <= 8) return 2;
-    return 3;
+// ponytail: Story Quest helpers — withinRatio + boundaryLeak only for isFuzzyMatch (Story Quest).
+// Word Blast stays Levenshtein alone (isWordMatch d<=1) with L1 safe words in CurriculumSeeder.
+function withinRatio(a, b) {
+    const d = standardLevenshtein(a, b);
+    return d / Math.max(a.length, b.length) <= 0.34;
 }
 
-// Boundary leak guard: near-matches that drop or swap the leading sound, or drop a
-// clean ending, are still mispronunciations (areful/fareful->careful, do->dog,
-// tabl->table). Medial edits and pure substitutions (tabel, cot, dig) stay tolerated.
 function boundaryLeak(a, b) {
     if (Math.max(a.length, b.length) < 3) return false;
     if (a[0] !== b[0]) return true;
@@ -38,10 +33,24 @@ function boundaryLeak(a, b) {
     return longer.length > shorter.length && (longer.endsWith(shorter) || longer.startsWith(shorter));
 }
 
+export function normalizeText(text) {
+    return (text ?? "").toLowerCase().replace(/[^\w\s]/g, "").trim();
+}
+
+// ponytail: Word Blast — Levenshtein alone (d <= 1). If a hardcoded word is not pabor, replace word in CurriculumSeeder.
+export function isWordMatch(spoken, target) {
+    if (!spoken || !target) return false;
+    const a = normalizeText(spoken);
+    const b = normalizeText(target);
+    if (a.length === 0 || b.length === 0) return false;
+    if (a === b) return true;
+    return standardLevenshtein(a, b) <= 1;
+}
+
 export function isFuzzyMatch(spoken, target) {
     if (!spoken || !target) return false;
-    const a = spoken.toLowerCase().trim();
-    const b = target.toLowerCase().trim();
+    const a = normalizeText(spoken);
+    const b = normalizeText(target);
     if (a === b) return true;
     if (a.length === 0 || b.length === 0) return false;
 
@@ -52,18 +61,25 @@ export function isFuzzyMatch(spoken, target) {
         return wordsA.every((word, i) => {
             if (word === wordsB[i]) return true;
             if (boundaryLeak(word, wordsB[i])) return false;
-            const limit = maxEdits(Math.max(word.length, wordsB[i].length));
-            return standardLevenshtein(word, wordsB[i]) <= limit;
+            return withinRatio(word, wordsB[i]);
         });
     }
 
-    return wordsB.every((targetWord) =>
-        wordsA.some((spokenWord) => {
-            if (spokenWord === targetWord) return true;
-            if (boundaryLeak(spokenWord, targetWord)) return false;
-            const limit = maxEdits(Math.max(spokenWord.length, targetWord.length));
-            if (Math.abs(spokenWord.length - targetWord.length) > limit) return false;
-            return standardLevenshtein(spokenWord, targetWord) <= limit;
-        }),
-    );
+    // ponytail: ASR split fallback — Deepgram may split cupcake -> cup cake; join and check with ratio+leak
+    if (wordsB.length === 1 && wordsA.length > 1) {
+        const joined = wordsA.join("");
+        if (!boundaryLeak(joined, b) && withinRatio(joined, b)) return true;
+    }
+
+    // ponytail: ordered two-pointer — spoken must contain target words in order
+    let j = 0;
+    for (let i = 0; i < wordsA.length && j < wordsB.length; i++) {
+        if (wordsA[i] === wordsB[j]) {
+            j++;
+            continue;
+        }
+        if (boundaryLeak(wordsA[i], wordsB[j])) continue;
+        if (withinRatio(wordsA[i], wordsB[j])) j++;
+    }
+    return j === wordsB.length;
 }

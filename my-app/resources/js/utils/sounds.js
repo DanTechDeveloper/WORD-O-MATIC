@@ -116,6 +116,17 @@ export function playMispronounceSound() {
     playAudio("/Sound Effects/mispronounced.mp3")
 }
 
+export function playMispronounceFeedback() {
+    playMispronounceSound()
+    if ("vibrate" in navigator) {
+        try {
+            navigator.vibrate([200])
+        } catch {
+            // vibrate not supported or blocked
+        }
+    }
+}
+
 export function playFeedbackSound(message) {
     const file = FEEDBACK_FILES[message]
     if (file) {

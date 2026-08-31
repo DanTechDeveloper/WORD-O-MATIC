@@ -1,99 +1,86 @@
-import { isFuzzyMatch } from "@/lib/speechUtils.js";
-import { processSentenceModeResult } from "@/hooks/Student/useSpeechRecognition.js";
+import { isFuzzyMatch, isWordMatch, standardLevenshtein } from "@/lib/speechUtils.js";
+import { processSentenceModeResult, processWordModeResult } from "@/lib/speechProcessors.js";
 
-describe("isFuzzyMatch", () => {
+// Story Quest = isFuzzyMatch with withinRatio + boundaryLeak
+// Word Blast = isWordMatch with standardLevenshtein d<=1 (L1 fish/bird... Levenshtein-safe)
+
+describe("isFuzzyMatch — Story Quest (withinRatio + boundaryLeak)", () => {
     describe("exact match", () => {
         test("returns true for identical words", () => {
             expect(isFuzzyMatch("cat", "cat")).toBe(true);
         });
- 
         test("returns true for identical words with different case", () => {
             expect(isFuzzyMatch("CAT", "cat")).toBe(true);
             expect(isFuzzyMatch("Cat", "CAT")).toBe(true);
         });
- 
         test("returns true for identical words with whitespace", () => {
             expect(isFuzzyMatch("cat ", " cat")).toBe(true);
             expect(isFuzzyMatch("  cat  ", "cat")).toBe(true);
         });
     });
- 
+
     describe("short words (<=5 chars, 1 edit tolerance)", () => {
         test("returns true for hat and hot (1 substitution)", () => {
             expect(isFuzzyMatch("hat", "hot")).toBe(true);
             expect(isFuzzyMatch("hot", "hat")).toBe(true);
         });
- 
-        test("returns false for cat and bat (leading substitution)", () => {
+        test("returns false for cat and bat (leading substitution — boundaryLeak)", () => {
             expect(isFuzzyMatch("cat", "bat")).toBe(false);
         });
- 
         test("returns true for read and red (1 deletion)", () => {
             expect(isFuzzyMatch("read", "red")).toBe(true);
         });
- 
         test("returns true for sit and sit (exact match)", () => {
             expect(isFuzzyMatch("sit", "sit")).toBe(true);
         });
- 
         test("returns false for cat and dog (3 edits)", () => {
             expect(isFuzzyMatch("cat", "dog")).toBe(false);
         });
- 
         test("returns false for cat and hen (2 substitutions)", () => {
             expect(isFuzzyMatch("cat", "hen")).toBe(false);
         });
     });
- 
+
     describe("medium words (6-8 chars, 2 edit tolerance)", () => {
         test("returns true for hello and helo (2 edits)", () => {
             expect(isFuzzyMatch("hello", "helo")).toBe(true);
         });
- 
         test("returns true for world and word (1 substitution + 1 deletion)", () => {
             expect(isFuzzyMatch("world", "word")).toBe(true);
         });
- 
         test("returns true for testing and testing (typo)", () => {
             expect(isFuzzyMatch("testing", "teting")).toBe(true);
         });
     });
- 
+
     describe("long words (>8 chars, 3 edit tolerance)", () => {
-        test("returns false for elephant and legphant (leading drop)", () => {
+        test("returns false for elephant and legphant (leading drop — leak)", () => {
             expect(isFuzzyMatch("elephant", "legphant")).toBe(false);
         });
- 
         test("returns true for beautiful and beutiful (2 edits)", () => {
             expect(isFuzzyMatch("beautiful", "beutiful")).toBe(true);
         });
     });
- 
+
     describe("boundary leaks (leading/trailing drops and leading substitutions)", () => {
         test("returns false for areful and careful (leading drop)", () => {
             expect(isFuzzyMatch("areful", "careful")).toBe(false);
         });
-
         test("returns false for fareful and careful (leading substitution)", () => {
             expect(isFuzzyMatch("fareful", "careful")).toBe(false);
         });
-
         test("returns false for member and remember (leading syllable drop)", () => {
             expect(isFuzzyMatch("member", "remember")).toBe(false);
         });
-
         test("returns false for do and dog (trailing drop)", () => {
             expect(isFuzzyMatch("do", "dog")).toBe(false);
         });
-
         test("returns false for tabl and table (trailing drop)", () => {
             expect(isFuzzyMatch("tabl", "table")).toBe(false);
         });
-
         test("returns false for at and cat (leading consonant drop)", () => {
             expect(isFuzzyMatch("at", "cat")).toBe(false);
         });
-
         test("returns false regardless of argument order", () => {
             expect(isFuzzyMatch("careful", "areful")).toBe(false);
             expect(isFuzzyMatch("dog", "do")).toBe(false);
@@ -104,19 +91,15 @@ describe("isFuzzyMatch", () => {
         test("returns true for tablo and table (end vowel substitution)", () => {
             expect(isFuzzyMatch("tablo", "table")).toBe(true);
         });
-
         test("returns true for carful and careful (medial schwa drop)", () => {
             expect(isFuzzyMatch("carful", "careful")).toBe(true);
         });
-
         test("returns true for ct and cat (medial drop)", () => {
             expect(isFuzzyMatch("ct", "cat")).toBe(true);
         });
-
         test("returns true for cot and cat (medial substitution)", () => {
             expect(isFuzzyMatch("cot", "cat")).toBe(true);
         });
-
         test("returns true for dig and dog (trailing substitution)", () => {
             expect(isFuzzyMatch("dig", "dog")).toBe(true);
         });
@@ -126,57 +109,143 @@ describe("isFuzzyMatch", () => {
         test("returns true when all words match within tolerance", () => {
             expect(isFuzzyMatch("hat hot", "hot hat")).toBe(true);
         });
- 
         test("returns false when one word is too different", () => {
             expect(isFuzzyMatch("cat dog", "bat hen")).toBe(false);
         });
- 
         test("returns true for exact multi-word match", () => {
             expect(isFuzzyMatch("the cat sat", "the cat sat")).toBe(true);
         });
     });
- 
+
     describe("multi-word matching (different word count)", () => {
         test("returns false when a spoken word only masks another (leading substitution)", () => {
             expect(isFuzzyMatch("the cat", "the hat cat")).toBe(false);
         });
- 
         test("returns false when target word has no match", () => {
             expect(isFuzzyMatch("the cat", "the dog cat")).toBe(false);
         });
     });
- 
+
+    describe("ASR split fallback (single-word target, multi-word spoken)", () => {
+        test("returns true for a compound split (cup cake vs cupcake)", () => {
+            expect(isFuzzyMatch("cup cake", "cupcake")).toBe(true);
+        });
+        test("returns true for a prefix split (un happy vs unhappy)", () => {
+            expect(isFuzzyMatch("un happy", "unhappy")).toBe(true);
+        });
+        test("returns true for a verb split (re play vs replay)", () => {
+            expect(isFuzzyMatch("re play", "replay")).toBe(true);
+        });
+        test("returns true for an exact compound split (tooth brush vs toothbrush)", () => {
+            expect(isFuzzyMatch("tooth brush", "toothbrush")).toBe(true);
+        });
+        test("returns false for joined noise that only masks the target (and do vs undo)", () => {
+            expect(isFuzzyMatch("and do", "undo")).toBe(false);
+        });
+        test("returns false for random joined words unrelated to target (dog sun vs cupcake)", () => {
+            expect(isFuzzyMatch("dog sun", "cupcake")).toBe(false);
+        });
+        test("returns false when the join produces a leading-swap leak (fun cake vs cupcake)", () => {
+            expect(isFuzzyMatch("fun cake", "cupcake")).toBe(false);
+        });
+    });
+
     describe("edge cases", () => {
         test("returns false for null spoken", () => {
             expect(isFuzzyMatch(null, "cat")).toBe(false);
         });
- 
         test("returns false for null target", () => {
             expect(isFuzzyMatch("cat", null)).toBe(false);
         });
- 
         test("returns false for undefined spoken", () => {
             expect(isFuzzyMatch(undefined, "cat")).toBe(false);
         });
- 
         test("returns false for undefined target", () => {
             expect(isFuzzyMatch("cat", undefined)).toBe(false);
         });
- 
         test("returns false for empty string spoken", () => {
             expect(isFuzzyMatch("", "cat")).toBe(false);
         });
- 
         test("returns false for empty string target", () => {
             expect(isFuzzyMatch("cat", "")).toBe(false);
         });
- 
-    test("returns false for both empty strings", () => {
-        expect(isFuzzyMatch("", "")).toBe(false);
+        test("returns false for both empty strings", () => {
+            expect(isFuzzyMatch("", "")).toBe(false);
+        });
     });
 });
 
-describe("processSentenceModeResult (unified with word mode)", () => {
+describe("isWordMatch (Word Blast — Levenshtein d<=1 alone, L1 safe words)", () => {
+    describe("exact + d<=1", () => {
+        test("identical true", () => {
+            expect(isWordMatch("fish", "fish")).toBe(true);
+        });
+        test("case/punct normalized true", () => {
+            expect(isWordMatch("FISH", "fish")).toBe(true);
+            expect(isWordMatch("fish!", "fish")).toBe(true);
+        });
+        test("d=1 true (Levenshtein alone)", () => {
+            expect(isWordMatch("fist", "fish")).toBe(true);
+            expect(standardLevenshtein("fist", "fish")).toBe(1);
+            expect(isWordMatch("cot", "cat")).toBe(true);
+            expect(isWordMatch("kat", "cat")).toBe(true);
+            expect(isWordMatch("tabl", "table")).toBe(true);
+            expect(isWordMatch("bard", "bird")).toBe(true);
+        });
+        test("d>1 false", () => {
+            expect(isWordMatch("category", "cat")).toBe(false);
+            expect(isWordMatch("cat", "dog")).toBe(false);
+            expect(isWordMatch("unhappy", "happy")).toBe(false);
+        });
+        test("cup cake vs cupcake d=1 true via Levenshtein alone", () => {
+            expect(isWordMatch("cup cake", "cupcake")).toBe(true);
+            expect(standardLevenshtein("cup cake", "cupcake")).toBe(1);
+        });
+    });
+    describe("edge cases", () => {
+        test("null/empty false", () => {
+            expect(isWordMatch(null, "fish")).toBe(false);
+            expect(isWordMatch("fish", null)).toBe(false);
+            expect(isWordMatch("", "fish")).toBe(false);
+            expect(isWordMatch("fish", "")).toBe(false);
+            expect(isWordMatch("", "")).toBe(false);
+        });
+    });
+});
+
+// ponytail: WORD BLAST curriculum guard — Levenshtein-safe L1 (fish/bird...), d<=1 alone.
+describe("WORD BLAST curriculum (seeded words) — regression guard (Levenshtein d<=1, L1 safe)", () => {
+    const wordsByModule = [
+        ["fish", "bird", "book", "lamp", "jump", "farm", "chip", "desk", "moon", "gold"],
+        ["cake", "tree", "kite", "road", "cube", "rain", "boat", "seed", "lime", "bone"],
+        ["star", "drum", "frog", "milk", "nest", "sand", "belt", "fist", "golf", "hand"],
+        ["grass", "train", "plate", "broom", "snake", "grape", "trail", "flame", "clamp", "brick"],
+        ["rabbit", "window", "pencil", "basket", "kitten", "napkin", "picnic", "helmet", "muffin", "lantern"],
+        ["replay", "prefix", "unseen", "redo", "undo", "preview", "unhappy", "reload", "rewrite", "subway"],
+        ["slowly", "joyful", "fearless", "quickly", "useful", "careful", "loudly", "kindly", "sadly", "painful"],
+        ["rainbow", "sunset", "popcorn", "bedroom", "toothbrush", "football", "pancake", "firefly", "starfish", "cupcake"],
+        ["explore", "beautiful", "adventure", "dinosaur", "enormous", "fantastic", "astronaut", "discover", "important", "vegetable"],
+        ["perseverance", "accomplishment", "extraordinary", "responsibility", "determination", "communication", "collaboration", "environment", "celebration", "imagination"],
+    ];
+    test("every WORD BLAST word matches itself (d=0)", () => {
+        for (const level of wordsByModule) for (const w of level) expect(isWordMatch(w, w)).toBe(true);
+    });
+    test("every WORD BLAST word matches its uppercased form", () => {
+        for (const level of wordsByModule) for (const w of level) expect(isWordMatch(w.toUpperCase(), w)).toBe(true);
+    });
+    test("d=1 variants true (Levenshtein alone) — medial/leading both true now", () => {
+        expect(isWordMatch("fist", "fish")).toBe(true);
+        expect(isWordMatch("bard", "bird")).toBe(true);
+        expect(isWordMatch("cot", "cat")).toBe(true);
+        expect(isWordMatch("kat", "cat")).toBe(true);
+    });
+    test("d>1 still false", () => {
+        expect(isWordMatch("category", "cat")).toBe(false);
+        expect(isWordMatch("unhappy", "happy")).toBe(false);
+    });
+});
+
+describe("processSentenceModeResult (Story Quest — withinRatio + boundaryLeak)", () => {
     const makeRefs = () => {
         const stateRefs = {
             current: {
@@ -208,25 +277,21 @@ describe("processSentenceModeResult (unified with word mode)", () => {
         };
         return { stateRefs, timeoutRefs, timerRefs, propsRef };
     };
-
     const makeEvent = (results) => ({ resultIndex: 0, results });
-
-    test("recognizes a sentence when all target words are present plus a filler (no strict word-count gate)", () => {
+    test("recognizes a sentence when all target words are present plus a filler", () => {
         const { stateRefs, timeoutRefs, timerRefs, propsRef } = makeRefs();
         const target = "i see a cat";
         const event = makeEvent([{ isFinal: true, 0: { transcript: "i see a cat um" } }]);
         processSentenceModeResult(event, target, stateRefs, timeoutRefs, timerRefs, propsRef);
         expect(propsRef.current.onWordRecognized).toHaveBeenCalled();
     });
-
-    test("mispronounces on an empty settled final (Deepgram low-confidence / wrong word)", () => {
+    test("mispronounces on an empty settled final", () => {
         const { stateRefs, timeoutRefs, timerRefs, propsRef } = makeRefs();
         const target = "i see a cat";
         const event = makeEvent([{ isFinal: true, 0: { transcript: "" } }]);
         processSentenceModeResult(event, target, stateRefs, timeoutRefs, timerRefs, propsRef);
         expect(propsRef.current.onMispronounced).toHaveBeenCalled();
     });
-
     test("mispronounces on a settled final that does not match the target", () => {
         const { stateRefs, timeoutRefs, timerRefs, propsRef } = makeRefs();
         const target = "i see a cat";
@@ -234,7 +299,6 @@ describe("processSentenceModeResult (unified with word mode)", () => {
         processSentenceModeResult(event, target, stateRefs, timeoutRefs, timerRefs, propsRef);
         expect(propsRef.current.onMispronounced).toHaveBeenCalled();
     });
-
     test("arms a ~2s await-final timer and mispronounces once a wrong interim settles", () => {
         vi.useFakeTimers();
         const { stateRefs, timeoutRefs, timerRefs, propsRef } = makeRefs();
@@ -246,8 +310,7 @@ describe("processSentenceModeResult (unified with word mode)", () => {
         expect(propsRef.current.onMispronounced).toHaveBeenCalled();
         vi.useRealTimers();
     });
-
-    test("emits live per-word progress for a partial interim (student-first)", () => {
+    test("emits live per-word progress for a partial interim", () => {
         vi.useFakeTimers();
         const { stateRefs, timeoutRefs, timerRefs, propsRef } = makeRefs();
         const target = "the cat sat";
@@ -258,8 +321,7 @@ describe("processSentenceModeResult (unified with word mode)", () => {
         vi.clearAllTimers();
         vi.useRealTimers();
     });
-
-    test("defers verdict: partial interim then late authoritative final recognizes (verify-later)", () => {
+    test("defers verdict: partial interim then late authoritative final recognizes", () => {
         vi.useFakeTimers();
         const { stateRefs, timeoutRefs, timerRefs, propsRef } = makeRefs();
         const target = "the cat sat";
@@ -275,7 +337,6 @@ describe("processSentenceModeResult (unified with word mode)", () => {
         vi.clearAllTimers();
         vi.useRealTimers();
     });
-
     test("treats speech_final as authoritative and mispronounces immediately on a non-match", () => {
         vi.useFakeTimers();
         const { stateRefs, timeoutRefs, timerRefs, propsRef } = makeRefs();
@@ -288,4 +349,72 @@ describe("processSentenceModeResult (unified with word mode)", () => {
     });
 });
 
+describe("processWordModeResult (Word Blast — Levenshtein d<=1)", () => {
+    const makeRefs = () => {
+        const stateRefs = {
+            current: {
+                hasMatched: false,
+                lastProcessed: -1,
+                isMounted: true,
+                stoppedAt: 0,
+                mispronouncedSentence: false,
+                mispronouncedInWord: false,
+                transcript: "",
+                interim: "",
+                lastSpeechAt: Date.now(),
+            },
+        };
+        const timeoutRefs = { current: { graceEnd: 0, restartCount: 0, target: null } };
+        const timerRefs = {
+            current: { restart: null, sentence: null, word: null, settle: null, sentenceSettle: null, wordSettle: null },
+        };
+        const propsRef = {
+            current: {
+                isActive: true,
+                onWordRecognized: vi.fn(),
+                onMispronounced: vi.fn(),
+                onProgress: vi.fn(),
+                onPermissionDenied: vi.fn(),
+                onRecognitionError: vi.fn(),
+                onRestartFailed: vi.fn(),
+            },
+        };
+        return { stateRefs, timeoutRefs, timerRefs, propsRef };
+    };
+    const makeEvent = (transcript, isFinal = false) => ({ results: [{ isFinal, 0: { transcript } }] });
+    test("recognizes exact word", () => {
+        const { stateRefs, timeoutRefs, timerRefs, propsRef } = makeRefs();
+        processWordModeResult(makeEvent("fish"), "fish", stateRefs, timerRefs, timeoutRefs, propsRef);
+        expect(propsRef.current.onWordRecognized).toHaveBeenCalledTimes(1);
+    });
+    test("recognizes d=1 variant (Levenshtein alone)", () => {
+        const { stateRefs, timeoutRefs, timerRefs, propsRef } = makeRefs();
+        processWordModeResult(makeEvent("fist"), "fish", stateRefs, timerRefs, timeoutRefs, propsRef);
+        expect(propsRef.current.onWordRecognized).toHaveBeenCalledTimes(1);
+        expect(standardLevenshtein("fist", "fish")).toBe(1);
+    });
+    test("recognizes cot/kat vs cat via d<=1", () => {
+        for (const spoken of ["cot", "kat"]) {
+            const { stateRefs, timeoutRefs, timerRefs, propsRef } = makeRefs();
+            processWordModeResult(makeEvent(spoken), "cat", stateRefs, timerRefs, timeoutRefs, propsRef);
+            expect(propsRef.current.onWordRecognized).toHaveBeenCalledTimes(1);
+        }
+    });
+    test("rejects d>1", () => {
+        const cases = [
+            ["category", "cat"],
+            ["unhappy", "happy"],
+        ];
+        for (const [spoken, target] of cases) {
+            const { stateRefs, timeoutRefs, timerRefs, propsRef } = makeRefs();
+            processWordModeResult(makeEvent(spoken), target, stateRefs, timerRefs, timeoutRefs, propsRef);
+            expect(propsRef.current.onWordRecognized).not.toHaveBeenCalled();
+        }
+    });
+    test("random word salpak — d<=1 true kaya true", () => {
+        const { stateRefs, timeoutRefs, timerRefs, propsRef } = makeRefs();
+        expect(standardLevenshtein("cold", "gold")).toBe(1);
+        processWordModeResult(makeEvent("cold"), "gold", stateRefs, timerRefs, timeoutRefs, propsRef);
+        expect(propsRef.current.onWordRecognized).toHaveBeenCalledTimes(1);
+    });
 });

@@ -1,12 +1,9 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useCountdown } from "./useCountdown";
 import { router } from "@inertiajs/react";
-import { playSuccessSound, playFeedbackSound, playMispronounceSound } from "@/utils/sounds";
+import { playSuccessSound, playFeedbackSound, playMispronounceFeedback } from "@/utils/sounds";
 import { readResumeSession, clearResumeSession } from "@/utils/resumeStorage";
-
-function normalizeWord(word) {
-    return (word ?? "").toLowerCase().replace(/[^\w\s]/g, "").trim();
-}
+import { normalizeText as normalizeWord } from "@/lib/speechUtils";
 
 function getStreakFeedbackMessage(streak) {
     if (streak >= 6) return "Excellent!";
@@ -41,8 +38,8 @@ export function useGameplayEngine({
         return resumeData ? resumeData : (moduleId ? readResumeSession(moduleId) : null);
     }, [resumeData, moduleId]);
 
-    const [currentWordIndex, setCurrentWordIndex] = useState(() => Math.min(resume?.currentWordIndex ?? 0, totalWords));
-    const [wordsSmashed, setWordsSmashed] = useState(() => Math.min(resume?.wordsSmashed ?? 0, totalWords));
+    const [currentWordIndex, setCurrentWordIndex] = useState(() => resume?.currentWordIndex ?? 0);
+    const [wordsSmashed, setWordsSmashed] = useState(() => resume?.wordsSmashed ?? 0);
     const [gameState, setGameState] = useState(() => resume ? "ACTIVE" : "IDLE");
     const [isMispronounced, setIsMispronounced] = useState(false);
     const [isExploding, setIsExploding] = useState(false);
@@ -82,11 +79,21 @@ export function useGameplayEngine({
         maxStreakRef.current = maxStreak;
         wordsRef.current = words;
         currentStreakRef.current = currentStreak;
-    }, [onWordRecognized, onMispronounce, currentWordIndex, wordsSmashed, maxStreak, words, currentStreak]);
-
-    useEffect(() => {
         gameStateRef.current = gameState;
-    }, [gameState]);
+    }, [onWordRecognized, onMispronounce, currentWordIndex, wordsSmashed, maxStreak, words, currentStreak, gameState]);
+
+    // ponytail: clamp resume indices after words load (initial totalWords may be 0)
+    useEffect(() => {
+        if (totalWords > 0) {
+            setCurrentWordIndex((prev) => (prev > totalWords ? totalWords : prev));
+            setWordsSmashed((prev) => (prev > totalWords ? totalWords : prev));
+        }
+    }, [totalWords]);
+
+    // Reset one-shot save guard when module changes (SPA navigation may reuse hook)
+    useEffect(() => {
+        hasSaved.current = false;
+    }, [moduleId]);
 
     useEffect(() => {
         if (typeof window === "undefined" || !moduleId || gameState !== "ACTIVE") {
@@ -246,7 +253,7 @@ export function useGameplayEngine({
         clearTimeout(feedbackTimerRef.current);
         setFeedbackMessage(mispMsg);
         setFeedbackType("mispronounce");
-        playMispronounceSound();
+        playMispronounceFeedback();
         playFeedbackSound(mispMsg);
         feedbackTimerRef.current = setTimeout(() => {
             setFeedbackType(null);

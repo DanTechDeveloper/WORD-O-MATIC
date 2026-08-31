@@ -9,7 +9,7 @@
 | Type | Reading with speech recognition |
 | Timer | 60 seconds per session |
 | Presentation | Words randomized per session (`inRandomOrder()`) |
-| Scoring | Tolerance-bucketed Levenshtein fuzzy match (`speechUtils.js` `isFuzzyMatch`, wraps `standardLevenshtein`) |
+| Scoring | Levenshtein alone (`speechUtils.js` `isWordMatch` → `standardLevenshtein ≤1`; `cot`=`cat`, `kat`=`cat`, `tabl`=`table` all Correct; words curated to be Levenshtein-safe) |
 | Accuracy | `words_smashed / total_words * 100` |
 | Update rule | Only on new best score (retries don't lower existing score) |
 | Mastery | Per-word: `mastered` or `training`, stored in `student_word_mastery` |
@@ -22,7 +22,7 @@
 | Type | Speaking with paragraph content |
 | Timer | 60 seconds per session |
 | Presentation | Sentence-based, fixed word order |
-| Scoring | Speech recognition accuracy per word |
+| Scoring | Tolerance-bucketed Levenshtein (`speechUtils.js` `isFuzzyMatch` → `withinRatio` 0.34 + `boundaryLeak`; `cot`=cat Correct, `kat`=cat Wrong, `tabl`=table Wrong) |
 | Update rule | Only on new best score |
 | Mastery | Per-word: `mastered` or `training`, stored in `student_paragraph_mastery` |
 | Routes | `/student/gameplaySpeakMode/{level}`, `/student/speakModeLevels` |
@@ -74,14 +74,14 @@ being in `flash.new_badges`, so it fires only at completion, not on later visits
 
 ## Speech Recognition (Deepgram)
 
-Recognition uses **Deepgram streaming ASR** (`useDeepgramRecognition.js`, model `nova-3`); the pure transcript-processing logic (fuzzy match, timeout arming, `graceEnd`) lives in `useSpeechRecognition.js` and is driven by Deepgram events. A browser token is fetched from `StudentController::deepgramToken()`.
+Recognition uses **Deepgram streaming ASR** (`useDeepgramRecognition.js`, model `nova-3`); the pure transcript-processing logic (Word Blast `isWordMatch` Levenshtein `≤1` with L1 safe words; Story Quest `isFuzzyMatch` tolerance-bucketed `withinRatio`+`boundaryLeak`, timeout arming, `graceEnd`) lives in `speechProcessors.js` and is driven by Deepgram events. A browser token is fetched from `StudentController::deepgramToken()`.
 
 ### Timeout Rules
 
 | Mode | Timeout Behavior |
 |---|---|
-| **Word Mode** | After speech settles on a transcript that doesn't fuzzy-match the target (no new result for ~900ms), the word is marked mispronounced immediately — no fixed wait. `is_final` is also a fast-path. A 5s `armWordTimeout` remains as the no-speech fallback (catches a silent student). A 500ms `graceEnd` guard after a word switch suppresses stray finals. |
-| **Sentence Mode** | If no speech is detected for 5 **continuous** seconds (silence watchdog), the sentence is marked as mispronounced. The watchdog tracks `lastSpeechAt`, which is re-based to ACTIVE at game start so countdown silence isn't counted. A full-length transcript that doesn't fuzzy-match also mispronounces, after a 500ms `graceEnd` guard. The match transcript (`full`) is taken from the latest cumulative interim when present, else the accumulated finals — Deepgram partials are cumulative, so stacking them double-counts words (BF28). |
+| **Word Mode** | After speech settles on a transcript where `standardLevenshtein ≤1` is false (no new result for ~900ms), the word is marked mispronounced immediately — no fixed wait. `is_final` is also a fast-path. A 5s `armWordTimeout` remains as the no-speech fallback (catches a silent student). A 500ms `graceEnd` guard after a word switch suppresses stray finals. |
+| **Sentence Mode** | If no speech is detected for 5 **continuous** seconds (silence watchdog), the sentence is marked as mispronounced. The watchdog tracks `lastSpeechAt`, which is re-based to ACTIVE at game start so countdown silence isn't counted. A full-length transcript where `isFuzzyMatch` (`withinRatio`+`boundaryLeak`) fails also mispronounces, after a 500ms `graceEnd` guard. The match transcript (`full`) is taken from the latest cumulative interim when present, else the accumulated finals — Deepgram partials are cumulative, so stacking them double-counts words (BF28). |
 
 ### Timer Synchronization
 
@@ -102,7 +102,7 @@ Mode-aware `isActive` gate in the two gameplay pages:
 
 | Mode | isActive | Why |
 |---|---|---|
-| Word Blast (read) | `gameState === "ACTIVE" && !isExploding` | Mic is muted via the Deepgram `muted` prop during the 500ms blast window after a correct match (set before `playSuccessSound`, so echo feedback can't fuzzy-match the short target word). The word changes instantly; a ~900ms utterance-settle timer + 5s `armWordTimeout` fallback in the hook (re-armed on every recognized transcript) catch wrong/silent speech. |
+| Word Blast (read) | `gameState === "ACTIVE" && !isExploding` | Mic is muted via the Deepgram `muted` prop during the 500ms blast window after a correct match (set before `playSuccessSound`, so echo feedback can't Levenshtein-match the short target word). The word changes instantly; a ~900ms utterance-settle timer + 5s `armWordTimeout` fallback in the hook (re-armed on every recognized transcript) catch wrong/silent speech. |
 | Story Quest (speak) | `gameState === "ACTIVE"` only | Mic stays live continuously — students read sentences back-to-back; stopping would clip the head of the next utterance. Full-sentence matching (full transcript, word count equality) makes feedback-echo mis-recapture negligible. |
 
 ## Results
