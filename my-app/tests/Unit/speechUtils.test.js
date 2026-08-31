@@ -216,10 +216,10 @@ describe("isWordMatch (Word Blast — Levenshtein d<=1 alone, L1 safe words)", (
 // ponytail: WORD BLAST curriculum guard — Levenshtein-safe L1 (fish/bird...), d<=1 alone.
 describe("WORD BLAST curriculum (seeded words) — regression guard (Levenshtein d<=1, L1 safe)", () => {
     const wordsByModule = [
-        ["fish", "bird", "book", "lamp", "jump", "farm", "chip", "desk", "moon", "gold"],
-        ["cake", "tree", "kite", "road", "cube", "rain", "boat", "seed", "lime", "bone"],
-        ["star", "drum", "frog", "milk", "nest", "sand", "belt", "fist", "golf", "hand"],
-        ["grass", "train", "plate", "broom", "snake", "grape", "trail", "flame", "clamp", "brick"],
+        ["fish", "bird", "book", "lamp", "jump", "farm", "chip", "desk", "moon", "iron"],
+        ["cake", "tree", "kite", "road", "cube", "snow", "boat", "seed", "lime", "bone"],
+        ["star", "drum", "frog", "milk", "nest", "sand", "belt", "grip", "golf", "palm"],
+        ["grass", "train", "plate", "broom", "snake", "grape", "track", "flame", "press", "brick"],
         ["rabbit", "window", "pencil", "basket", "kitten", "napkin", "picnic", "helmet", "muffin", "lantern"],
         ["replay", "prefix", "unseen", "redo", "undo", "preview", "unhappy", "reload", "rewrite", "subway"],
         ["slowly", "joyful", "fearless", "quickly", "useful", "careful", "loudly", "kindly", "sadly", "painful"],
@@ -411,10 +411,14 @@ describe("processWordModeResult (Word Blast — Levenshtein d<=1)", () => {
             expect(propsRef.current.onWordRecognized).not.toHaveBeenCalled();
         }
     });
-    test("random word salpak — d<=1 true kaya true", () => {
-        const { stateRefs, timeoutRefs, timerRefs, propsRef } = makeRefs();
+    test("random word salpak — cold→gold was d=1 but gold→iron now d=4 false", () => {
         expect(standardLevenshtein("cold", "gold")).toBe(1);
-        processWordModeResult(makeEvent("cold"), "gold", stateRefs, timerRefs, timeoutRefs, propsRef);
-        expect(propsRef.current.onWordRecognized).toHaveBeenCalledTimes(1);
+        expect(standardLevenshtein("cold", "iron")).toBe(4);
+        // old gold replaced by iron — cold no longer salpak, demonstrates Plan A fix
+        const { stateRefs, timeoutRefs, timerRefs, propsRef } = makeRefs();
+        processWordModeResult(makeEvent("cold"), "iron", stateRefs, timerRefs, timeoutRefs, propsRef);
+        expect(propsRef.current.onWordRecognized).not.toHaveBeenCalled();
+        // grip is new word, fist→fish was d=1 but fist→grip d=4
+        expect(standardLevenshtein("fist", "grip")).toBe(4);
     });
 });

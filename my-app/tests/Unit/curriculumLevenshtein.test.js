@@ -2,15 +2,15 @@ import { standardLevenshtein, isWordMatch, isFuzzyMatch, normalizeText } from "@
 
 // ponytail: HARDCODED WORD BLAST curriculum — WORD BLAST only (L1-L10 100) + tutorial 5 = 105
 // Source: CurriculumSeeder.php (Word Blast WORDS, not paragraphs)
-// L1 is Levenshtein-safe set (fish,bird,book,lamp,jump,farm,chip,desk,moon,gold) — d<=1 alone.
+// L1 fish/bird/book/lamp/jump/farm/chip/desk/moon/iron + L2 snow + L3 grip/palm + L4 track/press — Plan A 6-word fix for intra d=1 collisions (fish/fist, lamp/clamp, gold/golf, rain/train, sand/hand, train/trail).
 // If a word not pabor (d=1 gives unwanted Correct), replace word in seeder and keep d<=1.
 // This test uses standardLevenshtein ALONE — no withinRatio / boundaryLeak.
 
 const wordsByModule = {
-    1: ["fish", "bird", "book", "lamp", "jump", "farm", "chip", "desk", "moon", "gold"],
-    2: ["cake", "tree", "kite", "road", "cube", "rain", "boat", "seed", "lime", "bone"],
-    3: ["star", "drum", "frog", "milk", "nest", "sand", "belt", "fist", "golf", "hand"],
-    4: ["grass", "train", "plate", "broom", "snake", "grape", "trail", "flame", "clamp", "brick"],
+    1: ["fish", "bird", "book", "lamp", "jump", "farm", "chip", "desk", "moon", "iron"],
+    2: ["cake", "tree", "kite", "road", "cube", "snow", "boat", "seed", "lime", "bone"],
+    3: ["star", "drum", "frog", "milk", "nest", "sand", "belt", "grip", "golf", "palm"],
+    4: ["grass", "train", "plate", "broom", "snake", "grape", "track", "flame", "press", "brick"],
     5: ["rabbit", "window", "pencil", "basket", "kitten", "napkin", "picnic", "helmet", "muffin", "lantern"],
     6: ["replay", "prefix", "unseen", "redo", "undo", "preview", "unhappy", "reload", "rewrite", "subway"],
     7: ["slowly", "joyful", "fearless", "quickly", "useful", "careful", "loudly", "kindly", "sadly", "painful"],
@@ -26,7 +26,7 @@ describe("CurriculumSeeder HARDCODED — WORD BLAST only (L1 Levenshtein-safe)",
     test("WORD BLAST 100 words (10×10) with new L1", () => {
         expect(allWordBlast.length).toBe(100);
         for (let lvl = 1; lvl <= 10; lvl++) expect(wordsByModule[lvl].length).toBe(10);
-        expect(wordsByModule[1]).toEqual(["fish", "bird", "book", "lamp", "jump", "farm", "chip", "desk", "moon", "gold"]);
+        expect(wordsByModule[1]).toEqual(["fish", "bird", "book", "lamp", "jump", "farm", "chip", "desk", "moon", "iron"]);
     });
     test("with tutorial 105 total", () => {
         expect(allWithTutorial.length).toBe(105);
@@ -61,15 +61,14 @@ describe("Levenshtein ALONE audit — standardLevenshtein only (d<=1)", () => {
     });
 
     test("WORD BLAST Levenshtein-safe: new L1 words have ≤2 real d=1 neighbors (old cat had 10)", () => {
-        const common = ["cat","cot","cut","bat","hat","mat","rat","can","cap","car","dog","dig","dug","dag","cog","log","sun","son","bun","run","big","bag","beg","red","bed","cup","cop","box","fox","pen","pan","pin","fish","fist","dish","bird","bard","book","look","cook","lamp","camp","jump","bump","farm","harm","chip","chop","desk","disk","moon","soon","gold","cold","hold"];
+        const common = ["cat","cot","cut","bat","hat","mat","rat","can","cap","car","dog","dig","dug","dag","cog","log","sun","son","bun","run","big","bag","beg","red","bed","cup","cop","box","fox","pen","pan","pin","fish","fist","dish","bird","bard","book","look","cook","lamp","camp","jump","bump","farm","harm","chip","chop","desk","disk","moon","soon","gold","cold","hold","iron","snow","grip","palm","track","press"];
         const counts = wordsByModule[1].map((w) => ({
             w,
             c: common.filter((c) => c !== w && standardLevenshtein(w, c) === 1).length,
         }));
         for (const { w, c } of counts) expect(c).toBeLessThanOrEqual(2);
-        // old cat would be 10, new fish is 2
         expect(counts.find((x) => x.w === "fish").c).toBe(2);
-        expect(counts.find((x) => x.w === "bird").c).toBe(1);
+        expect(counts.find((x) => x.w === "iron").c).toBe(0);
     });
 
     test("isWordMatch now = d<=1 (Levenshtein alone) — cot/cat true, kat/cat true, tabl/table true", () => {
@@ -102,22 +101,27 @@ describe("Levenshtein ALONE audit — standardLevenshtein only (d<=1)", () => {
 
     test("random word salpak — kung d<=1 sa target, true kaya pwede isalpak sa CurriculumSeeder", () => {
         // Simulate: random candidate "fist" for target "fish" — d=1 true → pabor, pwede isalpak
-        const target = "fish";
-        const candidates = ["fist", "dish", "fash", "quag", "xyz"];
+        // Pero ngayon wala nang fist sa curriculum (grip na), at iron/gold collision fixed
+        const target = "iron";
+        const candidates = ["irons", "irony", "icon", "xyz"];
         const pabor = candidates.filter((c) => isWordMatch(c, target));
-        expect(pabor).toEqual(["fist", "dish", "fash"]);
-        // "quag" d=2 false, "xyz" false → hindi pabor, hindi isasalpak
-        expect(isWordMatch("quag", "fish")).toBe(false);
-        expect(isWordMatch("xyz", "fish")).toBe(false);
+        // irons d=1 true, xyz false
+        expect(pabor).toContain("irons");
+        expect(isWordMatch("xyz", "iron")).toBe(false);
 
-        // Full flow: random word "gold" vs "cold" d=1 true → kung true, isalpak sa seeder
-        const random = "cold";
-        if (standardLevenshtein(random, "gold") <= 1) {
-            // pabor — pwede isalpak (simulate)
-            expect(isWordMatch(random, "gold")).toBe(true);
-        }
-        // "category" vs "cat" d=5 false → hindi isasalpak, papalitan ng bagong word na pabor
-        expect(isWordMatch("category", "cat")).toBe(false);
+        // Full flow: random word "cold" vs old "gold" d=1 true pero gold wala na, iron vs cold d=4 false → hindi isasalpak
+        expect(standardLevenshtein("cold", "iron")).toBe(4);
+        expect(isWordMatch("cold", "iron")).toBe(false);
+
+        // Intra-curriculum d=1 should be 0 after Plan A fix
+        const all = Object.values(wordsByModule).flat();
+        let intra = 0;
+        for (let i = 0; i < all.length; i++) for (let j = i + 1; j < all.length; j++) if (standardLevenshtein(all[i], all[j]) <= 1) intra++;
+        expect(intra).toBe(0);
+
+        // Random salpak demo: new word "grip" vs "fish" d=4 false → hindi pabor, pero grip vs target grip true
+        expect(isWordMatch("grip", "grip")).toBe(true);
+        expect(isWordMatch("fist", "fish")).toBe(true); // fist still d=1 to fish, but fist not in curriculum anymore
     });
 
     test("tutorial not scored but same d<=1", () => {
