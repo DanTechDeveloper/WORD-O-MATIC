@@ -71,8 +71,6 @@ export function useDeepgramRecognition({
 
     const stateRefs = useRef({
         hasMatched: false,
-        lastProcessed: -1,
-        lastProcessedSentence: -1,
         isMounted: false,
         stoppedAt: 0,
         mispronouncedInWord: false,
@@ -100,7 +98,6 @@ export function useDeepgramRecognition({
     const audioCtxRef = useRef(null);
     const sourceNodeRef = useRef(null);
     const scriptNodeRef = useRef(null);
-    const resultsRef = useRef([]);
     const permissionDeniedRef = useRef(false);
 
     const stopAll = () => {
@@ -203,8 +200,14 @@ export function useDeepgramRecognition({
             audioCtxRef.current = audioCtx;
             const dg = new DeepgramClient({ accessToken: token, baseUrl });
             // ponytail: batch keyterm = level words (Word Blast 10 + Story Quest sentence words) — set once at open, survives targetWord re-arm without reconnect
-            const rawTerms = Array.isArray(propsRef.current.keyterms) ? propsRef.current.keyterms : [];
-            const keyterm = [...new Set(rawTerms.map((w) => normalizeText(w)).filter(Boolean))].slice(0, 10);
+            const rawTerms = Array.isArray(propsRef.current.keyterms)
+                ? propsRef.current.keyterms
+                : [];
+            const keyterm = [
+                ...new Set(
+                    rawTerms.map((w) => normalizeText(w)).filter(Boolean),
+                ),
+            ].slice(0, 10);
             const conn = await dg.listen.v1.connect({
                 model: MODEL,
                 language: LANGUAGE,
@@ -237,8 +240,6 @@ export function useDeepgramRecognition({
                 stateRefs.current.hasMatched = false;
                 stateRefs.current.mispronouncedInWord = false;
                 stateRefs.current.mispronouncedSentence = false;
-                stateRefs.current.lastProcessed = -1;
-                stateRefs.current.lastProcessedSentence = -1;
                 stateRefs.current.transcript = "";
                 stateRefs.current.interim = "";
                 if (propsRef.current.isActive) armForCurrentTarget();
@@ -335,37 +336,19 @@ export function useDeepgramRecognition({
                     );
                 }
                 const isFinal = !!data.is_final;
-                const speechFinal = !!(data.speech_final ?? data.speechFinal);
+                const speechFinal = !!data.speech_final;
                 const transcript =
                     data.channel?.alternatives?.[0]?.transcript ?? "";
                 if (!transcript && !isFinal && !speechFinal) return;
-                resultsRef.current.push({
+                const result = {
                     isFinal,
                     speechFinal,
                     0: { transcript },
-                });
-                const MAX_RESULTS = 128;
-                if (resultsRef.current.length > MAX_RESULTS) {
-                    const drop = resultsRef.current.length - MAX_RESULTS;
-                    resultsRef.current.splice(0, drop);
-                    stateRefs.current.lastProcessed = Math.max(
-                        -1,
-                        stateRefs.current.lastProcessed - drop,
-                    );
-                    stateRefs.current.lastProcessedSentence = Math.max(
-                        -1,
-                        stateRefs.current.lastProcessedSentence - drop,
-                    );
-                }
-                const resultIndex = resultsRef.current.length - 1;
-                const event = {
-                    resultIndex,
-                    results: resultsRef.current,
                 };
                 const target = normalizeText(propsRef.current.targetWord);
                 if (propsRef.current.isWordMode) {
                     processWordModeResult(
-                        event,
+                        result,
                         target,
                         stateRefs,
                         timerRefs,
@@ -374,7 +357,7 @@ export function useDeepgramRecognition({
                     );
                 } else {
                     processSentenceModeResult(
-                        event,
+                        result,
                         target,
                         stateRefs,
                         timeoutRefs,
@@ -435,8 +418,6 @@ export function useDeepgramRecognition({
         stateRefs.current.hasMatched = false;
         stateRefs.current.mispronouncedInWord = false;
         stateRefs.current.mispronouncedSentence = false;
-        stateRefs.current.lastProcessed = -1;
-        stateRefs.current.lastProcessedSentence = -1;
         stateRefs.current.transcript = "";
         stateRefs.current.interim = "";
         stateRefs.current.stoppedAt = 0;
@@ -444,7 +425,6 @@ export function useDeepgramRecognition({
         timeoutRefs.current.target = null;
         timeoutRefs.current.graceEnd = Date.now() + 500;
         timeoutRefs.current.restartCount = 0;
-        resultsRef.current = [];
         clearAllTimers(timerRefs.current);
 
         if (propsRef.current?.isActive && connRef.current) {
@@ -452,10 +432,6 @@ export function useDeepgramRecognition({
         }
     }, [targetWord]);
 
-    useEffect(() => {
-        timeoutRefs.current.graceEnd = Date.now() + 500;
-        timeoutRefs.current.restartCount = 0;
-    }, []);
     useEffect(() => {
         timeoutRefs.current.graceEnd = Date.now() + 500;
         if (propsRef.current?.isActive && connRef.current) {
@@ -472,8 +448,6 @@ export function useDeepgramRecognition({
                 stateRefs.current.hasMatched = false;
                 stateRefs.current.mispronouncedInWord = false;
                 stateRefs.current.mispronouncedSentence = false;
-                stateRefs.current.lastProcessed = -1;
-                stateRefs.current.lastProcessedSentence = -1;
                 stateRefs.current.transcript = "";
                 stateRefs.current.interim = "";
                 stateRefs.current.stoppedAt = 0;
@@ -482,7 +456,6 @@ export function useDeepgramRecognition({
                 timeoutRefs.current.graceEnd = Date.now() + 500;
                 timeoutRefs.current.restartCount = 0;
                 permissionDeniedRef.current = false;
-                resultsRef.current = [];
                 clearAllTimers(timerRefs.current);
                 if (connRef.current) return;
                 startConnection();
