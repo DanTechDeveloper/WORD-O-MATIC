@@ -87,8 +87,6 @@ export function useDeepgramRecognition({
         restart: null,
         sentence: null,
         word: null,
-        settle: null,
-        sentenceSettle: null,
         wordSettle: null,
     });
     const timeoutRefs = useRef({
