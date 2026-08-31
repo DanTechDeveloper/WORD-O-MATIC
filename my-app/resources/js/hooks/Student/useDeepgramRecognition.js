@@ -10,7 +10,7 @@ import {
 } from "@/lib/speechProcessors";
 
 const MODEL = "nova-3";
-const LANGUAGE = "en";
+const LANGUAGE = "en-US";
 const DEBUG_ASR = false;
 
 export function useDeepgramRecognition({
@@ -24,6 +24,7 @@ export function useDeepgramRecognition({
     onRestartFailed,
     matchMode = "word",
     muted = false,
+    keyterms = [],
 }) {
     const isWordMode = matchMode === "word";
     const propsRef = useRef({
@@ -32,6 +33,7 @@ export function useDeepgramRecognition({
         isWordMode,
         targetWord,
         muted,
+        keyterms,
         onWordRecognized,
         onPermissionDenied,
         onMispronounced,
@@ -46,6 +48,7 @@ export function useDeepgramRecognition({
             isWordMode,
             targetWord,
             muted,
+            keyterms,
             onWordRecognized,
             onPermissionDenied,
             onMispronounced,
@@ -58,6 +61,7 @@ export function useDeepgramRecognition({
         isWordMode,
         targetWord,
         muted,
+        keyterms,
         onWordRecognized,
         onPermissionDenied,
         onMispronounced,
@@ -200,6 +204,9 @@ export function useDeepgramRecognition({
             const audioCtx = new AudioCtx({ sampleRate: 16000 });
             audioCtxRef.current = audioCtx;
             const dg = new DeepgramClient({ accessToken: token, baseUrl });
+            // ponytail: batch keyterm = level words (Word Blast 10 + Story Quest sentence words) — set once at open, survives targetWord re-arm without reconnect
+            const rawTerms = Array.isArray(propsRef.current.keyterms) ? propsRef.current.keyterms : [];
+            const keyterm = [...new Set(rawTerms.map((w) => normalizeText(w)).filter(Boolean))].slice(0, 10);
             const conn = await dg.listen.v1.connect({
                 model: MODEL,
                 language: LANGUAGE,
@@ -207,6 +214,7 @@ export function useDeepgramRecognition({
                 sample_rate: audioCtx.sampleRate,
                 channels: 1,
                 interim_results: true,
+                ...(keyterm.length ? { keyterm } : {}),
             });
             if (!stateRefs.current.isMounted) {
                 conn.close();

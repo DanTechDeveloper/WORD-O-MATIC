@@ -299,15 +299,16 @@ describe("processSentenceModeResult (Story Quest — withinRatio + boundaryLeak)
         processSentenceModeResult(event, target, stateRefs, timeoutRefs, timerRefs, propsRef);
         expect(propsRef.current.onMispronounced).toHaveBeenCalled();
     });
-    test("arms a ~2s await-final timer and mispronounces once a wrong interim settles", () => {
+    test("does NOT mispronounce on a non-final interim (no settle timer); waits for isFinal", () => {
         vi.useFakeTimers();
         const { stateRefs, timeoutRefs, timerRefs, propsRef } = makeRefs();
         const target = "i see a cat";
         const event = makeEvent([{ isFinal: false, 0: { transcript: "the dog" } }]);
         processSentenceModeResult(event, target, stateRefs, timeoutRefs, timerRefs, propsRef);
         expect(propsRef.current.onMispronounced).not.toHaveBeenCalled();
+        // no settle timer: 2s of silence must NOT mispronounce (only 5s watchdog would)
         vi.advanceTimersByTime(2000);
-        expect(propsRef.current.onMispronounced).toHaveBeenCalled();
+        expect(propsRef.current.onMispronounced).not.toHaveBeenCalled();
         vi.useRealTimers();
     });
     test("emits live per-word progress for a partial interim", () => {
@@ -420,5 +421,59 @@ describe("processWordModeResult (Word Blast — Levenshtein d<=1)", () => {
         expect(propsRef.current.onWordRecognized).not.toHaveBeenCalled();
         // grip is new word, fist→fish was d=1 but fist→grip d=4
         expect(standardLevenshtein("fist", "grip")).toBe(4);
+    });
+    test("no eager isFinal mispronounce: lets a partial/let-down word settle before judging", () => {
+        vi.useFakeTimers();
+        const { stateRefs, timeoutRefs, timerRefs, propsRef } = makeRefs();
+        const target = "fish";
+        // Interim (non-final) wrong word: no immediate verdict
+        processWordModeResult(makeEvent("dog"), target, stateRefs, timerRefs, timeoutRefs, propsRef);
+        expect(propsRef.current.onMispronounced).not.toHaveBeenCalled();
+        expect(propsRef.current.onWordRecognized).not.toHaveBeenCalled();
+        // isFinal=true on a non-matching word: STILL no immediate mispronounce
+        // (Deepgram finals prematurely + wrong — don't punish before completion).
+        processWordModeResult(makeEvent("fur", true), target, stateRefs, timerRefs, timeoutRefs, propsRef);
+        expect(propsRef.current.onMispronounced).not.toHaveBeenCalled();
+        // Only the 850ms wordSettle commits the wrong verdict (stoppedAt stale >600ms)
+        vi.advanceTimersByTime(900);
+        expect(propsRef.current.onMispronounced).toHaveBeenCalledTimes(1);
+        vi.useRealTimers();
+    });
+    test("partial prefix + complete correct word finishes: recognize wins, no false mispronounce", () => {
+        vi.useFakeTimers();
+        const { stateRefs, timeoutRefs, timerRefs, propsRef } = makeRefs();
+        const target = "fish";
+        // Let-down start (incomplete but correct-so-far)
+        processWordModeResult(makeEvent("fi"), target, stateRefs, timerRefs, timeoutRefs, propsRef);
+        expect(propsRef.current.onMispronounced).not.toHaveBeenCalled();
+        // Correct word arrives before the 850ms settle fires → recognized, settle cleared
+        processWordModeResult(makeEvent("fish"), target, stateRefs, timerRefs, timeoutRefs, propsRef);
+        expect(propsRef.current.onWordRecognized).toHaveBeenCalledTimes(1);
+        expect(propsRef.current.onMispronounced).not.toHaveBeenCalled();
+        vi.advanceTimersByTime(2000);
+        expect(propsRef.current.onMispronounced).not.toHaveBeenCalled();
+        vi.useRealTimers();
+    });
+    test("empty isFinal returns early, defers to 5s armWordTimeout fallback (no fast fire)", () => {
+        vi.useFakeTimers();
+        const { stateRefs, timeoutRefs, timerRefs, propsRef } = makeRefs();
+        // transcript empty → if(!transcript) return; no wordSettle armed here, no fast mispronounce
+        processWordModeResult({ results: [{ isFinal: true, 0: { transcript: "" } }] }, "cat", stateRefs, timerRefs, timeoutRefs, propsRef);
+        expect(propsRef.current.onMispronounced).not.toHaveBeenCalled();
+        vi.useRealTimers();
+    });
+    test("d<=1 near-match still Recognized even on isFinal (cot/cat, kat/cat)", () => {
+        // isWordMatch d<=1 true → recognized, fast path does NOT mispronounce
+        for (const spoken of ["cot", "kat"]) {
+            const { stateRefs, timeoutRefs, timerRefs, propsRef } = makeRefs();
+            processWordModeResult(makeEvent(spoken, true), "cat", stateRefs, timerRefs, timeoutRefs, propsRef);
+            expect(propsRef.current.onMispronounced).not.toHaveBeenCalled();
+            expect(propsRef.current.onWordRecognized).toHaveBeenCalledTimes(1);
+        }
+        // cot is not fish target though — use correct targets in separate asserts
+        const { stateRefs, timeoutRefs, timerRefs, propsRef } = makeRefs();
+        processWordModeResult(makeEvent("fist", true), "fish", stateRefs, timerRefs, timeoutRefs, propsRef);
+        expect(propsRef.current.onMispronounced).not.toHaveBeenCalled();
+        expect(propsRef.current.onWordRecognized).toHaveBeenCalledTimes(1);
     });
 });

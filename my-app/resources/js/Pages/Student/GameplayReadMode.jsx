@@ -4,13 +4,14 @@ import Microphone from "@/Components/Student/Microphone";
 import AvatarSpeechBubble from "@/Components/Student/AvatarSpeechBubble";
 import DeniedModal from "@/Components/Student/DeniedModal";
 import TapToStartOverlay from "@/Components/Student/TapToStartOverlay";
-import { useEffect, useCallback, useState } from "react";
+import { useEffect, useCallback, useState, useMemo } from "react";
 import { usePage } from "@inertiajs/react";
 import axios from "axios";
 import { useGameplayEngine } from "@/hooks/Student/useGameplayEngine";
 import { useDeepgramRecognition } from "@/hooks/Student/useDeepgramRecognition";
 import { useMicrophonePermission } from "@/hooks/Student/useMicrophonePermission";
 import { pauseBackgroundMusic, setMicLive } from "@/utils/sounds";
+import { normalizeText } from "@/lib/speechUtils";
 
 const GUIDE_STEPS = [
     { title: "READ THE WORD", message: "Say each word aloud into the mic. Read it right to BLAST it!", emoji: "campaign", color: "accent" },
@@ -103,11 +104,18 @@ export default function GameplayReadMode({ module, tutorialComplete = true }) {
         return () => setMicLive(false);
     }, []);
 
+    // ponytail: YAGNI — keyterm batch only (10 words at open, no reconnect per word)
+    const readKeyterms = useMemo(
+        () => [...new Set((module?.words ?? []).map((w) => normalizeText(w.word)).filter(Boolean))].slice(0, 10),
+        [module?.words],
+    );
+
     useDeepgramRecognition({
         isActive: gameState === "ACTIVE",
         preload: gameState === "COUNTDOWN" || gameState === "ACTIVE",
         muted: isExploding,
         targetWord: targetWord,
+        keyterms: readKeyterms,
         onWordRecognized: handleWordRecognized,
         onPermissionDenied: () => setGameState("DENIED"),
         onMispronounced: handleMispronounce,
