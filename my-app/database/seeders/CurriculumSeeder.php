@@ -14,10 +14,10 @@ class CurriculumSeeder extends Seeder
     {
         $wordsByModule = [
             // ponytail: L1 replaced — Levenshtein-safe (d<=1 alone). Old cat/dog/sun/hat/run/big/red/cup/box/pen had 9+ d=1 real neighbors (cat→bat/cot/mat). New 4-letter set has ≤1 neighbor, so Levenshtein alone is not over-permissive. If a word still not pabor, replace again and keep d<=1.
-            1 => ['fish', 'bird', 'book', 'lamp', 'jump', 'farm', 'chip', 'desk', 'moon', 'gold'],
-            2 => ['cake', 'tree', 'kite', 'road', 'cube', 'rain', 'boat', 'seed', 'lime', 'bone'],
-            3 => ['star', 'drum', 'frog', 'milk', 'nest', 'sand', 'belt', 'fist', 'golf', 'hand'],
-            4 => ['grass', 'train', 'plate', 'broom', 'snake', 'grape', 'trail', 'flame', 'clamp', 'brick'],
+            1 => ['fish', 'bird', 'book', 'lamp', 'jump', 'farm', 'chip', 'desk', 'moon', 'iron'],
+            2 => ['cake', 'tree', 'kite', 'road', 'cube', 'snow', 'boat', 'seed', 'lime', 'bone'],
+            3 => ['star', 'drum', 'frog', 'milk', 'nest', 'sand', 'belt', 'grip', 'golf', 'palm'],
+            4 => ['grass', 'train', 'plate', 'broom', 'snake', 'grape', 'track', 'flame', 'press', 'brick'],
             5 => ['rabbit', 'window', 'pencil', 'basket', 'kitten', 'napkin', 'picnic', 'helmet', 'muffin', 'lantern'],
             6 => ['replay', 'prefix', 'unseen', 'redo', 'undo', 'preview', 'unhappy', 'reload', 'rewrite', 'subway'],
             7 => ['slowly', 'joyful', 'fearless', 'quickly', 'useful', 'careful', 'loudly', 'kindly', 'sadly', 'painful'],
