@@ -202,17 +202,20 @@ export function processWordModeResult(
         stateRefs.current.lastProcessed = event.results.length - 1;
         propsRef.current.onWordRecognized?.();
         clearAllTimers(timerRefs.current);
-        stateRefs.current.mispronouncedInWord = false;
         return;
     }
 
-    // ponytail: no eager isFinal mispronounce — Deepgram finals a single word
-    // prematurely OR with a wrong transcript, judging an incomplete utterance
-    // "wrong" before the child finishes. wordSettle (below) re-arms on every
-    // result, so it naturally waits for completion and reads the latest state.
-    // A correct word is always recognized first via isWordMatch (850ms window),
-    // clearing the settle, so recognition wins over a stale settle — no false
-    // mispronounce, and no punish of a let-down/partial utterance (both "a"+"b").
+    // ponytail: authoritative final on a non-matching word → immediate mispronounce.
+    // Without this, a correct word spoken after a wrong interim can be pre-empted
+    // by the 900ms wordSettle firing on the stale interim — causing false mispronounce.
+    if (!stateRefs.current.mispronouncedInWord && result.isFinal) {
+        stateRefs.current.mispronouncedInWord = true;
+        stateRefs.current.lastProcessed = event.results.length - 1;
+        clearAllTimers(timerRefs.current);
+        propsRef.current.onMispronounced?.(transcript);
+        return;
+    }
+
     if (!stateRefs.current.mispronouncedInWord) {
         // Ponytail: captured at arm time, rechecked at fire.
         const settleTarget = target;
@@ -227,15 +230,6 @@ export function processWordModeResult(
                 !s.mispronouncedInWord &&
                 timeoutRefs.current.target === settleTarget
             ) {
-                if (Date.now() - s.stoppedAt < 600) {
-                    timerRefs.current.wordSettle = setTimeout(() => {
-                        if (s.isMounted && propsRef.current.isActive && !s.hasMatched && !s.mispronouncedInWord && timeoutRefs.current.target === settleTarget) {
-                            s.mispronouncedInWord = true;
-                            propsRef.current.onMispronounced?.(settleTranscript);
-                        }
-                    }, 600);
-                    return;
-                }
                 s.mispronouncedInWord = true;
                 propsRef.current.onMispronounced?.(settleTranscript);
             }
