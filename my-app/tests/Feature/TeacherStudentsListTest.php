@@ -116,6 +116,24 @@ class TeacherStudentsListTest extends TestCase
                 ->where('data.data.1.fullName', 'Low Risk'));
     }
 
+    public function test_students_list_exposes_final_average_and_sorts_by_it_desc(): void
+    {
+        $this->makeStudent('Avg 40', ['wordBlastAcc' => 20, 'storyQuestAcc' => 60]);
+        $this->makeStudent('Avg 90', ['wordBlastAcc' => 90, 'storyQuestAcc' => 90]);
+        $this->makeStudent('Half Started', ['wordBlastAcc' => 0, 'storyQuestAcc' => 100]);
+
+        $this->actingAs($this->teacher)
+            ->get('/teacher/students?sort=finalAverage')
+            ->assertSuccessful()
+            ->assertInertia(fn ($page) => $page
+                ->where('data.data.0.fullName', 'Avg 90')
+                ->where('data.data.0.finalAverage', 90)
+                ->where('data.data.1.fullName', 'Half Started')
+                ->where('data.data.1.finalAverage', null)
+                ->where('data.data.2.fullName', 'Avg 40')
+                ->where('data.data.2.finalAverage', 40));
+    }
+
     public function test_students_list_sorts_by_read_level_asc(): void
     {
         $this->makeStudent('Level Three', ['read_level' => 3]);

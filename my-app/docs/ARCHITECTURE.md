@@ -1,6 +1,6 @@
 # Architecture
 
-> Version 1.7
+> Version 1.8
 
 ## Backend
 
@@ -9,7 +9,7 @@
 | Controllers | `UserController`, `StudentController`, `TeacherController`, `ReportController` — thin, delegate to services |
 | Services | `ProgressService`, `BadgeService`, `LevelService`, `ReportService` |
 | Middleware | `HandleInertiaRequests` (global data), `EnsureUserRole` (role gate), `CheckStudentOnboarding` (avatar) |
-| Models | 14 Eloquent models |
+| Models | 14 Eloquent models — `StudentProfile` exposes an appended `finalAverage` accessor (`round((wb+sq)/2, 2)`, null when either accuracy is 0, mirroring `ProgressService::finalAverage`) |
 | Validation | Inline `$request->validate()` in controllers |
 | Auth | Middleware-based (`role:teacher` / `role:student`), no Policy files |
 | Notifications | Laravel Mail queued (`Mail::to()->queue()`) |
@@ -67,6 +67,7 @@ Axios JSON endpoints (mastery toggles) bypass Inertia and return `noContent()`.
 | Mic-live audio silence | Gameplay `ACTIVE` pauses BGM + sets `micLive`; while `micLive` no SFX/BGM-resume runs, so the mic never records playback (echo protection) |
 | Badge-celebration silence | `BadgeUnlockModal` sets `bgmSilenced` and pauses BGM; BGM + tap sounds resume only on the last claimed badge |
 | Two-tier click SFX | `data-sfx="major"` actions get a loud click + BGM duck; un-tagged interactive elements get a soft blip (vol 0.35, no duck). Default is soft — a forgotten tag fails safely |
+| Numeric Final Average | Derived, not stored — `ProgressService::finalAverage()` (logical SOT) + `StudentProfile::finalAverage` accessor compute `(wb+sq)/2`, null until both skills started (mirrors `classify`), so a one-sided `(80+0)/2=40` never misleads. Surfaced across dashboard/students/leaderboards/reports/emails/Excel |
 
 ## Auth Flow
 

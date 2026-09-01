@@ -62,11 +62,34 @@ class DashboardTest extends TestCase
             ->where('students.0.status', 'onTrack')
             ->where('students.0.wordBlastAcc', 85)
             ->where('students.0.storyQuestAcc', 90)
+            ->where('students.0.finalAverage', 87.5)
             ->where('students.1.status', 'support')
+            ->where('students.1.finalAverage', 67.5)
             ->where('students.2.status', 'atRisk')
+            ->where('students.2.finalAverage', 45)
             ->where('students.3.status', 'in_progress')
+            ->where('students.3.finalAverage', null)
             ->where('students.4.status', 'notStarted')
+            ->where('students.4.finalAverage', null)
         );
+    }
+
+    public function test_dashboard_final_average_accessor_is_null_until_both_skills_started(): void
+    {
+        $this->actingAs($this->teacher);
+
+        $this->makeStudent('Both', ['wordBlastAcc' => 80, 'storyQuestAcc' => 90]);
+        $this->makeStudent('Zero WB', ['wordBlastAcc' => 0, 'storyQuestAcc' => 90]);
+        $this->makeStudent('Zero SQ', ['wordBlastAcc' => 80, 'storyQuestAcc' => 0]);
+        $this->makeStudent('Both Zero', ['wordBlastAcc' => 0, 'storyQuestAcc' => 0]);
+
+        // Seeking the persisted model directly locks the accessor's acc==0 guard.
+        $zeroWb = StudentProfile::whereHas('user', fn ($q) => $q->where('name', 'Zero WB'))->first();
+        $this->assertNull($zeroWb->finalAverage);
+        $zeroSq = StudentProfile::whereHas('user', fn ($q) => $q->where('name', 'Zero SQ'))->first();
+        $this->assertNull($zeroSq->finalAverage);
+        $both = StudentProfile::whereHas('user', fn ($q) => $q->where('name', 'Both'))->first();
+        $this->assertSame(85.0, $both->finalAverage);
     }
 
     public function test_dashboard_chart_counts_match_student_statuses(): void
@@ -163,6 +186,23 @@ class DashboardTest extends TestCase
         );
     }
 
+    public function test_dashboard_avg_final_accuracy_excludes_unstarted_students(): void
+    {
+        $this->actingAs($this->teacher);
+
+        // Only the first two have both skills started, so avg = (75+85)/2 = 80.
+        $this->makeStudent('Done A', ['wordBlastAcc' => 70, 'storyQuestAcc' => 80]);
+        $this->makeStudent('Done B', ['wordBlastAcc' => 80, 'storyQuestAcc' => 90]);
+        $this->makeStudent('Half', ['wordBlastAcc' => 100, 'storyQuestAcc' => 0]);
+        $this->makeStudent('None', ['wordBlastAcc' => 0, 'storyQuestAcc' => 0]);
+
+        $response = $this->get(route('teacher.dashboard'));
+
+        $response->assertInertia(fn ($page) => $page
+            ->where('avgFinalAccuracy', 80)
+        );
+    }
+
     public function test_dashboard_section_performance_thresholds(): void
     {
         $this->actingAs($this->teacher);
@@ -187,6 +227,12 @@ class DashboardTest extends TestCase
 
                 $alpha = $bySection['Sector Alpha'];
                 if ($alpha['status'] !== 'On Track' || $alpha['student_count'] !== 2 || $alpha['avg_read'] !== 90 || $alpha['avg_speak'] !== 80 || $alpha['total_points'] !== 10) {
+                    return false;
+                }
+                if (round($alpha['final_average'], 2) !== 85.0 || round($bySection['Sector Bravo']['final_average'], 2) !== 65.0) {
+                    return false;
+                }
+                if ($bySection['Sector Delta']['final_average'] !== null || $bySection['Sector Epsilon']['final_average'] !== null) {
                     return false;
                 }
 

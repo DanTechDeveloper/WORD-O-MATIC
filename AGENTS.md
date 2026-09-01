@@ -43,7 +43,7 @@ middleware aliases are registered in `bootstrap/app.php`.
 | `php artisan migrate:fresh --seed` | Reset DB + seed: 1 teacher (`admin`/`password`) + 100 students across 3 sectors (Sector 7-G, Sector Alpha, Sector Bravo) |
 | `npm run dev` | Vite only |
 | `npm run build` | Vite production build |
-| `npx vitest run` | JS unit tests (`tests/Unit/speechUtils.test.js`) — **not** run by CI or `composer run test` |
+| `npx vitest run` | JS unit tests (`tests/Unit/*.test.js` — speechUtils, audioGate, curriculumLevenshtein, masteryLabels) — **not** run by CI or `composer run test` |
 | `vendor/bin/pint` | PSR-12 format/fix (not wired into a script or CI) |
 
 ## What not to assume

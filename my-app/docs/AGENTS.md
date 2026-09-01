@@ -1,6 +1,6 @@
 # Word-O-Matic
 
-> Version 1.8 — Developer Guide
+> Version 1.9 — Developer Guide
 
 ## Design Context
 
@@ -77,11 +77,11 @@ Enforced by `CheckStudentOnboarding` middleware, which also bounces avatar-compl
 
 | Service | Responsibility |
 |---|---|
-| `ProgressService` | Update word/paragraph progress (best score only), recalculate status. Status thresholds live in the static `classify(float $wordBlastAcc, float $storyQuestAcc, bool $wordStarted, bool $storyStarted)` (single source of truth — called by `recalculateStatus`, `TeacherController::dashboardStats` per-student + section, and `StudentSeeder`; `started` = accuracy > 0 OR a progress row on a real module, resolving the both-zero `notStarted` collision, CAVEATS BF26). Tutorial plays — including post-onboarding replays, where `finishRound()` drops the isTutorial flag — never move `students.points` (recompute sums exclude tutorial rows; the delta path is gated on `! $module->is_tutorial`). Clamps client-reported inputs at the service boundary — `words_processed ≥ 0`, `words_smashed ≤ words_processed`, `accuracy ∈ [0,100]` — and never completes a module with 0 words (`$totalWords > 0` guard). |
+| `ProgressService` | Update word/paragraph progress (best score only), recalculate status. Status thresholds live in the static `classify(float $wordBlastAcc, float $storyQuestAcc, bool $wordStarted, bool $storyStarted)` (single source of truth — called by `recalculateStatus`, `TeacherController::dashboardStats` per-student + section, and `StudentSeeder`; `started` = accuracy > 0 OR a progress row on a real module, resolving the both-zero `notStarted` collision, CAVEATS BF26). Numeric Final Average is the static `finalAverage(float $wordBlastAcc, float $storyQuestAcc, bool $wordStarted, bool $storyStarted): ?float` — same guards as `classify` (null until both skills started, else `round((wb+sq)/2, 2)`); the `StudentProfile` accessor `finalAverage` (`$appends`) mirrors it with a pure `acc == 0 → null` guard (no query). Tutorial plays — including post-onboarding replays, where `finishRound()` drops the isTutorial flag — never move `students.points` (recompute sums exclude tutorial rows; the delta path is gated on `! $module->is_tutorial`). Clamps client-reported inputs at the service boundary — `words_processed ≥ 0`, `words_smashed ≤ words_processed`, `accuracy ∈ [0,100]` — and never completes a module with 0 words (`$totalWords > 0` guard). |
 | `BadgeService` | Award badges, check thresholds. `calculateModuleCompletion()` computes paragraph/word completion % from `words_smashed`. `checkAllEligibleBadges()` also runs at student login (avatar set). |
 | `LevelService` | Module lock/current/completed status per student |
 | `ReportService` | Deadline/cutoff resolution (`deadline()`, `cutoff()`), `trainingWordsFor()`, pure projections of `curriculumForUser()` (`trainingGroupsFrom()`, `trainingAttemptsFrom()`), `curriculumPercent()`, `latestBadge()`, and the `NEEDS_ATTENTION_ATTEMPTS` threshold const shared to the teacher UI — powers `ReportController` (routes `reports`, `reports.sendEmails`, `reports.deadline`, `reports.export`). |
-| `TeacherController::dashboardStats()` | Teacher dashboard stats (private method, no service class). Returns `topStudents`, `chartCounts`, `sectionPerformance`, and a per-student `students` list (id, name, section, wordBlastAcc, storyQuestAcc, status) powering the class-health drill-down table. |
+| `TeacherController::dashboardStats()` | Teacher dashboard stats (private method, no service class). Returns `topStudents`, `chartCounts`, `sectionPerformance` (each with `final_average`), `avgFinalAccuracy` (avg of per-student `finalAverage`, nulls filtered), and a per-student `students` list (id, name, section, wordBlastAcc, storyQuestAcc, finalAverage, status — `status` read from the stored column, `finalAverage` from the accessor) powering the class-health drill-down table. `students()` additionally accepts `?sort=finalAverage` (raw `(wb+sq)/2` ORDER BY, no thresholds) and exposes `finalAverage` per row. |
 
 Session logging done via `GameSession::logSession()` static method on the model (no service class).
 
@@ -173,6 +173,7 @@ while content or title is empty and renders server validation errors in-modal
 
 ## Conventions
 
+- **`finalAverage` risk dots are a client-side view mirror.** `Students.jsx` and `Dashboard.jsx` render each accuracy column (Word Blast / Story Quest / Final Average) with a colored dot via `computeRisk(acc)` → `<60 high / <80 moderate / else low / 0|null na`, mapped through `riskStyles`. The 60/80 thresholds mirror `ProgressService::classify` — do not edit them independently (logical SOT stays in ProgressService).
 - No comments unless explaining _why_.
 - Extend before creating new.
 - After each task: list changed files + what changed + intentionally untouched + follow-up.

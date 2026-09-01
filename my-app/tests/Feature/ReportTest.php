@@ -79,6 +79,7 @@ class ReportTest extends TestCase
         $response->assertInertia(fn ($page) => $page
             ->where('grouped.onTrack.0.name', 'Test Student')
             ->where('grouped.onTrack.0.wordBlastAcc', 85)
+            ->where('grouped.onTrack.0.finalAverage', 87.5)
         );
     }
 
@@ -359,7 +360,8 @@ class ReportTest extends TestCase
 
         Mail::assertQueued(StudentReportMail::class, function ($mail) {
             return $mail->data['wordAttempts'] === ['CAT' => 3]
-                && $mail->data['paragraphWordAttempts'] === [];
+                && $mail->data['paragraphWordAttempts'] === []
+                && $mail->data['finalAverage'] === 87.5;
         });
         $response->assertSessionHas('sent', 1);
     }
