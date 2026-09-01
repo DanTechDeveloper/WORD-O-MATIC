@@ -1,6 +1,6 @@
 # Database
 
-> Version 1.5
+> Version 1.6
 
 All migrations in `database/migrations/`. No raw SQL. All foreign keys on `user_id` use `cascadeOnDelete`.
 
@@ -17,7 +17,7 @@ All migrations in `database/migrations/`. No raw SQL. All foreign keys on `user_
 
 | Table | Key Fields | Notes |
 |---|---|---|
-| `students` | `user_id, points, read_progress, avatar, speak_progress, status, wordBlastAcc, storyQuestAcc, read_level, speak_level, section, gender, parent_email, tutorial_completed_at, report_sent_at` | Denormalized stats, best-score-only updates. `report_sent_at` set when parent report email is queued. Cascade on `user_id`. (`words_smashed` dropped 2026-06-29) |
+| `students` | `user_id, points, read_progress, avatar, speak_progress, status, wordBlastAcc, storyQuestAcc, read_level, speak_level, section, gender, parent_email, tutorial_completed_at, report_sent_at` | Denormalized stats, best-score-only updates. `status` (values `notStarted`/`in_progress`/`support`/`atRisk`/`onTrack`) is a stored **read-SOT**, written only by `ProgressService::recalculateStatus()` via `classify()` — read paths never re-derive it. `report_sent_at` set when parent report email is queued. Cascade on `user_id`. (`words_smashed` dropped 2026-06-29) |
 | `student_word_progress` | `user_id, word_module_id, status, words_smashed, accuracy` | Overwritten on best score. Cascade. |
 | `student_paragraph_progress` | `user_id, paragraph_module_id, status, words_smashed, accuracy` | Overwritten on best score. Cascade. |
 | `student_word_mastery` | `user_id, word_id, status` | Per-word mastery toggle. Cascade. |
@@ -70,3 +70,10 @@ User deleted → students cascade
 ```
 
 No orphan records. One `$user->delete()` cleans everything.
+
+## Derived metrics (not columns)
+
+`finalAverage` is **not stored** — it is an appended `StudentProfile` accessor
+computing `round((wordBlastAcc + storyQuestAcc) / 2, 2)`, returning `null` while
+either accuracy is `0` (i.e. the student has not started one skill yet). It
+mirrors `ProgressService::finalAverage()` (the logical SOT, `app/Services/ProgressService.php`).

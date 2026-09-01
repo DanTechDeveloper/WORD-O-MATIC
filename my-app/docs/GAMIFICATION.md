@@ -1,6 +1,6 @@
 # Gamification
 
-> Version 1.1
+> Version 1.2
 
 ## XP & Points
 
@@ -110,7 +110,7 @@ Each tab displays a full ranked list (all students) with section filter dropdown
 | Needs Support | Low accuracy |
 | On Track | Meeting expectations |
 
-Computed by `ProgressService::recalculateStatus()`, which delegates to the shared static classifier `ProgressService::classify(float $wordBlastAcc, float $storyQuestAcc)` — the single source of truth for these thresholds. The teacher dashboard (`TeacherController::dashboardStats`) and `StudentSeeder` call the same method, and the dashboard payload uses the DB vocabulary (`support`, not a separate `needsSupport` key).
+Computed by `ProgressService::recalculateStatus()`, which delegates to the shared static classifier `ProgressService::classify(float $wordBlastAcc, float $storyQuestAcc, bool $wordStarted, bool $storyStarted)` — the single source of truth for these thresholds. The teacher dashboard (`TeacherController::dashboardStats`) and `StudentSeeder` call the same method, and the dashboard payload uses the DB vocabulary (`support`, not a separate `needsSupport` key). The related **Final Average** metric (`round((wb+sq)/2,2)`) shares `classify`'s started guards via `ProgressService::finalAverage()` and the `StudentProfile::finalAverage` accessor — null until both skills started.
 
 ## Word Attempt Analytics
 

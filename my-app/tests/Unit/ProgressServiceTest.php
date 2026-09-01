@@ -43,4 +43,21 @@ class ProgressServiceTest extends TestCase
     {
         $this->assertSame('onTrack', ProgressService::classify(85, 90, true, true));
     }
+
+    public function test_final_average_is_null_until_both_skills_started(): void
+    {
+        $this->assertNull(ProgressService::finalAverage(0, 0, false, false));
+        $this->assertNull(ProgressService::finalAverage(80, 0, true, false));
+        $this->assertNull(ProgressService::finalAverage(0, 90, false, true));
+        $this->assertNull(ProgressService::finalAverage(80, 0, true, true));
+        $this->assertNull(ProgressService::finalAverage(0, 90, true, true));
+    }
+
+    public function test_final_average_averages_and_rounds_both_accuracies(): void
+    {
+        $this->assertSame(50.0, ProgressService::finalAverage(80, 20, true, true));
+        $this->assertSame(87.5, ProgressService::finalAverage(85, 90, true, true));
+        // Odd sum yields an x.5 middle rather than a 2-decimal spill.
+        $this->assertSame(66.5, ProgressService::finalAverage(66, 67, true, true));
+    }
 }

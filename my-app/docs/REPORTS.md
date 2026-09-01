@@ -1,6 +1,6 @@
 # Reports
 
-> Version 1.8
+> Version 1.9
 
 ## Dashboard
 
@@ -14,6 +14,8 @@ Route: `GET /teacher/reports` → `ReportController@reports`. Charts classify st
 | On Track | Average accuracy ≥ 80% |
 
 Classification formula: `wordBlastAcc` and `storyQuestAcc` averaged. The displayed status (dashboard, emailed report, Excel export, Reports.jsx) is the single stored `students.status` column written by `ProgressService::recalculateStatus()` — none recompute it, so they cannot diverge (CAVEATS BF26).
+
+The **numeric Final Average** is a separate, derived metric surfaced everywhere the two accuracies appear (teacher Dashboard table, Students, Reports.jsx, StudentDetails, parent email, Excel export): `round((wordBlastAcc + storyQuestAcc) / 2, 2)`, shown as `null`/"N/A" until **both** skills have a real started signal (one-sided `(80+0)/2=40` never renders). SOT is `ProgressService::finalAverage()` / the `StudentProfile::finalAverage` accessor. Teacher's `Dashboard.jsx` colors each accuracy column (incl. Final Average) with a risk dot based on `computeRisk(acc)` (60/80 thresholds mirroring `classify`).
 
 ## Deadline
 
@@ -38,7 +40,7 @@ The teacher deadline banner is a single source of truth in `DashboardLayout.jsx`
 **Email content** (`student-report.blade.php`, v1.7 redesign) is a projection of the **same `curriculumForUser()` data** that powers `StudentDetails` — parity locked by `ReportTest::test_email_payload_matches_student_details_view_data`:
 
 - **Header**: student name, sector, status pill (all five statuses render a colored pill).
-- **Performance Overview**: Word Blast / Story Quest accuracy tiles.
+- **Performance Overview**: Word Blast / Story Quest accuracy tiles + a full-width amber **Final Average** card (null-safe — hidden/absent when unstarted, `$data['finalAverage'] ?? null`).
 - **Curriculum Progress**: per-mode completion % (`wordBlastProg` / `storyQuestProg` via `ReportService::curriculumPercent()` — same math as the frontend's `calcOverallProgress`, parity asserted by test) rendered as progress bars + level line.
 - **Latest Achievement**: latest badge card (or empty state).
 - **Training Zone × 2** (Word Blast / Story Quest): every still-training word grouped by recorded tries against the shared threshold `ReportService::NEEDS_ATTENTION_ATTEMPTS = 3`:
@@ -57,11 +59,11 @@ The teacher deadline banner is a single source of truth in `DashboardLayout.jsx`
 ## Exports
 
 Excel (`.xlsx`) export via `ReportsExport` is available after deadline passes.
-- **Class Summary Sheet** (tab name `Class Summary`): One row per student with identity + Word Blast % + Story Quest % + that student's **own status category** in column D. Below the roster is a **Class Health Summary** block (status category + count, 5 rows) that feeds the pie. Two embedded native Excel charts sit on this same tab in columns N–V (scroll past column M):
+- **Class Summary Sheet** (tab name `Class Summary`): One row per student with identity + Word Blast % + Story Quest % + **Final Average %** + that student's **own status category** (column E, per BF25). Below the roster is a **Class Health Summary** block (status category + count, 5 rows) that feeds the pie. Two embedded native Excel charts sit on this same tab in columns N–V (scroll past column M):
   - **Class Health Distribution** (Pie Chart, anchored `N2:V16`): Visualizes the Class Health Summary block — student status distribution (On Track, Needs Support, At Risk, In Progress, Not Started) by count.
   - **Student Accuracy Comparison** (Bar/Column Chart, anchored `N18:V35`): Compares each student's Word Blast and Story Quest accuracy (columns A–C).
 - **Student Progress Summary Sheet**: One row per student with identity + status + per-mode progress:
-  - Student Name, Student ID, Section, Final Status, Word Blast (accuracy + level combined, e.g. `78% (Level 3 - Phonics Fundamentals)`), Story Quest (accuracy + level combined, e.g. `90% (Level 2 - Farm Animals)`), Top Struggle (up to two worst training words by attempts, e.g. `WB: CAT ×4 · SQ: the ×3`; empty when none)
+  - Student Name, Student ID, Section, Final Status, Word Blast (accuracy + level combined, e.g. `78% (Level 3 - Phonics Fundamentals)`), Story Quest (accuracy + level combined, e.g. `90% (Level 2 - Farm Animals)`), **Final Average** (e.g. `87.5%`), Top Struggle (up to two worst training words by attempts, e.g. `WB: CAT ×4 · SQ: the ×3`; empty when none)
 - **Words Needing Practice Sheet**: Flat drill-down, one row per student-word still in training (sorted attempts-desc within each student):
   - Student Name, Student ID, Section, Mode, Level, Word, Attempts
   - Same normalized projection as the parent email (`ReportService::struggleRowsFrom`, per-level merge + global display casing); rows at/over `NEEDS_ATTENTION_ATTEMPTS` are red-filled
