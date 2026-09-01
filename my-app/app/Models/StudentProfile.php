@@ -40,17 +40,18 @@ class StudentProfile extends Model
 
     protected $appends = ['finalAverage'];
 
-    public function getFinalAverageAttribute(): ?float
+    public function getFinalAverageAttribute(): ?int
     {
         // ponytail: pure (wb+sq)/2 — null when either is 0 (notStarted/in_progress).
         // Started-row check lives in ProgressService::finalAverage(); accessor keeps
         // the simple acc==0 guard so it never fires a query on attribute access.
+        // Whole number per DepEd (DO 8 s.2015 Table 8).
         $wb = (float) ($this->wordBlastAcc ?? 0);
         $sq = (float) ($this->storyQuestAcc ?? 0);
         if ($wb == 0 || $sq == 0) {
             return null;
         }
-        return round(($wb + $sq) / 2, 2);
+        return (int) round(($wb + $sq) / 2);
     }
 
     public function user()

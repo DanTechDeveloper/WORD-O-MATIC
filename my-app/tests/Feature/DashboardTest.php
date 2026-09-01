@@ -62,9 +62,9 @@ class DashboardTest extends TestCase
             ->where('students.0.status', 'onTrack')
             ->where('students.0.wordBlastAcc', 85)
             ->where('students.0.storyQuestAcc', 90)
-            ->where('students.0.finalAverage', 87.5)
+            ->where('students.0.finalAverage', 88)
             ->where('students.1.status', 'support')
-            ->where('students.1.finalAverage', 67.5)
+            ->where('students.1.finalAverage', 68)
             ->where('students.2.status', 'atRisk')
             ->where('students.2.finalAverage', 45)
             ->where('students.3.status', 'in_progress')
@@ -89,7 +89,7 @@ class DashboardTest extends TestCase
         $zeroSq = StudentProfile::whereHas('user', fn ($q) => $q->where('name', 'Zero SQ'))->first();
         $this->assertNull($zeroSq->finalAverage);
         $both = StudentProfile::whereHas('user', fn ($q) => $q->where('name', 'Both'))->first();
-        $this->assertSame(85.0, $both->finalAverage);
+        $this->assertSame(85, $both->finalAverage);
     }
 
     public function test_dashboard_chart_counts_match_student_statuses(): void
@@ -229,7 +229,7 @@ class DashboardTest extends TestCase
                 if ($alpha['status'] !== 'On Track' || $alpha['student_count'] !== 2 || $alpha['avg_read'] !== 90 || $alpha['avg_speak'] !== 80 || $alpha['total_points'] !== 10) {
                     return false;
                 }
-                if (round($alpha['final_average'], 2) !== 85.0 || round($bySection['Sector Bravo']['final_average'], 2) !== 65.0) {
+                if ($alpha['final_average'] !== 85 || $bySection['Sector Bravo']['final_average'] !== 65) {
                     return false;
                 }
                 if ($bySection['Sector Delta']['final_average'] !== null || $bySection['Sector Epsilon']['final_average'] !== null) {

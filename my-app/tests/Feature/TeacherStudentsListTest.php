@@ -179,7 +179,7 @@ class TeacherStudentsListTest extends TestCase
         $student = User::factory()->create(['role' => 'student', 'name' => 'Accurate Ana']);
         StudentProfile::factory()->for($student)->create(['read_level' => 1]);
 
-        // Two plays on the current level average to 75.5; a level-2 play must not count.
+        // Two plays on the current level average to 75.5 -> 76 whole number; a level-2 play must not count.
         $student->student->wordProgress()->create(['word_module_id' => $module1->id, 'words_smashed' => 7, 'accuracy' => 75, 'status' => 'in_progress']);
         $student->student->wordProgress()->create(['word_module_id' => $module1->id, 'words_smashed' => 8, 'accuracy' => 76, 'status' => 'in_progress']);
         $student->student->wordProgress()->create(['word_module_id' => $module2->id, 'words_smashed' => 9, 'accuracy' => 10, 'status' => 'completed']);
@@ -190,7 +190,7 @@ class TeacherStudentsListTest extends TestCase
             ->assertInertia(fn ($page) => $page
                 ->where('data.total', 1)
                 ->where('data.data.0.fullName', 'Accurate Ana')
-                ->where('data.data.0.currentWordBlastAcc', 75.5));
+                ->where('data.data.0.currentWordBlastAcc', 76));
     }
 
     public function test_students_list_echoes_all_filters(): void

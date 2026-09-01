@@ -57,7 +57,7 @@ class ProgressService
 
             $wordsProcessed = max(0, $wordsProcessed);
             $wordsSmashed = max(0, min($wordsSmashed, $wordsProcessed));
-            $accuracy = max(0, min(100, (float) $accuracy));
+            $accuracy = (int) round(max(0, min(100, (float) $accuracy)));
 
             $progress = $progressClass::firstOrNew([
                 'user_id' => $student->user_id,
@@ -95,7 +95,7 @@ class ProgressService
                 // rows to average — keep the stored accuracy instead of crashing
                 // on round(null).
                 if ($avgAccuracy !== null) {
-                    $student->update([$accColumn => round($avgAccuracy, 2)]);
+                    $student->update([$accColumn => (int) round($avgAccuracy)]);
                 }
                 $this->recalculateStatus($student);
             }
@@ -158,19 +158,21 @@ class ProgressService
 
     // SOT for numeric Final Average — same guards as classify(), null until both
     // skills have a real started signal (otherwise (80+0)/2=40 would mislead).
+    // Whole number per DepEd (DO 8 s.2015 Table 8): Final Grade & General Average
+    // are reported as whole numbers, 0.5 rounds up.
     public static function finalAverage(
         float $wordBlastAcc,
         float $storyQuestAcc,
         bool $wordStarted,
         bool $storyStarted,
-    ): ?float {
+    ): ?int {
         if (! $wordStarted && ! $storyStarted) {
             return null;
         }
         if (! $wordStarted || ! $storyStarted || $wordBlastAcc == 0 || $storyQuestAcc == 0) {
             return null;
         }
-        return round(($wordBlastAcc + $storyQuestAcc) / 2, 2);
+        return (int) round(($wordBlastAcc + $storyQuestAcc) / 2);
     }
 
 
