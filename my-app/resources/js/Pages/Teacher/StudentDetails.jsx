@@ -99,6 +99,14 @@ export default function StudentDetail({ data }) {
                 icon: "record_voice_over",
                 color: "text-cyan-400",
             },
+            {
+                label: "Final Average",
+                value: data.student?.finalAverage != null
+                    ? `${data.student.finalAverage}%`
+                    : "N/A",
+                icon: "star",
+                color: "text-amber-400",
+            },
         ],
         readCurriculum: data.readCurriculum || [],
         speakCurriculum: data.speakCurriculum || [],
@@ -259,7 +267,7 @@ export default function StudentDetail({ data }) {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 flex-1 w-full">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 flex-1 w-full">
                         {stats.map((stat, i) => (
                             <div
                                 key={i}
@@ -331,6 +339,14 @@ export default function StudentDetail({ data }) {
                                     </span>
                                     <span className="text-cyan-400 font-black uppercase italic tracking-tighter text-2xl">
                                         {sqAcc}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-slate-400 font-bold text-lg">
+                                        Final Average
+                                    </span>
+                                    <span className="text-amber-400 font-black uppercase italic tracking-tighter text-2xl">
+                                        {data.student?.finalAverage != null ? `${data.student.finalAverage}%` : 'N/A'}
                                     </span>
                                 </div>
                             </div>

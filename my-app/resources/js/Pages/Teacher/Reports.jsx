@@ -388,6 +388,7 @@ export default function Reports({ grouped, flash, deadline, errors }) {
                                                 <div className="flex items-center gap-4 text-xs text-slate-500 font-semibold mt-0.5">
                                                     <span>Word Blast: {student.wordBlastAcc ?? 0}%</span>
                                                     <span>Story Quest: {student.storyQuestAcc ?? 0}%</span>
+                                                    <span className="text-amber-400">Final Avg: {student.finalAverage != null ? `${student.finalAverage}%` : 'N/A'}</span>
                                                 </div>
                                             </div>
                                             <button

@@ -27,21 +27,31 @@ class SkillsOverviewSheet implements FromCollection, WithColumnWidths, WithHeadi
             'Final Status',
             'Word Blast',
             'Story Quest',
+            'Final Average',
             'Top Struggle',
         ];
     }
 
     public function collection()
     {
-        return collect($this->students)->map(fn ($s) => [
-            $s['name'] ?? '',
-            $s['student_id'] ?? '',
-            $s['section'] ?? '',
-            $s['status'] ?? 'notStarted',
-            ($s['wordBlastAcc'] ?? 0).'% ('.($s['wbLevelLabel'] ?? "Level {$s['read_level']}").')',
-            ($s['storyQuestAcc'] ?? 0).'% ('.($s['sqLevelLabel'] ?? "Level {$s['speak_level']}").')',
-            $s['topStruggle'] ?? '',
-        ]);
+        return collect($this->students)->map(function ($s) {
+            $fa = $s['finalAverage'] ?? null;
+            if ($fa === null && isset($s['wordBlastAcc'], $s['storyQuestAcc'])) {
+                $wb = (float) $s['wordBlastAcc'];
+                $sq = (float) $s['storyQuestAcc'];
+                $fa = ($wb == 0 || $sq == 0) ? null : round(($wb + $sq) / 2, 2);
+            }
+            return [
+                $s['name'] ?? '',
+                $s['student_id'] ?? '',
+                $s['section'] ?? '',
+                $s['status'] ?? 'notStarted',
+                ($s['wordBlastAcc'] ?? 0).'% ('.($s['wbLevelLabel'] ?? "Level {$s['read_level']}").')',
+                ($s['storyQuestAcc'] ?? 0).'% ('.($s['sqLevelLabel'] ?? "Level {$s['speak_level']}").')',
+                $fa !== null ? $fa.'%' : 'N/A',
+                $s['topStruggle'] ?? '',
+            ];
+        });
     }
 
     public function styles(Worksheet $sheet)
@@ -64,7 +74,8 @@ class SkillsOverviewSheet implements FromCollection, WithColumnWidths, WithHeadi
             'D' => 18,
             'E' => 42,
             'F' => 42,
-            'G' => 30,
+            'G' => 15,
+            'H' => 30,
         ];
     }
 }

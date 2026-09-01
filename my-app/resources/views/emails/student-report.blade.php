@@ -119,6 +119,32 @@
                             </tr>
                         </table>
 
+                        <table cellpadding="0" cellspacing="0" border="0" style="width:100%;margin-top:12px">
+                            <tr>
+                                <td>
+                                    <table cellpadding="0" cellspacing="0" border="0" style="width:100%;background:#0f172a;border:2px solid #f59e0b;border-radius:14px">
+                                        <tr>
+                                            <td style="padding:20px;text-align:center">
+                                                <p style="color:#f59e0b;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:1px;margin:0 0 11px">
+                                                    Final Average
+                                                </p>
+                                                <p style="color:#ffffff;font-size:38px;line-height:1;font-weight:900;margin:0">
+                                                    @if (($data['finalAverage'] ?? null) !== null)
+                                                        {{ $data['finalAverage'] }}<span style="color:#64748b;font-size:18px">%</span>
+                                                    @else
+                                                        <span style="color:#64748b;font-size:20px">N/A</span>
+                                                    @endif
+                                                </p>
+                                                <p style="color:#64748b;font-size:12px;font-weight:700;margin:9px 0 0">
+                                                    (Word Blast + Story Quest) / 2
+                                                </p>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                        </table>
+
                     </td>
                 </tr>
 

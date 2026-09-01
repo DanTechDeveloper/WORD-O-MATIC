@@ -7,6 +7,7 @@ import EditStudentModal from "@/Components/Teacher/EditStudentModal";
 
 const sortOptions = [
     { value: "risk", label: "Risk Level" },
+    { value: "finalAverage", label: "Final Average" },
     { value: "name", label: "Name (A-Z)" },
     { value: "level", label: "Level (Lowest First)" },
 ];
@@ -94,8 +95,8 @@ export default function Students({ data, sections, filters, existingStudentIds }
 
     const computeRisk = (acc) => {
         if (acc === null || acc === 0) return "na";
-        if (acc < 50) return "high";
-        if (acc < 75) return "moderate";
+        if (acc < 60) return "high";
+        if (acc < 80) return "moderate";
         return "low";
     };
 
@@ -235,8 +236,10 @@ export default function Students({ data, sections, filters, existingStudentIds }
                         {students.map((student, index) => {
                             const wAcc = student.wordBlastAcc;
                             const pAcc = student.storyQuestAcc;
+                            const fAcc = student.finalAverage;
                             const wRisk = riskStyles[computeRisk(wAcc)];
                             const pRisk = riskStyles[computeRisk(pAcc)];
+                            const fRisk = riskStyles[computeRisk(fAcc)];
                             const sStyle =
                                 statusStyles[student.status?.type] ||
                                 statusStyles.notStarted;
@@ -302,6 +305,15 @@ export default function Students({ data, sections, filters, existingStudentIds }
                                                     : pAcc + "%"}
                                             </span>
                                         </div>
+                                        <div className="flex items-center gap-1.5">
+                                            <div className={`w-2.5 h-2.5 rounded-full ${fRisk.dot}`}></div>
+                                            <span className="text-[10px] text-slate-500 font-label-bold uppercase">
+                                                Final Avg:
+                                            </span>
+                                            <span className={`font-label-bold text-xs ${fRisk.text} uppercase`}>
+                                                {fAcc == null ? "N/A" : fAcc + "%"}
+                                            </span>
+                                        </div>
                                         <div className="ml-auto flex gap-2">
                                             <Link
                                                 href={`/teacher/studentDetails/${student.id}`}
@@ -361,6 +373,9 @@ export default function Students({ data, sections, filters, existingStudentIds }
                                 <th className="px-6 py-5 font-headline-md text-sm uppercase tracking-widest text-lime-400">
                                     Story Quest
                                 </th>
+                                <th className="px-6 py-5 font-headline-md text-sm uppercase tracking-widest text-amber-400">
+                                    Final Avg
+                                </th>
                                 <th className="px-6 py-5 font-headline-md text-sm uppercase tracking-widest text-lime-400">
                                     Final Status
                                 </th>
@@ -373,8 +388,10 @@ export default function Students({ data, sections, filters, existingStudentIds }
                             {students.map((student, index) => {
                                 const wAcc = student.wordBlastAcc;
                                 const pAcc = student.storyQuestAcc;
+                                const fAcc = student.finalAverage;
                                 const wRisk = riskStyles[computeRisk(wAcc)];
                                 const pRisk = riskStyles[computeRisk(pAcc)];
+                                const fRisk = riskStyles[computeRisk(fAcc)];
                                 const sStyle =
                                     statusStyles[student.status?.type] ||
                                     statusStyles.notStarted;
@@ -433,6 +450,14 @@ export default function Students({ data, sections, filters, existingStudentIds }
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
+                                            <div className="flex items-center gap-2">
+                                                <div className={`w-3 h-3 rounded-full ${fRisk.dot}`}></div>
+                                                <span className={`font-label-bold ${fRisk.text} uppercase`}>
+                                                    {fAcc == null ? "N/A" : fAcc + "%"}
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
                                             <span
                                                 className={`${sStyle} px-3 py-1 rounded-full border-2 text-xs font-black uppercase`}
                                             >
@@ -484,7 +509,7 @@ export default function Students({ data, sections, filters, existingStudentIds }
                             {students.length === 0 && (
                                 <tr>
                                     <td
-                                        colSpan="5"
+                                        colSpan="6"
                                         className="px-6 py-12 text-center text-slate-500 font-black uppercase text-sm"
                                     >
                                         No students found
