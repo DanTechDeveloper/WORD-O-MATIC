@@ -458,8 +458,13 @@ export function useDeepgramRecognition({
         stateRefs.current.hasMatched = false;
         stateRefs.current.mispronouncedInWord = false;
         stateRefs.current.mispronouncedSentence = false;
-        stateRefs.current.transcript = "";
-        stateRefs.current.interim = "";
+        // ponytail: keep accumulated finals/interims in sentence mode — wiping them
+        // on each word advance destroys speech that lands (often as a late isFinal)
+        // during the previous word's 500ms window, causing false mispronounces.
+        if (propsRef.current.isWordMode) {
+            stateRefs.current.transcript = "";
+            stateRefs.current.interim = "";
+        }
         stateRefs.current.stoppedAt = 0;
         stateRefs.current.lastSpeechAt = Date.now();
         timeoutRefs.current.target = null;

@@ -13,6 +13,18 @@ function buildFullSentence(transcript, interim) {
     return normalizeText(transcript + " " + interim);
 }
 
+// ponytail: single-word targets (Story Quest one-by-one) match only against the
+// most recent speech (tail window), so a word spoken long ago / out of order does
+// not satisfy the current word. W=4 tolerates fillers; tunable. Multi-word targets
+// (the designed sentence contract) keep matching the whole buffer.
+const TAIL_WINDOW = 4;
+function matchScope(full, target) {
+    const isSingleWord = target.split(/\s+/).filter(Boolean).length === 1;
+    if (!isSingleWord) return full;
+    const words = full.split(/\s+/).filter(Boolean);
+    return words.slice(-TAIL_WINDOW).join(" ");
+}
+
 export function armSentenceTimeout(
     _target,
     _full,
@@ -125,10 +137,11 @@ export function processSentenceModeResult(
     );
 
     stateRefs.current.stoppedAt = Date.now();
+    const scope = matchScope(full, target);
     if (
         !stateRefs.current.hasMatched &&
         !stateRefs.current.mispronouncedSentence &&
-        isFuzzyMatch(full, target)
+        isFuzzyMatch(scope, target)
     ) {
         stateRefs.current.hasMatched = true;
         propsRef.current.onWordRecognized?.();
@@ -164,7 +177,7 @@ export function processSentenceModeResult(
 
     // Authoritative mismatch → immediate verdict (Deepgram empty/low-conf or speechFinal)
     if (hasAuthoritative) {
-        if (!isFuzzyMatch(full, target)) {
+        if (!isFuzzyMatch(scope, target)) {
             stateRefs.current.mispronouncedSentence = true;
             propsRef.current.onMispronounced?.(full);
             clearAllTimers(timerRefs.current);

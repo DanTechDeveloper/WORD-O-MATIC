@@ -344,6 +344,32 @@ describe("processSentenceModeResult (Story Quest — withinRatio + boundaryLeak)
         vi.clearAllTimers();
         vi.useRealTimers();
     });
+    test("single-word target matches when the word is in the recent tail", () => {
+        const { stateRefs, timeoutRefs, timerRefs, propsRef } = makeRefs();
+        const event = makeEvent([{ isFinal: true, 0: { transcript: "the cat is big" } }]);
+        processSentenceModeResult(event, "cat", stateRefs, timeoutRefs, timerRefs, propsRef);
+        expect(propsRef.current.onWordRecognized).toHaveBeenCalled();
+    });
+    test("single-word target does NOT match a word spoken long ago (out of the tail window)", () => {
+        const { stateRefs, timeoutRefs, timerRefs, propsRef } = makeRefs();
+        // "cat" is the first word, far outside the last-4-word scope -> not the current word
+        const event = makeEvent([{ isFinal: true, 0: { transcript: "cat ran the dog the boy the girl the man" } }]);
+        processSentenceModeResult(event, "cat", stateRefs, timeoutRefs, timerRefs, propsRef);
+        expect(propsRef.current.onWordRecognized).not.toHaveBeenCalled();
+        expect(propsRef.current.onMispronounced).toHaveBeenCalled();
+    });
+    test("recovers the next word already spoken in a preserved final (late-final race)", () => {
+        const { stateRefs, timeoutRefs, timerRefs, propsRef } = makeRefs();
+        // word 1 matches from an interim
+        processSentenceModeResult(makeEvent([{ isFinal: false, 0: { transcript: "the cat" } }]), "the", stateRefs, timeoutRefs, timerRefs, propsRef);
+        expect(propsRef.current.onWordRecognized).toHaveBeenCalledTimes(1);
+        // simulate the engine advancing to the next word; the late final stays in transcript
+        stateRefs.current.hasMatched = false;
+        stateRefs.current.transcript = "the cat";
+        // continued speech; the already-spoken "cat" must now match from the kept transcript
+        processSentenceModeResult(makeEvent([{ isFinal: false, 0: { transcript: "is" } }]), "cat", stateRefs, timeoutRefs, timerRefs, propsRef);
+        expect(propsRef.current.onWordRecognized).toHaveBeenCalledTimes(2);
+    });
 });
 
 describe("processWordModeResult (Word Blast — Levenshtein d<=1)", () => {
