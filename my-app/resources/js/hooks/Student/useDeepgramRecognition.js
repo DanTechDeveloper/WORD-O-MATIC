@@ -102,8 +102,7 @@ export function useDeepgramRecognition({
     const permissionDeniedRef = useRef(false);
     const gateStateRef = useRef({ isOpen: false });
 
-    const stopAll = () => {
-        clearAllTimers(timerRefs.current);
+    const teardownAudio = () => {
         if (scriptNodeRef.current) {
             try {
                 scriptNodeRef.current.disconnect();
@@ -128,6 +127,11 @@ export function useDeepgramRecognition({
             streamRef.current.getTracks().forEach((t) => t.stop());
             streamRef.current = null;
         }
+    };
+
+    const stopAll = () => {
+        clearAllTimers(timerRefs.current);
+        teardownAudio();
         if (connRef.current) {
             try {
                 connRef.current.close();
@@ -312,6 +316,7 @@ export function useDeepgramRecognition({
 
                 const pushPcm = (float32) => {
                     if (propsRef.current?.muted) return;
+                    if (!stateRefs.current.isMounted) return;
                     const gated = applyNoiseGate(float32, gateStateRef.current);
                     const int16 = new Int16Array(gated.length);
                     for (let i = 0; i < gated.length; i++) {
@@ -411,6 +416,7 @@ export function useDeepgramRecognition({
 
             conn.on("close", () => {
                 connRef.current = null;
+                teardownAudio();
                 if (!stateRefs.current.isMounted || !propsRef.current.isActive)
                     return;
                 if (permissionDeniedRef.current) return;
@@ -432,8 +438,7 @@ export function useDeepgramRecognition({
             await conn.waitForOpen();
         } catch (e) {
             console.error("Deepgram connect failed:", e);
-            audioCtxRef.current?.close();
-            audioCtxRef.current = null;
+            teardownAudio();
             propsRef.current.onRecognitionError?.(
                 e?.message || "connect_failed",
             );
