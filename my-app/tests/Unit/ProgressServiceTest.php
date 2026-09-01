@@ -55,9 +55,9 @@ class ProgressServiceTest extends TestCase
 
     public function test_final_average_averages_and_rounds_both_accuracies(): void
     {
-        $this->assertSame(50.0, ProgressService::finalAverage(80, 20, true, true));
-        $this->assertSame(87.5, ProgressService::finalAverage(85, 90, true, true));
-        // Odd sum yields an x.5 middle rather than a 2-decimal spill.
-        $this->assertSame(66.5, ProgressService::finalAverage(66, 67, true, true));
+        $this->assertSame(50, ProgressService::finalAverage(80, 20, true, true));
+        $this->assertSame(88, ProgressService::finalAverage(85, 90, true, true));
+        // Odd sum yields whole number per DepEd (0.5 rounds up).
+        $this->assertSame(67, ProgressService::finalAverage(66, 67, true, true));
     }
 }

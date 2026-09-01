@@ -176,7 +176,7 @@ class BadgeService
             $currentValue = match ($badge->metric) {
                 'total_points' => $student ? $student->points : 0,
                 'streak' => $this->bestSessionMetric($user, 'streak'),
-                'accuracy' => round((float) $session->accuracy, 2),
+                'accuracy' => (int) round((float) $session->accuracy),
                 'paragraph_completion' => $this->calculateModuleCompletion($user, 'paragraph'),
                 'word_completion' => $this->calculateModuleCompletion($user, 'word'),
                 default => 0,
@@ -223,7 +223,8 @@ class BadgeService
 
         // Cap at 100: a module shrunk after completion can leave words_smashed
         // above the curriculum total, which must not report >100% completion.
-        return round(min(100, ($earned / $total) * 100), 2);
+        // ponytail: whole number per DepEd — same rule as accuracies
+        return (int) round(min(100, ($earned / $total) * 100));
     }
 
     private function meetsThreshold($value, string $operator, $threshold): bool

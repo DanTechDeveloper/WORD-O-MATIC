@@ -79,7 +79,7 @@ class ReportTest extends TestCase
         $response->assertInertia(fn ($page) => $page
             ->where('grouped.onTrack.0.name', 'Test Student')
             ->where('grouped.onTrack.0.wordBlastAcc', 85)
-            ->where('grouped.onTrack.0.finalAverage', 87.5)
+            ->where('grouped.onTrack.0.finalAverage', 88)
         );
     }
 
@@ -361,7 +361,7 @@ class ReportTest extends TestCase
         Mail::assertQueued(StudentReportMail::class, function ($mail) {
             return $mail->data['wordAttempts'] === ['CAT' => 3]
                 && $mail->data['paragraphWordAttempts'] === []
-                && $mail->data['finalAverage'] === 87.5;
+                && $mail->data['finalAverage'] === 88;
         });
         $response->assertSessionHas('sent', 1);
     }
@@ -792,7 +792,7 @@ class ReportTest extends TestCase
         $this->assertEquals('onTrack', $row[3]);
         $this->assertEquals('85% (Level 3 - Phonics Fundamentals)', $row[4]);
         $this->assertEquals('90% (Level 2 - Farm Animals)', $row[5]);
-        $this->assertEquals('87.5%', $row[6]);
+        $this->assertEquals('88%', $row[6]);
         $this->assertEquals('WB: CAT ×4 · SQ: the ×3', $row[7]);
     }
 
@@ -891,7 +891,7 @@ class ReportTest extends TestCase
         $this->assertEquals('Test Student', $studentRow[0]);
         $this->assertEquals(85, $studentRow[1]);
         $this->assertEquals(90, $studentRow[2]);
-        $this->assertEquals(87.5, $studentRow[3]);
+        $this->assertEquals(88, $studentRow[3]);
         $this->assertEquals('On Track', $studentRow[4]);
         $this->assertEquals('', $studentRow[5]);
 

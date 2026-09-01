@@ -370,7 +370,7 @@ class StudentController extends Controller
         $wordsSmashed = min($request->words_smashed, $totalPossible);
         $streak = min($request->streak ?? 0, $wordsSmashed + 1);
         $accuracy = $totalPossible > 0
-            ? round(min(($wordsSmashed / $totalPossible) * 100, 100), 2)
+            ? (int) round(min(($wordsSmashed / $totalPossible) * 100, 100))
             : 0;
 
         $isDeadlineHit = (bool) $this->reportService->cutoff();

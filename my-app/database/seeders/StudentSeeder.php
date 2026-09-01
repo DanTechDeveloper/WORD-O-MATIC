@@ -71,12 +71,13 @@ class StudentSeeder extends Seeder
 
         // Mirrors finishRound: score is a word count derived from accuracy,
         // accuracy recomputed from that count, streak capped at the count.
+        // ponytail: whole number per DepEd (DO 8 s.2015) — accuracy as int
         $logSession = function (User $user, $moduleId, string $type, int $totalPossible, float $acc) {
             $smashedWords = (int) round($totalPossible * $acc / 100);
             GameSession::create([
                 'user_id' => $user->id, 'module_id' => $moduleId, 'module_type' => $type,
                 'score' => $smashedWords,
-                'accuracy' => $totalPossible > 0 ? round(($smashedWords / $totalPossible) * 100, 2) : 0,
+                'accuracy' => $totalPossible > 0 ? (int) round(($smashedWords / $totalPossible) * 100) : 0,
                 'streak' => $smashedWords,
                 'is_deadline_hit' => rand(0, 9) === 0,
             ]);
@@ -92,17 +93,17 @@ class StudentSeeder extends Seeder
                 $wAcc = 0.0;
                 $sAcc = 0.0;
             } elseif ($roll < 3) {
-                $wAcc = round(rand(20, 90) + rand(0, 99) / 100, 2);
+                $wAcc = rand(20, 90);
                 $sAcc = 0.0;
             } elseif ($roll < 5) {
-                $wAcc = round(rand(1, 55) + rand(0, 99) / 100, 2);
-                $sAcc = round(rand(1, 55) + rand(0, 99) / 100, 2);
+                $wAcc = rand(1, 55);
+                $sAcc = rand(1, 55);
             } elseif ($roll < 7) {
-                $wAcc = round(rand(55, 78) + rand(0, 99) / 100, 2);
-                $sAcc = round(rand(55, 78) + rand(0, 99) / 100, 2);
+                $wAcc = rand(55, 78);
+                $sAcc = rand(55, 78);
             } else {
-                $wAcc = round(rand(78, 100) + rand(0, 99) / 100, 2);
-                $sAcc = round(rand(78, 100) + rand(0, 99) / 100, 2);
+                $wAcc = rand(78, 100);
+                $sAcc = rand(78, 100);
             }
 
             // $status is derived after the progress rows are written (below) so it
@@ -127,7 +128,7 @@ class StudentSeeder extends Seeder
 
                 StudentWordProgress::create([
                     'user_id' => $user->id, 'word_module_id' => $module->id,
-                    'status' => 'completed', 'words_smashed' => $smashed, 'accuracy' => $totalPoints > 0 ? round(($smashed / $totalPoints) * 100, 2) : 0,
+                    'status' => 'completed', 'words_smashed' => $smashed, 'accuracy' => $totalPoints > 0 ? (int) round(($smashed / $totalPoints) * 100) : 0,
                 ]);
 
                 foreach (Word::where('word_module_id', $module->id)->get() as $word) {
@@ -150,7 +151,7 @@ class StudentSeeder extends Seeder
 
                 StudentParagraphProgress::create([
                     'user_id' => $user->id, 'paragraph_module_id' => $module->id,
-                    'status' => 'completed', 'words_smashed' => $smashed, 'accuracy' => $totalScore > 0 ? round(($smashed / $totalScore) * 100, 2) : 0,
+                    'status' => 'completed', 'words_smashed' => $smashed, 'accuracy' => $totalScore > 0 ? (int) round(($smashed / $totalScore) * 100) : 0,
                 ]);
 
                 foreach (ParagraphWord::where('paragraph_module_id', $module->id)->get() as $pw) {
@@ -169,8 +170,8 @@ class StudentSeeder extends Seeder
             // Recompute the cached accuracy columns from the rows just written so
             // wordBlastAcc/storyQuestAcc equal the true module average (per-module
             // accuracy is integer-rounded, so the random target never matched).
-            $wAcc = round(StudentWordProgress::where('user_id', $user->id)->avg('accuracy') ?? 0, 2);
-            $sAcc = round(StudentParagraphProgress::where('user_id', $user->id)->avg('accuracy') ?? 0, 2);
+            $wAcc = (int) round(StudentWordProgress::where('user_id', $user->id)->avg('accuracy') ?? 0);
+            $sAcc = (int) round(StudentParagraphProgress::where('user_id', $user->id)->avg('accuracy') ?? 0);
             $status = ProgressService::classify($wAcc, $sAcc, $wAcc != 0, $sAcc != 0);
 
             $user->student()->create([

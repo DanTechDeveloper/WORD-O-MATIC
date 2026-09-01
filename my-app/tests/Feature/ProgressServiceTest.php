@@ -259,8 +259,8 @@ class ProgressServiceTest extends TestCase
         );
 
         $this->student->refresh();
-        $this->assertSame(87.5, $this->student->student->wordBlastAcc);
-        $this->assertSame(0.0, $this->student->student->storyQuestAcc);
+        $this->assertSame(88.0, (float) $this->student->student->wordBlastAcc);
+        $this->assertSame(0.0, (float) $this->student->student->storyQuestAcc);
         $this->assertSame('in_progress', $this->student->student->status);
         $this->assertNotEquals('atRisk', $this->student->student->status);
     }
@@ -610,7 +610,7 @@ class ProgressServiceTest extends TestCase
         );
 
         $this->student->refresh();
-        $this->assertSame(33.33, (float) $this->student->student->wordBlastAcc);
+        $this->assertSame(33.0, (float) $this->student->student->wordBlastAcc);
     }
 
     public function test_status_on_track_when_both_skills_high(): void

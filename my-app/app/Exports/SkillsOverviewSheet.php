@@ -39,7 +39,7 @@ class SkillsOverviewSheet implements FromCollection, WithColumnWidths, WithHeadi
             if ($fa === null && isset($s['wordBlastAcc'], $s['storyQuestAcc'])) {
                 $wb = (float) $s['wordBlastAcc'];
                 $sq = (float) $s['storyQuestAcc'];
-                $fa = ($wb == 0 || $sq == 0) ? null : round(($wb + $sq) / 2, 2);
+                $fa = ($wb == 0 || $sq == 0) ? null : (int) round(($wb + $sq) / 2);
             }
             return [
                 $s['name'] ?? '',

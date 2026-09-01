@@ -815,7 +815,7 @@ class BadgeTest extends TestCase
 
         $progress = (new BadgeService)->getBadgeProgress($user, $session);
         $accuracyEntry = collect($progress)->firstWhere('metric', 'accuracy');
-        $this->assertEquals(87.35, $accuracyEntry['current_value']);
+        $this->assertEquals(87, $accuracyEntry['current_value']);
 
         $noProfile = User::factory()->create(['name' => 'No Profile Progress', 'role' => 'student']);
         $progress2 = (new BadgeService)->getBadgeProgress($noProfile, $session);
@@ -858,7 +858,7 @@ class BadgeTest extends TestCase
             'user_id' => $user->id, 'word_module_id' => $module->id, 'words_smashed' => 7, 'status' => 'in_progress',
         ]);
 
-        $this->assertEquals(46.67, (new BadgeService)->calculateModuleCompletion($user, 'word'));
+        $this->assertEquals(47, (new BadgeService)->calculateModuleCompletion($user, 'word'));
     }
 
     // ponytail: regression lock for BF15 — zero non-tutorial modules is 0%.
