@@ -156,6 +156,25 @@ class ProgressService
         return $avg >= 80 ? 'onTrack' : ($avg >= 60 ? 'support' : 'atRisk');
     }
 
+    // SOT for numeric Final Average — same guards as classify(), null until both
+    // skills have a real started signal (otherwise (80+0)/2=40 would mislead).
+    public static function finalAverage(
+        float $wordBlastAcc,
+        float $storyQuestAcc,
+        bool $wordStarted,
+        bool $storyStarted,
+    ): ?float {
+        if (! $wordStarted && ! $storyStarted) {
+            return null;
+        }
+        if (! $wordStarted || ! $storyStarted || $wordBlastAcc == 0 || $storyQuestAcc == 0) {
+            return null;
+        }
+        return round(($wordBlastAcc + $storyQuestAcc) / 2, 2);
+    }
+
+
+
     private function recalculateStatus(StudentProfile $student): void
     {
         $fresh = $student->fresh();

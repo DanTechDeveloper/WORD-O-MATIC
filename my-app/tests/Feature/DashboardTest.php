@@ -29,6 +29,16 @@ class DashboardTest extends TestCase
             'role' => 'student',
         ]);
 
+        // Branch B: dashboard reads stored status (SOT), so factory must store the
+        // classify-derived status that matches the given accuracies (started = acc>0).
+        if (! array_key_exists('status', $profile)) {
+            $wAcc = (float) ($profile['wordBlastAcc'] ?? 0);
+            $sAcc = (float) ($profile['storyQuestAcc'] ?? 0);
+            $profile['status'] = \App\Services\ProgressService::classify(
+                $wAcc, $sAcc, $wAcc > 0, $sAcc > 0
+            );
+        }
+
         return StudentProfile::factory()->for($user)->create($profile);
     }
 

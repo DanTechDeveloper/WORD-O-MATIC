@@ -31,6 +31,7 @@ class ClassReportSheet implements FromCollection, WithCharts, WithColumnWidths, 
             'Student Name',
             'Word Blast Accuracy (%)',
             'Story Quest Accuracy (%)',
+            'Final Average (%)',
             'Status Category',
             'Count',
         ];
@@ -66,21 +67,29 @@ class ClassReportSheet implements FromCollection, WithCharts, WithColumnWidths, 
         $rows = [];
         foreach ($this->students as $s) {
             $st = $s['status'] ?? 'notStarted';
+            $fa = $s['finalAverage'] ?? null;
+            if ($fa === null && isset($s['wordBlastAcc'], $s['storyQuestAcc'])) {
+                $wb = (float) $s['wordBlastAcc'];
+                $sq = (float) $s['storyQuestAcc'];
+                $fa = ($wb == 0 || $sq == 0) ? null : round(($wb + $sq) / 2, 2);
+            }
             $rows[] = [
                 $s['name'] ?? '',
                 $s['wordBlastAcc'] ?? 0,
                 $s['storyQuestAcc'] ?? 0,
+                $fa ?? 'N/A',
                 $labelByKey[$st] ?? 'Not Started',
                 '', // Count applies only to the summary block below
             ];
         }
 
         // Class-health summary block (feeds the pie chart), placed below the roster.
-        $rows[] = ['', '', '', '', ''];
-        $rows[] = ['Class Health Summary', '', '', '', ''];
+        $rows[] = ['', '', '', '', '', ''];
+        $rows[] = ['Class Health Summary', '', '', '', '', ''];
 
         foreach (['onTrack', 'support', 'atRisk', 'in_progress', 'notStarted'] as $key) {
             $rows[] = [
+                '',
                 '',
                 '',
                 '',
@@ -109,8 +118,9 @@ class ClassReportSheet implements FromCollection, WithCharts, WithColumnWidths, 
             'A' => 25,
             'B' => 22,
             'C' => 22,
-            'D' => 20,
-            'E' => 12,
+            'D' => 15,
+            'E' => 20,
+            'F' => 12,
         ];
     }
 
@@ -125,10 +135,10 @@ class ClassReportSheet implements FromCollection, WithCharts, WithColumnWidths, 
 
         // 1. Pie Chart for Class Health Distribution (summary block below roster)
         $categoriesPie = [
-            new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_STRING, "'Class Summary'!\$D\$" . $summaryStart . ':$D$' . $summaryEnd, null, 5),
+            new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_STRING, "'Class Summary'!\$E\$" . $summaryStart . ':$E$' . $summaryEnd, null, 5),
         ];
         $valuesPie = [
-            new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_NUMBER, "'Class Summary'!\$E\$" . $summaryStart . ':$E$' . $summaryEnd, null, 5),
+            new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_NUMBER, "'Class Summary'!\$F\$" . $summaryStart . ':$F$' . $summaryEnd, null, 5),
         ];
 
         $seriesPie = new DataSeries(

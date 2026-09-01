@@ -75,7 +75,8 @@ class TeacherController extends Controller
         $query->join('students', 'users.id', '=', 'students.user_id')
             ->select('users.*');
 
-        if ($sort === 'risk') {
+        if ($sort === 'risk' || $sort === 'finalAverage') {
+            // ponytail: mirrors ProgressService::classify/finalAverage avg ((wb+sq)/2) — sort only, no thresholds
             $query->orderByRaw('(COALESCE(students.wordBlastAcc,0) + COALESCE(students.storyQuestAcc,0)) / 2 desc');
         } else {
             $query->orderBy($sortCol, $sortDir);
@@ -108,6 +109,7 @@ class TeacherController extends Controller
                     'currentStoryQuestAcc' => $currentStoryAcc ? round($currentStoryAcc, 2) : null,
                     'wordBlastAcc' => $student?->wordBlastAcc,
                     'storyQuestAcc' => $student?->storyQuestAcc,
+                    'finalAverage' => $student?->finalAverage,
                     'readLevel' => $readLevel,
                     'speakLevel' => $speakLevel,
                     'status' => $this->computeStatus($student?->status ?? 'notStarted'),
@@ -162,14 +164,11 @@ class TeacherController extends Controller
         $allStudents = StudentProfile::join('users', 'users.id', '=', 'students.user_id')
             ->where('users.role', 'student')
             ->select(['students.*', 'users.name'])
-            ->withCount([
-                'wordProgress' => fn ($q) => $q->whereHas('wordModule', fn ($m) => $m->has('words')),
-                'paragraphProgress' => fn ($q) => $q->whereHas('paragraphModule', fn ($m) => $m->has('words')),
-            ])
             ->get();
 
         $avgReadAccuracy = $allStudents->avg('wordBlastAcc') ?? 0;
         $avgSpeakAccuracy = $allStudents->avg('storyQuestAcc') ?? 0;
+        $avgFinalAccuracy = $allStudents->map(fn ($s) => $s->finalAverage)->filter(fn ($v) => $v !== null)->avg() ?? 0;
         $totalClassPoints = $allStudents->sum('points') ?? 0;
 
         $sections = $allStudents->pluck('section')->unique()->filter();
@@ -201,6 +200,12 @@ class TeacherController extends Controller
                 'student_count' => $sectionStudents->count(),
                 'avg_read' => round($avgRead ?? 0, 2),
                 'avg_speak' => round($avgSpeak ?? 0, 2),
+                'final_average' => ProgressService::finalAverage(
+                    (float) ($avgRead ?? 0),
+                    (float) ($avgSpeak ?? 0),
+                    ($avgRead ?? 0) != 0,
+                    ($avgSpeak ?? 0) != 0,
+                ),
                 'total_points' => $sectionStudents->sum('points'),
                 'status' => $status,
             ];
@@ -216,12 +221,8 @@ class TeacherController extends Controller
 
         $students = [];
         foreach ($allStudents as $student) {
-            $status = ProgressService::classify(
-                (float) $student->wordBlastAcc,
-                (float) $student->storyQuestAcc,
-                ($student->wordBlastAcc > 0) || ($student->word_progress_count ?? 0) > 0,
-                ($student->storyQuestAcc > 0) || ($student->paragraph_progress_count ?? 0) > 0,
-            );
+            // ponytail: stored status is SOT — written only via ProgressService::classify()
+            $status = $student->status ?? 'notStarted';
             $counts[$status]++;
 
             $students[] = [
@@ -230,6 +231,7 @@ class TeacherController extends Controller
                 'section' => $student->section,
                 'wordBlastAcc' => $student->wordBlastAcc,
                 'storyQuestAcc' => $student->storyQuestAcc,
+                'finalAverage' => $student->finalAverage,
                 'status' => $status,
             ];
         }
@@ -254,6 +256,7 @@ class TeacherController extends Controller
             'totalStudents' => $totalStudents,
             'avgReadAccuracy' => round($avgReadAccuracy, 2),
             'avgSpeakAccuracy' => round($avgSpeakAccuracy, 2),
+            'avgFinalAccuracy' => round($avgFinalAccuracy, 2),
             'totalClassPoints' => $totalClassPoints,
             'sectionPerformance' => $sectionPerformance,
             'students' => $students,
@@ -547,6 +550,8 @@ class TeacherController extends Controller
             )
             ->get()
             ->map(function ($s) {
+                // ponytail: finalAverage via accessor needs model hydration; compute here
+                $fa = ($s->wordBlastAcc ?? 0) == 0 || ($s->storyQuestAcc ?? 0) == 0 ? null : round(($s->wordBlastAcc + $s->storyQuestAcc) / 2, 2);
                 return [
                     'id' => $s->user_id,
                     'name' => $s->name,
@@ -555,6 +560,7 @@ class TeacherController extends Controller
                     'points' => $s->points ?? 0,
                     'wordBlastAcc' => $s->wordBlastAcc ?? 0,
                     'storyQuestAcc' => $s->storyQuestAcc ?? 0,
+                    'finalAverage' => $fa,
                     'avatar' => $s->avatar,
                     'readLevel' => $s->read_level ?? 1,
                     'speakLevel' => $s->speak_level ?? 1,

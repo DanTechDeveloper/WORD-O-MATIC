@@ -15,6 +15,7 @@ export default function Dashboard({
     totalStudents,
     avgReadAccuracy,
     avgSpeakAccuracy,
+    avgFinalAccuracy,
     totalClassPoints,
     sectionPerformance = [],
     chartCounts,
@@ -47,7 +48,13 @@ export default function Dashboard({
             label: "Total AVG Story Quest Score",
             value: `${avgSpeakAccuracy}%`,
             icon: "record_voice_over",
-            color: "text-lime-400",
+            color: "text-cyan-400",
+        },
+        {
+            label: "Total Final Average",
+            value: `${avgFinalAccuracy ?? 0}%`,
+            icon: "star",
+            color: "text-amber-400",
         },
         {
             label: "Total Class Points",
@@ -78,6 +85,20 @@ export default function Dashboard({
         { key: "support", label: "Needs Support", countKey: "support", color: "#fbbf24", icon: "tips_and_updates" },
         { key: "onTrack", label: "On Track", countKey: "onTrack", color: "#a3e635", icon: "check_circle" },
     ];
+
+    const computeRisk = (acc) => {
+        if (acc === null || acc === 0) return "na";
+        if (acc < 60) return "high";
+        if (acc < 80) return "moderate";
+        return "low";
+    };
+
+    const riskStyles = {
+        high: { dot: "bg-error shadow-[0_0_8px_#ffb4ab]", text: "text-error" },
+        moderate: { dot: "bg-tertiary shadow-[0_0_8px_#ffb77f]", text: "text-tertiary" },
+        low: { dot: "bg-green-400 shadow-[0_0_8px_#4ade80]", text: "text-green-400" },
+        na: { dot: "bg-slate-500 shadow-[0_0_8px_#64748b]", text: "text-slate-500" },
+    };
 
     const chartData = STATUS_CATEGORIES.map((cat) => ({
         name: cat.label,
@@ -134,11 +155,11 @@ export default function Dashboard({
             </div>
 
             {/* Stats Cards — horizontal */}
-            <div className="flex flex-col sm:flex-row gap-4 mb-10">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-10">
                 {stats.map((stat, index) => (
                     <div
                         key={index}
-                        className="bg-slate-900 border-2 border-slate-800 p-6 rounded-2xl shadow-[4px_4px_0_0_#020617] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all cursor-default flex-1"
+                        className="bg-slate-900 border-2 border-slate-800 p-6 rounded-2xl shadow-[4px_4px_0_0_#020617] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all cursor-default"
                     >
                         <div className="flex items-start justify-between mb-4">
                             <span
@@ -267,6 +288,7 @@ export default function Dashboard({
                                     <th className="px-4 py-2 text-slate-500 font-black uppercase text-xs tracking-widest">Name</th>
                                     <th className="px-4 py-2 text-slate-500 font-black uppercase text-xs tracking-widest text-right">Word Blast</th>
                                     <th className="px-4 py-2 text-slate-500 font-black uppercase text-xs tracking-widest text-right">Story Quest</th>
+                                    <th className="px-4 py-2 text-amber-400 font-black uppercase text-xs tracking-widest text-right">Final Avg</th>
                                     <th className="px-4 py-2 text-slate-500 font-black uppercase text-xs tracking-widest">Status</th>
                                 </tr>
                             </thead>
@@ -274,24 +296,45 @@ export default function Dashboard({
                                 {tableStudents.length === 0 ? (
                                     <tr>
                                         <td
-                                            colSpan="4"
+                                            colSpan="5"
                                             className="px-4 py-8 text-center text-slate-600 font-black uppercase tracking-widest text-sm"
                                         >
                                             No students match the current filters
                                         </td>
                                     </tr>
                                 ) : (
-                                    tableStudents.map((s) => (
+                                    tableStudents.map((s) => {
+                                        const wRisk = riskStyles[computeRisk(s.wordBlastAcc)];
+                                        const pRisk = riskStyles[computeRisk(s.storyQuestAcc)];
+                                        const fRisk = riskStyles[computeRisk(s.finalAverage)];
+                                        return (
                                         <tr
                                             key={s.id}
                                             className="hover:bg-slate-900/50 transition-colors"
                                         >
                                             <td className="px-4 py-3 text-white font-bold">{s.name}</td>
-                                            <td className="px-4 py-3 text-purple-400 font-black italic text-right">{s.wordBlastAcc ?? 0}%</td>
-                                            <td className="px-4 py-3 text-cyan-400 font-black italic text-right">{s.storyQuestAcc ?? 0}%</td>
+                                            <td className="px-4 py-3">
+                                                <div className="flex items-center justify-end gap-2">
+                                                    <div className={`w-2.5 h-2.5 rounded-full ${wRisk.dot}`}></div>
+                                                    <span className={`font-black italic ${wRisk.text}`}>{s.wordBlastAcc ?? 0}%</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <div className="flex items-center justify-end gap-2">
+                                                    <div className={`w-2.5 h-2.5 rounded-full ${pRisk.dot}`}></div>
+                                                    <span className={`font-black italic ${pRisk.text}`}>{s.storyQuestAcc ?? 0}%</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <div className="flex items-center justify-end gap-2">
+                                                    <div className={`w-2.5 h-2.5 rounded-full ${fRisk.dot}`}></div>
+                                                    <span className={`font-black italic ${fRisk.text}`}>{s.finalAverage != null ? `${s.finalAverage}%` : 'N/A'}</span>
+                                                </div>
+                                            </td>
                                             <td className="px-4 py-3">{statusBadge(s.status)}</td>
                                         </tr>
-                                    ))
+                                        );
+                                    })
                                 )}
                             </tbody>
                         </table>
@@ -326,6 +369,9 @@ export default function Dashboard({
                                 <th className="px-6 py-4 text-slate-500 font-black uppercase text-xs tracking-widest">
                                     AVG. STORY QUEST
                                 </th>
+                                <th className="px-6 py-4 text-amber-400 font-black uppercase text-xs tracking-widest">
+                                    FINAL AVG
+                                </th>
                                 <th className="px-6 py-4 text-slate-500 font-black uppercase text-xs tracking-widest">
                                     FINAL STATUS
                                 </th>
@@ -333,7 +379,11 @@ export default function Dashboard({
                             </tr>
                         </thead>
                         <tbody className="divide-y-2 divide-slate-800/50">
-                            {sectionPerformance.map((item, idx) => (
+                            {sectionPerformance.map((item, idx) => {
+                                        const wRisk = riskStyles[computeRisk(item.avg_read)];
+                                        const pRisk = riskStyles[computeRisk(item.avg_speak)];
+                                        const fRisk = riskStyles[computeRisk(item.final_average)];
+                                        return (
                                     <tr
                                         key={idx}
                                         className="hover:bg-slate-900/50 transition-all"
@@ -344,11 +394,23 @@ export default function Dashboard({
                                         <td className="px-6 py-4 text-white text-center font-bold">
                                             {item.student_count}
                                         </td>
-                                        <td className="px-6 py-4 text-purple-400 font-black italic">
-                                            {item.avg_read}%
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-2">
+                                                <div className={`w-3 h-3 rounded-full ${wRisk.dot}`}></div>
+                                                <span className={`font-black italic ${wRisk.text}`}>{item.avg_read}%</span>
+                                            </div>
                                         </td>
-                                        <td className="px-6 py-4 text-lime-400 font-black italic">
-                                            {item.avg_speak}%
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-2">
+                                                <div className={`w-3 h-3 rounded-full ${pRisk.dot}`}></div>
+                                                <span className={`font-black italic ${pRisk.text}`}>{item.avg_speak}%</span>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-2">
+                                                <div className={`w-3 h-3 rounded-full ${fRisk.dot}`}></div>
+                                                <span className={`font-black italic ${fRisk.text}`}>{item.final_average != null ? `${item.final_average}%` : 'N/A'}</span>
+                                            </div>
                                         </td>
                                         <td className="px-6 py-4">
                                             <span
@@ -367,11 +429,12 @@ export default function Dashboard({
                                             </span>
                                         </td>
                                     </tr>
-                                ))}
+                                        );
+                                    })}
                             {sectionPerformance.length === 0 && (
                                 <tr>
                                     <td
-                                        colSpan="6"
+                                        colSpan="7"
                                         className="px-6 py-10 text-center text-slate-600 font-black uppercase tracking-widest"
                                     >
                                         No section data available
@@ -514,9 +577,10 @@ export default function Dashboard({
                                                              ? `${s.points?.toLocaleString() ?? 0}`
                                                              : `${s[activeMetricObj.valueKey] ?? 0}%`}
                                                      </p>
-                                                     <p className="text-slate-400 font-semibold">Section: {s.section || 'N/A'}</p>
-                                                     <p className="text-purple-400 font-semibold">Word Blast: {s.wordBlastAcc ?? 0}%</p>
-                                                     <p className="text-cyan-400 font-semibold">Story Quest: {s.storyQuestAcc ?? 0}%</p>
+                                                      <p className="text-slate-400 font-semibold">Section: {s.section || 'N/A'}</p>
+                                                      <p className="text-purple-400 font-semibold">Word Blast: {s.wordBlastAcc ?? 0}%</p>
+                                                      <p className="text-cyan-400 font-semibold">Story Quest: {s.storyQuestAcc ?? 0}%</p>
+                                                      <p className="text-amber-400 font-semibold">Final Avg: {s.finalAverage != null ? `${s.finalAverage}%` : 'N/A'}</p>
                                                  </div>
                                             </div>
                                         );

@@ -776,6 +776,7 @@ class ReportTest extends TestCase
             'Final Status',
             'Word Blast',
             'Story Quest',
+            'Final Average',
             'Top Struggle',
         ], $sheet->headings());
 
@@ -789,7 +790,8 @@ class ReportTest extends TestCase
         $this->assertEquals('onTrack', $row[3]);
         $this->assertEquals('85% (Level 3 - Phonics Fundamentals)', $row[4]);
         $this->assertEquals('90% (Level 2 - Farm Animals)', $row[5]);
-        $this->assertEquals('WB: CAT ×4 · SQ: the ×3', $row[6]);
+        $this->assertEquals('87.5%', $row[6]);
+        $this->assertEquals('WB: CAT ×4 · SQ: the ×3', $row[7]);
     }
 
     public function test_skills_words_sheet_has_correct_headings(): void
@@ -857,6 +859,7 @@ class ReportTest extends TestCase
             'Student Name',
             'Word Blast Accuracy (%)',
             'Story Quest Accuracy (%)',
+            'Final Average (%)',
             'Status Category',
             'Count',
         ], $sheet->headings());
@@ -886,13 +889,14 @@ class ReportTest extends TestCase
         $this->assertEquals('Test Student', $studentRow[0]);
         $this->assertEquals(85, $studentRow[1]);
         $this->assertEquals(90, $studentRow[2]);
-        $this->assertEquals('On Track', $studentRow[3]);
-        $this->assertEquals('', $studentRow[4]);
+        $this->assertEquals(87.5, $studentRow[3]);
+        $this->assertEquals('On Track', $studentRow[4]);
+        $this->assertEquals('', $studentRow[5]);
 
-        $onTrackSummary = $collection->first(fn ($row) => $row[3] === 'On Track' && is_numeric($row[4]));
-        $this->assertEquals(1, $onTrackSummary[4]);
-        $notStartedSummary = $collection->first(fn ($row) => $row[3] === 'Not Started' && is_numeric($row[4]));
-        $this->assertEquals(0, $notStartedSummary[4]);
+        $onTrackSummary = $collection->first(fn ($row) => $row[4] === 'On Track' && is_numeric($row[5]));
+        $this->assertEquals(1, $onTrackSummary[5]);
+        $notStartedSummary = $collection->first(fn ($row) => $row[4] === 'Not Started' && is_numeric($row[5]));
+        $this->assertEquals(0, $notStartedSummary[5]);
     }
 
     public function test_class_report_sheet_maps_support_status_to_needs_support_count(): void
@@ -905,12 +909,12 @@ class ReportTest extends TestCase
 
         // Counts live in the summary block (rows with a numeric Count column),
         // not in the per-student roster rows.
-        $summary = $collection->filter(fn ($row) => is_numeric($row[4]) && $row[4] !== '');
-        $needsSupport = $summary->first(fn ($row) => $row[3] === 'Needs Support');
-        $onTrack = $summary->first(fn ($row) => $row[3] === 'On Track');
+        $summary = $collection->filter(fn ($row) => is_numeric($row[5]) && $row[5] !== '');
+        $needsSupport = $summary->first(fn ($row) => $row[4] === 'Needs Support');
+        $onTrack = $summary->first(fn ($row) => $row[4] === 'On Track');
 
-        $this->assertEquals(1, $needsSupport[4]);
-        $this->assertEquals(1, $onTrack[4]);
+        $this->assertEquals(1, $needsSupport[5]);
+        $this->assertEquals(1, $onTrack[5]);
     }
 
     public function test_class_report_sheet_includes_charts(): void
