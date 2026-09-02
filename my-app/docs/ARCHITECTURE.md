@@ -1,6 +1,6 @@
 # Architecture
 
-> Version 1.8
+> Version 1.9
 
 ## Backend
 
@@ -52,13 +52,13 @@ Axios JSON endpoints (mastery toggles) bypass Inertia and return `noContent()`.
 | Queued email | Don't block response waiting for mail |
 | Cascade deletes | All child tables cascade on `user_id` — delete user = clean slate |
 | Random word order | `inRandomOrder()` per session in Read mode, prevents memorization |
-| Mastery = explicit per-word toggle | Auto-mastery removed; `updateWordMastery`/`updateParagraphMastery` via axios |
+| Mastery = explicit per-word toggle (storage) + sentence derived view for Story Quest | Auto-mastery removed; `updateWordMastery`/`updateParagraphMastery` via axios per word, `ParagraphModule::buildLevels` derives `sentence_stats{ sentence, mastery=sum(all words mastered), failed_attempts=sum(word)}` for teacher reporting (no `paragraph_sentences` table) — `StudentDetails` `SentenceChip`, email `trainingSentenceGroupsFrom` |
 | PIN with hash only | `pin` is bcrypt-only and **reset-only** — teachers set a new PIN but can never read it back (`pin_plain` removed). Uniqueness via `pinIsTaken()` on `store()`/`updateStudent()`, scoped to same-name students (login resolves by name + PIN) so the bcrypt scan stays O(same-name count) |
 | Rate-limited logins | `throttle:30,1` on student login, `throttle:5,1` on teacher login (brute-force mitigation) |
 | Avatar follows gender, until customized | `updateStudent()` re-syncs the gender-default avatar only while it is still a placeholder (`/images/boy.svg` / `/images/girl.svg`); custom heroes are kept (gender and avatar decoupled) |
 | Atomic bulk student creation | `storeBulk()` normalizes all rows → validates → one `DB::transaction`; a bad row rejects the whole batch (no partial rosters) |
 | Separate modals per creation flow | `AddStudentModal` vs `BulkAddStudentModal` — distinct two-stage flows; each `useForm` gets its own error keys |
-| PHP-side dup normalization | Case/whitespace-insensitive duplicate checks run in PHP (student IDs, word module words) because MySQL's ci collation differs from SQLite (tests) |
+| PHP-side dup normalization | Case/whitespace-insensitive duplicate checks run in PHP (student IDs, word module words) because MySQL's ci collation differs from SQLite (tests). Word Blast dedup (`aggregateWordStats`) removed — 10 unique words/level, direct `word_stats` iteration |
 | `has_progress` flag on word modules | `wordModules()` exposes whether any `StudentWordMastery` row exists → modal shows a progress-reset `confirm()` before editing |
 | Progress writes clamped at the service | `ProgressService::updateModuleProgress` clamps `processed ≥ 0`, `smashed ≤ processed`, `accuracy ∈ [0,100]` — the single choke point every caller routes through, because controller per-field rules can't cover cross-field lies (`smashed = total, processed = 0` point-farm) |
 | Zero-word module guard | A module with 0 words can never be `completed` (`$totalWords > 0`); paragraph content is validated non-empty at save so zero-word modules can't be created |

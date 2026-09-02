@@ -1,6 +1,6 @@
 # Word-O-Matic
 
-> Version 1.9 — Developer Guide
+> Version 2.0 — Developer Guide
 
 ## Design Context
 
@@ -80,7 +80,7 @@ Enforced by `CheckStudentOnboarding` middleware, which also bounces avatar-compl
 | `ProgressService` | Update word/paragraph progress (best score only), recalculate status. Status thresholds live in the static `classify(float $wordBlastAcc, float $storyQuestAcc, bool $wordStarted, bool $storyStarted)` (single source of truth — called by `recalculateStatus`, `TeacherController::dashboardStats` per-student + section, and `StudentSeeder`; `started` = accuracy > 0 OR a progress row on a real module, resolving the both-zero `notStarted` collision, CAVEATS BF26). Numeric Final Average is the static `finalAverage(float $wordBlastAcc, float $storyQuestAcc, bool $wordStarted, bool $storyStarted): ?float` — same guards as `classify` (null until both skills started, else `round((wb+sq)/2, 2)`); the `StudentProfile` accessor `finalAverage` (`$appends`) mirrors it with a pure `acc == 0 → null` guard (no query). Tutorial plays — including post-onboarding replays, where `finishRound()` drops the isTutorial flag — never move `students.points` (recompute sums exclude tutorial rows; the delta path is gated on `! $module->is_tutorial`). Clamps client-reported inputs at the service boundary — `words_processed ≥ 0`, `words_smashed ≤ words_processed`, `accuracy ∈ [0,100]` — and never completes a module with 0 words (`$totalWords > 0` guard). |
 | `BadgeService` | Award badges, check thresholds. `calculateModuleCompletion()` computes paragraph/word completion % from `words_smashed`. `checkAllEligibleBadges()` also runs at student login (avatar set). |
 | `LevelService` | Module lock/current/completed status per student |
-| `ReportService` | Deadline/cutoff resolution (`deadline()`, `cutoff()`), `trainingWordsFor()`, pure projections of `curriculumForUser()` (`trainingGroupsFrom()`, `trainingAttemptsFrom()`), `curriculumPercent()`, `latestBadge()`, and the `NEEDS_ATTENTION_ATTEMPTS` threshold const shared to the teacher UI — powers `ReportController` (routes `reports`, `reports.sendEmails`, `reports.deadline`, `reports.export`). |
+| `ReportService` | Deadline/cutoff resolution (`deadline()`, `cutoff()`), Word Blast `trainingWordsFor()`/`curriculumPercent()`/`trainingGroupsFrom()`/`trainingAttemptsFrom()`/`struggleRowsFrom()` (direct `word_stats`), Story Quest sentence helpers `trainingSentenceGroupsFrom()`/`trainingSentenceAttemptsFrom()`/`sentenceStruggleRowsFrom()`/`sentenceCurriculumPercent()` (`sentence_stats` via `sentencesFromContent`, `failed_attempts=sum(word)`), `latestBadge()`, `NEEDS_ATTENTION_ATTEMPTS` — powers `ReportController`. |
 | `TeacherController::dashboardStats()` | Teacher dashboard stats (private method, no service class). Returns `topStudents`, `chartCounts`, `sectionPerformance` (each with `final_average`), `avgFinalAccuracy` (avg of per-student `finalAverage`, nulls filtered), and a per-student `students` list (id, name, section, wordBlastAcc, storyQuestAcc, finalAverage, status — `status` read from the stored column, `finalAverage` from the accessor) powering the class-health drill-down table. `students()` additionally accepts `?sort=finalAverage` (raw `(wb+sq)/2` ORDER BY, no thresholds) and exposes `finalAverage` per row. |
 
 Session logging done via `GameSession::logSession()` static method on the model (no service class).
@@ -148,7 +148,7 @@ Rules:
 then required (`required|string`) — empty or whitespace-only content is rejected,
 so a zero-word paragraph module can never be created (a zero-word module would
 strand students: `ProgressService` refuses to complete a module with 0 words —
-`$totalWords > 0` guard, see CAVEATS.md BF13). Words are split on whitespace and
+`$totalWords > 0` guard, see CAVEATS.md BF13). Content is 2 short sentences ×3-5w (73 total words, was paragraph prose) — split `(?<=[.!?])\s+` → `sentence_stats` (sentence `mastered` iff every word `mastered`, `failed_attempts=sum(word)`). Words are split on whitespace and
 stored case-as-entered via `ParagraphModule::saveWithContent` (deletes +
 recreates the module's words each save). `level` is likewise validated
 `min:1` for the same reason as word modules (`saveWithContent` upserts by

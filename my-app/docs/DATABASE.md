@@ -1,6 +1,6 @@
 # Database
 
-> Version 1.6
+> Version 1.7
 
 All migrations in `database/migrations/`. No raw SQL. All foreign keys on `user_id` use `cascadeOnDelete`.
 
@@ -20,8 +20,8 @@ All migrations in `database/migrations/`. No raw SQL. All foreign keys on `user_
 | `students` | `user_id, points, read_progress, avatar, speak_progress, status, wordBlastAcc, storyQuestAcc, read_level, speak_level, section, gender, parent_email, tutorial_completed_at, report_sent_at` | Denormalized stats, best-score-only updates. `status` (values `notStarted`/`in_progress`/`support`/`atRisk`/`onTrack`) is a stored **read-SOT**, written only by `ProgressService::recalculateStatus()` via `classify()` — read paths never re-derive it. `report_sent_at` set when parent report email is queued. Cascade on `user_id`. (`words_smashed` dropped 2026-06-29) |
 | `student_word_progress` | `user_id, word_module_id, status, words_smashed, accuracy` | Overwritten on best score. Cascade. |
 | `student_paragraph_progress` | `user_id, paragraph_module_id, status, words_smashed, accuracy` | Overwritten on best score. Cascade. |
-| `student_word_mastery` | `user_id, word_id, status` | Per-word mastery toggle. Cascade. |
-| `student_paragraph_mastery` | `user_id, paragraph_word_id, status` | Per-word mastery toggle. Cascade. |
+| `student_word_mastery` | `user_id, word_id, status` | Per-word mastery toggle. Word Blast stays word-based (10 unique words/level, no dedup). Cascade. |
+| `student_paragraph_mastery` | `user_id, paragraph_word_id, status` | Per-word storage, sentence-based reporting — `ParagraphModule::buildLevels` derives `sentence_stats{ sentence, mastery=sum(all words mastered ? mastered:training), failed_attempts=sum(word)}` via `sentencesFromContent` (no `paragraph_sentences` table). Cascade. |
 | `student_badges` | `user_id, badge_id, earned_at, progress, status, unlocked_session_id` | Pivot with progress. Cascade. |
 
 ### Modules
@@ -30,8 +30,8 @@ All migrations in `database/migrations/`. No raw SQL. All foreign keys on `user_
 |---|---|---|
 | `word_modules` | `id, level, title, is_tutorial` | 11 modules (10 real + 1 tutorial), sequential. (`total_points`/`paragraph_modules.total_score` dropped 2026-06-28) |
 | `words` | `id, word_module_id, word, position` | 10 words per module (5 for tutorial). `position` for teacher ordering, gameplay uses `inRandomOrder()`. (`points` dropped 2026-07-09) |
-| `paragraph_modules` | `id, level, title, content, is_tutorial` | 11 modules (10 real + 1 tutorial), sequential |
-| `paragraph_words` | `id, paragraph_module_id, word, position` | Words extracted from paragraphs |
+| `paragraph_modules` | `id, level, title, content, is_tutorial` | 11 modules (10 real + 1 tutorial), sequential. `content` is 2 short sentences ×3-5w (73 total words, was paragraph prose) — split by `sentencesFromContent` `(?<=[.!?])\s+`. |
+| `paragraph_words` | `id, paragraph_module_id, word, position` | Words extracted via `preg_split \s+` (73 total, short seed). `position` 1..n drives `sentence_stats` slice. |
 
 ### Game Sessions (Append-Only)
 

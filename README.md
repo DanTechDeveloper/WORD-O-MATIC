@@ -190,8 +190,8 @@ The application contains **14 Eloquent models**, including:
 **📊 ReportService**
 
 - Deadline/cutoff resolution (`deadline()`, `cutoff()`)
-- `trainingWordsFor()` / `curriculumPercent()` / `latestBadge()`
-- Pure projections of `curriculumForUser()`: `trainingGroupsFrom()`, `trainingAttemptsFrom()`
+- Word Blast: `trainingWordsFor()` / `curriculumPercent()` / `trainingGroupsFrom()` / `trainingAttemptsFrom()` / `struggleRowsFrom()` (direct `word_stats`, no dedup)
+- Story Quest: `trainingSentenceGroupsFrom()` / `trainingSentenceAttemptsFrom()` / `sentenceStruggleRowsFrom()` / `sentenceCurriculumPercent()` (sentence-based `sentence_stats` derived via `ParagraphModule::sentencesFromContent`, `failed_attempts=sum(word)`)
 - `NEEDS_ATTENTION_ATTEMPTS = 3` — single-source threshold shared to the teacher UI and used to group parent-email Training Zones (Still Practicing / Needs More Practice)
 - Navigated alongside **`ProgressService::finalAverage()`** / the `StudentProfile::finalAverage` accessor — the derived **Final Average** (`round((wb+sq)/2,2)`, null until both skills started) surfaced across the teacher dashboard, students list, Reports.jsx, StudentDetails, parent email, and Excel export.
 - Powers `ReportController` (reports, send-emails, deadline, export)

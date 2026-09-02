@@ -1,6 +1,6 @@
 # Gameplay
 
-> Version 1.6
+> Version 1.7
 
 ## Word Blast (Read Mode)
 
@@ -19,12 +19,12 @@
 
 | Property | Value |
 |---|---|
-| Type | Speaking with paragraph content |
+| Type | Speaking with short sentences (2 per level, 3-5 words each, 73 total words) |
 | Timer | 60 seconds per session |
 | Presentation | Sentence-based, fixed word order |
 | Scoring | Tolerance-bucketed Levenshtein (`speechUtils.js` `isFuzzyMatch` → `withinRatio` 0.34 + `boundaryLeak`; `cot`=cat Correct, `kat`=cat Wrong, `tabl`=table Wrong) |
 | Update rule | Only on new best score |
-| Mastery | Per-word: `mastered` or `training`, stored in `student_paragraph_mastery` |
+| Mastery | Sentence-based reporting — per-word storage `student_paragraph_mastery` but `ParagraphModule::buildLevels` derives `sentence_stats{ sentence, mastery=sum(all words mastered?mastered:training), failed_attempts=sum(word)}` via `sentencesFromContent` `(?<=[.!?])\s+`; teacher `StudentDetails` shows `SentenceChip` (Mastery/Training zones), sentence progress `mastered_sentences/total_sentences` (`ReportService::sentenceCurriculumPercent`). Gameplay still word-step `SpeakModeMainContent` word highlight. |
 | Routes | `/student/gameplaySpeakMode/{level}`, `/student/speakModeLevels` |
 
 ## Rules
