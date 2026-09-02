@@ -194,7 +194,7 @@ class BadgeTest extends TestCase
         ]);
         StudentProfile::factory()->for($user)->create([
             'avatar' => '/images/avatars/zoe/head.png',
-            'points' => 35,
+            'points' => 55,
             'wordBlastAcc' => 85,
             'storyQuestAcc' => 0,
         ]);
@@ -330,9 +330,9 @@ class BadgeTest extends TestCase
         $slugs = collect($awarded)->map(fn ($b) => $b->slug)->sort()->values()->all();
 
         $this->assertSame(
-            ['blazing-streak', 'clear-speaker', 'first-steps', 'on-fire', 'perfect-round', 'unstoppable'],
+            ['first-steps', 'perfect-round', 'unstoppable'],
             $this->normalize($slugs),
-            'A perfect 10/10 first level should award the documented 6-badge burst.'
+            'A perfect 10/10 first level should award the highest tier per metric (ponytail burst fix).'
         );
     }
 
@@ -359,8 +359,8 @@ class BadgeTest extends TestCase
         $badgeService = new BadgeService;
         $awarded = $badgeService->checkGameplayBadges($user, $session->id, 90.0);
 
-        $this->assertCount(4, $awarded);
-        $this->assertTrue($this->hasBadge($user, 'on-fire'));
+        $this->assertCount(3, $awarded);
+        $this->assertFalse($this->hasBadge($user, 'on-fire'));
         $this->assertTrue($this->hasBadge($user, 'blazing-streak'));
         $this->assertTrue($this->hasBadge($user, 'clear-speaker'));
         $this->assertTrue($this->hasBadge($user, 'first-steps'));
@@ -461,7 +461,7 @@ class BadgeTest extends TestCase
     {
         $this->seedBadges();
         [$user] = $this->makeStudent('Point Badges');
-        $user->student->update(['points' => 35]);
+        $user->student->update(['points' => 55]);
 
         $awarded = (new BadgeService)->checkAllEligibleBadges($user);
         $slugs = collect($awarded)->pluck('slug')->sort()->values()->all();
@@ -490,7 +490,7 @@ class BadgeTest extends TestCase
 
         GameSession::create([
             'user_id' => $user->id, 'module_id' => $module->id, 'module_type' => 'word',
-            'score' => 8, 'accuracy' => 80, 'streak' => 8, 'is_deadline_hit' => false,
+            'score' => 8, 'accuracy' => 80, 'streak' => 6, 'is_deadline_hit' => false,
         ]);
         GameSession::create([
             'user_id' => $user->id, 'module_id' => $module->id, 'module_type' => 'word',
@@ -499,7 +499,7 @@ class BadgeTest extends TestCase
 
         (new BadgeService)->checkAllEligibleBadges($user);
 
-        $this->assertTrue($this->hasBadge($user, 'on-fire'));
+        $this->assertFalse($this->hasBadge($user, 'on-fire'));
         $this->assertTrue($this->hasBadge($user, 'blazing-streak'));
         $this->assertFalse($this->hasBadge($user, 'unstoppable'));
     }
@@ -581,7 +581,7 @@ class BadgeTest extends TestCase
     {
         $this->seedBadges();
         [$user] = $this->makeStudent('No Dup');
-        $user->student->update(['points' => 35]);
+        $user->student->update(['points' => 55]);
 
         (new BadgeService)->checkAllEligibleBadges($user);
         $second = (new BadgeService)->checkAllEligibleBadges($user);
@@ -606,16 +606,18 @@ class BadgeTest extends TestCase
 
     public function test_meets_threshold_operator_variants(): void
     {
-        Badges::create(['name' => 'GT Five', 'slug' => 'gt-five', 'description' => 'd', 'metric' => 'total_points', 'operator' => '>', 'threshold_score' => 5, 'icon' => 'x']);
-        Badges::create(['name' => 'EQ Ten', 'slug' => 'eq-ten', 'description' => 'd', 'metric' => 'total_points', 'operator' => '=', 'threshold_score' => 10, 'icon' => 'x']);
-        Badges::create(['name' => 'LTE Ten', 'slug' => 'lte-ten', 'description' => 'd', 'metric' => 'total_points', 'operator' => '<=', 'threshold_score' => 10, 'icon' => 'x']);
-        Badges::create(['name' => 'Weird Op', 'slug' => 'weird-op', 'description' => 'd', 'metric' => 'total_points', 'operator' => '??', 'threshold_score' => 1, 'icon' => 'x']);
+        // ponytail C+D: operator dropped + tier (highest per metric) — only highest qualifies per metric
+        Badges::create(['name' => 'GT Five', 'slug' => 'gt-five', 'description' => 'd', 'metric' => 'total_points', 'threshold_score' => 5, 'icon' => 'x']);
+        Badges::create(['name' => 'EQ Ten', 'slug' => 'eq-ten', 'description' => 'd', 'metric' => 'total_points', 'threshold_score' => 10, 'icon' => 'x']);
+        Badges::create(['name' => 'LTE Twelve', 'slug' => 'lte-twelve', 'description' => 'd', 'metric' => 'total_points', 'threshold_score' => 12, 'icon' => 'x']);
+        Badges::create(['name' => 'Weird Op', 'slug' => 'weird-op', 'description' => 'd', 'metric' => 'total_points', 'threshold_score' => 1, 'icon' => 'x']);
 
         foreach ([
-            ['points' => 5, 'expected' => ['lte-ten']],
-            ['points' => 6, 'expected' => ['gt-five', 'lte-ten']],
-            ['points' => 10, 'expected' => ['eq-ten', 'gt-five', 'lte-ten']],
-            ['points' => 11, 'expected' => ['gt-five']],
+            ['points' => 5, 'expected' => ['gt-five', 'weird-op']],
+            ['points' => 6, 'expected' => ['gt-five', 'weird-op']],
+            ['points' => 10, 'expected' => ['eq-ten', 'gt-five', 'weird-op']],
+            ['points' => 12, 'expected' => ['eq-ten', 'gt-five', 'lte-twelve', 'weird-op']],
+            ['points' => 13, 'expected' => ['eq-ten', 'gt-five', 'lte-twelve', 'weird-op']],
         ] as $case) {
             [$user] = $this->makeStudent('Operator '.$case['points']);
             $user->student->update(['points' => $case['points']]);
@@ -652,6 +654,9 @@ class BadgeTest extends TestCase
         ]);
 
         $service = new BadgeService;
+        // ponytail tier: 100 pts/10 streak/100 acc now needs 3 calls to drain all tiers (was 1 burst)
+        $service->checkGameplayBadges($user, $session->id, 100.0);
+        $service->checkGameplayBadges($user, $session->id, 100.0);
         $service->checkGameplayBadges($user, $session->id, 100.0);
         $second = $service->checkGameplayBadges($user, $session->id, 100.0);
 
@@ -694,7 +699,7 @@ class BadgeTest extends TestCase
 
         (new BadgeService)->checkGameplayBadges($user, $session->id, 20.0);
 
-        $this->assertTrue($this->hasBadge($user, 'on-fire'));
+        $this->assertFalse($this->hasBadge($user, 'on-fire'));
         $this->assertTrue($this->hasBadge($user, 'blazing-streak'));
         $this->assertFalse($this->hasBadge($user, 'unstoppable'));
     }

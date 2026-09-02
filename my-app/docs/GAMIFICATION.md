@@ -39,7 +39,7 @@ Tutorial play (`is_tutorial=true` modules) is isolated from real game tracking:
 | Onboarding | Complete tutorial / set avatar | `awardOnboardingBadge()` |
 | Gameplay | Points / streak / accuracy thresholds | `checkGameplayBadges()` |
 
-Badges defined in `badges` table (`operator`, `threshold_score`). Unlock once per student via `student_badges` pivot.
+Badges defined in `badges` table (`metric`, `threshold_score` — `operator` dropped 2026-09-02, always `>=`). Unlock once per student via `student_badges` pivot. Streak/accuracy are tiered — only the highest threshold per metric is awarded per game (prevents 10/10 6-badge burst; `first-steps` + `word-master` still stack as different thresholds of same metric are progressive).
 
 ### Teacher Badges Page
 
@@ -58,12 +58,12 @@ badges earned while a student was logged out still count. Props passed from `Tea
 | Badge | Slug | Category | Metric | Threshold | Requirement |
 |---|---|---|---|---|---|
 | First Steps | `first-steps` | Points | `total_points` | 5 | Reach 5 accumulated player points |
-| Word Master | `word-master` | Points | `total_points` | 30 | Reach 30 accumulated player points |
+| Word Master | `word-master` | Points | `total_points` | 50 | Reach 50 accumulated player points |
 | Story Quest Finisher | `story-finisher` | Completion | `paragraph_completion` | 100 (%) | Complete 100% of paragraph module words |
 | Word Blast Finisher | `word-blast-finisher` | Completion | `word_completion` | 100 (%) | Complete 100% of word module words |
 | On Fire | `on-fire` | Streak | `streak` | 3 | Get 3 correct in a row |
 | Blazing Streak | `blazing-streak` | Streak | `streak` | 5 | Get 5 correct in a row |
-| Unstoppable | `unstoppable` | Streak | `streak` | 10 | Get 10 correct in a row |
+| Unstoppable | `unstoppable` | Streak | `streak` | 7 | Get 7 correct in a row |
 | Clear Speaker | `clear-speaker` | Accuracy | `accuracy` | 80 | Get 80% accuracy in a single game |
 | Perfect Round | `perfect-round` | Accuracy | `accuracy` | 100 | Get 100% accuracy in a single game |
 | Tutorial Complete | `tutorial-complete` | Onboarding | `action` | — | Finish both tutorial modes |
