@@ -564,7 +564,7 @@ export default function StudentDetail({ data }) {
                         </div>
                         <div className="bg-slate-950 rounded-[2.5rem] border-4 border-slate-800 p-8 shadow-[8px_8px_0_0_#020617] min-h-[400px] max-h-[600px] overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-slate-800 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-orange-400">
                             {student.speakCurriculum.map((level, i) => {
-                                const training = (level.sentence_stats || []).filter((s) => s.mastery === 'training');
+                                const training = (level.sentence_stats || []).filter((s) => s.mastery === 'training' && Number(s.failed_attempts || 0) > 0);
                                 if (training.length === 0) return <div key={i} className="mb-8 last:mb-0" />;
                                 return (
                                     <div key={i} className="mb-8 last:mb-0">

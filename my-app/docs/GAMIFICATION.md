@@ -1,6 +1,6 @@
 # Gamification
 
-> Version 1.2
+> Version 1.3
 
 ## XP & Points
 
@@ -115,14 +115,14 @@ Computed by `ProgressService::recalculateStatus()`, which delegates to the share
 ## Word Attempt Analytics
 
 Per-word attempt tracking lives on `student_word_mastery` / `student_paragraph_mastery`
-(`failed_attempts`, default 0). Deliberately kept distinct from module/student Status —
+(`failed_attempts`, default 0) — storage stays per-word, reporting diverges. Deliberately kept distinct from module/student Status —
 three concepts, never collapsed:
 
 | Concept | Answers | Where |
 |---|---|---|
 | Status | How is the student performing overall? | `students.status` (accuracy-based) |
-| Mastery | Has the student recognized this word at least once? | `student_*_mastery.status` (sticky) |
-| Attempts | Which words required repeated attempts? | `student_*_mastery.failed_attempts` |
+| Mastery | Has the student recognized this word/sentence at least once? | Word Blast: `student_word_mastery.status` per word (sticky); Story Quest: sentence `mastered` iff every word `mastered` else `training` (`ParagraphModule::buildLevels` derives `sentence_stats`) |
+| Attempts | Which words/sentences required repeated attempts? | Word Blast: `student_word_mastery.failed_attempts` per word; Story Quest: `sentence.failed_attempts = sum(word.failed_attempts)` |
 
 Semantics:
 
@@ -137,18 +137,11 @@ Semantics:
   - `training` + ≥3 → **Needs Attention** (unresolved struggle — act)
   - `mastered` + ≥3 → **Recovered** (was difficult, overcome — history only)
   - else → no flag rendered (Normal is the absence of a flag, not a label)
-- Surfaced in the Word Analysis tables on `Teacher/StudentDetails.jsx` via the
-  additive `word_stats` key of `curriculumForUser()`; unseen words appear at 0.
-- Duplicate texts within a level (natural in sentences — "I see a cat. The cat
-  is big") render as ONE chip: `failed_attempts` summed across occurrences and
-  the worst mastery shown (`training` beats `unseen` beats `mastered`) so a
-  Needs Attention flag survives merging. Grouping normalizes casing and
-  trailing punctuation (`Cat.` ≡ `cat` ≡ `THE`). The rule is mirrored
-  identically page-side (`aggregateZoneRows` in StudentDetails.jsx) and
-  email-side (`ReportService::aggregateWordStats`) — locked by the parity test.
-- Also surfaced in parent emails: the Training Zones group training words into
+- Surfaced in the Word Analysis tables on `Teacher/StudentDetails.jsx`: Word Blast via `word_stats` (`aggregateZoneRows` now direct, no dedup — 10 unique words/level, YAGNI), Story Quest via `sentence_stats` (`SentenceChip` per sentence, `failed_attempts=sum(word)`); unseen words appear at 0. Email ↔ StudentDetails parity locked by `ReportTest::test_email_payload_matches_student_details_view_data` (now sentence-aware for Story Quest).
+- Story Quest no longer merges duplicate word texts — sentences are unique (`I see a cat.` vs `The cat is big.`); the old per-word dedup (`aggregateWordStats` `normalizeWord` `BF25`) was Word Blast legacy and has been removed (now direct `word_stats` iteration).
+- Also surfaced in parent emails: the Training Zones group training words/sentences into
   **Still Practicing** (< threshold) and **Needs More Practice** (≥ threshold,
-  amber, "Not yet mastered") with `N recorded attempt(s)` metas — counts framed
+  amber, "Not yet mastered") with `N recorded attempt(s)` (Story Quest `N=sum(word)` ) metas — counts framed
   as recorded history, not recommended repetitions. Recovered stays teacher-only;
   email ↔ StudentDetails parity locked by
   `ReportTest::test_email_payload_matches_student_details_view_data`.

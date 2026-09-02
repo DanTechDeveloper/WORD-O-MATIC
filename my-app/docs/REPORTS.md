@@ -1,6 +1,6 @@
 # Reports
 
-> Version 1.9
+> Version 2.0
 
 ## Dashboard
 
@@ -41,13 +41,13 @@ The teacher deadline banner is a single source of truth in `DashboardLayout.jsx`
 
 - **Header**: student name, sector, status pill (all five statuses render a colored pill).
 - **Performance Overview**: Word Blast / Story Quest accuracy tiles + a full-width amber **Final Average** card (null-safe — hidden/absent when unstarted, `$data['finalAverage'] ?? null`).
-- **Curriculum Progress**: per-mode completion % (`wordBlastProg` / `storyQuestProg` via `ReportService::curriculumPercent()` — same math as the frontend's `calcOverallProgress`, parity asserted by test) rendered as progress bars + level line.
+- **Curriculum Progress**: per-mode completion % — Word Blast `wordBlastProg` via `ReportService::curriculumPercent()` (words), Story Quest `storyQuestProg` via `ReportService::sentenceCurriculumPercent()` (sentences, `mastered_sentences/total_sentences`, `calcSentenceProgress` parity) rendered as progress bars + level line.
 - **Latest Achievement**: latest badge card (or empty state).
-- **Training Zone × 2** (Word Blast / Story Quest): every still-training word grouped by recorded tries against the shared threshold `ReportService::NEEDS_ATTENTION_ATTEMPTS = 3`:
-  - **Still Practicing** — training words below the threshold; chips show `N recorded attempt(s)`.
-  - **Needs More Practice** — training words at/above it; amber chips with `N recorded attempts · Not yet mastered`.
-  - Disclaimer copy states counts are recorded history, not recommended repetitions.
-  - Payload: `wordAttempts` / `paragraphWordAttempts` from `ReportService::trainingAttemptsFrom()`. Recovered words (mastered + ≥3) stay teacher-only.
+- **Training Zone × 2**: Word Blast word-based, Story Quest sentence-based, both grouped by recorded tries against `ReportService::NEEDS_ATTENTION_ATTEMPTS = 3`:
+  - **Word Blast** — every still-training word; **Story Quest** — every still-training sentence (`sentence` = 3-5w short, mastery = `every word mastered ? mastered:training`, `failed_attempts=sum(word)`). Chips: `N recorded attempt(s)` (Story Quest `N=sum`).
+  - **Still Practicing** — below threshold; **Needs More Practice** — at/above threshold, amber `N recorded attempts · Not yet mastered`.
+  - Disclaimer: counts are recorded history, not recommended repetitions.
+  - Payload: `wordAttempts` via `trainingAttemptsFrom()` (Word Blast), `paragraphWordAttempts` via `trainingSentenceAttemptsFrom()` (Story Quest sentences). Recovered stay teacher-only.
 - **Recommendation**: banner for **all five statuses** (including `notStarted` / `in_progress`). Copy is template-local wording — deliberately no longer mirrored from the `StudentDetails.jsx` `recommendations` map.
 
 ## Sent Tracking
@@ -64,11 +64,11 @@ Excel (`.xlsx`) export via `ReportsExport` is available after deadline passes.
   - **Student Accuracy Comparison** (Bar/Column Chart, anchored `N18:V35`): Compares each student's Word Blast and Story Quest accuracy (columns A–C).
 - **Student Progress Summary Sheet**: One row per student with identity + status + per-mode progress:
   - Student Name, Student ID, Section, Final Status, Word Blast (accuracy + level combined, e.g. `78% (Level 3 - Phonics Fundamentals)`), Story Quest (accuracy + level combined, e.g. `90% (Level 2 - Farm Animals)`), **Final Average** (e.g. `87.5%`), Top Struggle (up to two worst training words by attempts, e.g. `WB: CAT ×4 · SQ: the ×3`; empty when none)
-- **Words Needing Practice Sheet**: Flat drill-down, one row per student-word still in training (sorted attempts-desc within each student):
-  - Student Name, Student ID, Section, Mode, Level, Word, Attempts
-  - Same normalized projection as the parent email (`ReportService::struggleRowsFrom`, per-level merge + global display casing); rows at/over `NEEDS_ATTENTION_ATTEMPTS` are red-filled
-  - Export reads per-student `curriculumForUser` — identical data source as the emailed report
+- **Words Needing Practice Sheet**: Flat drill-down, one row per student-item still in training (sorted attempts-desc within each student):
+  - Student Name, Student ID, Section, Mode, Level, Word/Sentence, Attempts (Word Blast: `Word`, Story Quest: `Sentence` 3-5w)
+  - Word Blast: `ReportService::struggleRowsFrom` (direct, no dedup); Story Quest: `ReportService::sentenceStruggleRowsFrom` (per sentence, `attempts=sum(word)`); rows at/over `NEEDS_ATTENTION_ATTEMPTS` red-filled
+  - Export reads per-student `curriculumForUser` — identical source as email
 
 ## Student Details
 
-Route: `GET /teacher/studentDetails/{id}`. Shows completed modules, accuracy trends, badge history. A top **Overall Status panel** summarizes the student at a glance: colored status badge, the per-status recommendation line, a Performance Summary (Word Blast / Story Quest accuracy), and Curriculum Progress (completion % per mode, computed from `curriculumForUser`).
+Route: `GET /teacher/studentDetails/{id}`. Shows completed modules, accuracy trends, badge history. A top **Overall Status panel** summarizes the student at a glance: colored status badge, per-status recommendation line, a Performance Summary (Word Blast / Story Quest accuracy), and Curriculum Progress — Word Blast `calcOverallProgress` (words), Story Quest `calcSentenceProgress` (`mastered_sentences/total_sentences`, 2 per level uniform). Mastery/Training zones: Word Blast `WordChip` per word (`aggregateZoneRows` direct, no merge), Story Quest `SentenceChip` per sentence (`sentence_stats` `mastery=sum`) `MasteryZone` / `TrainingZone` columns.
