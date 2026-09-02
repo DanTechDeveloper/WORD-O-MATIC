@@ -270,8 +270,8 @@ class ReportTest extends TestCase
 
     public function test_training_attempts_sum_duplicate_texts_within_a_level(): void
     {
-        // "cat" occurs twice in one paragraph module — two mastery rows, one
-        // summed email entry instead of the second overwriting the first.
+        // Word Blast has 10 unique words/level (dedup removed) — duplicate
+        // texts are now last-write-wins (no sum). Legacy sum behavior retired.
         $module = WordModule::create(['level' => 1, 'title' => 'Dupes']);
         foreach ([1, 2] as $i => $fails) {
             $word = Word::create(['word_module_id' => $module->id, 'word' => 'cat', 'position' => $i + 1]);
@@ -284,15 +284,14 @@ class ReportTest extends TestCase
         }
 
         $this->assertSame(
-            ['cat' => 3],
+            ['cat' => 2],
             (new ReportService())->trainingAttemptsFrom(WordModule::curriculumForUser($this->student->id)),
         );
     }
 
     public function test_training_attempts_merge_casing_and_trailing_punctuation(): void
     {
-        // Natural sentence tokens: "Cat." (sentence-final) vs "cat" vs "CAT"
-        // are the same spoken word for reporting purposes.
+        // Word Blast dedup removed — casing/punctuation variants are now distinct keys.
         $module = WordModule::create(['level' => 1, 'title' => 'Casing']);
         foreach ([['Cat.', 2], ['cat', 1], ['CAT', 4]] as $i => [$text, $fails]) {
             $word = Word::create(['word_module_id' => $module->id, 'word' => $text, 'position' => $i + 1]);
@@ -305,7 +304,7 @@ class ReportTest extends TestCase
         }
 
         $this->assertSame(
-            ['Cat.' => 7],
+            ['Cat.' => 2, 'cat' => 1, 'CAT' => 4],
             (new ReportService())->trainingAttemptsFrom(WordModule::curriculumForUser($this->student->id)),
         );
     }
@@ -419,8 +418,9 @@ class ReportTest extends TestCase
         // grouping — mirrors ReportService::normalizeWord (BF25).
         $normalize = fn (string $word) => mb_strtolower(preg_replace('/[^\p{L}\p{N}]+$/u', '', trim($word)));
 
-        // The rendering contract of the JSX zones: non-empty levels only,
-        // duplicate texts merged (normalize + SUM — mirrors aggregateZoneRows).
+        // The rendering contract of the JSX zones: Word Blast uses word_stats
+        // (normalize + SUM — mirrors aggregateZoneRows), Story Quest uses
+        // sentence_stats (one chip per sentence, attempts = sum(word attempts)).
         $zoneTrainingGroups = fn (array $curriculum) => collect($curriculum)
             ->mapWithKeys(function ($level) use ($normalize) {
                 $rows = collect($level['word_stats'] ?? [])
@@ -432,6 +432,11 @@ class ReportTest extends TestCase
             ->filter(fn ($words) => $words !== [])
             ->all();
 
+        $zoneSentenceTrainingGroups = fn (array $curriculum) => collect($curriculum)
+            ->mapWithKeys(fn ($level) => [$level['level'] => collect($level['sentence_stats'] ?? [])->filter(fn ($s) => $s['mastery'] === 'training')->pluck('sentence')->all()])
+            ->filter(fn ($s) => $s !== [])
+            ->all();
+
         // What the JSX chips would flag: training + >= threshold (Needs Attention).
         $zoneAttention = fn (array $curriculum) => collect($curriculum)
             ->flatMap(fn ($level) => $level['word_stats'])
@@ -441,12 +446,24 @@ class ReportTest extends TestCase
             ->mapWithKeys(fn ($rows, $key) => [$rows->first()['word'] => $rows->sum('failed_attempts')])
             ->all();
 
+        $zoneSentenceAttention = fn (array $curriculum) => collect($curriculum)
+            ->flatMap(fn ($level) => $level['sentence_stats'] ?? [])
+            ->filter(fn ($stat) => $stat['mastery'] === 'training' && (int) $stat['failed_attempts'] >= ReportService::NEEDS_ATTENTION_ATTEMPTS)
+            ->mapWithKeys(fn ($stat) => [$stat['sentence'] => (int) $stat['failed_attempts']])
+            ->all();
+
         // Recorded tries for EVERY still-training word, as the zones see them.
         $zoneTries = fn (array $curriculum) => collect($curriculum)
             ->flatMap(fn ($level) => $level['word_stats'])
             ->filter(fn ($stat) => $stat['mastery'] === 'training')
             ->groupBy(fn ($stat) => $normalize($stat['word']))
             ->mapWithKeys(fn ($rows, $key) => [$rows->first()['word'] => $rows->sum('failed_attempts')])
+            ->all();
+
+        $zoneSentenceTries = fn (array $curriculum) => collect($curriculum)
+            ->flatMap(fn ($level) => $level['sentence_stats'] ?? [])
+            ->filter(fn ($stat) => $stat['mastery'] === 'training')
+            ->mapWithKeys(fn ($stat) => [$stat['sentence'] => (int) $stat['failed_attempts']])
             ->all();
 
         // PATH B — the queued parent email
@@ -462,9 +479,9 @@ class ReportTest extends TestCase
         });
 
         $this->assertSame($zoneTrainingGroups($readCur), $mailData['trainingWords']);
-        $this->assertSame($zoneTrainingGroups($speakCur), $mailData['paragraphTrainingWords']);
+        $this->assertSame($zoneSentenceTrainingGroups($speakCur), $mailData['paragraphTrainingWords']);
         $this->assertSame($zoneTries($readCur), $mailData['wordAttempts']);
-        $this->assertSame($zoneTries($speakCur), $mailData['paragraphWordAttempts']);
+        $this->assertSame($zoneSentenceTries($speakCur), $mailData['paragraphWordAttempts']);
 
         // The >=threshold slice of the email attempts must equal the flags the
         // JSX chips would show (Needs Attention / Needs More Practice).
@@ -477,7 +494,7 @@ class ReportTest extends TestCase
             fn ($tries) => $tries >= ReportService::NEEDS_ATTENTION_ATTEMPTS,
         );
         $this->assertSame($zoneAttention($readCur), $mailNeedsWb);
-        $this->assertSame($zoneAttention($speakCur), $mailNeedsSq);
+        $this->assertSame($zoneSentenceAttention($speakCur), $mailNeedsSq);
 
         // Recovered words stay in the teacher's zones but never reach parents.
         $hatStat = collect($readCur)->flatMap(fn ($level) => $level['word_stats'])->firstWhere('word', 'HAT');
@@ -485,14 +502,18 @@ class ReportTest extends TestCase
         $this->assertArrayNotHasKey('HAT', $mailData['wordAttempts']);
         $this->assertArrayNotHasKey('run', $mailData['paragraphWordAttempts']);
 
-        // Progress % parity: JSX calcOverallProgress ≡ PHP curriculumPercent.
-        $jsProgress = fn (array $curriculum) => collect($curriculum)->sum('words_count') > 0
+        // Progress % parity: Word Blast word-based, Story Quest sentence-based.
+        $jsWordProgress = fn (array $curriculum) => collect($curriculum)->sum('words_count') > 0
             ? (int) round(collect($curriculum)->sum(fn ($level) => count($level['mastered']))
                 / collect($curriculum)->sum('words_count') * 100)
             : 0;
+        $jsSentenceProgress = fn (array $curriculum) => collect($curriculum)->sum(fn ($l) => $l['total_sentences'] ?? count($l['sentence_stats'] ?? [])) > 0
+            ? (int) round(collect($curriculum)->sum(fn ($l) => $l['mastered_sentences'] ?? collect($l['sentence_stats'] ?? [])->where('mastery', 'mastered')->count())
+                / collect($curriculum)->sum(fn ($l) => $l['total_sentences'] ?? count($l['sentence_stats'] ?? [])) * 100)
+            : 0;
 
-        $this->assertSame($jsProgress($readCur), $mailData['wordBlastProg']);
-        $this->assertSame($jsProgress($speakCur), $mailData['storyQuestProg']);
+        $this->assertSame($jsWordProgress($readCur), $mailData['wordBlastProg']);
+        $this->assertSame($jsSentenceProgress($speakCur), $mailData['storyQuestProg']);
     }
 
     private function backdatedMastery(string $model, array $attrs): void
@@ -817,7 +838,7 @@ class ReportTest extends TestCase
             'Section',
             'Mode',
             'Level',
-            'Word',
+            'Word/Sentence',
             'Attempts',
         ], $sheet->headings());
 

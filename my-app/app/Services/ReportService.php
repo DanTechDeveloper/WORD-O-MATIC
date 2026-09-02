@@ -40,79 +40,91 @@ class ReportService
         ];
     }
 
-    // Display/report normalization: the same spoken word collapses to one
-    // entry regardless of casing or trailing punctuation ("Cat." ≡ "cat" ≡
-    // "THE"). Applied only at report boundaries — storage stays untouched.
-    public static function normalizeWord(string $word): string
+    // ponytail: Word Blast dedup removed — WordModule has 10 unique words/level
+    // and cross-level reuse blocked by TeacherController::updateWordModule,
+    // so duplicate merge is YAGNI. Story Quest is sentence-based (no word dedup).
+
+    // ── Story Quest sentence helpers (approach B: derived, no DB change) ──
+    // Split mirrors ParagraphModule::sentencesFromContent so service stays pure.
+    public static function sentencesFromContent(?string $content): array
     {
-        return mb_strtolower(preg_replace('/[^\p{L}\p{N}]+$/u', '', trim($word)));
+        $content = trim((string) $content);
+        if ($content === '') return [];
+        $parts = preg_split('/(?<=[.!?])\s+/u', $content, -1, PREG_SPLIT_NO_EMPTY);
+        if (! $parts || count($parts) === 0) return [$content];
+        return array_values(array_filter(array_map('trim', $parts), fn ($s) => $s !== ''));
     }
 
-    // Merge duplicate word texts into one stat row: summed failed_attempts,
-    // worst mastery wins (training > unseen > mastered) so struggle flags
-    // survive the merge (BF25).
-    public static function aggregateWordStats(array $wordStats): array
+    // ["Level X: Title" => [sentences]] for Story Quest — no word dedup.
+    public function trainingSentenceGroupsFrom(array $curriculum): array
     {
-        $rank = ['mastered' => 0, 'unseen' => 1, 'training' => 2];
-        $merged = [];
+        return collect($curriculum)
+            ->mapWithKeys(function ($level) {
+                $sentences = [];
+                foreach ($level['sentence_stats'] ?? [] as $stat) {
+                    if (($stat['mastery'] ?? 'unseen') === 'training') {
+                        $sentences[] = $stat['sentence'];
+                    }
+                }
+                return [$level['level'] => $sentences];
+            })
+            ->filter(fn ($s) => $s !== [])
+            ->all();
+    }
 
-        foreach ($wordStats as $stat) {
-            $key = self::normalizeWord((string) ($stat['word'] ?? ''));
-
-            if ($key === '') {
-                continue;
-            }
-
-            if (! isset($merged[$key])) {
-                $merged[$key] = [
-                    'word' => $stat['word'],
-                    'mastery' => $stat['mastery'],
-                    'failed_attempts' => (int) ($stat['failed_attempts'] ?? 0),
-                ];
-
-                continue;
-            }
-
-            $merged[$key]['failed_attempts'] += (int) ($stat['failed_attempts'] ?? 0);
-
-            if (($rank[$stat['mastery']] ?? 0) > ($rank[$merged[$key]['mastery']] ?? 0)) {
-                $merged[$key]['mastery'] = $stat['mastery'];
+    // [sentence => summed attempts] — sum of constituent word failed_attempts.
+    public function trainingSentenceAttemptsFrom(array $curriculum): array
+    {
+        $attempts = [];
+        foreach ($curriculum as $level) {
+            foreach ($level['sentence_stats'] ?? [] as $stat) {
+                if (($stat['mastery'] ?? 'unseen') === 'training') {
+                    $attempts[$stat['sentence']] = (int) ($stat['failed_attempts'] ?? 0);
+                }
             }
         }
-
-        return array_values($merged);
+        return $attempts;
     }
 
-    // Global pass first so every surface agrees on ONE display casing per
-    // normalized word (first occurrence seen wins).
-    private function aggregatedWordStats(array $curriculum): array
+    // Flat rows for Excel: one row per training sentence.
+    public function sentenceStruggleRowsFrom(array $curriculum): array
     {
-        return self::aggregateWordStats(
-            collect($curriculum)->flatMap(fn ($level) => $level['word_stats'])->all()
-        );
+        $rows = [];
+        foreach ($curriculum as $level) {
+            foreach ($level['sentence_stats'] ?? [] as $stat) {
+                if (($stat['mastery'] ?? 'unseen') !== 'training') continue;
+                $rows[] = [
+                    'level' => $level['level'],
+                    'word' => $stat['sentence'],
+                    'sentence' => $stat['sentence'],
+                    'attempts' => (int) ($stat['failed_attempts'] ?? 0),
+                ];
+            }
+        }
+        return $rows;
+    }
+
+    public function sentenceCurriculumPercent(array $curriculum): int
+    {
+        $mastered = 0;
+        $total = 0;
+        foreach ($curriculum as $level) {
+            $mastered += $level['mastered_sentences'] ?? collect($level['sentence_stats'] ?? [])->where('mastery', 'mastered')->count();
+            $total += $level['total_sentences'] ?? count($level['sentences'] ?? []) ?: count($level['sentence_stats'] ?? []);
+        }
+        return $total ? (int) round(($mastered / $total) * 100) : 0;
     }
 
     // Pure projections of curriculumForUser() output — no queries.
-    // ["Level X: Title" => [words]]; empty levels skipped so payloads keep
-    // their legacy shape. Duplicate texts are collapsed to one entry (BF25).
+    // Word Blast is 10 unique words/level (no dedup needed).
     public function trainingGroupsFrom(array $curriculum): array
     {
-        $display = [];
-
-        foreach ($this->aggregatedWordStats($curriculum) as $stat) {
-            $display[self::normalizeWord($stat['word'])] = $stat['word'];
-        }
-
         return collect($curriculum)
-            ->mapWithKeys(function ($level) use ($display) {
-                $words = [];
-
-                foreach (self::aggregateWordStats($level['word_stats'] ?? []) as $stat) {
-                    if ($stat['mastery'] === 'training') {
-                        $words[] = $display[self::normalizeWord($stat['word'])];
-                    }
-                }
-
+            ->mapWithKeys(function ($level) {
+                $words = collect($level['word_stats'] ?? [])
+                    ->filter(fn ($s) => ($s['mastery'] ?? '') === 'training')
+                    ->pluck('word')
+                    ->all();
                 return [$level['level'] => $words];
             })
             ->filter(fn ($words) => $words !== [])
@@ -120,48 +132,33 @@ class ReportService
     }
 
     // Every still-training word with its recorded try count → [word => tries].
-    // Duplicate texts are summed into one entry instead of overwriting (BF25).
     public function trainingAttemptsFrom(array $curriculum): array
     {
         $attempts = [];
-
-        foreach ($this->aggregatedWordStats($curriculum) as $stat) {
-            if ($stat['mastery'] === 'training') {
-                $attempts[$stat['word']] = $stat['failed_attempts'];
+        foreach ($curriculum as $level) {
+            foreach ($level['word_stats'] ?? [] as $stat) {
+                if (($stat['mastery'] ?? '') === 'training') {
+                    $attempts[$stat['word']] = (int) ($stat['failed_attempts'] ?? 0);
+                }
             }
         }
-
         return $attempts;
     }
 
-    // Flat drill-down rows for the Excel export: one entry per still-training
-    // word. Merge/dedupe is per level with global display casing — the exact
-    // semantics of trainingGroupsFrom — plus the attempt count the email shows.
-    // Pure projection of curriculumForUser() output — no queries.
+    // Flat drill-down rows for the Excel export: one entry per still-training word.
     public function struggleRowsFrom(array $curriculum): array
     {
-        $display = [];
-
-        foreach ($this->aggregatedWordStats($curriculum) as $stat) {
-            $display[self::normalizeWord($stat['word'])] = $stat['word'];
-        }
-
         $rows = [];
-
         foreach ($curriculum as $level) {
-            foreach (self::aggregateWordStats($level['word_stats'] ?? []) as $stat) {
-                if ($stat['mastery'] !== 'training') {
-                    continue;
-                }
-
+            foreach ($level['word_stats'] ?? [] as $stat) {
+                if (($stat['mastery'] ?? '') !== 'training') continue;
                 $rows[] = [
                     'level' => $level['level'],
-                    'word' => $display[self::normalizeWord($stat['word'])],
-                    'attempts' => (int) $stat['failed_attempts'],
+                    'word' => $stat['word'],
+                    'attempts' => (int) ($stat['failed_attempts'] ?? 0),
                 ];
             }
         }
-
         return $rows;
     }
 

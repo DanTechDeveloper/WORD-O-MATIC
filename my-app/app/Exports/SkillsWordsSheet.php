@@ -27,7 +27,7 @@ class SkillsWordsSheet implements FromCollection, WithColumnWidths, WithHeadings
             'Section',
             'Mode',
             'Level',
-            'Word',
+            'Word/Sentence',
             'Attempts',
         ];
     }
@@ -88,7 +88,7 @@ class SkillsWordsSheet implements FromCollection, WithColumnWidths, WithHeadings
             'C' => 14,
             'D' => 16,
             'E' => 22,
-            'F' => 16,
+            'F' => 40,
             'G' => 10,
         ];
     }

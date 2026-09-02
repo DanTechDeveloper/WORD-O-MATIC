@@ -34,16 +34,16 @@ class CurriculumSeeder extends Seeder
         ];
 
         $paragraphsByLevel = [
-            1 => 'I see a cat. The cat is big and fat.',
-            2 => 'The sun is hot. A dog can run fast in the park.',
-            3 => 'Once upon a time a little frog sat on a rock. He liked to jump into the pond.',
-            4 => 'The boy went to the store to buy some milk. He also got a loaf of bread and fresh eggs for his mom.',
-            5 => 'My favorite pet is a kitten. It has soft white fur and bright green eyes. I play with it every day after school.',
-            6 => 'The prefix re means again so replay means to play again. The word unhappy means not happy. Learning prefixes helps us understand new words.',
-            7 => 'She walked slowly through the garden. The flowers were beautiful and colorful. She felt joyful as she picked a sunflower for her mother.',
-            8 => 'A rainbow appears after the rain when the sun shines. It has many beautiful colors like red orange yellow green blue indigo and violet.',
-            9 => 'Exploring a rainforest is an adventure. You can discover enormous trees colorful birds and magnificent butterflies. It is an extraordinary place to visit and learn about nature.',
-            10 => 'Perseverance means never giving up even when things are difficult. With determination and collaboration we can accomplish anything. Every challenge is an opportunity for growth and learning.',
+            1 => 'I see a cat. It is big.',
+            2 => 'The sun is hot. A dog can run.',
+            3 => 'A frog is on a rock. It can jump.',
+            4 => 'I go to the store. I buy milk.',
+            5 => 'My kitten is soft. I play with it.',
+            6 => 'I replay the game. She is sad.',
+            7 => 'She walks slow. I am happy.',
+            8 => 'I see a rainbow. I eat popcorn.',
+            9 => 'I like to explore. It is fun.',
+            10 => 'I try hard. We are happy.',
         ];
 
         $paraTitles = [
