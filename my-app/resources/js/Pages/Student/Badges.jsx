@@ -49,7 +49,6 @@ export default function Badges({ badges }) {
             slug: badge.slug,
             title: badge.name,
             description: badge.description,
-            requirement: badge.requirement,
             icon: badge.icon,
             progress,
             isLocked: !badge.is_earned,

@@ -615,7 +615,6 @@ class TeacherController extends Controller
             'slug' => $b->slug,
             'icon' => $b->icon,
             'description' => $b->description,
-            'requirement' => $b->requirement,
             'earned_count' => $b->users_count,
         ]);
 
