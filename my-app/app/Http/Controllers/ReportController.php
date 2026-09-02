@@ -121,13 +121,13 @@ class ReportController extends Controller
                 'read_level' => $user->student?->read_level ?? 1,
                 'speak_level' => $user->student?->speak_level ?? 1,
                 'wordBlastProg' => $this->reportService->curriculumPercent($wbCurriculum),
-                'storyQuestProg' => $this->reportService->curriculumPercent($sqCurriculum),
+                'storyQuestProg' => $this->reportService->sentenceCurriculumPercent($sqCurriculum),
                 'status' => $user->student?->status ?? 'notStarted',
                 'latestBadge' => $this->reportService->latestBadge($user->id),
                 'trainingWords' => $this->reportService->trainingGroupsFrom($wbCurriculum),
-                'paragraphTrainingWords' => $this->reportService->trainingGroupsFrom($sqCurriculum),
+                'paragraphTrainingWords' => $this->reportService->trainingSentenceGroupsFrom($sqCurriculum),
                 'wordAttempts' => $this->reportService->trainingAttemptsFrom($wbCurriculum),
-                'paragraphWordAttempts' => $this->reportService->trainingAttemptsFrom($sqCurriculum),
+                'paragraphWordAttempts' => $this->reportService->trainingSentenceAttemptsFrom($sqCurriculum),
                 'reported_at' => $deadlineTs->format('F j, Y \a\t g:i A'),
             ]));
 
@@ -187,9 +187,10 @@ class ReportController extends Controller
             // Same single-source-per-student read as sendReportEmails(): one
             // curriculum per mode feeds Top Struggle and the drill-down rows,
             // so the export can never disagree with the emailed report.
+            // Story Quest is sentence-based (approach B).
             $rows = array_merge(
                 $this->struggleRows('Word Blast', WordModule::curriculumForUser($user->id, $cutoff)),
-                $this->struggleRows('Story Quest', ParagraphModule::curriculumForUser($user->id, $cutoff)),
+                $this->sentenceStruggleRows('Story Quest', ParagraphModule::curriculumForUser($user->id, $cutoff)),
             );
 
             usort($rows, fn ($a, $b) => $b['attempts'] <=> $a['attempts']);
@@ -226,6 +227,14 @@ class ReportController extends Controller
         return array_map(
             fn ($row) => ['mode' => $mode] + $row,
             $this->reportService->struggleRowsFrom($curriculum),
+        );
+    }
+
+    private function sentenceStruggleRows(string $mode, array $curriculum): array
+    {
+        return array_map(
+            fn ($row) => ['mode' => $mode] + $row,
+            $this->reportService->sentenceStruggleRowsFrom($curriculum),
         );
     }
 }

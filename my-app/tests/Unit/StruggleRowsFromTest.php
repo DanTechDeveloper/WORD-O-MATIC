@@ -9,6 +9,7 @@ class StruggleRowsFromTest extends TestCase
 {
     public function test_merges_duplicate_texts_within_level_and_keeps_first_seen_casing(): void
     {
+        // Dedup removed — Word Blast now emits per-word rows (no sum, no casing merge).
         $curriculum = [
             [
                 'level' => 'Level 1: Animals',
@@ -21,7 +22,10 @@ class StruggleRowsFromTest extends TestCase
         ];
 
         $this->assertSame(
-            [['level' => 'Level 1: Animals', 'word' => 'CAT', 'attempts' => 3]],
+            [
+                ['level' => 'Level 1: Animals', 'word' => 'CAT', 'attempts' => 2],
+                ['level' => 'Level 1: Animals', 'word' => 'cat.', 'attempts' => 1],
+            ],
             (new ReportService)->struggleRowsFrom($curriculum)
         );
     }
@@ -44,9 +48,7 @@ class StruggleRowsFromTest extends TestCase
 
     public function test_same_word_training_in_two_levels_yields_one_row_per_level(): void
     {
-        // Per-level merge mirrors the parent email's trainingGroupsFrom(): the
-        // same text stays under each level it is training in, attempts summed
-        // within the level only.
+        // Dedup removed — per-word rows, no sum, no global casing.
         $curriculum = [
             [
                 'level' => 'Level 1: A',
@@ -63,11 +65,10 @@ class StruggleRowsFromTest extends TestCase
             ],
         ];
 
-        // Display casing is GLOBAL (first seen anywhere wins), matching the
-        // email's trainingGroupsFrom — Level 2 renders 'the', not its own 'The'.
         $this->assertSame([
-            ['level' => 'Level 1: A', 'word' => 'the', 'attempts' => 2],
-            ['level' => 'Level 2: B', 'word' => 'the', 'attempts' => 4],
+            ['level' => 'Level 1: A', 'word' => 'the', 'attempts' => 1],
+            ['level' => 'Level 1: A', 'word' => 'the', 'attempts' => 1],
+            ['level' => 'Level 2: B', 'word' => 'The', 'attempts' => 4],
         ], (new ReportService)->struggleRowsFrom($curriculum));
     }
 }

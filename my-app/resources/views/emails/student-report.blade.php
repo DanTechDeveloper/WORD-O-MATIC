@@ -431,17 +431,17 @@
                                         </h2>
 
                                         <p style="color:#94a3b8;font-size:13px;line-height:1.6;margin:0 0 12px">
-                                            Words that are not mastered yet.
+                                            Sentences that are not mastered yet. A sentence is mastered only when every word in it is mastered.
                                         </p>
 
                                         <p style="color:#94a3b8;font-size:13px;line-height:1.65;margin:0 0 17px">
-                                            These words are still being learned. Attempts show the student's recorded practice history, not a recommended number of repetitions.
+                                            These sentences are still being learned. Attempts show summed word attempts for that sentence (recorded practice history, not a recommended number of repetitions).
                                         </p>
 
                                         <div style="border-top:1px solid #334155;margin:0 0 18px"></div>
 
 
-                                        @foreach ($data['paragraphTrainingWords'] as $moduleTitle => $words)
+                                        @foreach ($data['paragraphTrainingWords'] as $moduleTitle => $sentences)
 
                                             <p style="color:#64748b;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.8px;margin:0 0 10px">
                                                 {{ $moduleTitle }}
@@ -453,13 +453,13 @@
                                                 $practicing = [];
                                                 $needing = [];
 
-                                                foreach ($words as $word) {
-                                                    $tries = $data['paragraphWordAttempts'][$word] ?? 0;
+                                                foreach ($sentences as $sentence) {
+                                                    $tries = $data['paragraphWordAttempts'][$sentence] ?? 0;
 
                                                     if ($tries >= $threshold) {
-                                                        $needing[] = [$word, $tries];
+                                                        $needing[] = [$sentence, $tries];
                                                     } else {
-                                                        $practicing[] = [$word, $tries];
+                                                        $practicing[] = [$sentence, $tries];
                                                     }
                                                 }
                                             @endphp
@@ -474,11 +474,11 @@
 
                                                 <div style="margin:0 0 17px">
 
-                                                    @foreach ($practicing as [$word, $tries])
+                                                    @foreach ($practicing as [$sentence, $tries])
 
-                                                        <span style="display:inline-block;background:#1e293b;color:#e2e8f0;font-size:14px;font-weight:700;padding:8px 11px;border-radius:12px;border:1px solid #475569;margin:0 5px 7px 0">
+                                                        <span style="display:block;background:#1e293b;color:#e2e8f0;font-size:14px;font-weight:700;padding:10px 12px;border-radius:12px;border:1px solid #475569;margin:0 0 7px 0">
 
-                                                            {{ $word }}<br>
+                                                            {{ $sentence }}<br>
 
                                                             <span style="color:#94a3b8;font-size:11px;font-weight:600">
                                                                 {{ $tries }}
@@ -503,11 +503,11 @@
 
                                                 <div style="margin:0 0 20px">
 
-                                                    @foreach ($needing as [$word, $tries])
+                                                    @foreach ($needing as [$sentence, $tries])
 
-                                                        <span style="display:inline-block;background:#451a03;color:#fbbf24;font-size:14px;font-weight:700;padding:8px 11px;border-radius:12px;border:1px solid #f59e0b;margin:0 5px 7px 0">
+                                                        <span style="display:block;background:#451a03;color:#fbbf24;font-size:14px;font-weight:700;padding:10px 12px;border-radius:12px;border:1px solid #f59e0b;margin:0 0 7px 0">
 
-                                                            {{ $word }}<br>
+                                                            {{ $sentence }}<br>
 
                                                             <span style="font-size:11px;font-weight:600">
                                                                 {{ $tries }} recorded attempts &middot; Not yet mastered

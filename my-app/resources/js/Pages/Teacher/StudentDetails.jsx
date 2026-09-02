@@ -2,38 +2,14 @@ import DashboardLayout from "@/Layouts/Teacher/DashboardLayout";
 import { Link, usePage } from "@inertiajs/react";
 import { attentionMeta, attemptsShown } from "@/utils/masteryLabels.js";
 
-// Merge duplicate word texts within a level into ONE chip: summed
-// failed_attempts, worst mastery wins (training > unseen > mastered).
-// Normalization mirrors ReportService::aggregateWordStats so the page and
-// the parent email always agree (BF25).
+// ponytail: Word Blast dedup removed — 10 unique words/level, no merge needed.
+// Story Quest uses SentenceChip directly from sentence_stats.
 function aggregateZoneRows(wordStats) {
-    const rank = { mastered: 0, unseen: 1, training: 2 };
-    const normalize = (w) =>
-        (w || "").trim().replace(/[^\p{L}\p{N}]+$/u, "").toLowerCase();
-    const merged = new Map();
-
-    for (const stat of wordStats || []) {
-        const key = normalize(stat.word);
-        if (!key) continue;
-
-        const current = merged.get(key);
-        if (!current) {
-            merged.set(key, {
-                word: stat.word,
-                mastery: stat.mastery,
-                failed_attempts: Number(stat.failed_attempts || 0),
-            });
-            continue;
-        }
-
-        current.failed_attempts += Number(stat.failed_attempts || 0);
-        if ((rank[stat.mastery] ?? 0) > (rank[current.mastery] ?? 0)) {
-            current.mastery = stat.mastery;
-        }
-    }
-
-    const rows = [...merged.values()];
-
+    const rows = [...(wordStats || [])].map((s) => ({
+        word: s.word,
+        mastery: s.mastery,
+        failed_attempts: Number(s.failed_attempts || 0),
+    }));
     return {
         mastered: rows.filter((r) => r.mastery === "mastered"),
         training: rows.filter((r) => r.mastery === "training"),
@@ -61,6 +37,28 @@ function WordChip({ word, stat, threshold, className }) {
                     Attempts: {attemptsShown(stat)}
                 </span>
             )}
+        </span>
+    );
+}
+
+function SentenceChip({ sentence, stat, threshold, className }) {
+    // Sentence attempts are sum(word.failed_attempts) — no +1; attention uses same threshold.
+    const attempts = Number(stat?.failed_attempts ?? 0);
+    const attention = stat ? attentionMeta({ mastery: stat.mastery, failed_attempts: attempts }, threshold) : null;
+
+    return (
+        <span
+            className={`px-4 py-3 bg-slate-900 border-2 border-slate-800 font-black rounded-xl text-sm leading-relaxed transition-colors cursor-default block ${className}`}
+        >
+            <span className="block">{sentence}</span>
+            <span className="block mt-1 text-xs uppercase tracking-widest text-slate-500">
+                Attempts: {attempts}
+                {attention ? (
+                    <>
+                        , <span className={attention.cls}>{attention.label}</span>
+                    </>
+                ) : null}
+            </span>
         </span>
     );
 }
@@ -123,6 +121,20 @@ export default function StudentDetail({ data }) {
         return Math.round((mastered / total) * 100);
     };
 
+    // Sentence % for Story Quest — mastered_sentences / total_sentences.
+    const calcSentenceProgress = (curriculum) => {
+        let mastered = 0;
+        let total = 0;
+        curriculum.forEach((level) => {
+            const t = level.total_sentences ?? (level.sentence_stats?.length ?? 0);
+            const m = level.mastered_sentences ?? (level.sentence_stats?.filter((s) => s.mastery === 'mastered').length ?? 0);
+            total += t;
+            mastered += m;
+        });
+        if (!total) return 0;
+        return Math.round((mastered / total) * 100);
+    };
+
     const calcMasteredCount = (curriculum) => {
         return curriculum.reduce((sum, level) => sum + level.mastered.length, 0);
     };
@@ -131,10 +143,18 @@ export default function StudentDetail({ data }) {
         return curriculum.reduce((sum, level) => sum + (level.words_count || 0), 0);
     };
 
+    const calcTotalSentences = (curriculum) => {
+        return curriculum.reduce((sum, level) => sum + (level.total_sentences ?? (level.sentence_stats?.length ?? 0)), 0);
+    };
+
+    const calcMasteredSentences = (curriculum) => {
+        return curriculum.reduce((sum, level) => sum + (level.mastered_sentences ?? (level.sentence_stats?.filter((s) => s.mastery === 'mastered').length ?? 0)), 0);
+    };
+
     const readTotal = calcTotalWords(student.readCurriculum);
-    const speakTotal = calcTotalWords(student.speakCurriculum);
+    const speakTotal = calcTotalSentences(student.speakCurriculum);
     const readMastered = calcMasteredCount(student.readCurriculum);
-    const speakMastered = calcMasteredCount(student.speakCurriculum);
+    const speakMastered = calcMasteredSentences(student.speakCurriculum);
 
     const modes = [
         {
@@ -147,8 +167,8 @@ export default function StudentDetail({ data }) {
         {
             name: "Story Quest",
             level: `LV ${data.student?.speak_level ?? 1}`,
-            sub: speakTotal > 0 ? `${speakMastered} of ${speakTotal} Items Mastered` : "No items yet",
-            progress: calcOverallProgress(student.speakCurriculum),
+            sub: speakTotal > 0 ? `${speakMastered} of ${speakTotal} Sentences Mastered` : "No sentences yet",
+            progress: calcSentenceProgress(student.speakCurriculum),
             color: "bg-cyan-400",
         },
     ];
@@ -213,7 +233,7 @@ export default function StudentDetail({ data }) {
         ? `${data.student.storyQuestAcc}%`
         : "N/A";
     const wbProgress = calcOverallProgress(student.readCurriculum);
-    const sqProgress = calcOverallProgress(student.speakCurriculum);
+    const sqProgress = calcSentenceProgress(student.speakCurriculum);
 
     const latestBadge = data.latestBadge;
     const badgeCard =
@@ -514,23 +534,19 @@ export default function StudentDetail({ data }) {
                         </div>
                         <div className="bg-slate-950 rounded-[2.5rem] border-4 border-slate-800 p-8 shadow-[8px_8px_0_0_#020617] min-h-[400px] max-h-[600px] overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-slate-800 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-cyan-400">
                             {student.speakCurriculum.map((level, i) => {
-                                const zone = aggregateZoneRows(level.word_stats);
-
+                                const mastered = (level.sentence_stats || []).filter((s) => s.mastery === 'mastered');
+                                if (mastered.length === 0) return <div key={i} className="mb-8 last:mb-0" />;
                                 return (
                                     <div key={i} className="mb-8 last:mb-0">
-                                        {zone.mastered.length > 0 && (
-                                            <>
-                                                <div className="text-cyan-400 font-black uppercase text-xs tracking-widest mb-4 flex items-center gap-2">
-                                                    <div className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_#22d3ee]"></div>
-                                                    {level.level}
-                                                </div>
-                                                <div className="flex flex-wrap gap-2">
-                                                    {zone.mastered.map((row) => (
-                                                        <WordChip key={row.word} word={row.word} stat={row} threshold={attentionThreshold} className="text-white hover:border-cyan-400" />
-                                                    ))}
-                                                </div>
-                                            </>
-                                        )}
+                                        <div className="text-cyan-400 font-black uppercase text-xs tracking-widest mb-4 flex items-center gap-2">
+                                            <div className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_#22d3ee]"></div>
+                                            {level.level}
+                                        </div>
+                                        <div className="flex flex-col gap-3">
+                                            {mastered.map((row) => (
+                                                <SentenceChip key={row.sentence} sentence={row.sentence} stat={row} threshold={attentionThreshold} className="text-white hover:border-cyan-400" />
+                                            ))}
+                                        </div>
                                     </div>
                                 );
                             })}
@@ -548,23 +564,19 @@ export default function StudentDetail({ data }) {
                         </div>
                         <div className="bg-slate-950 rounded-[2.5rem] border-4 border-slate-800 p-8 shadow-[8px_8px_0_0_#020617] min-h-[400px] max-h-[600px] overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-slate-800 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-orange-400">
                             {student.speakCurriculum.map((level, i) => {
-                                const zone = aggregateZoneRows(level.word_stats);
-
+                                const training = (level.sentence_stats || []).filter((s) => s.mastery === 'training');
+                                if (training.length === 0) return <div key={i} className="mb-8 last:mb-0" />;
                                 return (
                                     <div key={i} className="mb-8 last:mb-0">
-                                        {zone.training.length > 0 && (
-                                            <>
-                                                <div className="text-orange-400 font-black uppercase text-xs tracking-widest mb-4 flex items-center gap-2">
-                                                    <div className="w-2 h-2 rounded-full bg-orange-400 shadow-[0_0_8px_#fb923c]"></div>
-                                                    {level.level}
-                                                </div>
-                                                <div className="flex flex-wrap gap-2">
-                                                    {zone.training.map((row) => (
-                                                        <WordChip key={row.word} word={row.word} stat={row} threshold={attentionThreshold} className="text-slate-400 hover:border-orange-400" />
-                                                    ))}
-                                                </div>
-                                            </>
-                                        )}
+                                        <div className="text-orange-400 font-black uppercase text-xs tracking-widest mb-4 flex items-center gap-2">
+                                            <div className="w-2 h-2 rounded-full bg-orange-400 shadow-[0_0_8px_#fb923c]"></div>
+                                            {level.level}
+                                        </div>
+                                        <div className="flex flex-col gap-3">
+                                            {training.map((row) => (
+                                                <SentenceChip key={row.sentence} sentence={row.sentence} stat={row} threshold={attentionThreshold} className="text-slate-400 hover:border-orange-400" />
+                                            ))}
+                                        </div>
                                     </div>
                                 );
                             })}
