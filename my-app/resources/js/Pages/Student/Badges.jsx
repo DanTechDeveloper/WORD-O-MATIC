@@ -42,7 +42,7 @@ export default function Badges({ badges }) {
         const progress = badge.is_earned
             ? 100
             : hasThreshold
-                ? Math.min((badge.current_value / badge.threshold) * 100, 100)
+                ? Math.min(Math.round((badge.current_value / badge.threshold) * 100), 100)
                 : 0;
         return {
             id: badge.id,
@@ -142,7 +142,7 @@ export default function Badges({ badges }) {
                                 {badge.hasThreshold && (
                                     <div className="mt-3">
                                             <div className="flex justify-between text-sm font-bold text-on-surface-variant/50 mb-1">
-                                                <span>{badge.currentValue}/{badge.threshold}</span>
+                                                <span>{Math.round(badge.currentValue)}/{Math.round(badge.threshold)}</span>
                                             </div>
                                             <ProgressBar
                                                 value={badge.progress}

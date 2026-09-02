@@ -266,16 +266,16 @@ export default function StudentDetail({ data }) {
                 </Link>
 
                 <div className="flex flex-col lg:flex-row gap-8 items-start">
-                    <div className="bg-slate-900 rounded-[2.5rem] border-4 border-slate-800 p-8 flex items-center gap-6 shadow-[8px_8px_0_0_#020617] w-full lg:w-auto">
-                        <div className="w-24 h-24 rounded-2xl bg-slate-950 border-4 border-lime-400 overflow-hidden rotate-3 shadow-[4px_4px_0_0_#3f6212]">
+                    <div className="bg-slate-900 rounded-[2.5rem] border-4 border-slate-800 p-8 flex items-center gap-6 shadow-[8px_8px_0_0_#020617] w-full lg:w-auto max-w-full overflow-hidden">
+                        <div className="w-24 h-24 rounded-2xl bg-slate-950 border-4 border-lime-400 overflow-hidden rotate-3 shadow-[4px_4px_0_0_#3f6212] shrink-0">
                             <img
                                 src={student.avatar}
                                 alt={student.name}
                                 className="w-full h-full object-cover"
                             />
                         </div>
-                        <div>
-                            <h1 className="text-4xl font-black text-white uppercase italic tracking-tighter">
+                        <div className="flex-1 min-w-0 overflow-hidden">
+                            <h1 className="text-3xl sm:text-4xl font-black text-white uppercase italic tracking-tighter truncate" title={student.name}>
                                 {student.name}
                             </h1>
                             <p className="mt-2 text-slate-500 font-black uppercase text-sm tracking-widest">

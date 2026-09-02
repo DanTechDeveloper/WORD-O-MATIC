@@ -287,7 +287,7 @@ export default function Badges({
                                                         </span>
                                                     )}
                                                 </div>
-                                                <span className="font-black text-white">
+                                                <span className="font-black text-white truncate max-w-[14rem] block" title={student.name}>
                                                     {student.name}
                                                 </span>
                                             </div>

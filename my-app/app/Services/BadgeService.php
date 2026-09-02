@@ -199,31 +199,27 @@ class BadgeService
 
     public function calculateModuleCompletion(User $user, string $type): float
     {
-        $isParagraph = $type === 'paragraph';
-        $moduleClass = $isParagraph ? ParagraphModule::class : WordModule::class;
-        $progressClass = $isParagraph ? StudentParagraphProgress::class : StudentWordProgress::class;
-        $moduleKey = $isParagraph ? 'paragraph_module_id' : 'word_module_id';
-
-        $tutorialModule = $moduleClass::where('is_tutorial', true)->first();
-
-        $total = $moduleClass::where('is_tutorial', false)
-            ->withCount('words')
-            ->get()
-            ->sum('words_count');
-
-        // Fail-closed: an empty curriculum is 0%, never 100% — a fresh install
-        // with only the tutorial must not hand out the finisher badges for free.
-        if ($total === 0) {
-            return 0;
+        if ($type === 'paragraph') {
+            // Sentence-based for Story Quest — aligns badge `story-finisher` with teacher
+            // reporting `sentenceCurriculumPercent` (20 sents, 2/level uniform). Word Blast stays word-based.
+            $curriculum = ParagraphModule::curriculumForUser($user->id);
+            $mastered = 0;
+            $total = 0;
+            foreach ($curriculum as $level) {
+                $mastered += $level['mastered_sentences'] ?? collect($level['sentence_stats'] ?? [])->where('mastery', 'mastered')->count();
+                $total += $level['total_sentences'] ?? count($level['sentence_stats'] ?? []);
+            }
+            if ($total === 0) return 0;
+            // ponytail: whole number per DepEd — same rule as accuracies
+            return (int) round(min(100, ($mastered / $total) * 100));
         }
 
-        $earned = $progressClass::where('user_id', $user->id)
-            ->when($tutorialModule, fn ($q) => $q->where($moduleKey, '!=', $tutorialModule->id))
+        $tutorialModule = WordModule::where('is_tutorial', true)->first();
+        $total = WordModule::where('is_tutorial', false)->withCount('words')->get()->sum('words_count');
+        if ($total === 0) return 0;
+        $earned = StudentWordProgress::where('user_id', $user->id)
+            ->when($tutorialModule, fn ($q) => $q->where('word_module_id', '!=', $tutorialModule->id))
             ->sum('words_smashed');
-
-        // Cap at 100: a module shrunk after completion can leave words_smashed
-        // above the curriculum total, which must not report >100% completion.
-        // ponytail: whole number per DepEd — same rule as accuracies
         return (int) round(min(100, ($earned / $total) * 100));
     }
 
