@@ -312,7 +312,7 @@ export default function Dashboard({
                                             key={s.id}
                                             className="hover:bg-slate-900/50 transition-colors"
                                         >
-                                            <td className="px-4 py-3 text-white font-bold">{s.name}</td>
+                                            <td className="px-4 py-3 text-white font-bold max-w-[14rem] truncate" title={s.name}>{s.name}</td>
                                             <td className="px-4 py-3">
                                                 <div className="flex items-center justify-end gap-2">
                                                     <div className={`w-2.5 h-2.5 rounded-full ${wRisk.dot}`}></div>
@@ -546,7 +546,7 @@ export default function Dashboard({
                                                                 emoji_events
                                                             </span>
                                                         )}
-                                                        <span className="text-sm font-bold whitespace-nowrap" style={{ color: '#e2e8f0' }}>
+                                                        <span className="text-sm font-bold truncate max-w-[150px] block" style={{ color: '#e2e8f0' }} title={payload.value}>
                                                             {payload.value}
                                                         </span>
                                                     </div>

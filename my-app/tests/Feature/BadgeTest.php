@@ -538,11 +538,9 @@ class BadgeTest extends TestCase
 
         $module = ParagraphModule::create(['level' => 1, 'title' => 'Level 1', 'content' => 'a b c d e']);
         foreach (['a', 'b', 'c', 'd', 'e'] as $i => $w) {
-            ParagraphWord::create(['paragraph_module_id' => $module->id, 'word' => $w, 'position' => $i + 1]);
+            $pw = ParagraphWord::create(['paragraph_module_id' => $module->id, 'word' => $w, 'position' => $i + 1]);
+            \App\Models\StudentParagraphMastery::create(['user_id' => $user->id, 'paragraph_word_id' => $pw->id, 'status' => 'mastered', 'failed_attempts' => 0]);
         }
-        StudentParagraphProgress::create([
-            'user_id' => $user->id, 'paragraph_module_id' => $module->id, 'words_smashed' => 5, 'status' => 'completed',
-        ]);
 
         (new BadgeService)->checkAllEligibleBadges($user);
 
@@ -840,13 +838,11 @@ class BadgeTest extends TestCase
         ]);
         $this->assertEquals(100.0, $service->calculateModuleCompletion($user, 'word'));
 
-        $paragraph = ParagraphModule::create(['level' => 1, 'title' => 'P1', 'content' => 'a b c d e']);
+        $paragraph = ParagraphModule::create(['level' => 1, 'title' => 'P1', 'content' => 'a b c d e.']);
         foreach (['a', 'b', 'c', 'd', 'e'] as $i => $w) {
-            ParagraphWord::create(['paragraph_module_id' => $paragraph->id, 'word' => $w, 'position' => $i + 1]);
+            $pw = ParagraphWord::create(['paragraph_module_id' => $paragraph->id, 'word' => $w, 'position' => $i + 1]);
+            \App\Models\StudentParagraphMastery::create(['user_id' => $user->id, 'paragraph_word_id' => $pw->id, 'status' => 'mastered', 'failed_attempts' => 0]);
         }
-        StudentParagraphProgress::create([
-            'user_id' => $user->id, 'paragraph_module_id' => $paragraph->id, 'words_smashed' => 5, 'status' => 'completed',
-        ]);
         $this->assertEquals(100.0, $service->calculateModuleCompletion($user, 'paragraph'));
     }
 

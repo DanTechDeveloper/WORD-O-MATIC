@@ -51,13 +51,13 @@ class StudentSeeder extends Seeder
                 return 0;
             }
             if ($accuracy >= 80) {
-                return 5;
+                return 8;
             }
             if ($accuracy >= 60) {
-                return 3;
+                return 5;
             }
             if ($accuracy >= 40) {
-                return 2;
+                return 3;
             }
 
             return 1;
@@ -154,13 +154,34 @@ class StudentSeeder extends Seeder
                     'status' => 'completed', 'words_smashed' => $smashed, 'accuracy' => $totalScore > 0 ? (int) round(($smashed / $totalScore) * 100) : 0,
                 ]);
 
-                foreach (ParagraphWord::where('paragraph_module_id', $module->id)->get() as $pw) {
-                    $mastered = rand(0, 99) < $sAcc;
-                    StudentParagraphMastery::create([
-                        'user_id' => $user->id, 'paragraph_word_id' => $pw->id,
-                        'status' => $mastered ? 'mastered' : 'training',
-                        'failed_attempts' => $failedAttempts($mastered, $sAcc),
-                    ]);
+                // Sentence-coherent mastery: per sentence roll, all words in that sentence share same mastery
+                // so sentence_stats `mastery=every word mastered` + `failed_attempts=sum(word)` yields clean Mastery/Training chips
+                $sentences = ParagraphModule::sentencesFromContent($module->content ?? '');
+                $pws = ParagraphWord::where('paragraph_module_id', $module->id)->orderBy('position')->get()->values();
+                $cursor = 0;
+                foreach ($sentences as $sentence) {
+                    $cnt = $sentence === '' ? 0 : count(preg_split('/\s+/', trim($sentence), -1, PREG_SPLIT_NO_EMPTY));
+                    $slice = $pws->slice($cursor, $cnt);
+                    $cursor += $cnt;
+                    $masteredSentence = rand(0, 99) < $sAcc;
+                    foreach ($slice as $pw) {
+                        StudentParagraphMastery::create([
+                            'user_id' => $user->id, 'paragraph_word_id' => $pw->id,
+                            'status' => $masteredSentence ? 'mastered' : 'training',
+                            'failed_attempts' => $failedAttempts($masteredSentence, $sAcc),
+                        ]);
+                    }
+                }
+                // Fallback for modules where content split mismatches word count (legacy)
+                if ($pws->count() > $cursor) {
+                    foreach ($pws->slice($cursor) as $pw) {
+                        $mastered = rand(0, 99) < $sAcc;
+                        StudentParagraphMastery::create([
+                            'user_id' => $user->id, 'paragraph_word_id' => $pw->id,
+                            'status' => $mastered ? 'mastered' : 'training',
+                            'failed_attempts' => $failedAttempts($mastered, $sAcc),
+                        ]);
+                    }
                 }
 
                 $totalWordsSmashed += $smashed;

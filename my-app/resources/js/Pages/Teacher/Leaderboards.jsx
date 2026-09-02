@@ -166,8 +166,8 @@ export default function Leaderboards({ leaderboard, totalStudents, sections = []
                                             )}
                                         </div>
 
-                                        <div>
-                                            <p className="font-black text-white text-base">
+                                        <div className="min-w-0">
+                                            <p className="font-black text-white text-base truncate max-w-[16rem] lg:max-w-[20rem]" title={s.name}>
                                                 {s.name}
                                             </p>
                                             <p className="text-sm text-slate-500 font-semibold">
