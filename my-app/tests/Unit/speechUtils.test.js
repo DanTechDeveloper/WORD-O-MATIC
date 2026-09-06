@@ -321,7 +321,7 @@ describe("processWordModeResult (Word Blast — Levenshtein d<=1)", () => {
                 lastSpeechAt: Date.now(),
             },
         };
-        const timeoutRefs = { current: { graceEnd: 0, restartCount: 0, target: null } };
+        const timeoutRefs = { current: { graceEnd: 0, restartCount: 0, target: null, prevTarget: null, targetChangedAt: 0 } };
         const timerRefs = {
             current: { restart: null, sentence: null, word: null, settle: null, sentenceSettle: null, wordSettle: null },
         };
@@ -368,18 +368,37 @@ describe("processWordModeResult (Word Blast — Levenshtein d<=1)", () => {
             expect(propsRef.current.onWordRecognized).not.toHaveBeenCalled();
         }
     });
-    test("non-match on isFinal waits for the 1500ms settle (no immediate mispronounce)", () => {
-        // ponytail: the immediate result.isFinal mispronounce block is deleted
-        // (working tree). On a non-match isFinal, control falls through to the
-        // 1500ms wordSettle which then mispronounces — that's the current path.
+    test("BF29b: wrong word on isFinal fires immediate mispronounce (no 1500ms settle wait)", () => {
         vi.useFakeTimers();
         const { stateRefs, timeoutRefs, timerRefs, propsRef } = makeRefs();
-        const target = "fish";
-        processWordModeResult(makeEvent("fur", true), target, stateRefs, timerRefs, timeoutRefs, propsRef);
-        expect(propsRef.current.onMispronounced).not.toHaveBeenCalled();
-        vi.advanceTimersByTime(1500);
+        const target = "cat";
+        // "do" vs "cat" — d>1, authoritative final → instant verdict
+        processWordModeResult(makeEvent("do", true), target, stateRefs, timerRefs, timeoutRefs, propsRef);
         expect(propsRef.current.onMispronounced).toHaveBeenCalledTimes(1);
+        expect(propsRef.current.onMispronounced).toHaveBeenCalledWith("do");
         expect(propsRef.current.onWordRecognized).not.toHaveBeenCalled();
+        // no stale settle should fire afterwards
+        vi.advanceTimersByTime(2000);
+        expect(propsRef.current.onMispronounced).toHaveBeenCalledTimes(1);
+        vi.useRealTimers();
+    });
+    test("BF29b: speechFinal wrong word also fires immediately (Deepgram speech_final)", () => {
+        const { stateRefs, timeoutRefs, timerRefs, propsRef } = makeRefs();
+        const target = "cat";
+        processWordModeResult({ isFinal: false, speechFinal: true, 0: { transcript: "do" } }, target, stateRefs, timerRefs, timeoutRefs, propsRef);
+        expect(propsRef.current.onMispronounced).toHaveBeenCalledTimes(1);
+        expect(propsRef.current.onMispronounced).toHaveBeenCalledWith("do");
+    });
+    test("BF29b: wrong interim still uses settle — no instant fire, fires after 1500ms", () => {
+        vi.useFakeTimers();
+        const { stateRefs, timeoutRefs, timerRefs, propsRef } = makeRefs();
+        const target = "cat";
+        processWordModeResult(makeEvent("do", false), target, stateRefs, timerRefs, timeoutRefs, propsRef);
+        expect(propsRef.current.onMispronounced).not.toHaveBeenCalled();
+        vi.advanceTimersByTime(1499);
+        expect(propsRef.current.onMispronounced).not.toHaveBeenCalled();
+        vi.advanceTimersByTime(1);
+        expect(propsRef.current.onMispronounced).toHaveBeenCalledTimes(1);
         vi.useRealTimers();
     });
     test("partial prefix + complete correct word finishes: recognize wins, no false mispronounce", () => {
@@ -413,5 +432,54 @@ describe("processWordModeResult (Word Blast — Levenshtein d<=1)", () => {
         processWordModeResult(makeEvent("fist", true), "fish", stateRefs, timerRefs, timeoutRefs, propsRef);
         expect(propsRef.current.onMispronounced).not.toHaveBeenCalled();
         expect(propsRef.current.onWordRecognized).toHaveBeenCalledTimes(1);
+    });
+    test("BF29b: correct word on isFinal still wins (no mispronounce)", () => {
+        const { stateRefs, timeoutRefs, timerRefs, propsRef } = makeRefs();
+        processWordModeResult(makeEvent("cat", true), "cat", stateRefs, timerRefs, timeoutRefs, propsRef);
+        expect(propsRef.current.onWordRecognized).toHaveBeenCalledTimes(1);
+        expect(propsRef.current.onMispronounced).not.toHaveBeenCalled();
+    });
+    test("BF30 A: stale tail matching prevTarget within 500ms is dropped (no instant, no settle)", () => {
+        vi.useFakeTimers();
+        const { stateRefs, timeoutRefs, timerRefs, propsRef } = makeRefs();
+        // simulate CAT -> DOG switch 100ms ago
+        timeoutRefs.current.prevTarget = "cat";
+        timeoutRefs.current.targetChangedAt = Date.now();
+        // late final "cat" tail for previous word, now target is "dog"
+        processWordModeResult(makeEvent("cat", true), "dog", stateRefs, timerRefs, timeoutRefs, propsRef);
+        expect(propsRef.current.onMispronounced).not.toHaveBeenCalled();
+        expect(propsRef.current.onWordRecognized).not.toHaveBeenCalled();
+        vi.advanceTimersByTime(1600);
+        expect(propsRef.current.onMispronounced).not.toHaveBeenCalled();
+        vi.useRealTimers();
+    });
+    test("BF30 B: wrong authoritative within 350ms of switch defers to settle (no instant)", () => {
+        vi.useFakeTimers();
+        const { stateRefs, timeoutRefs, timerRefs, propsRef } = makeRefs();
+        timeoutRefs.current.prevTarget = "cat";
+        timeoutRefs.current.targetChangedAt = Date.now();
+        // new target dog, wrong word "fish" at 100ms after switch — not matching prev, but within 350ms
+        processWordModeResult(makeEvent("fish", true), "dog", stateRefs, timerRefs, timeoutRefs, propsRef);
+        expect(propsRef.current.onMispronounced).not.toHaveBeenCalled();
+        vi.advanceTimersByTime(1499);
+        expect(propsRef.current.onMispronounced).not.toHaveBeenCalled();
+        vi.advanceTimersByTime(1);
+        expect(propsRef.current.onMispronounced).toHaveBeenCalledTimes(1);
+        vi.useRealTimers();
+    });
+    test("BF30 B: fast correct within 350ms still wins and cancels stale settle", () => {
+        vi.useFakeTimers();
+        const { stateRefs, timeoutRefs, timerRefs, propsRef } = makeRefs();
+        timeoutRefs.current.prevTarget = "cat";
+        timeoutRefs.current.targetChangedAt = Date.now();
+        processWordModeResult(makeEvent("fish", true), "dog", stateRefs, timerRefs, timeoutRefs, propsRef);
+        expect(propsRef.current.onMispronounced).not.toHaveBeenCalled();
+        // correct arrives 200ms after switch, before settle fires
+        vi.advanceTimersByTime(200);
+        processWordModeResult(makeEvent("dog", false), "dog", stateRefs, timerRefs, timeoutRefs, propsRef);
+        expect(propsRef.current.onWordRecognized).toHaveBeenCalledTimes(1);
+        vi.advanceTimersByTime(1500);
+        expect(propsRef.current.onMispronounced).not.toHaveBeenCalled();
+        vi.useRealTimers();
     });
 });

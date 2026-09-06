@@ -92,6 +92,8 @@ export function useDeepgramRecognition({
         graceEnd: Date.now() + 500,
         restartCount: 0,
         target: null,
+        prevTarget: null,
+        targetChangedAt: 0,
     });
 
     const connRef = useRef(null);
@@ -221,8 +223,9 @@ export function useDeepgramRecognition({
                 sample_rate: audioCtx.sampleRate,
                 channels: 1,
                 interim_results: true,
+                smart_format: false,
+                punctuate: false,
                 ...(keyterm.length ? { keyterm } : {}),
-                
             });
             if (!stateRefs.current.isMounted) {
                 conn.close();
@@ -468,6 +471,11 @@ export function useDeepgramRecognition({
         }
         stateRefs.current.stoppedAt = 0;
         stateRefs.current.lastSpeechAt = Date.now();
+        // ponytail: A+B stale-tail guard — remember prev target so a late final
+        // for the old word ("cat" tail after switch to "dog") doesn't instantly
+        // mispronounce the new word at t+80ms.
+        timeoutRefs.current.prevTarget = timeoutRefs.current.target;
+        timeoutRefs.current.targetChangedAt = Date.now();
         timeoutRefs.current.target = null;
         // ponytail: 50ms grace absorbs the targetWord re-render tick, NOT 500ms
         // of user speech. A 500ms grace silently drops correct first-word finals
