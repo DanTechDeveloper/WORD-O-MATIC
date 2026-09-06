@@ -13,10 +13,6 @@ function buildFullSentence(transcript, interim) {
     return normalizeText(transcript + " " + interim);
 }
 
-// ponytail: single-word targets (Story Quest one-by-one) match only against the
-// most recent speech (tail window), so a word spoken long ago / out of order does
-// not satisfy the current word. W=4 tolerates fillers; tunable. Multi-word targets
-// (the designed sentence contract) keep matching the whole buffer.
 const TAIL_WINDOW = 4;
 function matchScope(full, target) {
     const isSingleWord = target.split(/\s+/).filter(Boolean).length === 1;
@@ -68,10 +64,6 @@ export function armWordTimeout(
     propsRef,
 ) {
     clearTimeout(timerRefs.current.word);
-    // ponytail: cancel any pending wordSettle from a prior word/target — its
-    // settleTarget closure would otherwise fire on the wrong target if the
-    // next transcript never arrives in time. timeoutRefs.target guards too,
-    // but clearing here makes the intent explicit and prevents visual flashes.
     clearTimeout(timerRefs.current.wordSettle);
     timeoutRefs.current.target = target;
 

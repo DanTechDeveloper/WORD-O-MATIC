@@ -1,35 +1,21 @@
-import { useState } from "react";
 import { Head, useForm, Link } from "@inertiajs/react";
+import GameplayDemo from "@/Components/Student/GameplayDemo";
 
-const features = [
-    {
-        icon: "menu_book",
-        title: "WORD BLAST Mode",
-        desc: "Build vocabulary through engaging reading exercises with real-time pronunciation guidance.",
-    },
-    {
-        icon: "mic",
-        title: "STORY QUEST Mode",
-        desc: "Practice speaking with AI-powered feedback to improve fluency and confidence.",
-    },
-    {
-        icon: "emoji_events",
-        title: "Badges & Rewards",
-        desc: "Earn badges and track achievements as you progress through each learning milestone.",
-    },
-    {
-        icon: "bar_chart",
-        title: "Progress Tracking",
-        desc: "Monitor your improvement with detailed analytics and personalized learning insights.",
-    },
+const SHAPES = [
+    { size: 28, color: "#d1bcff", left: "8%",  delay: 0,    dur: 18, rotate: 45  },
+    { size: 44, color: "#7000ff", left: "22%", delay: 3,    dur: 22, rotate: 0   },
+    { size: 20, color: "#ff3bc0", left: "55%", delay: 1,    dur: 16, rotate: 45  },
+    { size: 36, color: "#d1bcff", left: "70%", delay: 5,    dur: 20, rotate: 22  },
+    { size: 24, color: "#ffb77f", left: "88%", delay: 2,    dur: 24, rotate: 45  },
+    { size: 32, color: "#7000ff", left: "40%", delay: 7,    dur: 19, rotate: 0   },
+    { size: 18, color: "#ff3bc0", left: "62%", delay: 4,    dur: 21, rotate: 45  },
+    { size: 40, color: "#d1bcff", left: "12%", delay: 6,    dur: 17, rotate: 30  },
 ];
 
 const focusRing =
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary-container focus-visible:ring-offset-2 focus-visible:ring-offset-background";
 
 export default function Homepage() {
-    const [mobileOpen, setMobileOpen] = useState(false);
-
     const { data, setData, post, processing, errors, reset } = useForm({
         name: "",
         pin: "",
@@ -42,330 +28,223 @@ export default function Homepage() {
         });
     };
 
-    const scrollTo = (id) => {
-        setMobileOpen(false);
-        document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
-    };
-
     return (
-        <div className="min-h-screen bg-background text-on-background">
+        <div className="min-h-screen bg-background text-on-background overflow-hidden">
             <Head title="Word-O-Matic - Learn Through Play" />
 
-            {/* HEADER */}
-            <header className="fixed top-0 left-0 w-full z-50 bg-background border-b-4 border-outline">
-                <div className="max-w-7xl mx-auto px-4 md:px-8 flex items-center justify-between h-16">
-                    <div className="flex items-center gap-2">
-                        <span className="text-2xl font-black text-primary font-headline-xl uppercase italic tracking-tighter">
-                            WORD-O-MATIC
-                        </span>
-                    </div>
-
-                    <nav className="hidden md:flex items-center gap-8">
-                        <button
-                            onClick={() => scrollTo("features")}
-                            className={`text-on-surface-variant hover:text-on-surface font-bold uppercase text-xs tracking-widest transition-colors rounded ${focusRing}`}
-                        >
-                            Features
-                        </button>
-                        <button
-                            onClick={() => scrollTo("about")}
-                            className={`text-on-surface-variant hover:text-on-surface font-bold uppercase text-xs tracking-widest transition-colors rounded ${focusRing}`}
-                        >
-                            About
-                        </button>
-                        <button
-                            onClick={() => scrollTo("login")}
-                            className={`text-on-surface-variant hover:text-on-surface font-bold uppercase text-xs tracking-widest transition-colors rounded ${focusRing}`}
-                        >
-                            Login
-                        </button>
-                        <Link
-                            href="/teacher/login"
-                            className={`px-5 py-2.5 bg-transparent border-2 border-outline rounded-xl font-black uppercase text-xs tracking-widest text-on-surface-variant hover:text-accent hover:border-accent transition-all ${focusRing}`}
-                        >
-                            Teacher Login
-                        </Link>
-                    </nav>
-
-                    <button
-                        onClick={() => setMobileOpen(!mobileOpen)}
-                        className={`md:hidden p-2 text-on-surface-variant hover:text-on-surface rounded ${focusRing}`}
-                        aria-label="Toggle menu"
-                    >
-                        <svg
-                            className="w-6 h-6"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            {mobileOpen ? (
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M6 18L18 6M6 6l12 12"
-                                />
-                            ) : (
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M4 6h16M4 12h16M4 18h16"
-                                />
-                            )}
-                        </svg>
-                    </button>
+            {/* HERO = FULL-SCREEN LOGIN */}
+            <section className="relative min-h-screen flex items-center justify-center pt-14 pb-20 px-4">
+                {/* Arcade background layers */}
+                <div className="absolute inset-0 pointer-events-none z-0" aria-hidden="true">
+                    <style>
+                        {`
+                            .home-grid-bg {
+                                background-image: radial-gradient(circle, rgba(112,0,255,0.15) 1px, transparent 1px);
+                                background-size: 32px 32px;
+                            }
+                            .home-grid-fine {
+                                background-image: radial-gradient(circle, rgba(209,188,255,0.04) 1px, transparent 1px);
+                                background-size: 16px 16px;
+                            }
+                            .home-scanlines {
+                                background: repeating-linear-gradient(
+                                    0deg,
+                                    transparent,
+                                    transparent 3px,
+                                    rgba(0,0,0,0.04) 3px,
+                                    rgba(0,0,0,0.04) 4px
+                                );
+                            }
+                            @keyframes home-glow-pulse {
+                                0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.15; }
+                                50%      { transform: translate(-50%, -50%) scale(1.08); opacity: 0.25; }
+                            }
+                            @keyframes home-shape-drift {
+                                0%   { transform: translateY(0) rotate(var(--sr)); opacity: 0; }
+                                10%  { opacity: var(--op); }
+                                90%  { opacity: var(--op); }
+                                100% { transform: translateY(-110vh) rotate(calc(var(--sr) + 180deg)); opacity: 0; }
+                            }
+                            @media (prefers-reduced-motion: reduce) {
+                                .home-shape, .home-glow { animation: none !important; opacity: 0.3 !important; }
+                            }
+                        `}
+                    </style>
+                    <div className="home-grid-bg absolute inset-0" />
+                    <div className="home-grid-fine absolute inset-0" />
+                    <div
+                        className="home-glow absolute rounded-full"
+                        style={{
+                            width: "600px",
+                            height: "600px",
+                            left: "50%",
+                            top: "50%",
+                            transform: "translate(-50%, -50%)",
+                            background: "radial-gradient(circle, rgba(112,0,255,0.2) 0%, rgba(112,0,255,0.05) 50%, transparent 70%)",
+                            boxShadow: "0 0 80px 40px rgba(112,0,255,0.08)",
+                            animation: "home-glow-pulse 5s ease-in-out infinite",
+                        }}
+                    />
+                    {SHAPES.map((s, i) => (
+                        <div
+                            key={i}
+                            className="home-shape absolute"
+                            style={{
+                                width: s.size,
+                                height: s.size,
+                                left: s.left,
+                                bottom: "-60px",
+                                backgroundColor: s.color,
+                                opacity: 0.12,
+                                boxShadow: "4px 4px 0 0 #4c1d95",
+                                transform: `rotate(${s.rotate}deg)`,
+                                "--sr": `${s.rotate}deg`,
+                                "--op": 0.12 + (i % 3) * 0.04,
+                                animation: `home-shape-drift ${s.dur}s linear ${s.delay}s infinite`,
+                            }}
+                        />
+                    ))}
+                    <div className="home-scanlines absolute inset-0" />
                 </div>
 
-                {mobileOpen && (
-                    <div className="md:hidden bg-surface-container-high border-b-4 border-outline px-4 py-4 space-y-3">
-                        <button
-                            onClick={() => scrollTo("features")}
-                            className={`block w-full text-left text-on-surface-variant hover:text-on-surface font-bold uppercase text-xs tracking-widest py-2 rounded ${focusRing}`}
-                        >
-                            Features
-                        </button>
-                        <button
-                            onClick={() => scrollTo("about")}
-                            className={`block w-full text-left text-on-surface-variant hover:text-on-surface font-bold uppercase text-xs tracking-widest py-2 rounded ${focusRing}`}
-                        >
-                            About
-                        </button>
-                        <button
-                            onClick={() => scrollTo("login")}
-                            className={`block w-full text-left text-on-surface-variant hover:text-on-surface font-bold uppercase text-xs tracking-widest py-2 rounded ${focusRing}`}
-                        >
-                            Login
-                        </button>
-                        <Link
-                            href="/teacher/login"
-                            className={`block text-center px-5 py-3 bg-transparent border-2 border-outline rounded-xl font-black uppercase text-xs tracking-widest text-on-surface-variant hover:text-accent hover:border-accent transition-all ${focusRing}`}
-                        >
-                            Teacher Login
-                        </Link>
-                    </div>
-                )}
-            </header>
+                {/* Vignette */}
+                <div
+                    className="absolute inset-0 z-[1] pointer-events-none"
+                    style={{
+                        background: "radial-gradient(circle at center, rgba(12,12,31,0.6) 0%, rgba(12,12,31,0.2) 40%, transparent 60%)",
+                    }}
+                />
 
-            {/* HERO */}
-            <section className="relative min-h-screen flex items-center justify-center pt-16">
-                <div className="relative z-10 max-w-4xl mx-auto px-4 text-center">
-                    <h1 className="text-5xl md:text-7xl lg:text-8xl font-black uppercase italic tracking-tighter leading-[0.9]">
-                        Learn
-                        <br />
-                        <span className="text-accent">Through</span>
-                        <br />
-                        Play
+                {/* Content */}
+                <div className="relative z-10 w-full max-w-7xl mx-auto text-center">
+                    {/* Title */}
+                    <h1
+                        className="font-black uppercase italic tracking-tighter leading-[0.9]"
+                        style={{
+                            fontSize: "clamp(2.5rem, 10vw, 3rem)",
+                            color: "#d1bcff",
+                            textShadow: "0 0 20px rgba(209,188,255,0.3)",
+                        }}
+                    >
+                        WORD-O-MATIC
                     </h1>
-                    <p className="mt-6 text-on-surface-variant text-lg md:text-xl max-w-2xl mx-auto font-bold">
-                        Word-O-Matic combines reading and speaking exercises
-                        with gamified progression to make vocabulary building
-                        fun and effective.
+                    <p className="text-on-surface-variant text-lg md:text-xl font-bold">
+                        Learn Through Play
                     </p>
-                    <button
-                        onClick={() => scrollTo("login")}
-                        className={`mt-10 px-10 py-5 bg-accent text-[#0c0c1f] rounded-2xl border-b-[6px] border-accent-deep font-black uppercase italic text-lg tracking-tight hover:bg-accent-hover transition-all active:translate-y-1 active:border-b-[2px] ${focusRing}`}
+            
+                    {/* Split layout: demo left, login right */}
+                    <div className="flex flex-col lg:flex-row items-center gap-10 lg:gap-20">
+                        {/* Left: Gameplay demo carousel */}
+                        <div className="flex-1 w-full max-w-2xl hidden lg:block">
+                            <GameplayDemo />
+                        </div>
+
+                        {/* Right: Login card */}
+                        <div className="w-full max-w-lg">
+                            <div className="relative bg-surface-container-high border-4 border-primary-container tactile-card rounded-2xl p-6 md:p-10">
+                                <header className="text-center mb-6">
+                                    <h2 className="text-2xl md:text-3xl font-black uppercase italic tracking-tighter text-on-surface">
+                                        Student{" "}
+                                        <span className="text-accent">Login</span>
+                                    </h2>
+                                    <p className="text-on-surface-variant text-sm font-bold mt-2">
+                                        Enter your name and PIN
+                                    </p>
+                                </header>
+
+                                <form onSubmit={handleSubmit} className="space-y-5">
+                                    <div className="space-y-4">
+                                        <div className="space-y-2">
+                                            <label
+                                                htmlFor="name"
+                                                className="text-base font-black text-on-surface-variant ml-2"
+                                            >
+                                                Your name
+                                            </label>
+                                            <input
+                                                id="name"
+                                                name="name"
+                                                type="text"
+                                                autoComplete="username"
+                                                aria-invalid={errors.name ? "true" : undefined}
+                                                aria-describedby={errors.name ? "name-error" : undefined}
+                                                className="w-full p-5 bg-surface-container-lowest border-4 border-outline rounded-2xl text-on-surface text-lg font-bold focus:border-accent outline-none transition-all placeholder:text-on-surface-variant/40"
+                                                placeholder="Your name"
+                                                value={data.name}
+                                                onChange={(e) => setData("name", e.target.value)}
+                                            />
+                                            {errors.name && (
+                                                <p id="name-error" aria-live="polite" className="text-error text-sm font-bold ml-2">
+                                                    {errors.name}
+                                                </p>
+                                            )}
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label
+                                                htmlFor="pin"
+                                                className="text-base font-black text-on-surface-variant ml-2"
+                                            >
+                                                Your PIN
+                                            </label>
+                                            <input
+                                                id="pin"
+                                                name="pin"
+                                                type="text"
+                                                inputMode="numeric"
+                                                autoComplete="off"
+                                                aria-invalid={errors.pin ? "true" : undefined}
+                                                aria-describedby={errors.pin ? "pin-error" : undefined}
+                                                className="w-full p-5 bg-surface-container-lowest border-4 border-outline rounded-2xl text-on-surface text-lg font-bold focus:border-accent outline-none transition-all placeholder:text-on-surface-variant/40 tracking-[0.3em]"
+                                                placeholder="••••"
+                                                value={data.pin}
+                                                onChange={(e) => setData("pin", e.target.value)}
+                                            />
+                                            {errors.pin && (
+                                                <p id="pin-error" aria-live="polite" className="text-error text-sm font-bold ml-2">
+                                                    {errors.pin}
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <button
+                                        type="submit"
+                                        disabled={processing}
+                                        data-sfx="major"
+                                        className={`w-full py-5 md:py-6 mt-2 rounded-2xl border-b-[6px] md:border-b-[8px] border-accent-deep font-black uppercase italic text-xl md:text-2xl tracking-tighter transition-all active:translate-y-1 active:border-b-[2px] flex items-center justify-center gap-3 bg-accent text-[#0c0c1f] hover:bg-accent-hover disabled:opacity-70 tactile-button ${focusRing}`}
+                                    >
+                                        <span className="material-symbols-outlined text-3xl" aria-hidden="true">
+                                            play_arrow
+                                        </span>
+                                        <span>{processing ? "Starting..." : "PLAY"}</span>
+                                    </button>
+                                    <p className="text-center text-on-surface-variant text-sm font-bold">
+                                        Ask your teacher for help!
+                                    </p>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Mobile-only demo (below login) */}
+                    <div className="block lg:hidden mt-10">
+                        <GameplayDemo />
+                    </div>
+                </div>
+            </section>
+
+            {/* FOOTER — minimal */}
+            <footer className="fixed bottom-0 left-0 w-full z-40 border-t-2 border-outline/50 bg-background/60 backdrop-blur-sm py-3 px-4">
+                <div className="max-w-6xl mx-auto flex items-center justify-between">
+                    <span className="text-sm font-black text-primary/40 font-headline-xl uppercase italic tracking-tighter">
+                        WORD-O-MATIC
+                    </span>
+                    <Link
+                        href="/teacher/login"
+                        className={`text-sm font-bold text-on-surface-variant/50 hover:text-accent transition-colors rounded ${focusRing}`}
                     >
-                        Get Started
-                    </button>
-                </div>
-            </section>
-
-            {/* FEATURES */}
-            <section id="features" className="py-20 md:py-32 px-4">
-                <div className="max-w-6xl mx-auto">
-                    <h2 className="text-3xl md:text-5xl font-black uppercase italic tracking-tighter text-center mb-4">
-                        Why <span className="text-accent">Word-O-Matic</span>
-                    </h2>
-                    <p className="text-on-surface-variant text-center font-bold uppercase text-xs tracking-widest mb-16">
-                        Everything you need to master vocabulary
-                    </p>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {features.map((f, i) => (
-                            <div
-                                key={i}
-                                className="bg-surface-container-high border-4 border-outline rounded-2xl p-6 md:p-8 tactile-card hover:border-accent/30 transition-all duration-300"
-                            >
-                                <span className="material-symbols-outlined text-4xl block mb-4 text-primary">
-                                    {f.icon}
-                                </span>
-                                <h3 className="text-lg font-black uppercase italic mb-3">
-                                    {f.title}
-                                </h3>
-                                <p className="text-on-surface-variant text-sm leading-relaxed">
-                                    {f.desc}
-                                </p>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </section>
-
-            {/* ABOUT */}
-            <section id="about" className="py-20 md:py-32 px-4 bg-surface-container/50">
-                <div className="max-w-4xl mx-auto text-center">
-                    <h2 className="text-3xl md:text-5xl font-black uppercase italic tracking-tighter mb-6">
-                        About <span className="text-accent">the Project</span>
-                    </h2>
-                    <div className="w-20 h-1 bg-accent mx-auto mb-8 rounded-full" />
-                    <p className="text-on-surface text-lg md:text-xl leading-relaxed">
-                        Word-O-Matic is an interactive learning platform
-                        designed for students to build vocabulary through
-                        reading and speaking exercises. Teachers can create
-                        custom word and paragraph modules, track student
-                        progress, and assign targeted exercises all within a
-                        gamified environment that keeps learners engaged and
-                        motivated.
-                    </p>
-                </div>
-            </section>
-
-            {/* STUDENT LOGIN */}
-            <section
-                id="login"
-                className="py-20 md:py-32 px-4 flex items-center justify-center relative overflow-hidden"
-            >
-                <div className="relative w-full max-w-lg">
-                    <div className="relative bg-surface-container-high border-4 border-primary-container tactile-card rounded-2xl p-6 md:p-10">
-                        <header className="text-center mb-8">
-                            <h2 className="text-3xl font-black uppercase italic tracking-tighter text-on-surface">
-                                Student{" "}
-                                <span className="text-accent">Login</span>
-                            </h2>
-                            <p className="text-on-surface-variant text-xs font-black uppercase tracking-widest mt-2">
-                                Enter your name &amp; PIN
-                            </p>
-                        </header>
-
-                        <form onSubmit={handleSubmit} className="space-y-6">
-                            <div className="space-y-5">
-                                <div className="space-y-2">
-                                    <label
-                                        htmlFor="name"
-                                        className="text-sm font-black uppercase tracking-widest text-on-surface-variant ml-2"
-                                    >
-                                        Name:
-                                    </label>
-                                    <input
-                                        id="name"
-                                        name="name"
-                                        type="text"
-                                        autoComplete="username"
-                                        aria-invalid={
-                                            errors.name ? "true" : undefined
-                                        }
-                                        aria-describedby={
-                                            errors.name
-                                                ? "name-error"
-                                                : undefined
-                                        }
-                                        className="w-full p-4 md:p-5 bg-surface-container-lowest border-4 border-outline rounded-2xl text-on-surface font-bold focus:border-accent outline-none transition-all placeholder:text-on-surface-variant/40"
-                                        placeholder="Your name"
-                                        value={data.name}
-                                        onChange={(e) =>
-                                            setData("name", e.target.value)
-                                        }
-                                    />
-                                    {errors.name && (
-                                        <p
-                                            id="name-error"
-                                            aria-live="polite"
-                                            className="text-error text-xs font-black uppercase ml-2"
-                                        >
-                                            {errors.name}
-                                        </p>
-                                    )}
-                                </div>
-                                <div className="space-y-2">
-                                    <label
-                                        htmlFor="pin"
-                                        className="text-sm font-black uppercase tracking-widest text-on-surface-variant ml-2"
-                                    >
-                                        PIN:
-                                    </label>
-                                    <input
-                                        id="pin"
-                                        name="pin"
-                                        type="text"
-                                        inputMode="numeric"
-                                        autoComplete="off"
-                                        aria-invalid={
-                                            errors.pin ? "true" : undefined
-                                        }
-                                        aria-describedby={
-                                            errors.pin
-                                                ? "pin-error"
-                                                : undefined
-                                        }
-                                        className="w-full p-4 md:p-5 bg-surface-container-lowest border-4 border-outline rounded-2xl text-on-surface font-bold focus:border-accent outline-none transition-all placeholder:text-on-surface-variant/40 tracking-[0.3em]"
-                                        placeholder="••••"
-                                        value={data.pin}
-                                        onChange={(e) =>
-                                            setData("pin", e.target.value)
-                                        }
-                                    />
-                                    {errors.pin && (
-                                        <p
-                                            id="pin-error"
-                                            aria-live="polite"
-                                            className="text-error text-xs font-black uppercase ml-2"
-                                        >
-                                            {errors.pin}
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-
-                            <button
-                                type="submit"
-                                disabled={processing}
-                                className={`w-full py-5 md:py-6 mt-4 rounded-2xl border-b-[6px] md:border-b-[8px] border-accent-deep font-black uppercase italic text-xl md:text-2xl tracking-tighter transition-all active:translate-y-1 active:border-b-[2px] flex items-center justify-center gap-3 bg-accent text-[#0c0c1f] hover:bg-accent-hover disabled:opacity-70 ${focusRing}`}
-                            >
-                                <span>
-                                    {processing ? "Logging in…" : "LOGIN"}
-                                </span>
-                                <span className="material-symbols-outlined text-3xl">
-                                    rocket_launch
-                                </span>
-                            </button>
-                            <p className="text-center text-on-surface-variant text-xs font-bold">
-                                Ask your teacher if you don't know your name or
-                                PIN.
-                            </p>
-                        </form>
-                    </div>
-                </div>
-            </section>
-
-            {/* FOOTER */}
-            <footer className="border-t-4 border-outline py-10 px-4">
-                <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8 md:gap-6 text-center md:text-left">
-                    <div className="flex items-center gap-2">
-                        <span className="text-2xl font-black text-primary font-headline-xl uppercase italic tracking-tighter">
-                            WORD-O-MATIC
-                        </span>
-                    </div>
-                    <div className="flex flex-wrap justify-center items-center gap-4 md:gap-6 text-xs font-black uppercase tracking-widest text-on-surface-variant">
-                        <Link
-                            href="/teacher/login"
-                            className={`hover:text-accent transition-colors rounded ${focusRing}`}
-                        >
-                            Teacher Login
-                        </Link>
-                        <button
-                            onClick={() => scrollTo("features")}
-                            className={`hover:text-on-surface transition-colors rounded ${focusRing}`}
-                        >
-                            Features
-                        </button>
-                        <button
-                            onClick={() => scrollTo("about")}
-                            className={`hover:text-on-surface transition-colors rounded ${focusRing}`}
-                        >
-                            About
-                        </button>
-                    </div>
+                        Teacher Login
+                    </Link>
                 </div>
             </footer>
         </div>

@@ -1,4 +1,3 @@
-// Space Complexity optimized to O(N)
 export function standardLevenshtein(a, b) {
   const m = a.length, n = b.length;
   if (m === 0) return n;

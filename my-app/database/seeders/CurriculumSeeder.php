@@ -54,8 +54,15 @@ class CurriculumSeeder extends Seeder
         ];
 
         foreach (range(1, 10) as $level) {
-            $module = WordModule::create(['level' => $level, 'title' => $titles[$level]]);
-
+            if ($level > 10) {
+                throw new \RuntimeException("Curriculum level {$level} exceeds maximum 10");
+            }
+            $module = WordModule::updateOrCreate(
+                ['level' => $level],
+                ['title' => $titles[$level], 'is_tutorial' => false]
+            );
+            // idempotent: wipe and recreate words so re-seed without fresh doesn't duplicate levels
+            $module->words()->delete();
             foreach ($wordsByModule[$level] as $position => $word) {
                 Word::create([
                     'word_module_id' => $module->id,
@@ -64,12 +71,11 @@ class CurriculumSeeder extends Seeder
                 ]);
             }
 
-            $paraModule = ParagraphModule::create([
-                'level' => $level,
-                'title' => $paraTitles[$level],
-                'content' => $paragraphsByLevel[$level],
-            ]);
-
+            $paraModule = ParagraphModule::updateOrCreate(
+                ['level' => $level],
+                ['title' => $paraTitles[$level], 'content' => $paragraphsByLevel[$level], 'is_tutorial' => false]
+            );
+            $paraModule->words()->delete();
             $contentWords = preg_split('/\s+/', trim($paragraphsByLevel[$level]), -1, PREG_SPLIT_NO_EMPTY);
             foreach ($contentWords as $pos => $word) {
                 ParagraphWord::create([

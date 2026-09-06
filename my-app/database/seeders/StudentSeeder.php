@@ -20,6 +20,17 @@ class StudentSeeder extends Seeder
 {
     public function run(): void
     {
+        // ponytail: idempotent — truncate student data so re-seed without fresh doesn't stack levels/points
+        \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=0');
+        StudentWordMastery::truncate();
+        StudentParagraphMastery::truncate();
+        StudentWordProgress::truncate();
+        StudentParagraphProgress::truncate();
+        GameSession::truncate();
+        \App\Models\StudentProfile::truncate();
+        User::where('role', 'student')->delete();
+        \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=1');
+
         $wordModules = WordModule::all()->keyBy('level');
         $paragraphModules = ParagraphModule::all()->keyBy('level');
 
@@ -207,6 +218,114 @@ class StudentSeeder extends Seeder
                 'tutorial_completed_at' => now(),
             ]);
 
+            app(BadgeService::class)->checkAllEligibleBadges($user);
+        }
+
+        // Perfect Level 10 demo students — 10/10 both modes, with Recovered in Mastery Zone
+        // Ensures StudentDetails shows LV10, 100% progress, and both Needs Attention + Recovered chips.
+        // Guard: ProgressService caps at 10 and throws beyond, so these are the max.
+        $perfectStudents = [
+            ['name' => 'Astra Perfect', 'student_id' => 'STU-101', 'section' => 'Sector 7-G', 'avatarChar' => 'ana', 'gender' => 'female'],
+            ['name' => 'Nova Stellar', 'student_id' => 'STU-102', 'section' => 'Sector Alpha', 'avatarChar' => 'leo', 'gender' => 'male'],
+            ['name' => 'Stellar Apex', 'student_id' => 'STU-103', 'section' => 'Sector Bravo', 'avatarChar' => 'zoe', 'gender' => 'female'],
+        ];
+        foreach ($perfectStudents as $idx => $p) {
+            $user = User::create([
+                'name' => $p['name'],
+                'student_id' => $p['student_id'],
+                'pin' => (string) $pins[100 + $idx], // use remaining shuffled pins
+                'role' => 'student',
+            ]);
+            $totalWordsSmashed = 0;
+            // Word Blast 10/10
+            for ($lvl = 1; $lvl <= 10; $lvl++) {
+                $module = $wordModules[$lvl];
+                $totalPoints = $module->total_points;
+                $smashed = $totalPoints; // 100%
+                StudentWordProgress::create([
+                    'user_id' => $user->id, 'word_module_id' => $module->id,
+                    'status' => 'completed', 'words_smashed' => $smashed, 'accuracy' => 100,
+                ]);
+                $words = Word::where('word_module_id', $module->id)->get();
+                foreach ($words as $pos => $word) {
+                    // 70% Normal mastered (0-2), 20% Recovered (mastered 3-5), 10% Needs Attention (training 3-8)
+                    $roll = rand(0, 99);
+                    if ($roll < 70) {
+                        $mastered = true; $attempts = rand(0, 2);
+                    } elseif ($roll < 90) {
+                        $mastered = true; $attempts = rand(3, 5); // Recovered
+                    } else {
+                        $mastered = false; $attempts = rand(3, 8); // Needs Attention
+                    }
+                    StudentWordMastery::create([
+                        'user_id' => $user->id, 'word_id' => $word->id,
+                        'status' => $mastered ? 'mastered' : 'training',
+                        'failed_attempts' => $attempts,
+                    ]);
+                }
+                $totalWordsSmashed += $smashed;
+                $logSession($user, $module->id, 'word', 10, 100);
+            }
+            // Story Quest 10/10
+            for ($lvl = 1; $lvl <= 10; $lvl++) {
+                $module = $paragraphModules[$lvl];
+                $totalScore = $module->total_score;
+                $smashed = $totalScore;
+                StudentParagraphProgress::create([
+                    'user_id' => $user->id, 'paragraph_module_id' => $module->id,
+                    'status' => 'completed', 'words_smashed' => $smashed, 'accuracy' => 100,
+                ]);
+                $sentences = ParagraphModule::sentencesFromContent($module->content ?? '');
+                $pws = ParagraphWord::where('paragraph_module_id', $module->id)->orderBy('position')->get()->values();
+                $cursor = 0;
+                foreach ($sentences as $sentence) {
+                    $cnt = $sentence === '' ? 0 : count(preg_split('/\s+/', trim($sentence), -1, PREG_SPLIT_NO_EMPTY));
+                    $slice = $pws->slice($cursor, $cnt);
+                    $cursor += $cnt;
+                    // Sentence-level Recovered: 80% mastered (half of those Recovered), 20% training
+                    $roll = rand(0, 99);
+                    if ($roll < 60) {
+                        $masteredSentence = true; $attempts = rand(0, 2);
+                    } elseif ($roll < 80) {
+                        $masteredSentence = true; $attempts = rand(3, 5);
+                    } else {
+                        $masteredSentence = false; $attempts = rand(3, 8);
+                    }
+                    // Distribute attempts across words in sentence for sum
+                    $perWord = $cnt > 0 ? intdiv($attempts, $cnt) : 0;
+                    $rem = $cnt > 0 ? $attempts % $cnt : 0;
+                    foreach ($slice as $i => $pw) {
+                        $a = $perWord + ($i < $rem ? 1 : 0);
+                        StudentParagraphMastery::create([
+                            'user_id' => $user->id, 'paragraph_word_id' => $pw->id,
+                            'status' => $masteredSentence ? 'mastered' : 'training',
+                            'failed_attempts' => $a,
+                        ]);
+                    }
+                }
+                if ($pws->count() > $cursor) {
+                    foreach ($pws->slice($cursor) as $pw) {
+                        StudentParagraphMastery::create([
+                            'user_id' => $user->id, 'paragraph_word_id' => $pw->id,
+                            'status' => 'training',
+                            'failed_attempts' => rand(3, 8),
+                        ]);
+                    }
+                }
+                $totalWordsSmashed += $smashed;
+                $logSession($user, $module->id, 'paragraph', ParagraphWord::where('paragraph_module_id', $module->id)->count(), 100);
+            }
+            $user->student()->create([
+                'points' => $totalWordsSmashed,
+                'avatar' => "/images/avatars/{$p['avatarChar']}/head.png",
+                'gender' => $p['gender'],
+                'read_progress' => 10, 'speak_progress' => 10,
+                'read_level' => 10, 'speak_level' => 10, // capped at 10, not 11
+                'status' => 'onTrack', 'wordBlastAcc' => 100, 'storyQuestAcc' => 100,
+                'section' => $p['section'],
+                'parent_email' => "parent.".strtolower(str_replace(' ', '', $p['student_id']))."@email.com",
+                'tutorial_completed_at' => now(),
+            ]);
             app(BadgeService::class)->checkAllEligibleBadges($user);
         }
     }
