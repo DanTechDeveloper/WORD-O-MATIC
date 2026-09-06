@@ -1,4 +1,4 @@
-import { isFuzzyMatch, isWordMatch, normalizeText } from "@/lib/speechUtils";
+import { isWordMatch, normalizeText } from "@/lib/speechUtils";
 
 export function clearAllTimers(timers) {
     Object.keys(timers).forEach((key) => {
@@ -68,6 +68,11 @@ export function armWordTimeout(
     propsRef,
 ) {
     clearTimeout(timerRefs.current.word);
+    // ponytail: cancel any pending wordSettle from a prior word/target — its
+    // settleTarget closure would otherwise fire on the wrong target if the
+    // next transcript never arrives in time. timeoutRefs.target guards too,
+    // but clearing here makes the intent explicit and prevents visual flashes.
+    clearTimeout(timerRefs.current.wordSettle);
     timeoutRefs.current.target = target;
 
     timerRefs.current.word = setTimeout(() => {
@@ -141,7 +146,7 @@ export function processSentenceModeResult(
     if (
         !stateRefs.current.hasMatched &&
         !stateRefs.current.mispronouncedSentence &&
-        isFuzzyMatch(scope, target)
+        isWordMatch(scope, target)
     ) {
         stateRefs.current.hasMatched = true;
         propsRef.current.onWordRecognized?.();
@@ -160,7 +165,12 @@ export function processSentenceModeResult(
     // Live progress: emit count of prefix-matched target words for interim
     if (!hasAuthoritative && propsRef.current.onProgress) {
         const targetWords = target.split(/\s+/).filter(Boolean);
-        const fullWords = full.split(/\s+/).filter(Boolean);
+        const fullWords = full
+            .split(/\s+/)
+            .filter(Boolean)
+            // ponytail: dedupe adjacent repeats so a stumble ("The... The dog runs")
+            // doesn't reset prefixMatched to 0 mid-sentence.
+            .filter((w, i, arr) => i === 0 || w !== arr[i - 1]);
         let prefixMatched = 0;
         for (
             let i = 0;
@@ -169,7 +179,7 @@ export function processSentenceModeResult(
         ) {
             const fw = normalizeText(fullWords[i]);
             const tw = normalizeText(targetWords[i]);
-            if (fw === tw || isFuzzyMatch(fw, tw)) prefixMatched++;
+            if (fw === tw || isWordMatch(fw, tw)) prefixMatched++;
             else break;
         }
         if (prefixMatched > 0) propsRef.current.onProgress(prefixMatched);
@@ -177,7 +187,7 @@ export function processSentenceModeResult(
 
     // Authoritative mismatch → immediate verdict (Deepgram empty/low-conf or speechFinal)
     if (hasAuthoritative) {
-        if (!isFuzzyMatch(scope, target)) {
+        if (!isWordMatch(scope, target)) {
             stateRefs.current.mispronouncedSentence = true;
             propsRef.current.onMispronounced?.(full);
             clearAllTimers(timerRefs.current);
@@ -222,21 +232,14 @@ export function processWordModeResult(
         return;
     }
 
-    // ponytail: authoritative final on a non-matching word → immediate mispronounce.
-    // Without this, a correct word spoken after a wrong interim can be pre-empted
-    // by the 900ms wordSettle firing on the stale interim — causing false mispronounce.
-    if (!stateRefs.current.mispronouncedInWord && result.isFinal) {
-        stateRefs.current.mispronouncedInWord = true;
-        clearAllTimers(timerRefs.current);
-        propsRef.current.onMispronounced?.(transcript);
-        return;
-    }
-
     if (!stateRefs.current.mispronouncedInWord) {
         // Ponytail: captured at arm time, rechecked at fire.
         const settleTarget = target;
         const settleTranscript = transcript;
         clearTimeout(timerRefs.current.wordSettle);
+        // ponytail: 1500ms (was 850ms) tolerates mid-word pauses for slow readers
+        // e.g. "um... brella" — the settle fires on the stale "um" interim before
+        // "brella" arrives. armWordTimeout still guards total silence at 5s.
         timerRefs.current.wordSettle = setTimeout(() => {
             const s = stateRefs.current;
             if (
@@ -249,6 +252,6 @@ export function processWordModeResult(
                 s.mispronouncedInWord = true;
                 propsRef.current.onMispronounced?.(settleTranscript);
             }
-        }, 850);
+        }, 1500);
     }
 }
