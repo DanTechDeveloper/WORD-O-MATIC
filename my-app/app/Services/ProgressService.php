@@ -100,9 +100,20 @@ class ProgressService
                 $this->recalculateStatus($student);
             }
 
+            // Guard: curriculum is 1-10 only — exceeding must error (panel requirement)
+            if ($module->level > 10) {
+                throw new \RuntimeException("Module level {$module->level} exceeds maximum 10");
+            }
+            if ($student->{$levelColumn} > 10) {
+                throw new \RuntimeException("Student level {$student->{$levelColumn}} exceeds maximum 10");
+            }
             // Tutorial modules advance the student out of level 0; a flagged
             // tutorial replay on a non-tutorial module must not (BF24).
             if ($progress->status === 'completed' && $module->level >= $student->{$levelColumn} && (! $isTutorial || $module->is_tutorial)) {
+                if ($module->level + 1 > 10 && $student->{$levelColumn} >= 10) {
+                    throw new \RuntimeException("Level progression beyond 10 blocked (module {$module->level} → 11)");
+                }
+                $nextLevel = min(10, $module->level + 1);
                 // Mirror StudentController::dashboard(): tutorial plays never count
                 // as earned points. Without these exclusions, a post-onboarding
                 // tutorial replay inflates students.points while the dashboard
@@ -111,7 +122,7 @@ class ProgressService
                 $tutParaId = ParagraphModule::where('is_tutorial', true)->value('id');
 
                 $student->update([
-                    $levelColumn => $module->level + 1,
+                    $levelColumn => $nextLevel,
                     $progressColumn => $progressClass::where('user_id', $student->user_id)->where('status', 'completed')->count(),
                     'points' => StudentWordProgress::where('user_id', $student->user_id)
                         ->when($tutWordId, fn ($q) => $q->where('word_module_id', '!=', $tutWordId))
