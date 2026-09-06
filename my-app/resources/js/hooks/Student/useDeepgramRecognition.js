@@ -222,6 +222,7 @@ export function useDeepgramRecognition({
                 channels: 1,
                 interim_results: true,
                 ...(keyterm.length ? { keyterm } : {}),
+                
             });
             if (!stateRefs.current.isMounted) {
                 conn.close();
@@ -468,7 +469,11 @@ export function useDeepgramRecognition({
         stateRefs.current.stoppedAt = 0;
         stateRefs.current.lastSpeechAt = Date.now();
         timeoutRefs.current.target = null;
-        timeoutRefs.current.graceEnd = Date.now() + 500;
+        // ponytail: 50ms grace absorbs the targetWord re-render tick, NOT 500ms
+        // of user speech. A 500ms grace silently drops correct first-word finals
+        // (fast readers finish "cat" in 200-400ms), then armWordTimeout fires
+        // onMispronounced at 5s for a word the student said right.
+        timeoutRefs.current.graceEnd = Date.now() + 50;
         timeoutRefs.current.restartCount = 0;
         gateStateRef.current.isOpen = false;
         clearAllTimers(timerRefs.current);
@@ -479,6 +484,8 @@ export function useDeepgramRecognition({
     }, [targetWord]);
 
     useEffect(() => {
+        // ponytail: 500ms grace on session transitions (IDLE→ACTIVE flip) absorbs
+        // the mic/connection resume transient, but per-word grace above is only 50ms.
         timeoutRefs.current.graceEnd = Date.now() + 500;
         if (propsRef.current?.isActive && connRef.current) {
             armForCurrentTarget();

@@ -22,7 +22,7 @@
 | Type | Speaking with short sentences (2 per level, 3-5 words each, 73 total words) |
 | Timer | 60 seconds per session |
 | Presentation | Sentence-based, fixed word order |
-| Scoring | Tolerance-bucketed Levenshtein (`speechUtils.js` `isFuzzyMatch` → `withinRatio` 0.34 + `boundaryLeak`; `cot`=cat Correct, `kat`=cat Wrong, `tabl`=table Wrong) |
+| Scoring | SSOT `isWordMatch` (`speechUtils.js`): per-word Levenshtein ≤ 1, sentence-aware (ordered two-pointer + ASR split fallback). Both Word Blast and Story Quest use the same function. Strict L1 per word means ASR mishears of 2+ edits surface as Wrong — scoring is objective, not hidden as "close enough". Replaces the old `isFuzzyMatch`/`withinRatio`/`boundaryLeak` stack. |
 | Update rule | Only on new best score |
 | Mastery | Sentence-based reporting — per-word storage `student_paragraph_mastery` but `ParagraphModule::buildLevels` derives `sentence_stats{ sentence, mastery=sum(all words mastered?mastered:training), failed_attempts=sum(word)}` via `sentencesFromContent` `(?<=[.!?])\s+`; teacher `StudentDetails` shows `SentenceChip` (Mastery/Training zones), sentence progress `mastered_sentences/total_sentences` (`ReportService::sentenceCurriculumPercent`). Gameplay still word-step `SpeakModeMainContent` word highlight. |
 | Routes | `/student/gameplaySpeakMode/{level}`, `/student/speakModeLevels` |
@@ -74,14 +74,14 @@ being in `flash.new_badges`, so it fires only at completion, not on later visits
 
 ## Speech Recognition (Deepgram)
 
-Recognition uses **Deepgram streaming ASR** (`useDeepgramRecognition.js`, model `nova-3`); the pure transcript-processing logic (Word Blast `isWordMatch` Levenshtein `≤1` with L1 safe words; Story Quest `isFuzzyMatch` tolerance-bucketed `withinRatio`+`boundaryLeak`, timeout arming, `graceEnd`) lives in `speechProcessors.js` and is driven by Deepgram events. A browser token is fetched from `StudentController::deepgramToken()`.
+Recognition uses **Deepgram streaming ASR** (`useDeepgramRecognition.js`, model `nova-3`); the pure transcript-processing logic (SSOT `isWordMatch` — per-word Levenshtein `≤1`, sentence-aware via ordered two-pointer + ASR split fallback; timeout arming, `graceEnd`) lives in `speechProcessors.js` and is driven by Deepgram events. A browser token is fetched from `StudentController::deepgramToken()`.
 
 ### Timeout Rules
 
 | Mode | Timeout Behavior |
 |---|---|
 | **Word Mode** | After speech settles on a transcript where `standardLevenshtein ≤1` is false (no new result for ~900ms), the word is marked mispronounced immediately — no fixed wait. `is_final` is also a fast-path. A 5s `armWordTimeout` remains as the no-speech fallback (catches a silent student). A 500ms `graceEnd` guard after a word switch suppresses stray finals. |
-| **Sentence Mode** | If no speech is detected for 5 **continuous** seconds (silence watchdog), the sentence is marked as mispronounced. The watchdog tracks `lastSpeechAt`, which is re-based to ACTIVE at game start so countdown silence isn't counted. A full-length transcript where `isFuzzyMatch` (`withinRatio`+`boundaryLeak`) fails also mispronounces, after a 500ms `graceEnd` guard. The match transcript (`full`) is taken from the latest cumulative interim when present, else the accumulated finals — Deepgram partials are cumulative, so stacking them double-counts words (BF28). |
+| **Sentence Mode** | If no speech is detected for 5 **continuous** seconds (silence watchdog), the sentence is marked as mispronounced. The watchdog tracks `lastSpeechAt`, which is re-based to ACTIVE at game start so countdown silence isn't counted. A full-length transcript where the SSOT `isWordMatch` (per-word Levenshtein `≤1`, sentence-aware) fails also mispronounces, after a 500ms `graceEnd` guard. The match transcript (`full`) is taken from the latest cumulative interim when present, else the accumulated finals — Deepgram partials are cumulative, so stacking them double-counts words (BF28). |
 
 ### Timer Synchronization
 

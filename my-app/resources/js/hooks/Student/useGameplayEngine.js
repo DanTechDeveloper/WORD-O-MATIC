@@ -183,6 +183,19 @@ export function useGameplayEngine({
         if (wordRecognizedGuardRef.current) return;
         wordRecognizedGuardRef.current = true;
 
+        // ponytail: real recognition after a stale 1500ms settle mispronounce.
+        // Cancel the in-flight mispronounce advance + UI flag so the correct word
+        // wins. Backend is race-safe: server `updateMastery` (BF4) is sticky on
+        // existing `mastered` rows, and `training → mastered` order lets the
+        // counter freeze at its current value (CAVEATS BF4). The only risk is the
+        // reverse order (mastered POST first, then late training POST from a
+        // second settle) — also no-op via the same sticky guard.
+        if (mispronounceGuardRef.current) {
+            mispronounceGuardRef.current = false;
+            clearTimeout(mispronounceTimerRef.current);
+            setIsMispronounced(false);
+        }
+
         clearTimeout(mispronounceTimerRef.current);
         mispronounceGuardRef.current = false;
 

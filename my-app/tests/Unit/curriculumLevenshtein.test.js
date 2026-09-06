@@ -1,4 +1,4 @@
-import { standardLevenshtein, isWordMatch, isFuzzyMatch, normalizeText } from "@/lib/speechUtils.js";
+import { standardLevenshtein, isWordMatch, normalizeText } from "@/lib/speechUtils.js";
 
 // ponytail: HARDCODED WORD BLAST curriculum — WORD BLAST only (L1-L10 100) + tutorial 5 = 105
 // Source: CurriculumSeeder.php (Word Blast WORDS, not paragraphs)
@@ -95,7 +95,6 @@ describe("Levenshtein ALONE audit — standardLevenshtein only (d<=1)", () => {
             if (v === w) continue;
             expect(standardLevenshtein(v, w)).toBe(1);
             expect(isWordMatch(v, w)).toBe(true);
-            expect(isFuzzyMatch(v, w)).toBe(true);
         }
     });
 
