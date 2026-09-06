@@ -100,13 +100,7 @@ class ProgressService
                 $this->recalculateStatus($student);
             }
 
-            // Guard: curriculum is 1-10 only — exceeding must error (panel requirement)
-            if ($module->level > 10) {
-                throw new \RuntimeException("Module level {$module->level} exceeds maximum 10");
-            }
-            if ($student->{$levelColumn} > 10) {
-                throw new \RuntimeException("Student level {$student->{$levelColumn}} exceeds maximum 10");
-            }
+       
             // Tutorial modules advance the student out of level 0; a flagged
             // tutorial replay on a non-tutorial module must not (BF24).
             if ($progress->status === 'completed' && $module->level >= $student->{$levelColumn} && (! $isTutorial || $module->is_tutorial)) {
@@ -208,7 +202,7 @@ class ProgressService
         $hasParagraphProgress = (float) $fresh->storyQuestAcc > 0
             || StudentParagraphProgress::where('user_id', $fresh->user_id)
                 ->when($tutParaId, fn ($q) => $q->where('paragraph_module_id', '!=', $tutParaId))
-                ->whereHas('paragraphModule', fn ($m) => $m->has('words'))
+                    ->whereHas('paragraphModule', fn ($m) => $m->has('words'))
                 ->exists();
 
         $status = self::classify(

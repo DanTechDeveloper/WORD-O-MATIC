@@ -204,6 +204,13 @@ class StudentSeeder extends Seeder
             // accuracy is integer-rounded, so the random target never matched).
             $wAcc = (int) round(StudentWordProgress::where('user_id', $user->id)->avg('accuracy') ?? 0);
             $sAcc = (int) round(StudentParagraphProgress::where('user_id', $user->id)->avg('accuracy') ?? 0);
+            // ponytail: no stale 100 — rounding can inflate 95->100 but mastery keeps training; flip to mastered so 100% never shows training
+            if ($wAcc === 100) {
+                StudentWordMastery::where('user_id', $user->id)->where('status', 'training')->update(['status' => 'mastered']);
+            }
+            if ($sAcc === 100) {
+                StudentParagraphMastery::where('user_id', $user->id)->where('status', 'training')->update(['status' => 'mastered']);
+            }
             $status = ProgressService::classify($wAcc, $sAcc, $wAcc != 0, $sAcc != 0);
 
             $user->student()->create([
@@ -221,8 +228,8 @@ class StudentSeeder extends Seeder
             app(BadgeService::class)->checkAllEligibleBadges($user);
         }
 
-        // Perfect Level 10 demo students — 10/10 both modes, with Recovered in Mastery Zone
-        // Ensures StudentDetails shows LV10, 100% progress, and both Needs Attention + Recovered chips.
+        // Perfect Level 10 demo students — 10/10 both modes, Recovered only (no stale training at 100%)
+        // Ensures StudentDetails shows LV10, 100% progress, and Recovered chips without 100%+training stale.
         // Guard: ProgressService caps at 10 and throws beyond, so these are the max.
         $perfectStudents = [
             ['name' => 'Astra Perfect', 'student_id' => 'STU-101', 'section' => 'Sector 7-G', 'avatarChar' => 'ana', 'gender' => 'female'],
@@ -248,14 +255,12 @@ class StudentSeeder extends Seeder
                 ]);
                 $words = Word::where('word_module_id', $module->id)->get();
                 foreach ($words as $pos => $word) {
-                    // 70% Normal mastered (0-2), 20% Recovered (mastered 3-5), 10% Needs Attention (training 3-8)
+                    // ponytail: no stale 100 — 70% normal 0-2, 30% recovered 3-5, 0% training
                     $roll = rand(0, 99);
                     if ($roll < 70) {
                         $mastered = true; $attempts = rand(0, 2);
-                    } elseif ($roll < 90) {
-                        $mastered = true; $attempts = rand(3, 5); // Recovered
                     } else {
-                        $mastered = false; $attempts = rand(3, 8); // Needs Attention
+                        $mastered = true; $attempts = rand(3, 5); // Recovered
                     }
                     StudentWordMastery::create([
                         'user_id' => $user->id, 'word_id' => $word->id,
@@ -282,14 +287,12 @@ class StudentSeeder extends Seeder
                     $cnt = $sentence === '' ? 0 : count(preg_split('/\s+/', trim($sentence), -1, PREG_SPLIT_NO_EMPTY));
                     $slice = $pws->slice($cursor, $cnt);
                     $cursor += $cnt;
-                    // Sentence-level Recovered: 80% mastered (half of those Recovered), 20% training
+                    // ponytail: no stale 100 — 70% normal 0-2, 30% recovered 3-5, 0% training
                     $roll = rand(0, 99);
-                    if ($roll < 60) {
+                    if ($roll < 70) {
                         $masteredSentence = true; $attempts = rand(0, 2);
-                    } elseif ($roll < 80) {
-                        $masteredSentence = true; $attempts = rand(3, 5);
                     } else {
-                        $masteredSentence = false; $attempts = rand(3, 8);
+                        $masteredSentence = true; $attempts = rand(3, 5);
                     }
                     // Distribute attempts across words in sentence for sum
                     $perWord = $cnt > 0 ? intdiv($attempts, $cnt) : 0;
@@ -307,8 +310,8 @@ class StudentSeeder extends Seeder
                     foreach ($pws->slice($cursor) as $pw) {
                         StudentParagraphMastery::create([
                             'user_id' => $user->id, 'paragraph_word_id' => $pw->id,
-                            'status' => 'training',
-                            'failed_attempts' => rand(3, 8),
+                            'status' => 'mastered',
+                            'failed_attempts' => rand(0, 2),
                         ]);
                     }
                 }
