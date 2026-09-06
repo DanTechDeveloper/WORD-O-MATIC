@@ -33,24 +33,26 @@ class CurriculumSeeder extends Seeder
             10 => 'Mastery Marathon',
         ];
 
+        // ponytail: Chapter 1-10 connected story — Milo + map arc, 2 sentences/level, 20 sentences total
+        // Clean split on (?<=[.!?])\s+ — keep exactly "Sentence. Sentence." no extra punctuation
         $paragraphsByLevel = [
-            1 => 'I see a cat. It is big.',
-            2 => 'The sun is hot. A dog can run.',
-            3 => 'A frog is on a rock. It can jump.',
-            4 => 'I go to the store. I buy milk.',
-            5 => 'My kitten is soft. I play with it.',
-            6 => 'I replay the game. She is sad.',
-            7 => 'She walks slow. I am happy.',
-            8 => 'I see a rainbow. I eat popcorn.',
-            9 => 'I like to explore. It is fun.',
-            10 => 'I try hard. We are happy.',
+            1 => 'Milo finds a map. He feels brave.',
+            2 => 'The map shows a hill. Milo climbs slowly.',
+            3 => 'A frog sits on a rock. It jumps high.',
+            4 => 'Milo sees tall grass. A track leads ahead.',
+            5 => 'A rabbit naps by a window. Milo waves hello.',
+            6 => 'He can replay the path. He will not undo it.',
+            7 => 'He walks slowly and careful. Joy feels useful.',
+            8 => 'A rainbow lights the sky. Milo eats popcorn.',
+            9 => 'They explore a bright adventure. It feels fantastic.',
+            10 => 'With perseverance they find home. Imagination wins today.',
         ];
 
         $paraTitles = [
-            1 => 'First Sentences', 2 => 'Short Stories', 3 => 'Descriptive Scenes',
-            4 => 'Narrative Adventures', 5 => 'Opinion Pieces', 6 => 'Informative Texts',
-            7 => 'Persuasive Arguments', 8 => 'Creative Tales', 9 => 'Complex Narratives',
-            10 => 'Masterpiece',
+            1 => 'Chapter 1: The Map', 2 => 'Chapter 2: The Hill', 3 => 'Chapter 3: The Rock',
+            4 => 'Chapter 4: The Grass', 5 => 'Chapter 5: The Rabbit', 6 => 'Chapter 6: The Path',
+            7 => 'Chapter 7: The Climb', 8 => 'Chapter 8: The Rainbow', 9 => 'Chapter 9: The Adventure',
+            10 => 'Chapter 10: Home Again',
         ];
 
         foreach (range(1, 10) as $level) {
