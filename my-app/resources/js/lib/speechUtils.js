@@ -30,6 +30,43 @@ export function normalizeText(text) {
   return (text ?? "").toLowerCase().replace(/[^\w\s]/g, "").trim();
 }
 
+/**
+ * Universal Word Match Validator
+ * Angkop sa KAHIT ANONG SALITA (maikli man o mahaba)
+ */
+function isValidFuzzyMatch(spokenWord, targetWord) {
+  if (spokenWord === targetWord) return true;
+
+  const targetLen = targetWord.length;
+  const spokenLen = spokenWord.length;
+  const rawDist = standardLevenshtein(spokenWord, targetWord);
+
+  // 1. DYNAMIC ERROR ALLOWANCE (20% threshold, max out at 2 errors para hindi sumobra ang luwag sa mahahabang salita)
+  const maxAllowedError = Math.min(2, Math.max(1, Math.floor(targetLen * 0.20)));
+  
+  if (rawDist > maxAllowedError) return false;
+
+  // 2. UNIVERSAL RIGID ANCHOR CHECKS
+  if (targetLen >= 3) {
+    const firstLetterMatch = spokenWord[0] === targetWord[0];
+    const lastLetterMatch = spokenWord[spokenLen - 1] === targetWord[targetLen - 1];
+
+    // CRITICAL FIX: Kung mali ang unang letra, AUTOMATIC FAIL agad.
+    // Walang porsyento, walang math. Kung hindi binigkas ang panimulang tunog, mali ang basa.
+    if (!firstLetterMatch) {
+      return false; 
+    }
+
+    // Para sa dulo, magpataw ng mabigat na penalty (+1)
+    let adjustedDist = rawDist;
+    if (!lastLetterMatch) adjustedDist += 1;
+
+    if (adjustedDist > maxAllowedError) return false;
+  }
+
+  return true;
+}
+
 export function isWordMatch(spoken, target) {
   if (!spoken || !target) return false;
 
@@ -47,11 +84,11 @@ export function isWordMatch(spoken, target) {
     const singleTarget = wordsB[0];
     
     for (let i = 0; i < wordsA.length; i++) {
-      if (standardLevenshtein(wordsA[i], singleTarget) <= 1) return true;
+      if (isValidFuzzyMatch(wordsA[i], singleTarget)) return true;
       
       if (i < wordsA.length - 1) {
         const combined = wordsA[i] + wordsA[i + 1];
-        if (standardLevenshtein(combined, singleTarget) <= 1) return true;
+        if (isValidFuzzyMatch(combined, singleTarget)) return true;
       }
     }
     return false;
@@ -61,15 +98,13 @@ export function isWordMatch(spoken, target) {
   let j = 0;
   for (let i = 0; i < wordsA.length && j < wordsB.length; i++) {
     const isExact = wordsA[i] === wordsB[j];
-    const isFuzzy = !isExact && standardLevenshtein(wordsA[i], wordsB[j]) <= 1;
+    const isFuzzy = !isExact && isValidFuzzyMatch(wordsA[i], wordsB[j]);
 
     if (isExact || isFuzzy) {
-      // Lookahead: If current is a weak match but the immediate next word is 
-      // an exact match, drop the current token so the exact match catches it next loop.
       if (isFuzzy && i + 1 < wordsA.length && wordsA[i + 1] === wordsB[j]) {
         continue; 
       }
-      j++; // Step forward in target phrase
+      j++;
     }
   }
 

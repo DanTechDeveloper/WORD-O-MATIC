@@ -194,10 +194,6 @@ export function processSentenceModeResult(
         }
         return;
     }
-
-    // ponytail: no settle timer — rely on Deepgram isFinal/speechFinal for a wrong
-    // verdict and the 5s armSentenceTimeout for total silence. Removes the 900ms
-    // false-kill of slow-but-correct readers (Story Quest only; Word Blast untouched).
 }
 
 export function processWordModeResult(
@@ -222,6 +218,20 @@ export function processWordModeResult(
         armWordTimeout(target, stateRefs, timerRefs, timeoutRefs, propsRef);
     }
 
+    // ponytail: A+B stale-tail guard — a late final for the PREVIOUS word
+    // ("cat" tail arriving at t+80ms after switch to "dog") must not
+    // instantly mispronounce the NEW word, nor falsely match it.
+    const sinceSwitch = timeoutRefs.current.targetChangedAt
+        ? Date.now() - timeoutRefs.current.targetChangedAt
+        : Infinity;
+    if (
+        timeoutRefs.current.prevTarget &&
+        sinceSwitch < 500 &&
+        isWordMatch(transcript, timeoutRefs.current.prevTarget)
+    ) {
+        return;
+    }
+
     if (
         !stateRefs.current.mispronouncedInWord &&
         isWordMatch(transcript, target)
@@ -232,14 +242,31 @@ export function processWordModeResult(
         return;
     }
 
+    // ponytail: BF29b — Deepgram isFinal/speechFinal on a non-matching transcript
+    // is the authoritative wrong-word verdict. Fire immediately instead of waiting
+    // 1500ms for the interim settle (the user's "the moment DO leaves the mouth"
+    // case). B guard: within 350ms of a target switch, defer to the settle so a
+    // fast correct ("dog" at 200ms) can cancel the stale wrong settle.
+    const isAuthoritative = !!result.isFinal || !!result.speechFinal;
+    if (
+        isAuthoritative &&
+        !stateRefs.current.mispronouncedInWord &&
+        !isWordMatch(transcript, target) &&
+        sinceSwitch >= 350
+    ) {
+        stateRefs.current.mispronouncedInWord = true;
+        propsRef.current.onMispronounced?.(transcript);
+        clearAllTimers(timerRefs.current);
+        return;
+    }
+
+    // ponytail: handle non-authoritative interim updates. Settle timer tolerates 
+    // stutter or pauses, ensuring we don't drop out too fast on incomplete phrases.
     if (!stateRefs.current.mispronouncedInWord) {
-        // Ponytail: captured at arm time, rechecked at fire.
         const settleTarget = target;
         const settleTranscript = transcript;
         clearTimeout(timerRefs.current.wordSettle);
-        // ponytail: 1500ms (was 850ms) tolerates mid-word pauses for slow readers
-        // e.g. "um... brella" — the settle fires on the stale "um" interim before
-        // "brella" arrives. armWordTimeout still guards total silence at 5s.
+        
         timerRefs.current.wordSettle = setTimeout(() => {
             const s = stateRefs.current;
             if (
