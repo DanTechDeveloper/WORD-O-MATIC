@@ -362,11 +362,12 @@ export default function StudentDetail({ data }) {
                                         {sqAcc}
                                     </span>
                                 </div>
-                                <div className="flex justify-between items-center">
-                                    <span className="text-slate-400 font-bold text-lg">
+                                <div className="flex justify-between items-center pt-4 mt-4 border-t-2 border-slate-800">
+                                    <span className="text-amber-400 font-black uppercase text-sm tracking-widest flex items-center gap-2">
+                                        <span className="material-symbols-outlined text-lg">star</span>
                                         Final Average
                                     </span>
-                                    <span className="text-amber-400 font-black uppercase italic tracking-tighter text-2xl">
+                                    <span className="text-amber-400 font-black uppercase italic tracking-tighter text-3xl bg-amber-400/10 border border-amber-400/20 rounded-xl px-3 py-1">
                                         {data.student?.finalAverage != null ? `${data.student.finalAverage}%` : 'N/A'}
                                     </span>
                                 </div>
