@@ -44,7 +44,7 @@ The teacher deadline banner is a single source of truth in `DashboardLayout.jsx`
 - **Curriculum Progress**: per-mode completion % — Word Blast `wordBlastProg` via `ReportService::curriculumPercent()` (words), Story Quest `storyQuestProg` via `ReportService::sentenceCurriculumPercent()` (sentences, `mastered_sentences/total_sentences`, `calcSentenceProgress` parity) rendered as progress bars + level line.
 - **Latest Achievement**: latest badge card (or empty state).
 - **Training Zone × 2**: Word Blast word-based, Story Quest sentence-based, both grouped by recorded tries against `ReportService::NEEDS_ATTENTION_ATTEMPTS = 3`:
-  - **Word Blast** — every still-training word; **Story Quest** — every still-training sentence (`sentence` = 3-5w short, mastery = `every word mastered ? mastered:training`, `failed_attempts=sum(word)`). Chips: `N recorded attempt(s)` (Story Quest `N=sum`).
+  - **Word Blast** — every still-training word; **Story Quest** — every still-training sentence (`sentence` = 3-5w short, mastery = `every word mastered ? mastered:training`, `failed_attempts=sum(word)`). Chips: `N recorded attempt(s)` (Story Quest `N=sum`, display `attemptsShown` `mastered ? failed+1 : failed` so `0` failures shows `1` when encountered — `StudentDetails.jsx` `SentenceChip`).
   - **Still Practicing** — below threshold; **Needs More Practice** — at/above threshold, amber `N recorded attempts · Not yet mastered`.
   - Disclaimer: counts are recorded history, not recommended repetitions.
   - Payload: `wordAttempts` via `trainingAttemptsFrom()` (Word Blast), `paragraphWordAttempts` via `trainingSentenceAttemptsFrom()` (Story Quest sentences). Recovered stay teacher-only.

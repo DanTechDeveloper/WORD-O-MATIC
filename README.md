@@ -280,8 +280,8 @@ Foreign keys use **cascading deletes**. Deleting a user automatically removes st
 Three-tab Excel export available after deadline:
 
 - **Class Summary** (tab `Class Summary`): Per-student roster with Word Blast %, Story Quest %, **Final Average %**, and each student's own status category (column E), plus a Class Health Summary block (status + count) below the roster that feeds the pie; accuracy bar chart compares per-student Word Blast / Story Quest. Both charts are embedded on this tab in columns N–V (scroll past column M).
-- **Student Progress Summary**: One row per student — identity + final status + combined Word Blast / Story Quest accuracy-and-level labels (e.g. `78% (Level 3 - Phonics Fundamentals)`) + **Final Average** (e.g. `87.5%`)
-- **Mastered & Training Words**: One row per student — mastered + training words per mode, grouped per level (e.g. `Level 1 - cat, dog`)
+- **Student Progress Summary** (tab `Student Progress Summary`): One row per student — identity + final status + combined Word Blast / Story Quest accuracy-and-level labels (e.g. `78% (Level 3 - Phonics Fundamentals)`) + **Final Average** (e.g. `87.5%`) + Top Struggle
+- **Words Needing Practice** (tab `Words Needing Practice`): Flat drill-down — one row per student-item still in training, sorted attempts-desc: Student Name, Student ID, Section, Mode, Level, Word/Sentence (3-5w Story Quest `40` width), Attempts; rows at/over `NEEDS_ATTENTION_ATTEMPTS=3` red-filled (`ReportService::sentenceStruggleRowsFrom`/`struggleRowsFrom`)
 
 </details>
 

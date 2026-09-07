@@ -1,6 +1,6 @@
 # Database
 
-> Version 1.7
+> Version 1.8
 
 All migrations in `database/migrations/`. No raw SQL. All foreign keys on `user_id` use `cascadeOnDelete`.
 
@@ -21,7 +21,7 @@ All migrations in `database/migrations/`. No raw SQL. All foreign keys on `user_
 | `student_word_progress` | `user_id, word_module_id, status, words_smashed, accuracy` | Overwritten on best score. Cascade. |
 | `student_paragraph_progress` | `user_id, paragraph_module_id, status, words_smashed, accuracy` | Overwritten on best score. Cascade. |
 | `student_word_mastery` | `user_id, word_id, status` | Per-word mastery toggle. Word Blast stays word-based (10 unique words/level, no dedup). Cascade. |
-| `student_paragraph_mastery` | `user_id, paragraph_word_id, status` | Per-word storage, sentence-based reporting — `ParagraphModule::buildLevels` derives `sentence_stats{ sentence, mastery=sum(all words mastered ? mastered:training), failed_attempts=sum(word)}` via `sentencesFromContent` (no `paragraph_sentences` table). Cascade. |
+| `student_paragraph_mastery` | `user_id, paragraph_word_id, status` | Per-word storage, sentence-based reporting — `ParagraphModule::buildLevels` derives `sentence_stats{ sentence, mastery=sum(all words mastered ? mastered:training), failed_attempts=sum(word)}` via `sentencesFromContent` (no `paragraph_sentences` table). Display via `utils/masteryLabels.js` `attemptsShown` (`mastered ? failed+1 : failed`) so `0` failures shows `1` when encountered. Cascade. |
 | `student_badges` | `user_id, badge_id, earned_at, progress, status, unlocked_session_id` | Pivot with progress. Cascade. |
 
 ### Modules
