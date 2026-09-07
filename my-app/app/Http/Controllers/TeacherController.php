@@ -320,49 +320,6 @@ class TeacherController extends Controller
         return redirect()->back();
     }
 
-    public function storeBulk(Request $request)
-    {
-        // Normalize every row before validate so the unique rule sees trimmed
-        // IDs (same trap as store(): "2023-000001 " would pass unique then collide).
-        $rows = collect($request->input('students', []))
-            ->map(fn ($row) => $this->normalizeStudentRow($row))
-            ->values()
-            ->all();
-
-        $request->merge(['students' => $rows]);
-
-        $validated = $request->validate([
-            'students' => 'required|array|min:1|max:50',
-            'students.*.fullName' => 'required|string|max:255',
-            'students.*.studentID' => ['required', 'string', 'max:50', Rule::unique('users', 'student_id')],
-            'students.*.section' => 'required|string|max:255',
-            'students.*.pin' => 'required|digits:4',
-            'students.*.gender' => 'nullable|in:male,female',
-            'students.*.parent_email' => 'nullable|email|max:255',
-        ]);
-
-        // Rule::unique can't see sibling rows in the same request, so catch
-        // intra-batch duplicates before any row is persisted (all-or-nothing).
-        $seen = [];
-        foreach ($validated['students'] as $i => $row) {
-            $id = strtolower($row['studentID']);
-            if (isset($seen[$id])) {
-                throw ValidationException::withMessages([
-                    "students.$i.studentID" => "\"{$row['studentID']}\" appears twice in this list.",
-                ]);
-            }
-            $seen[$id] = true;
-        }
-
-        DB::transaction(function () use ($validated) {
-            foreach ($validated['students'] as $row) {
-                $this->persistStudent($row);
-            }
-        });
-
-        return redirect()->back();
-    }
-
     private function normalizeStudentRow(mixed $row): array
     {
         $parentEmail = trim((string) ($row['parent_email'] ?? ''));

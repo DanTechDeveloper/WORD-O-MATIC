@@ -56,8 +56,8 @@ Axios JSON endpoints (mastery toggles) bypass Inertia and return `noContent()`.
 | PIN with hash only | `pin` is bcrypt-only and **reset-only** — teachers set a new PIN but can never read it back (`pin_plain` removed). Uniqueness via `pinIsTaken()` on `store()`/`updateStudent()`, scoped to same-name students (login resolves by name + PIN) so the bcrypt scan stays O(same-name count) |
 | Rate-limited logins | `throttle:30,1` on student login, `throttle:5,1` on teacher login (brute-force mitigation) |
 | Avatar follows gender, until customized | `updateStudent()` re-syncs the gender-default avatar only while it is still a placeholder (`/images/boy.svg` / `/images/girl.svg`); custom heroes are kept (gender and avatar decoupled) |
-| Atomic bulk student creation | `storeBulk()` normalizes all rows → validates → one `DB::transaction`; a bad row rejects the whole batch (no partial rosters) |
-| Separate modals per creation flow | `AddStudentModal` vs `BulkAddStudentModal` — distinct two-stage flows; each `useForm` gets its own error keys |
+| Single student creation | `store()` validates → `persistStudent()` creates `users` + `students` row; `existingStudentIds` feeds live client check |
+| Single modal flow | `AddStudentModal` only — single `useForm` error bag |
 | PHP-side dup normalization | Case/whitespace-insensitive duplicate checks run in PHP (student IDs, word module words) because MySQL's ci collation differs from SQLite (tests). Word Blast dedup (`aggregateWordStats`) removed — 10 unique words/level, direct `word_stats` iteration |
 | `has_progress` flag on word modules | `wordModules()` exposes whether any `StudentWordMastery` row exists → modal shows a progress-reset `confirm()` before editing |
 | Progress writes clamped at the service | `ProgressService::updateModuleProgress` clamps `processed ≥ 0`, `smashed ≤ processed`, `accuracy ∈ [0,100]` — the single choke point every caller routes through, because controller per-field rules can't cover cross-field lies (`smashed = total, processed = 0` point-farm) |
