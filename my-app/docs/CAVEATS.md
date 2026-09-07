@@ -24,7 +24,7 @@ fix" column names the event that should prompt the fix — not before (YAGNI).
 | H1 | Emails | `StudentReportMail` is sent via `Mail::to()->queue()` (StudentReportMail.php:33) — a queue worker must run in prod (DEPLOYMENT.md:34). Without a worker, emails pile up in the `jobs` table but the UI reports "sent" and `report_sent_at` is still set (ReportController.php:130). No failure detection. | Parents never receive reports while teacher believes they were sent | First production email run |
 | H2 | Gameplay trust | Completion is driven by the client-reported `words_processed` (`finishRound`, StudentController.php:325). The dumb vectors are closed: `words_processed > totalPossible` is rejected with a `ValidationException` (StudentController.php:344), and `ProgressService` clamps `words_smashed ≤ words_processed`, negatives, and accuracy to [0,100] (ProgressService.php:57-59). The core cheat **remains**: a client can claim `words_processed = total` and complete without playing — no clamp catches it (999 → clamped to total still completes). | Progress/levels/leaderboard can still be gamed by claiming full coverage | If cheating becomes a real concern → fix is server-authoritative per-word scoring, not validation |
 | H4 | Reports (product) | Retries erase the struggle signal: 25 retries → perfect → `onTrack` → no warning email. `game_sessions` holds every attempt but reports only use best scores. | Warning-only reports miss the students who needed the most attempts | Prof feedback says parents need attempt counts |
-| H6 | Security | PINs are bcrypt-only and **reset-only** (`pin_plain` removed 2026-08-10) — a PIN can never be read back, so a teacher who forgets a student's PIN must reset it. Uniqueness is enforced by `pinIsTaken()`, scoped to **same-name** students (login resolves by name + PIN, so cross-name collisions are harmless) — O(same-name count) `Hash::check`, not O(all). | Teacher can't state a student's current PIN. Bulk add (`storeBulk`) does NOT run the PIN-uniqueness check (only single add does) | Uniqueness must also hold for bulk adds |
+| H6 | Security | PINs are bcrypt-only and **reset-only** (`pin_plain` removed 2026-08-10) — a PIN can never be read back, so a teacher who forgets a student's PIN must reset it. Uniqueness is enforced by `pinIsTaken()`, scoped to **same-name** students (login resolves by name + PIN, so cross-name collisions are harmless) — O(same-name count) `Hash::check`, not O(all). | Teacher can't state a student's current PIN | — |
 
 ## Medium
 
@@ -40,8 +40,7 @@ fix" column names the event that should prompt the fix — not before (YAGNI).
 | M8 | Onboarding | `updateAvatar` validates `avatar_url` as free-form string (`StudentController.php:74`, only `required|string`) — arbitrary value stored in `avatar` and rendered as `<img src>` in `StudentDetails`. |
 | M9 | Onboarding | `CheckStudentOnboarding` gates the avatar step only — direct URL to any gameplay module bypasses tutorial ordering; tutorial branches assume `->first()` tutorial module. |
 | M10 | CI | vitest/Pint/typecheck are not wired into CI (PHP tests only) — JS regressions ship invisibly. |
-| M11 | Bulk students | Intra-batch duplicate reporting is first-collision-only — the pass throws on the first duplicate pair (TeacherController `storeBulk`), so a batch with several duplicated IDs surfaces one error per submit and the teacher re-submits to find the next. |
-| M12 | Bulk students | Atomicity is all-or-nothing — one invalid row (bad email, duplicate ID, malformed line) rejects the entire batch with per-row errors; a 40-row paste with one typo is rejected wholesale. Intended (no partial rosters), but strict. |
+| M11 | Student creation | Single-add only — one row per request; no batch semantics. |
 | M13 | Word modules | "Paste 10 words" silently drops anything past the 10th token — `handleFill` fills `parts[i] || ""` and never warns that extra words were discarded. |
 | M14 | Audio | BGM cannot start until the first interactive click on `/student` (browser autoplay policy) — landing on gameplay with no taps leaves the app silent until the first tap. Fails soft (silence, not error). |
 | M15 | Audio | Loud click is a double-play at volume 1.0 (HTML media volume clamps at 1.0). If more headroom is ever needed, switch to an AudioContext `GainNode` (`playClickSound`, sounds.js). |
@@ -54,7 +53,7 @@ fix" column names the event that should prompt the fix — not before (YAGNI).
 | L1 | Stats | `wordBlastAcc` = average across modules — early modules drag the average down; risk sort uses COALESCE avg. |
 | L3 | Performance | `TeacherController::dashboardStats()` re-queries aggregates per request, no caching — fine at MVP scale. |
 | L4 | Deploy | Queue env divergence: local `.env` uses `sync`, prod expects `database` — async ordering and failure visibility differ. |
-| L5 | Bulk students | 50-row batch cap is hard-coded in two places: client (`rows.length <= 50` in `BulkAddStudentModal.jsx`) and server (`students` `max:50` rule) — a magic number duplicated across the stack. |
+| L5 | Student creation | Single-add only — no batch cap. |
 
 ## Explicitly accepted for MVP
 

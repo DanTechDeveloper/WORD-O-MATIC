@@ -87,7 +87,7 @@ Session logging done via `GameSession::logSession()` static method on the model 
 
 ## Student Management (Teacher)
 
-Two creation paths, both routed through the same rules and the shared private
+Creation is single-add only via the shared private
 `TeacherController::persistStudent()` (writes the `users` row + `students`
 row: role `student`, bcrypt-only PIN, default avatar by gender, zeroed stats, and
 `read_level`/`speak_level` seeded to `0` — the tutorial level; completing the
@@ -106,17 +106,6 @@ tutorial module in each mode bumps them to `1` via `ProgressService`):
   student being edited). Changing gender re-syncs the gender-default avatar only
   while the current avatar is still a placeholder (`/images/boy.svg` /
   `/images/girl.svg`); custom avatars are kept.
-- **Bulk paste** — `POST /teacher/addStudents` → `storeBulk()`
-  (`addStudents.store`). Payload is `students[]` (max 50): paste grammar
-  `Name, ID, Section` per line; the modal fills auto-generated 4-digit PINs
-  and optional per-row gender/email in the preview. `storeBulk()` normalizes
-  every row → validates with wildcard rules → a manual case/whitespace-
-  insensitive intra-batch duplicate pass (only the first collision is reported
-  per request) → creates everything in ONE `DB::transaction` (all-or-nothing).
-  `Rule::unique('users','student_id')` backstops against existing students.
-- Frontend: `BulkAddStudentModal.jsx` is a separate component from
-  `AddStudentModal.jsx` — each `useForm` gets its own error keys, so they
-  never cross-contaminate.
 
 ## Word Module Editing (Teacher)
 
@@ -196,9 +185,9 @@ while content or title is empty and renders server validation errors in-modal
 - `assertSessionHasNoErrors()` takes NO key argument (asserts zero errors
   session-wide). For per-key absence use
   `assertArrayNotHasKey($key, session('errors')->getBag('default')->messages())`.
-- Student/word-module validation hardening lives in `AddStudentBulkTest.php`
-  (22 cases), `ModuleCrudTest.php` (dup/blank/length/deadline/has_progress),
-  and `TutorialSaveGuardScenarioTest.php` (level ≥ 1 tutorial-wipe guard).
+- Student/word-module validation hardening lives in `ModuleCrudTest.php`
+  (dup/blank/length/deadline/has_progress) and
+  `TutorialSaveGuardScenarioTest.php` (level ≥ 1 tutorial-wipe guard).
 
 ## Data Flow
 
