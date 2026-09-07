@@ -42,9 +42,10 @@ function WordChip({ word, stat, threshold, className }) {
 }
 
 function SentenceChip({ sentence, stat, threshold, className }) {
-    // Sentence attempts are sum(word.failed_attempts) — no +1; attention uses same threshold.
-    const attempts = Number(stat?.failed_attempts ?? 0);
-    const attention = stat ? attentionMeta({ mastery: stat.mastery, failed_attempts: attempts }, threshold) : null;
+    // ponytail: nasagupa na → 1st attempt default (mastered 0 failures = 1 shown), training stays raw
+    const raw = Number(stat?.failed_attempts ?? 0);
+    const attempts = stat ? attemptsShown({ mastery: stat.mastery, failed_attempts: raw }) : raw;
+    const attention = stat ? attentionMeta({ mastery: stat.mastery, failed_attempts: raw }, threshold) : null;
 
     return (
         <span

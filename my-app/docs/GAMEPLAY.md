@@ -1,6 +1,6 @@
 # Gameplay
 
-> Version 1.7
+> Version 1.8
 
 ## Word Blast (Read Mode)
 
@@ -24,7 +24,7 @@
 | Presentation | Sentence-based, fixed word order |
 | Scoring | SSOT `isWordMatch` (`speechUtils.js`): per-word Levenshtein ≤ 1, sentence-aware (ordered two-pointer + ASR split fallback). Both Word Blast and Story Quest use the same function. Strict L1 per word means ASR mishears of 2+ edits surface as Wrong — scoring is objective, not hidden as "close enough". Replaces the old `isFuzzyMatch`/`withinRatio`/`boundaryLeak` stack. |
 | Update rule | Only on new best score |
-| Mastery | Sentence-based reporting — per-word storage `student_paragraph_mastery` but `ParagraphModule::buildLevels` derives `sentence_stats{ sentence, mastery=sum(all words mastered?mastered:training), failed_attempts=sum(word)}` via `sentencesFromContent` `(?<=[.!?])\s+`; teacher `StudentDetails` shows `SentenceChip` (Mastery/Training zones), sentence progress `mastered_sentences/total_sentences` (`ReportService::sentenceCurriculumPercent`). Gameplay still word-step `SpeakModeMainContent` word highlight. |
+| Mastery | Sentence-based reporting — per-word storage `student_paragraph_mastery` but `ParagraphModule::buildLevels` derives `sentence_stats{ sentence, mastery=sum(all words mastered?mastered:training), failed_attempts=sum(word)}` via `sentencesFromContent` `(?<=[.!?])\s+`; teacher `StudentDetails` shows `SentenceChip` (Mastery/Training zones, `attemptsShown` `mastered ? failed+1 : failed` so `0` failures shows `1st attempt` when encountered) , sentence progress `mastered_sentences/total_sentences` (`ReportService::sentenceCurriculumPercent`). Gameplay still word-step `SpeakModeMainContent` word highlight but with buffered batch consume when whole sentence is spoken at once (90ms stagger + unified 600ms `PRONOUNCED`/`MISPRONOUNCED`+streak). |
 | Routes | `/student/gameplaySpeakMode/{level}`, `/student/speakModeLevels` |
 
 ## Rules
@@ -89,7 +89,8 @@ All speech recognition timeouts are owned by `useSpeechRecognition.js` (processo
  - **`armSentenceTimeout`**: 1s self-rescheduling silence watchdog (fires `onMispronounced` at `>=5s` of continuous silence via `lastSpeechAt`). Re-based at ACTIVE so the countdown pre-warm silence isn't miscounted.
  - **`armWordTimeout` (5000ms)**: per-word no-speech fallback, re-armed on every transcript result and on `targetWord` change.
  - **`wordSettle` (~900ms)**: fires mispronounce once speech settles on a non-matching transcript (independent of `is_final` — Deepgram finals for low-confidence/wrong words often arrive with empty transcripts and were previously dropped, leaving only the 5s fallback).
- - **`graceEnd` (500ms, both modes)**: grace window after a target switch / before a full-length mismatch is judged mispronounced.
+ - **`graceEnd` (500ms sentence / 50ms word)**: grace window after a target switch / before a full-length mismatch is judged mispronounced (word 50ms absorbs re-render tick, sentence 500ms).
+ - **Buffered sentence batch (Story Quest, Option B)**: when the whole sentence is already in `transcript+interim` (`useDeepgramRecognition.js` `snapshotRef` + `useGameplayEngine.js` `tryConsumeBufferedWords`), the engine auto-advances remaining words with a **90ms stagger** and a **unified 600ms dismiss** for `PRONOUNCED`/`MISPRONOUNCED` + streak + `+1` points, so feedback stays sabay even on fluent reads (`GameplaySpeakMode.jsx` `snapshotRef`). Falls back to the 500ms per-word `moveToNextWord` when no buffer.
 
 This prevents race conditions where:
 1. User speaks but doesn't complete the word/sentence within the timeout
