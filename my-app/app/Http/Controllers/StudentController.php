@@ -21,6 +21,7 @@ use App\Services\ReportService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Inertia\Inertia;
 
@@ -559,6 +560,14 @@ class StudentController extends Controller
             default => 'api.deepgram.com',
         };
 
+        // ponytail: grant token is server-wide (same key/region), not user-specific.
+        // Cache it so we don't proxy a Deepgram API call per student session.
+        // TTL buffer: Deepgram grants 3600s; cache 3500s to avoid serving a stale token.
+        $cacheKey = "deepgram_token:{$region}";
+        if ($cached = Cache::get($cacheKey)) {
+            return response()->json($cached)->withHeaders(['Cache-Control' => 'no-store']);
+        }
+
         try {
             $resp = Http::withHeaders([
                 'Authorization' => 'Token ' . $key,
@@ -586,10 +595,14 @@ class StudentController extends Controller
             ], 502);
         }
 
-        return response()->json([
+        $json = [
             'token' => $resp->json('access_token'),
             'expires_in' => $resp->json('expires_in'),
             'baseUrl' => "https://{$host}",
-        ])->withHeaders(['Cache-Control' => 'no-store']);
+        ];
+
+        Cache::put($cacheKey, $json, 3500);
+
+        return response()->json($json)->withHeaders(['Cache-Control' => 'no-store']);
     }
 }
