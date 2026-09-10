@@ -45,8 +45,8 @@ function isValidFuzzyMatch(spokenWord, targetWord) {
   
   if (rawDist > maxAllowedError) return false;
 
-  // 2. UNIVERSAL RIGID ANCHOR CHECKS
-  if (targetLen >= 3) {
+  // 2. UNIVERSAL RIGID ANCHOR CHECKS — applied to ALL word lengths
+  if (targetLen >= 1) {
     const firstLetterMatch = spokenWord[0] === targetWord[0];
     const lastLetterMatch = spokenWord[spokenLen - 1] === targetWord[targetLen - 1];
 
