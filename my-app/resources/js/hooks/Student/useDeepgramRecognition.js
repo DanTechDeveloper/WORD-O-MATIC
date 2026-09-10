@@ -14,6 +14,12 @@ const MODEL = "nova-3";
 const LANGUAGE = "en-US";
 const DEBUG_ASR = false;
 
+// ponytail: module-level token cache — avoids re-fetching the Deepgram grant
+// token when the hook reconnects (e.g. Word Blast → Story Quest switch).
+let cachedToken = null;
+let cachedBaseUrl = null;
+let tokenExpiry = 0;
+
 export function useDeepgramRecognition({
     isActive,
     preload = false,
@@ -178,27 +184,37 @@ export function useDeepgramRecognition({
             return;
 
         let token, baseUrl;
-        try {
-            if (DEBUG_ASR) window.__dgTokenStart = performance.now();
-            const resp = await fetch("/student/deepgram-token", {
-                headers: { Accept: "application/json" },
-            });
-            if (!resp.ok) {
+
+        if (cachedToken && Date.now() < tokenExpiry) {
+            token = cachedToken;
+            baseUrl = cachedBaseUrl;
+        } else {
+            try {
+                if (DEBUG_ASR) window.__dgTokenStart = performance.now();
+                const resp = await fetch("/student/deepgram-token", {
+                    headers: { Accept: "application/json" },
+                });
+                if (!resp.ok) {
+                    propsRef.current.onRecognitionError?.("token_failed");
+                    return;
+                }
+                const json = await resp.json();
+                token = json.token;
+                baseUrl = json.baseUrl;
+                // Cache with 60s safety buffer (Deepgram TTL is 3600s)
+                cachedToken = json.token;
+                cachedBaseUrl = json.baseUrl;
+                tokenExpiry = Date.now() + ((json.expires_in ?? 3600) - 60) * 1000;
+                if (DEBUG_ASR)
+                    console.debug(
+                        "[ASR] token RTT",
+                        performance.now() - window.__dgTokenStart,
+                        "ms",
+                    );
+            } catch {
                 propsRef.current.onRecognitionError?.("token_failed");
                 return;
             }
-            const json = await resp.json();
-            token = json.token;
-            baseUrl = json.baseUrl;
-            if (DEBUG_ASR)
-                console.debug(
-                    "[ASR] token RTT",
-                    performance.now() - window.__dgTokenStart,
-                    "ms",
-                );
-        } catch {
-            propsRef.current.onRecognitionError?.("token_failed");
-            return;
         }
         if (!stateRefs.current.isMounted) return;
 
