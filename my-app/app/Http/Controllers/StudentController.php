@@ -256,6 +256,56 @@ class StudentController extends Controller
         return $this->updateMastery($request, 'paragraph');
     }
 
+    public function updateParagraphMasteryBatch(Request $request)
+    {
+        $request->validate([
+            'paragraph_word_ids' => ['required', 'array', 'min:1'],
+            'paragraph_word_ids.*' => ['required', 'exists:paragraph_words,id'],
+            'status' => 'required|in:mastered,training',
+        ]);
+
+        if ($this->reportService->cutoff()) {
+            return response()->noContent();
+        }
+
+        // Sticky: once mastered, skip. Otherwise apply the same per-word logic.
+        foreach ($request->paragraph_word_ids as $paragraphWordId) {
+            $existing = StudentParagraphMastery::where('user_id', auth()->id())
+                ->where('paragraph_word_id', $paragraphWordId)
+                ->first();
+            if ($existing && $existing->status === 'mastered') {
+                continue;
+            }
+
+            if ($request->status === 'training') {
+                $affected = StudentParagraphMastery::where('user_id', auth()->id())
+                    ->where('paragraph_word_id', $paragraphWordId)
+                    ->where('status', '!=', 'mastered')
+                    ->increment('failed_attempts');
+
+                if ($affected === 0) {
+                    if (! StudentParagraphMastery::where('user_id', auth()->id())
+                        ->where('paragraph_word_id', $paragraphWordId)
+                        ->exists()) {
+                        StudentParagraphMastery::create([
+                            'user_id' => auth()->id(),
+                            'paragraph_word_id' => $paragraphWordId,
+                            'status' => 'training',
+                            'failed_attempts' => 1,
+                        ]);
+                    }
+                }
+            } else {
+                StudentParagraphMastery::updateOrCreate(
+                    ['user_id' => auth()->id(), 'paragraph_word_id' => $paragraphWordId],
+                    ['status' => 'mastered']
+                );
+            }
+        }
+
+        return response()->noContent();
+    }
+
     private function updateMastery(Request $request, string $type)
     {
         $idColumn = $type === 'word' ? 'word_id' : 'paragraph_word_id';

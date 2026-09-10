@@ -341,4 +341,78 @@ class MasteryAttemptTest extends TestCase
         $this->assertSame('training', $row->status);
         $this->assertSame(2, $row->failed_attempts);
     }
+
+    public function test_batch_mastery_masters_all_words_in_one_post(): void
+    {
+        $module = ParagraphModule::create([
+            'level' => 1, 'title' => 'Level 1',
+            'content' => 'cat dog', 'is_tutorial' => false,
+        ]);
+        $w1 = ParagraphWord::create(['paragraph_module_id' => $module->id, 'word' => 'cat', 'position' => 1]);
+        $w2 = ParagraphWord::create(['paragraph_module_id' => $module->id, 'word' => 'dog', 'position' => 2]);
+
+        $this->actingAs($this->student, 'web')
+            ->post('/student/updateParagraphMasteryBatch', [
+                'paragraph_word_ids' => [$w1->id, $w2->id],
+                'status' => 'mastered',
+            ])
+            ->assertStatus(204);
+
+        $this->assertSame('mastered', \App\Models\StudentParagraphMastery::where('user_id', $this->student->id)->where('paragraph_word_id', $w1->id)->value('status'));
+        $this->assertSame('mastered', \App\Models\StudentParagraphMastery::where('user_id', $this->student->id)->where('paragraph_word_id', $w2->id)->value('status'));
+    }
+
+    public function test_batch_mastery_respects_sticky_guard(): void
+    {
+        $module = ParagraphModule::create([
+            'level' => 1, 'title' => 'Level 1',
+            'content' => 'cat', 'is_tutorial' => false,
+        ]);
+        $word = ParagraphWord::create(['paragraph_module_id' => $module->id, 'word' => 'cat', 'position' => 1]);
+
+        \App\Models\StudentParagraphMastery::create([
+            'user_id' => $this->student->id, 'paragraph_word_id' => $word->id,
+            'status' => 'mastered', 'failed_attempts' => 3,
+        ]);
+
+        // Batch should not regress a mastered word to training.
+        $this->actingAs($this->student, 'web')
+            ->post('/student/updateParagraphMasteryBatch', [
+                'paragraph_word_ids' => [$word->id],
+                'status' => 'training',
+            ]);
+
+        $row = \App\Models\StudentParagraphMastery::where('user_id', $this->student->id)->where('paragraph_word_id', $word->id)->first();
+        $this->assertSame('mastered', $row->status);
+        $this->assertSame(3, $row->failed_attempts);
+    }
+
+    public function test_batch_mastery_rejects_unknown_word_id(): void
+    {
+        $this->actingAs($this->student, 'web')
+            ->postJson('/student/updateParagraphMasteryBatch', [
+                'paragraph_word_ids' => [99999], 'status' => 'mastered',
+            ])
+            ->assertStatus(422);
+    }
+
+    public function test_batch_mastery_post_deadline_writes_nothing(): void
+    {
+        \App\Models\Setting::setValue('report_deadline', now()->subMinute()->format('Y-m-d H:i:s'));
+        $module = ParagraphModule::create([
+            'level' => 1, 'title' => 'Level 1',
+            'content' => 'cat dog', 'is_tutorial' => false,
+        ]);
+        $w1 = ParagraphWord::create(['paragraph_module_id' => $module->id, 'word' => 'cat', 'position' => 1]);
+        $w2 = ParagraphWord::create(['paragraph_module_id' => $module->id, 'word' => 'dog', 'position' => 2]);
+
+        $this->actingAs($this->student, 'web')
+            ->post('/student/updateParagraphMasteryBatch', [
+                'paragraph_word_ids' => [$w1->id, $w2->id],
+                'status' => 'mastered',
+            ])
+            ->assertStatus(204);
+
+        $this->assertDatabaseMissing('student_paragraph_mastery', ['user_id' => $this->student->id]);
+    }
 }
