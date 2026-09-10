@@ -38,32 +38,23 @@ function isValidFuzzyMatch(spokenWord, targetWord) {
 
   const targetLen = targetWord.length;
   const spokenLen = spokenWord.length;
-  const rawDist = standardLevenshtein(spokenWord, targetWord);
 
-  // 1. DYNAMIC ERROR ALLOWANCE (20% threshold, max out at 2 errors para hindi sumobra ang luwag sa mahahabang salita)
+  // SHORT-CIRCUIT: Hihinto agad bago mag-Levenshtein matrix computation.
+  // Kung mali ang unang tunog/letra, automatic mali agad ang basa.
+  if (spokenWord[0] !== targetWord[0]) return false;
+  if (Math.abs(targetLen - spokenLen) > 2) return false;
+
+  const rawDist = standardLevenshtein(spokenWord, targetWord);
   const maxAllowedError = Math.min(2, Math.max(1, Math.floor(targetLen * 0.20)));
   
   if (rawDist > maxAllowedError) return false;
 
-  // 2. UNIVERSAL RIGID ANCHOR CHECKS — applied to ALL word lengths
-  if (targetLen >= 1) {
-    const firstLetterMatch = spokenWord[0] === targetWord[0];
-    const lastLetterMatch = spokenWord[spokenLen - 1] === targetWord[targetLen - 1];
-
-    // CRITICAL FIX: Kung mali ang unang letra, AUTOMATIC FAIL agad.
-    // Walang porsyento, walang math. Kung hindi binigkas ang panimulang tunog, mali ang basa.
-    if (!firstLetterMatch) {
-      return false; 
-    }
-
-    // Para sa dulo, magpataw ng mabigat na penalty (+1)
-    let adjustedDist = rawDist;
-    if (!lastLetterMatch) adjustedDist += 1;
-
-    if (adjustedDist > maxAllowedError) return false;
+  // LAST-LETTER PENALTY: Dagdag penalty (+1) kapag mali ang dulong letra.
+  let adjustedDist = rawDist;
+  if (spokenWord[spokenLen - 1] !== targetWord[targetLen - 1]) {
+    adjustedDist += 1;
   }
-
-  return true;
+  return adjustedDist <= maxAllowedError;
 }
 
 export function isWordMatch(spoken, target) {
@@ -78,7 +69,7 @@ export function isWordMatch(spoken, target) {
   const wordsA = a.split(/\s+/);
   const wordsB = b.split(/\s+/);
 
-  // Strategy 1: Single-Word Target processing with strict sliding check
+  // Strategy 1: Single-Word Target processing sa sliding window check
   if (wordsB.length === 1) {
     const singleTarget = wordsB[0];
     
@@ -93,18 +84,38 @@ export function isWordMatch(spoken, target) {
     return false;
   }
 
-  // Strategy 2: Multi-Word Target ordered two-pointer evaluation
+  // Strategy 2: Multi-Word Target gamit ang dynamic two-pointer evaluation
+  // Kaya nitong lagpasan ang stutters/fillers at ipunin ang pinaghiwalay na salita.
   let j = 0;
-  for (let i = 0; i < wordsA.length && j < wordsB.length; i++) {
+  let i = 0;
+  while (i < wordsA.length && j < wordsB.length) {
     const isExact = wordsA[i] === wordsB[j];
     const isFuzzy = !isExact && isValidFuzzyMatch(wordsA[i], wordsB[j]);
 
     if (isExact || isFuzzy) {
+      // STUTTER GUARD: Kung fuzzy match ang kasalukuyan pero exact match ang 
+      // susunod na salita, lalaktawan ang fuzzy para hindi masayang ang target slot.
       if (isFuzzy && i + 1 < wordsA.length && wordsA[i + 1] === wordsB[j]) {
-        continue; 
+        i++;
+        continue;
       }
       j++;
+      i++;
+      continue;
     }
+
+    // COMPOUND WORD STITCHING: Pinagsasama ang magkasunod na salita (Hal. "ca t" -> "cat")
+    if (i + 1 < wordsA.length) {
+      const combined = wordsA[i] + wordsA[i + 1];
+      if (combined === wordsB[j] || isValidFuzzyMatch(combined, wordsB[j])) {
+        j++;
+        i += 2;
+        continue;
+      }
+    }
+
+    // FILLER/HESITATION: Laktawan ang sinabing salita, panatilihin ang target pointer.
+    i++;
   }
 
   return j === wordsB.length;

@@ -105,6 +105,21 @@ describe("isWordMatch — SSOT (Word Blast + Story Quest, Levenshtein <= 1 per w
         });
     });
 
+    describe("multi-word target — compound word joining (STT splits)", () => {
+        test("returns true when STT splits a target word into two spoken words (cat dog vs ca t dog)", () => {
+            expect(isWordMatch("ca t dog", "cat dog")).toBe(true);
+        });
+        test("returns true when STT splits multiple target words (ca t do g vs cat dog)", () => {
+            expect(isWordMatch("ca t do g", "cat dog")).toBe(true);
+        });
+        test("returns true with filler before a compound word (um ca t dog)", () => {
+            expect(isWordMatch("um ca t dog", "cat dog")).toBe(true);
+        });
+        test("returns false when compound join doesn't match (ca x vs cat)", () => {
+            expect(isWordMatch("ca x dog", "cat dog")).toBe(false);
+        });
+    });
+
     describe("multi-word target — ordered two-pointer (Story Quest semantics)", () => {
         test("returns true when target words appear in spoken with filler (um i like to explore)", () => {
             expect(isWordMatch("um i like to explore", "i like to explore")).toBe(true);
