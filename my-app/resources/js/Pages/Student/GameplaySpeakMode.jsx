@@ -6,7 +6,7 @@ import Microphone from "@/Components/Student/Microphone";
 import AvatarSpeechBubble from "@/Components/Student/AvatarSpeechBubble";
 import DeniedModal from "@/Components/Student/DeniedModal";
 import TapToStartOverlay from "@/Components/Student/TapToStartOverlay";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useGameplayEngine } from "@/hooks/Student/useGameplayEngine";
 import { useDeepgramRecognition } from "@/hooks/Student/useDeepgramRecognition";
@@ -25,6 +25,32 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true }) {
     const isTutorial = !!module?.is_tutorial && !tutorialComplete;
     const isTutorialModule = !!module?.is_tutorial;
     const speechRecognitionWords = useMemo(() => module?.words?.map((w) => w.word) ?? [], [module?.words]);
+
+    // Sentence ranges derived from module content — drives batch (not per-word) saving.
+    const sentenceWordRanges = useMemo(() => {
+        const words = module?.words ?? [];
+        const content = module?.content;
+        if (!content || words.length === 0) {
+            return [{ start: 0, end: words.length }];
+        }
+        const sentences = content.split(/(?<=[.!?])\s+/).filter((s) => s.trim() !== "");
+        const ranges = [];
+        let pos = 0;
+        for (const sentence of sentences) {
+            const wordCount = sentence.trim().split(/\s+/).filter(Boolean).length;
+            ranges.push({ start: pos, end: pos + wordCount });
+            pos += wordCount;
+        }
+        if (pos !== words.length) {
+            return [{ start: 0, end: words.length }];
+        }
+        return ranges;
+    }, [module?.content, module?.words]);
+
+    const savedSentencesRef = useRef(new Set());
+    useEffect(() => {
+        savedSentencesRef.current.clear();
+    }, [module?.id]);
 
     const {
         totalWords,
@@ -56,12 +82,26 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true }) {
         moduleId: module?.id,
         saveEndpoint: "/student/saveParagraphProgress",
         onWordRecognized: (wordObj) => {
-            if (wordObj && !isTutorialModule) {
-                axios.post("/student/updateParagraphMastery", {
-                    paragraph_word_id: wordObj.id,
-                    status: "mastered",
-                }).catch(console.warn);
-            }
+            if (!wordObj || isTutorialModule) return;
+            const wordIndex = module?.words?.findIndex((w) => w.id === wordObj.id);
+            if (wordIndex === -1) return;
+            const sentenceIdx = sentenceWordRanges.findIndex(
+                (r) => wordIndex >= r.start && wordIndex < r.end,
+            );
+            if (sentenceIdx === -1) return;
+            if (savedSentencesRef.current.has(sentenceIdx)) return;
+            const range = sentenceWordRanges[sentenceIdx];
+            const sentenceWordIds = module.words.slice(range.start, range.end).map((w) => w.id);
+            savedSentencesRef.current.add(sentenceIdx);
+            axios.post("/student/updateParagraphMasteryBatch", {
+                paragraph_word_ids: sentenceWordIds,
+                status: "mastered",
+            }).then(() => {
+                // success — sentence stays marked as saved
+            }).catch((err) => {
+                savedSentencesRef.current.delete(sentenceIdx);
+                console.warn(err);
+            });
         },
         onMispronounce: (wordObj) => {
             if (wordObj && !isTutorialModule) {
