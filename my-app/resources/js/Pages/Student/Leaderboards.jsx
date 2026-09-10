@@ -13,6 +13,7 @@ export default function Leaderboards({ leaderboard, totalStudents }) {
     const currentUserId = auth.user?.id;
     const currentUserName = auth.user?.name ?? "You";
     const currentEntry = leaderboard.find((e) => e.user_id === currentUserId);
+    
 
     return (
         <DashboardLayout>
@@ -112,7 +113,7 @@ export default function Leaderboards({ leaderboard, totalStudents }) {
                                             >
                                                 {isCurrentUser
                                                     ? currentUserName
-                                                    : `Explorer ${rank}`}
+                                                    : `${entry.user.name}`}
                                             </p>
                                         </div>
                                     </div>

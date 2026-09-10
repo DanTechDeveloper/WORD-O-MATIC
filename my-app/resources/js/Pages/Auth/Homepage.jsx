@@ -1,5 +1,4 @@
 import { Head, useForm, Link } from "@inertiajs/react";
-import GameplayDemo from "@/Components/Student/GameplayDemo";
 
 const SHAPES = [
     { size: 28, color: "#d1bcff", left: "8%",  delay: 0,    dur: 18, rotate: 45  },
@@ -115,8 +114,8 @@ export default function Homepage() {
                     }}
                 />
 
-                {/* Content */}
-                <div className="relative z-10 w-full max-w-7xl mx-auto text-center">
+                {/* Content — centered login */}
+                <div className="relative z-10 w-full max-w-lg mx-auto text-center">
                     {/* Title */}
                     <h1
                         className="font-black uppercase italic tracking-tighter leading-[0.9]"
@@ -128,19 +127,12 @@ export default function Homepage() {
                     >
                         WORD-O-MATIC
                     </h1>
-                    <p className="text-on-surface-variant text-lg md:text-xl font-bold">
+                    <p className="text-on-surface-variant text-lg md:text-xl font-bold mb-8">
                         Learn Through Play
                     </p>
-            
-                    {/* Split layout: demo left, login right */}
-                    <div className="flex flex-col lg:flex-row items-center gap-10 lg:gap-20">
-                        {/* Left: Gameplay demo carousel */}
-                        <div className="flex-1 w-full max-w-2xl hidden lg:block">
-                            <GameplayDemo />
-                        </div>
 
-                        {/* Right: Login card */}
-                        <div className="w-full max-w-lg">
+                    {/* Login card — centered */}
+                    <div className="w-full">
                             <div className="relative bg-surface-container-high border-4 border-primary-container tactile-card rounded-2xl p-6 md:p-10">
                                 <header className="text-center mb-6">
                                     <h2 className="text-2xl md:text-3xl font-black uppercase italic tracking-tighter text-on-surface">
@@ -224,12 +216,6 @@ export default function Homepage() {
                                 </form>
                             </div>
                         </div>
-                    </div>
-
-                    {/* Mobile-only demo (below login) */}
-                    <div className="block lg:hidden mt-10">
-                        <GameplayDemo />
-                    </div>
                 </div>
             </section>
 

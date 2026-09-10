@@ -16,7 +16,10 @@ const SpeakModeMainContent = memo(function SpeakModeMainContent({
     const activeWordRef = useRef(null);
 
     useEffect(() => {
-        activeWordRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+        activeWordRef.current?.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+        });
     }, [currentIndex]);
 
     return (
@@ -72,7 +75,7 @@ const SpeakModeMainContent = memo(function SpeakModeMainContent({
                 <div className="flex-1 flex" />
             ) : gameState === "COUNTDOWN" ? (
                 <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="text-6xl sm:text-8xl md:text-[12rem] font-black text-quest italic animate-bounce drop-shadow-[0_0_50px_rgba(56,189,248,0.8)]">
+                    <span className="text-6xl sm:text-8xl md:text-[12rem] font-black text-quest italic animate-bounce drop-shadow-[0_0_50px_rgba(56,189,248,0.8)]">
                         {countdownValue}
                     </span>
                 </div>
@@ -82,62 +85,74 @@ const SpeakModeMainContent = memo(function SpeakModeMainContent({
                         <div className="relative w-full max-w-7xl my-auto">
                             <div className="sticky top-2 z-30 flex items-center justify-center gap-4 mb-3 min-h-10" />
 
-                            <div className={`font-headline-xl text-left leading-relaxed tracking-tight select-none text-4xl md:text-5xl lg:text-7xl flex flex-wrap gap-x-4 gap-y-8`}>
+                            <div
+                                className={`font-headline-xl text-left leading-relaxed tracking-tight select-none text-4xl md:text-5xl lg:text-7xl flex flex-wrap gap-x-4 gap-y-8`}
+                            >
                                 {words.map((word, index) => (
                                     <span
                                         key={index}
-                                        ref={index === currentIndex ? activeWordRef : undefined}
+                                        ref={
+                                            index === currentIndex
+                                                ? activeWordRef
+                                                : undefined
+                                        }
                                         className={`transition-all duration-300 whitespace-nowrap relative ${index === currentIndex && streakShake ? `animate-streak-shake-${streakShake} ` : ""}${
                                             index < currentIndex
                                                 ? "opacity-20 text-on-background"
                                                 : index === currentIndex
-                                                  ? (isMispronounced
-                                                        ? "text-rose-400 opacity-100 relative z-10 border-2 border-rose-500 rounded-xl px-3 py-2 bg-slate-900/80 drop-shadow-[0_0_12px_rgba(244,63,94,0.6)] animate-shake"
-                                                         : "text-quest opacity-100 relative z-10 border-2 border-quest/80 rounded-xl px-3 py-2 bg-slate-900/80 drop-shadow-[0_0_10px_rgba(56,189,248,0.5)]")
+                                                  ? isMispronounced
+                                                      ? "text-rose-400 opacity-100 relative z-10 border-2 border-rose-500 rounded-xl px-3 py-2 bg-slate-900/80 drop-shadow-[0_0_12px_rgba(244,63,94,0.6)] animate-shake"
+                                                      : "text-quest opacity-100 relative z-10 border-2 border-quest/80 rounded-xl px-3 py-2 bg-slate-900/80 drop-shadow-[0_0_10px_rgba(56,189,248,0.5)]"
                                                   : "opacity-60 text-on-background/50"
                                         }`}
                                     >
-                                        {index === currentIndex && feedbackType && (
-                                            <span
-                                                className={`absolute left-1/2 -translate-x-1/2 -top-8 sm:-top-10 z-30 flex items-center gap-2 font-black italic whitespace-nowrap text-xl sm:text-2xl md:text-3xl rounded-full px-3 py-1 border bg-slate-900/85 animate-feedback-pop ${
-                                                    feedbackType === "correct"
-                                                        ? "text-yellow-300 border-amber-400/60"
-                                                        : "text-rose-400 border-rose-500/60"
-                                                }`}
-                                                style={{
-                                                    filter:
-                                                        feedbackType === "correct"
-                                                            ? "drop-shadow(0 0 14px rgba(255,200,0,0.7))"
-                                                            : "drop-shadow(0 0 12px rgba(244,63,94,0.6))",
-                                                }}
-                                            >
-                                                {feedbackMessage}
-                                                {feedbackType === "correct" && (
-                                                    <span className="flex items-center gap-1.5 sm:gap-2">
-                                                        <span
-                                                            className="material-symbols-outlined text-2xl sm:text-3xl"
-                                                            style={{
-                                                                color:
-                                                                    streak >= 5
-                                                                        ? "#ff4444"
-                                                                        : streak >= 3
-                                                                          ? "#ff8800"
-                                                                          : "#ffcc00",
-                                                                filter: `drop-shadow(0 0 6px ${streak >= 5 ? "#ff444488" : streak >= 3 ? "#ff880088" : "#ffcc0088"})`,
-                                                            }}
-                                                        >
-                                                            local_fire_department
+                                        {index === currentIndex &&
+                                            feedbackType && (
+                                                <span
+                                                    className={`absolute left-1/2 -translate-x-1/2 -top-8 sm:-top-10 z-30 flex items-center gap-2 font-black italic whitespace-nowrap text-xl sm:text-2xl md:text-3xl rounded-full px-3 py-1 border bg-slate-900/85 animate-feedback-pop ${
+                                                        feedbackType ===
+                                                        "correct"
+                                                            ? "text-yellow-300 border-amber-400/60"
+                                                            : "text-rose-400 border-rose-500/60"
+                                                    }`}
+                                                    style={{
+                                                        filter:
+                                                            feedbackType ===
+                                                            "correct"
+                                                                ? "drop-shadow(0 0 14px rgba(255,200,0,0.7))"
+                                                                : "drop-shadow(0 0 12px rgba(244,63,94,0.6))",
+                                                    }}
+                                                >
+                                                    {feedbackMessage}
+                                                    {feedbackType ===
+                                                        "correct" && (
+                                                        <span className="flex items-center gap-1.5 sm:gap-2">
+                                                            <span
+                                                                className="material-symbols-outlined text-2xl sm:text-3xl"
+                                                                style={{
+                                                                    color:
+                                                                        streak >=
+                                                                        5
+                                                                            ? "#ff4444"
+                                                                            : streak >=
+                                                                                3
+                                                                              ? "#ff8800"
+                                                                              : "#ffcc00",
+                                                                    filter: `drop-shadow(0 0 6px ${streak >= 5 ? "#ff444488" : streak >= 3 ? "#ff880088" : "#ffcc0088"})`,
+                                                                }}
+                                                            >
+                                                                local_fire_department
+                                                            </span>
+                                                            <span className="text-xs sm:text-sm font-black uppercase tracking-widest text-amber-200/90">
+                                                                STREAK!
+                                                            </span>
+                                                            <span className="text-2xl sm:text-3xl md:text-4xl font-black text-white">
+                                                                {streak}
+                                                            </span>
                                                         </span>
-                                                        <span className="text-xs sm:text-sm font-black uppercase tracking-widest text-amber-200/90">
-                                                            STREAK!
-                                                        </span>
-                                                        <span className="text-2xl sm:text-3xl md:text-4xl font-black text-white">
-                                                            {streak}
-                                                        </span>
-                                                    </span>
-                                                )}
-                                            </span>
-                                        )}
+                                                    )}
+                                                </span>
+                                            )}
                                         {word}
                                     </span>
                                 ))}
