@@ -124,8 +124,9 @@ describe("Levenshtein ALONE audit — standardLevenshtein only (d<=1)", () => {
     });
 
     test("tutorial not scored but same d<=1", () => {
-        expect(isWordMatch("b", "a")).toBe(true); // d=1 true (single char)
-        expect(isWordMatch("soe", "see")).toBe(true); // medial d=1 true
+        expect(isWordMatch("b", "a")).toBe(false); // first letter mismatch even for single char
+        expect(isWordMatch("a", "a")).toBe(true);  // exact match still true
+        expect(isWordMatch("soe", "see")).toBe(true); // medial d=1 true, first letter matches
     });
 
     test("hardcoded verdict: Levenshtein alone sapat na, walang withinRatio/boundaryLeak — hindi pabor palitan salita", () => {

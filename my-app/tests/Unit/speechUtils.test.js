@@ -60,7 +60,34 @@ describe("isWordMatch — SSOT (Word Blast + Story Quest, Levenshtein <= 1 per w
         });
         test("returns false for category and cat", () => {
             expect(isWordMatch("category", "cat")).toBe(false);
+    });
+
+
+    describe("first-letter anchoring for short words (1-2 chars)", () => {
+        // ponytail: isValidFuzzyMatch now applies the first-letter anchor to ALL word lengths,
+        // not just 3+ char words. This prevents "b" matching "a" or "my" matching "by".
+        test("returns false for single-char first-letter mismatch (b vs a)", () => {
+            expect(isWordMatch("b", "a")).toBe(false);
+            expect(isWordMatch("c", "a")).toBe(false);
         });
+        test("returns true for single-char exact match", () => {
+            expect(isWordMatch("a", "a")).toBe(true);
+            expect(isWordMatch("I", "i")).toBe(true);
+        });
+        test("returns false for 2-char first-letter mismatch (my vs by, in vs on)", () => {
+            expect(isWordMatch("my", "by")).toBe(false);
+            expect(isWordMatch("in", "on")).toBe(false);
+        });
+        test("returns true for 2-char first-letter match with d≤1", () => {
+            expect(isWordMatch("it", "it")).toBe(true);
+            expect(isWordMatch("he", "he")).toBe(true);
+            expect(isWordMatch("by", "by")).toBe(true);
+        });
+        test("returns false for 2-char last-letter mismatch with adjusted distance overflow", () => {
+            // "mi" vs "my": d=1, first letter matches, but last-letter penalty pushes adjusted dist to 2 > maxAllowed
+            expect(isWordMatch("mi", "my")).toBe(false);
+        });
+    });
         test("returns false for member and remember (leading syllable drop)", () => {
             expect(isWordMatch("member", "remember")).toBe(false);
         });
