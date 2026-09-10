@@ -44,9 +44,10 @@ function isValidFuzzyMatch(spokenWord, targetWord) {
     const targetLen = targetWord.length;
     const spokenLen = spokenWord.length;
 
-    // SHORT-CIRCUIT: Hihinto agad bago mag-Levenshtein matrix computation.
-    // Kung mali ang unang tunog/letra, automatic mali agad ang basa.
-    if (spokenWord[0] !== targetWord[0]) return false;
+    // SHORT-CIRCUIT: Early exit bago mag-Levenshtein matrix computation.
+    // 1. FIRST-LETTER ANCHOR: Kung mali ang unang tunog/letra, automatic fail (K-5 Decoding constraint).
+    if (spokenWord.charAt(0) !== targetWord.charAt(0)) return false;
+    // 2. LENGTH FILTER: Kung lampas sa 2 letrang haba ang agwat, hindi na matatantya ng fuzzy.
     if (Math.abs(targetLen - spokenLen) > 2) return false;
 
     const rawDist = standardLevenshtein(spokenWord, targetWord);
@@ -59,7 +60,7 @@ function isValidFuzzyMatch(spokenWord, targetWord) {
 
     // LAST-LETTER PENALTY: Dagdag penalty (+1) kapag mali ang dulong letra.
     let adjustedDist = rawDist;
-    if (spokenWord[spokenLen - 1] !== targetWord[targetLen - 1]) {
+    if (spokenWord.charAt(spokenLen - 1) !== targetWord.charAt(targetLen - 1)) {
         adjustedDist += 1;
     }
     return adjustedDist <= maxAllowedError;
