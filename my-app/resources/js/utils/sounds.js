@@ -82,15 +82,19 @@ function duck() {
 }
 
 const FEEDBACK_FILES = {
-    "Good!": "good.wav",
-    "Great!": "great.wav",
-    "Great Job!": "great_job.wav",
-    "Excellent!": "excellent.wav",
-    "Almost!": "almost.wav",
-    "Try Again!": "try_again.wav",
-    "So Close!": "so_close.wav",
-    "Keep Going!": "keep_going.wav",
-    "Nice Try!": "nice_try.wav",
+    "Awesome!": "Awesome.wav",
+    "Great!": "Great.wav",
+    "Nailed It!": "Nailed It.wav",
+    "Excellent!": "Excellent.wav",
+    "Perfect" : "Perfect.wav",
+    
+    "Nope!": "Nope.wav", 
+    "Not Quite!": "Not_Quite.wav",
+    "Again!": "Again.wav", 
+    "Keep Trying!": "Keep Trying.wav",
+    "Try Again" : "Try Again.wav"
+
+
 }
 
 function playAudio(path, volume = 1.0, { duck: shouldDuck = true } = {}) {
@@ -130,7 +134,7 @@ export function playMispronounceFeedback() {
 export function playFeedbackSound(message) {
     const file = FEEDBACK_FILES[message]
     if (file) {
-        playAudio("/Sound Effects/" + file)
+        playAudio("/Sound Effects/" + file, 1.0, { duck: true })
     }
 }
 

@@ -104,9 +104,7 @@ class ProgressService
             // Tutorial modules advance the student out of level 0; a flagged
             // tutorial replay on a non-tutorial module must not (BF24).
             if ($progress->status === 'completed' && $module->level >= $student->{$levelColumn} && (! $isTutorial || $module->is_tutorial)) {
-                if ($module->level + 1 > 10 && $student->{$levelColumn} >= 10) {
-                    throw new \RuntimeException("Level progression beyond 10 blocked (module {$module->level} → 11)");
-                }
+              
                 $nextLevel = min(10, $module->level + 1);
                 // Mirror StudentController::dashboard(): tutorial plays never count
                 // as earned points. Without these exclusions, a post-onboarding
