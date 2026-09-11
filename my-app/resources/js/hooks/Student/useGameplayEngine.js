@@ -7,9 +7,9 @@ import { normalizeText as normalizeWord } from "@/lib/speechUtils";
 
 function getStreakFeedbackMessage(streak) {
     if (streak >= 6) return "Excellent!";
-    if (streak >= 4) return "Great Job!";
+    if (streak >= 4) return "Nailed It!";
     if (streak >= 2) return "Great!";
-    return "Good!";
+    return "Awesome!";
 }
 
 function getStreakShakeIntensity(streak) {
@@ -261,7 +261,7 @@ export function useGameplayEngine({
 
         currentStreakRef.current = 0;
         setCurrentStreak(0);
-        const mispMsgs = ["Almost!", "Try Again!", "So Close!", "Keep Going!", "Nice Try!"];
+        const mispMsgs = ["Keep Trying!", "Not Quite!", "Nope!", "Try Again", "Again!"];
         const mispMsg = mispMsgs[Math.floor(Math.random() * mispMsgs.length)];
         clearTimeout(feedbackTimerRef.current);
         setFeedbackMessage(mispMsg);
