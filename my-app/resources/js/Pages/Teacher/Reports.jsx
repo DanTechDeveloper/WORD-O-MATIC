@@ -540,6 +540,8 @@ export default function Reports({ grouped, flash, deadline, errors }) {
                 <div className="mb-8 flex gap-4">
                     <a
                         href={route("teacher.reports.export")}
+                        target="_blank"
+                        rel="noopener"
                         className="px-8 py-4 rounded-xl font-black uppercase italic text-sm transition-all flex items-center gap-2 bg-lime-400 border-4 border-slate-950 text-slate-950 hover:translate-y-1 hover:shadow-[4px_4px_0_0_#3f6212]"
                     >
                         <span className="material-symbols-outlined text-lg">
