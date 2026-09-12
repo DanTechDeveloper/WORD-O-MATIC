@@ -53,13 +53,15 @@ RUN setcap CAP_NET_BIND_SERVICE=+eip /usr/local/bin/frankenphp \
     && chown -R www-data:www-data /config/caddy /data/caddy
 
 # Guide minimal uses array/sync — we keep database-backed sessions via external DB
+# Aiven MySQL 8.4 on DigitalOcean blr requires SSL (REQUIRED) — ca.pem is copied via `COPY . .` above if present
 ENV PORT=80 \
     APP_ENV=production \
     APP_DEBUG=false \
     LOG_CHANNEL=stderr \
     CACHE_STORE=database \
     SESSION_DRIVER=database \
-    QUEUE_CONNECTION=sync
+    QUEUE_CONNECTION=sync \
+    MYSQL_ATTR_SSL_CA=/app/ca.pem
 
 USER www-data
 

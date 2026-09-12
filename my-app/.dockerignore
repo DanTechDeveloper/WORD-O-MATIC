@@ -2,6 +2,8 @@
 .env
 .env.*
 !.env.example
+# keep Aiven CA for SSL REQUIRED (mysql-683a80a...:12303)
+!ca.pem
 database/database.sqlite
 node_modules
 tests
