@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { usePage, Link } from "@inertiajs/react";
 import Sidebar from "../../Components/Teacher/Sidebar";
 import DeadlineBanner from "@/Components/DeadlineBanner";
+import Footer from "@/Components/Shared/Footer";
 
 export default function DashboardLayout({ children }) {
     const [isSidebarOpen, setSidebarOpen] = useState(false);
@@ -83,11 +84,11 @@ export default function DashboardLayout({ children }) {
                 />
             )}
 
-            <header className="fixed top-0 right-0 left-0 md:left-64 h-16 sm:h-20 flex items-center justify-between px-3 sm:px-4 md:px-8 z-40 bg-background border-b-4 border-outline/30 shadow-[0_4px_0_0_#1e1b4b]">
+            <header className="fixed top-0 right-0 left-0 md:left-64 h-16 sm:h-20 flex items-center justify-between px-3 sm:px-4 md:px-8 z-40 bg-background border-b-2 border-outline/20">
                 <div className="flex flex-1 min-w-0 sm:min-w-[180px] md:w-1/3 items-center gap-2 sm:gap-3 lg:gap-4">
                     <button
                         onClick={() => setSidebarOpen(true)}
-                        className="md:hidden p-2 text-on-surface-variant/60 hover:text-primary active:scale-95 transition-all"
+                            className="md:hidden p-2 text-on-surface-variant/60 hover:text-primary active:scale-95 transition-colors"
                     >
                         <span className="material-symbols-outlined">menu</span>
                     </button>
@@ -97,7 +98,7 @@ export default function DashboardLayout({ children }) {
                         </span>
                         <input
                             className="w-full bg-surface-container-lowest border-2 border-outline/40 rounded-lg py-2 sm:py-2.5 pl-8 sm:pl-10 pr-3 sm:pr-4 focus:ring-2 focus:ring-secondary-container focus:border-secondary-container text-xs sm:text-sm font-body-md text-on-surface transition-all"
-                            placeholder="Search the galaxy..."
+                            placeholder="Search students..."
                             type="text"
                         />
                     </div>
@@ -107,7 +108,7 @@ export default function DashboardLayout({ children }) {
                         <div ref={notifRef} className="relative">
                             <button
                                 onClick={() => setShowNotifs(!showNotifs)}
-                                className="relative hover:text-primary active:scale-95 transition-all"
+                                className="relative hover:text-primary active:scale-95 transition-colors"
                             >
                                 <span className="material-symbols-outlined">
                                     notifications
@@ -117,7 +118,7 @@ export default function DashboardLayout({ children }) {
                                 )}
                             </button>
                             {showNotifs && (
-                                <div className="absolute top-full left-1/2 -translate-x-1/2 sm:left-auto sm:translate-x-0 sm:right-0 mt-2 w-[92vw] sm:w-80 max-w-[90vw] max-h-[60vh] sm:max-h-[70vh] overflow-y-auto bg-surface-container-high border-2 border-outline/40 rounded-2xl shadow-[8px_8px_0_0_#1e1b4b] z-50">
+                                <div className="absolute top-full left-1/2 -translate-x-1/2 sm:left-auto sm:translate-x-0 sm:right-0 mt-2 w-[92vw] sm:w-80 max-w-[90vw] max-h-[60vh] sm:max-h-[70vh] overflow-y-auto bg-surface-container-high border-2 border-outline/30 rounded-xl shadow-[4px_4px_0_0_#1e1b4b] z-50">
                                     <div className="p-3 sm:p-4 border-b-2 border-outline/40">
                                         <p className="font-black text-sm text-on-surface uppercase tracking-widest">
                                             Alerts
@@ -168,13 +169,16 @@ export default function DashboardLayout({ children }) {
                     </div>
                 </div>
             </header>
-            <main className="md:ml-64 pt-28 pb-12 px-4 md:px-8 min-h-screen bg-background overflow-x-hidden min-w-0">
+            <main className="md:ml-64 pt-28 pb-20 px-4 md:px-8 min-h-screen bg-background overflow-x-hidden min-w-0">
                 <DeadlineBanner
                     isDeadlineClosed={showDeadlineBanner}
                     message={deadlineMessage}
                 />
                 {children}
             </main>
+            <div className="fixed bottom-0 left-0 right-0 md:left-64 z-30 bg-background">
+                <Footer />
+            </div>
         </>
     );
 }

@@ -1,3 +1,4 @@
+import { Head } from "@inertiajs/react";
 import DashboardLayout from "../../Layouts/Teacher/DashboardLayout";
 import { useState, useEffect } from "react";
 import {
@@ -42,31 +43,31 @@ export default function Dashboard({
             label: "Total Students",
             value: totalStudents,
             icon: "group",
-            color: "text-blue-400",
+            color: "text-primary",
         },
         {
             label: "Total AVG Word Blast Score",
             value: `${avgReadAccuracy}%`,
             icon: "auto_stories",
-            color: "text-purple-400",
+            color: "text-accent",
         },
         {
             label: "Total AVG Story Quest Score",
             value: `${avgSpeakAccuracy}%`,
             icon: "record_voice_over",
-            color: "text-cyan-400",
+            color: "text-quest",
         },
         {
             label: "Total Final Average",
             value: `${avgFinalAccuracy ?? 0}%`,
             icon: "star",
-            color: "text-amber-400",
+            color: "text-tertiary",
         },
         {
             label: "Total Class Points",
             value: totalClassPoints?.toLocaleString() ?? "0",
             icon: "military_tech",
-            color: "text-yellow-400",
+            color: "text-primary",
         },
     ];
 
@@ -103,7 +104,7 @@ export default function Dashboard({
         high: { dot: "bg-error shadow-[0_0_8px_#ffb4ab]", text: "text-error" },
         moderate: { dot: "bg-tertiary shadow-[0_0_8px_#ffb77f]", text: "text-tertiary" },
         low: { dot: "bg-green-400 shadow-[0_0_8px_#4ade80]", text: "text-green-400" },
-        na: { dot: "bg-slate-500 shadow-[0_0_8px_#64748b]", text: "text-slate-500" },
+        na: { dot: "bg-slate-500 shadow-[0_0_8px_#64748b]", text: "text-on-surface-variant" },
     };
 
     const chartData = STATUS_CATEGORIES.map((cat) => ({
@@ -131,7 +132,7 @@ export default function Dashboard({
     const STATUS_BADGE = {
         onTrack: "bg-green-900/50 text-green-400 border-green-500",
         support: "bg-amber-900/50 text-amber-400 border-amber-500",
-        notStarted: "bg-slate-800/50 text-slate-500 border-slate-700",
+        notStarted: "bg-surface-container-high/50 text-on-surface-variant border-outline/20",
         atRisk: "bg-rose-900/50 text-rose-400 border-rose-500",
         in_progress: "bg-sky-900/50 text-sky-400 border-sky-500",
     };
@@ -140,8 +141,8 @@ export default function Dashboard({
         const cfg = STATUS_CATEGORIES.find((c) => c.key === status);
         return (
             <span
-                className={`px-3 py-1 rounded-full border-2 text-[10px] font-black uppercase ${
-                    STATUS_BADGE[status] ?? "bg-slate-800/50 text-slate-500 border-slate-700"
+                className={`px-3 py-1 rounded-full border-2 text-xs font-black uppercase ${
+                    STATUS_BADGE[status] ?? "bg-surface-container-high/50 text-on-surface-variant border-outline/20"
                 }`}
             >
                 {cfg?.label ?? status}
@@ -151,43 +152,42 @@ export default function Dashboard({
 
     return (
         <DashboardLayout>
+            <Head title="Teacher Dashboard — Word-O-Matic">
+                <meta name="description" content="Teacher dashboard on Word-O-Matic — class health at a glance." />
+            </Head>
             <div className="mb-10">
                 <h1 className="text-4xl font-black text-white uppercase italic tracking-tighter mb-2">
                     Welcome back, {auth?.user?.name || "Teacher"}!
                 </h1>
-                <p className="text-slate-500 font-black uppercase text-xs tracking-widest">
+                <p className="text-on-surface-variant font-black uppercase text-xs tracking-widest">
                     System status: Operational • Sector 7 monitoring active
                 </p>
             </div>
 
-            {/* Stats Cards — horizontal */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-10">
                 {stats.map((stat, index) => (
                     <div
                         key={index}
-                        className="bg-slate-900 border-2 border-slate-800 p-6 rounded-2xl shadow-[4px_4px_0_0_#020617] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all cursor-default"
+                        className="bg-surface-container border-2 border-outline/20 p-5 rounded-xl"
                     >
-                        <div className="flex items-start justify-between mb-4">
-                            <span
-                                className={`material-symbols-outlined text-3xl ${stat.color}`}
-                            >
+                        <div className="flex items-start justify-between mb-3">
+                            <span className={`material-symbols-outlined text-2xl ${stat.color}`} aria-hidden="true">
                                 {stat.icon}
                             </span>
                         </div>
-                        <h3 className="text-slate-500 text-xs font-black uppercase tracking-widest mb-1">
+                        <h3 className="text-on-surface-variant text-xs font-black uppercase tracking-widest mb-1">
                             {stat.label}
                         </h3>
-                        <p className="text-3xl font-black text-white italic tracking-tighter">
+                        <p className="text-2xl font-black text-on-surface tracking-tight">
                             {stat.value}
                         </p>
                     </div>
                 ))}
             </div>
 
-            {/* Class Health Distribution — bar graph */}
-            <div className="bg-slate-900 border-4 border-slate-800 p-4 sm:p-6 md:p-8 rounded-[2.5rem] shadow-[8px_8px_0_0_#020617] mb-10">
-                <h3 className="text-white text-sm font-black uppercase tracking-widest mb-6 flex items-center gap-2">
-                    <span className="material-symbols-outlined text-cyan-400 text-sm">
+            <div className="bg-surface-container border-2 border-outline/20 p-4 sm:p-6 rounded-xl mb-8">
+                <h3 className="text-on-surface text-sm font-black uppercase tracking-widest mb-6 flex items-center gap-2">
+                    <span className="material-symbols-outlined text-quest text-sm" aria-hidden="true">
                         monitoring
                     </span>
                     Class Health Distribution
@@ -246,18 +246,12 @@ export default function Dashboard({
                         <button
                             key={cat.key}
                             onClick={() => selectCategory(cat.key)}
-                            className={`flex items-center gap-2 px-3 py-2 rounded-lg font-black uppercase italic text-xs transition-all ${
+                            className={`flex items-center gap-2 px-3 py-2 rounded-lg font-black uppercase italic text-xs transition-colors ${
                                 selectedCategory === cat.key
-                                    ? "bg-lime-400 text-slate-950 shadow-[2px_2px_0_0_#3f6212]"
-                                    : "bg-slate-950 border-2 border-slate-800 text-slate-400 hover:text-lime-300"
+                                    ? "bg-accent text-background"
+                                    : "bg-surface-container-lowest border-2 border-outline/20 text-on-surface-variant hover:text-accent"
                             }`}
                         >
-                            <span
-                                className="material-symbols-outlined text-sm"
-                                style={{ color: cat.color }}
-                            >
-                                {cat.icon}
-                            </span>
                             {cat.label} ({chartCounts?.[cat.countKey] ?? 0})
                         </button>
                     ))}
@@ -273,7 +267,7 @@ export default function Dashboard({
                         </h4>
                         <div className="relative min-w-[160px]">
                             <select
-                                className="w-full appearance-none bg-slate-950 border-2 border-slate-800 rounded-xl pl-4 pr-10 py-2 text-white font-bold focus:outline-none focus:border-lime-500 cursor-pointer transition-all text-sm"
+                                className="w-full appearance-none bg-surface-container-lowest border-2 border-outline/20 rounded-xl pl-4 pr-10 py-2 text-white font-bold focus:outline-none focus:border-accent cursor-pointer transition-all text-sm"
                                 value={selectedHealthSection}
                                 onChange={(e) => setSelectedHealthSection(e.target.value)}
                             >
@@ -282,14 +276,14 @@ export default function Dashboard({
                                     <option key={section} value={section}>{section}</option>
                                 ))}
                             </select>
-                            <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-lime-400">
+                            <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-accent">
                                 filter_list
                             </span>
                         </div>
                     </div>
-                    <div className="block lg:hidden divide-y-2 divide-slate-800/50 -mx-4 sm:mx-0">
+                    <div className="block lg:hidden divide-y-2 divide-outline/20 -mx-4 sm:mx-0">
                         {tableStudents.length === 0 ? (
-                            <div className="p-8 text-center text-slate-500 font-black uppercase text-sm">No students match the current filters</div>
+                            <div className="p-8 text-center text-on-surface-variant font-black uppercase text-sm">No students match the current filters</div>
                         ) : (
                             tableStudents.map((s) => {
                                 const wRisk = riskStyles[computeRisk(s.wordBlastAcc)];
@@ -311,23 +305,23 @@ export default function Dashboard({
                             })
                         )}
                     </div>
-                    <div className="hidden lg:block border-2 border-slate-800 rounded-xl overflow-hidden overflow-x-auto -mx-4 sm:mx-0">
+                    <div className="hidden lg:block border-2 border-outline/20 rounded-xl overflow-hidden overflow-x-auto -mx-4 sm:mx-0">
                         <table className="w-full text-left border-collapse min-w-[520px]">
                             <thead>
-                                <tr className="border-b-2 border-slate-800 bg-slate-950">
-                                    <th className="px-4 py-2 text-slate-500 font-black uppercase text-xs tracking-widest">Name</th>
-                                    <th className="px-4 py-2 text-slate-500 font-black uppercase text-xs tracking-widest text-right">Word Blast</th>
-                                    <th className="px-4 py-2 text-slate-500 font-black uppercase text-xs tracking-widest text-right">Story Quest</th>
+                                <tr className="border-b-2 border-outline/20 bg-surface-container-lowest">
+                                    <th className="px-4 py-2 text-on-surface-variant font-black uppercase text-xs tracking-widest">Name</th>
+                                    <th className="px-4 py-2 text-on-surface-variant font-black uppercase text-xs tracking-widest text-right">Word Blast</th>
+                                    <th className="px-4 py-2 text-on-surface-variant font-black uppercase text-xs tracking-widest text-right">Story Quest</th>
                                     <th className="px-4 py-2 text-amber-400 font-black uppercase text-xs tracking-widest text-right">Final Avg</th>
-                                    <th className="px-4 py-2 text-slate-500 font-black uppercase text-xs tracking-widest">Status</th>
+                                    <th className="px-4 py-2 text-on-surface-variant font-black uppercase text-xs tracking-widest">Status</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-800/50">
+                            <tbody className="divide-y divide-outline/20">
                                 {tableStudents.length === 0 ? (
                                     <tr>
                                         <td
                                             colSpan="5"
-                                            className="px-4 py-8 text-center text-slate-600 font-black uppercase tracking-widest text-sm"
+                                            className="px-4 py-8 text-center text-on-surface-variant/50 font-black uppercase tracking-widest text-sm"
                                         >
                                             No students match the current filters
                                         </td>
@@ -340,7 +334,7 @@ export default function Dashboard({
                                         return (
                                         <tr
                                             key={s.id}
-                                            className="hover:bg-slate-900/50 transition-colors"
+                                            className="hover:bg-surface-container/50 transition-colors"
                                         >
                                             <td className="px-4 py-3 text-white font-bold max-w-[14rem] truncate" title={s.name}>{s.name}</td>
                                             <td className="px-4 py-3">
@@ -372,20 +366,19 @@ export default function Dashboard({
                 </div>
             </div>
 
-            {/* Section Performance Comparison Table */}
-            <div className="bg-slate-900 border-4 border-slate-800 p-4 sm:p-6 md:p-10 rounded-[2.5rem] shadow-[8px_8px_0_0_#020617] mb-10">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
-                    <h2 className="text-2xl font-black text-white uppercase italic flex items-center gap-3">
-                        <span className="material-symbols-outlined text-cyan-400">
+            <div className="bg-surface-container border-2 border-outline/20 p-4 sm:p-6 rounded-xl mb-8">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-6">
+                    <h2 className="text-xl font-black text-on-surface uppercase tracking-tight flex items-center gap-3">
+                        <span className="material-symbols-outlined text-quest" aria-hidden="true">
                             analytics
                         </span>
                         Section Performance Overview
                     </h2>
                   
                 </div>
-                <div className="block lg:hidden divide-y-2 divide-slate-800/50 -mx-4 sm:mx-0">
+                <div className="block lg:hidden divide-y-2 divide-outline/20 -mx-4 sm:mx-0">
                     {sectionPerformance.length === 0 ? (
-                        <div className="p-8 text-center text-slate-500 font-black uppercase text-sm">No section data available</div>
+                        <div className="p-8 text-center text-on-surface-variant font-black uppercase text-sm">No section data available</div>
                     ) : (
                         sectionPerformance.map((item, idx) => {
                             const wRisk = riskStyles[computeRisk(item.avg_read)];
@@ -395,9 +388,9 @@ export default function Dashboard({
                                 <div key={idx} className="p-4 sm:p-5 flex flex-col gap-3">
                                     <div className="flex items-center justify-between gap-3">
                                         <span className="text-white font-black truncate" title={item.section}>{item.section}</span>
-                                        <span className={`px-3 py-1 rounded-full border-2 text-[10px] font-black uppercase shrink-0 ${item.status === "On Track" ? "bg-green-900/50 text-green-400 border-green-500" : item.status === "Needs Support" ? "bg-amber-900/50 text-amber-400 border-amber-500" : item.status === "Not Started" ? "bg-slate-800/50 text-slate-500 border-slate-700" : "bg-rose-900/50 text-rose-400 border-rose-500"}`}>{item.status}</span>
+                                        <span className={`px-3 py-1 rounded-full border-2 text-xs font-black uppercase shrink-0 ${item.status === "On Track" ? "bg-green-900/50 text-green-400 border-green-500" : item.status === "Needs Support" ? "bg-amber-900/50 text-amber-400 border-amber-500" : item.status === "Not Started" ? "bg-surface-container-high/50 text-on-surface-variant border-outline/20" : "bg-rose-900/50 text-rose-400 border-rose-500"}`}>{item.status}</span>
                                     </div>
-                                    <div className="text-xs text-slate-500 font-black uppercase">Total Students: <span className="text-white">{item.student_count}</span></div>
+                                    <div className="text-xs text-on-surface-variant font-black uppercase">Total Students: <span className="text-white">{item.student_count}</span></div>
                                     <div className="flex items-center gap-4 flex-wrap">
                                         <span className="flex items-center gap-2"><span className={`w-2.5 h-2.5 rounded-full ${wRisk.dot}`}></span><span className={`font-black italic text-xs ${wRisk.text}`}>{item.avg_read}% Word Blast</span></span>
                                         <span className="flex items-center gap-2"><span className={`w-2.5 h-2.5 rounded-full ${pRisk.dot}`}></span><span className={`font-black italic text-xs ${pRisk.text}`}>{item.avg_speak}% Story Quest</span></span>
@@ -411,29 +404,29 @@ export default function Dashboard({
                 <div className="hidden lg:block overflow-x-auto -mx-4 sm:mx-0">
                     <table className="w-full text-left border-collapse">
                         <thead>
-                            <tr className="border-b-4 border-slate-800">
-                                <th className="px-6 py-4 text-slate-500 font-black uppercase text-xs tracking-widest">
+                            <tr className="border-b-4 border-outline/20">
+                                <th className="px-6 py-4 text-on-surface-variant font-black uppercase text-xs tracking-widest">
                                     Section
                                 </th>
-                                <th className="px-6 py-4 text-slate-500 font-black uppercase text-xs tracking-widest text-center">
+                                <th className="px-6 py-4 text-on-surface-variant font-black uppercase text-xs tracking-widest text-center">
                                     Total Students
                                 </th>
-                                <th className="px-6 py-4 text-slate-500 font-black uppercase text-xs tracking-widest">
+                                <th className="px-6 py-4 text-on-surface-variant font-black uppercase text-xs tracking-widest">
                                     AVG. WORD BLAST
                                 </th>
-                                <th className="px-6 py-4 text-slate-500 font-black uppercase text-xs tracking-widest">
+                                <th className="px-6 py-4 text-on-surface-variant font-black uppercase text-xs tracking-widest">
                                     AVG. STORY QUEST
                                 </th>
                                 <th className="px-6 py-4 text-amber-400 font-black uppercase text-xs tracking-widest">
                                     FINAL AVG
                                 </th>
-                                <th className="px-6 py-4 text-slate-500 font-black uppercase text-xs tracking-widest">
+                                <th className="px-6 py-4 text-on-surface-variant font-black uppercase text-xs tracking-widest">
                                     FINAL STATUS
                                 </th>
                              
                             </tr>
                         </thead>
-                        <tbody className="divide-y-2 divide-slate-800/50">
+                        <tbody className="divide-y-2 divide-outline/20">
                             {sectionPerformance.map((item, idx) => {
                                         const wRisk = riskStyles[computeRisk(item.avg_read)];
                                         const pRisk = riskStyles[computeRisk(item.avg_speak)];
@@ -441,7 +434,7 @@ export default function Dashboard({
                                         return (
                                     <tr
                                         key={idx}
-                                        className="hover:bg-slate-900/50 transition-all"
+                                        className="hover:bg-surface-container/50 transition-all"
                                     >
                                         <td className="px-6 py-4 text-white font-bold">
                                             {item.section}
@@ -469,14 +462,14 @@ export default function Dashboard({
                                         </td>
                                         <td className="px-6 py-4">
                                             <span
-                                                className={`px-3 py-1 rounded-full border-2 text-[10px] font-black uppercase ${
+                                                className={`px-3 py-1 rounded-full border-2 text-xs font-black uppercase ${
                                                     item.status === "On Track"
                                                         ? "bg-green-900/50 text-green-400 border-green-500"
                                                         : item.status ===
                                                             "Needs Support"
                                                           ? "bg-amber-900/50 text-amber-400 border-amber-500"
                                                           : item.status === "Not Started"
-                                                            ? "bg-slate-800/50 text-slate-500 border-slate-700"
+                                                            ? "bg-surface-container-high/50 text-on-surface-variant border-outline/20"
                                                             : "bg-rose-900/50 text-rose-400 border-rose-500"
                                                 }`}
                                             >
@@ -490,7 +483,7 @@ export default function Dashboard({
                                 <tr>
                                     <td
                                         colSpan="7"
-                                        className="px-6 py-10 text-center text-slate-600 font-black uppercase tracking-widest"
+                                        className="px-6 py-10 text-center text-on-surface-variant/50 font-black uppercase tracking-widest"
                                     >
                                         No section data available
                                     </td>
@@ -502,7 +495,7 @@ export default function Dashboard({
             </div>
 
             {/* Top Performing Students */}
-            <div className="bg-slate-900 border-4 border-slate-800 p-4 sm:p-6 md:p-10 rounded-[2.5rem] shadow-[8px_8px_0_0_#020617] mb-10">
+            <div className="bg-surface-container border-4 border-outline/20 p-4 sm:p-6 md:p-10 rounded-xl  mb-10">
                 <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 mb-6 lg:mb-8">
                     <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 flex-wrap">
                         <h2 className="text-xl sm:text-2xl font-black text-white uppercase italic flex items-center gap-3">
@@ -511,15 +504,15 @@ export default function Dashboard({
                             </span>
                             Top Performing Students
                         </h2>
-                        <div className="flex items-center gap-1 bg-slate-950 border-2 border-slate-800 rounded-xl p-1 overflow-x-auto max-w-full">
+                        <div className="flex items-center gap-1 bg-surface-container-lowest border-2 border-outline/20 rounded-xl p-1 overflow-x-auto max-w-full">
                             {METRICS.map((metric) => (
                                 <button
                                     key={metric.key}
                                     onClick={() => setActiveMetric(metric.key)}
                                     className={`flex items-center gap-1.5 px-4 py-2 rounded-lg font-black uppercase italic text-xs transition-all ${
                                         activeMetric === metric.key
-                                            ? "bg-lime-400 text-slate-950 shadow-[2px_2px_0_0_#3f6212]"
-                                            : "text-slate-500 hover:text-lime-300"
+                                            ? "bg-accent text-slate-950 shadow-[2px_2px_0_0_#3f6212]"
+                                            : "text-on-surface-variant hover:text-accent"
                                     }`}
                                 >
                                     <span className="material-symbols-outlined text-sm">{metric.icon}</span>
@@ -535,15 +528,15 @@ export default function Dashboard({
                                 placeholder="Search name..."
                                 value={nameFilter}
                                 onChange={(e) => setNameFilter(e.target.value)}
-                                className="w-full bg-slate-950 border-2 border-slate-800 rounded-xl pl-10 pr-4 py-3 text-white font-bold focus:outline-none focus:border-lime-500 transition-all text-sm"
+                                className="w-full bg-surface-container-lowest border-2 border-outline/20 rounded-xl pl-10 pr-4 py-3 text-white font-bold focus:outline-none focus:border-accent transition-all text-sm"
                             />
-                            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-lg">
+                            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-lg">
                                 search
                             </span>
                         </div>
                         <div className="relative flex-1 min-w-[140px] sm:flex-none sm:min-w-[160px]">
                             <select
-                                className="w-full appearance-none bg-slate-950 border-2 border-slate-800 rounded-xl pl-4 pr-10 py-3 text-white font-bold focus:outline-none focus:border-lime-500 cursor-pointer transition-all text-sm"
+                                className="w-full appearance-none bg-surface-container-lowest border-2 border-outline/20 rounded-xl pl-4 pr-10 py-3 text-white font-bold focus:outline-none focus:border-accent cursor-pointer transition-all text-sm"
                                 value={selectedSection}
                                 onChange={(e) => setSelectedSection(e.target.value)}
                             >
@@ -552,7 +545,7 @@ export default function Dashboard({
                                     <option key={section} value={section}>{section}</option>
                                 ))}
                             </select>
-                            <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-lime-400">
+                            <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-accent">
                                 filter_list
                             </span>
                         </div>
@@ -616,7 +609,7 @@ export default function Dashboard({
                                         if (!active || !payload?.length) return null;
                                         const s = payload[0].payload;
                                         return (
-                                            <div className="bg-slate-950 border-2 border-slate-700 rounded-xl px-4 py-3 shadow-lg">
+                                            <div className="bg-surface-container-lowest border-2 border-outline/20 rounded-xl px-4 py-3 shadow-lg">
                                                 <p className="text-white font-black text-sm mb-2 flex items-center gap-1.5">
                                                     {s.rank <= 3 && (
                                                         <span className="material-symbols-outlined text-base" style={{ color: RANK_COLORS[s.rank - 1] }}>
@@ -626,13 +619,13 @@ export default function Dashboard({
                                                     <span>{s.name}</span>
                                                 </p>
                                                      <div className="space-y-1 text-xs">
-                                                     <p className="font-black text-lime-400">
+                                                     <p className="font-black text-accent">
                                                          {activeMetricObj.label}:{" "}
                                                          {activeMetricObj.valueKey === "points"
                                                              ? `${s.points?.toLocaleString() ?? 0}`
                                                              : `${s[activeMetricObj.valueKey] ?? 0}%`}
                                                      </p>
-                                                      <p className="text-slate-400 font-semibold">Section: {s.section || 'N/A'}</p>
+                                                      <p className="text-on-surface-variant font-semibold">Section: {s.section || 'N/A'}</p>
                                                       <p className="text-purple-400 font-semibold">Word Blast: {s.wordBlastAcc ?? 0}%</p>
                                                       <p className="text-cyan-400 font-semibold">Story Quest: {s.storyQuestAcc ?? 0}%</p>
                                                       <p className="text-amber-400 font-semibold">Final Avg: {s.finalAverage != null ? `${s.finalAverage}%` : 'N/A'}</p>
@@ -653,7 +646,7 @@ export default function Dashboard({
                         </ResponsiveContainer>
                     </div>
                 ) : (
-                    <div className="text-center py-10 text-slate-600 font-black uppercase tracking-widest text-sm">
+                    <div className="text-center py-10 text-on-surface-variant/50 font-black uppercase tracking-widest text-sm">
                         No students match the current filters
                     </div>
                 )}

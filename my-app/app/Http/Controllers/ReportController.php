@@ -137,7 +137,7 @@ class ReportController extends Controller
             $sent++;
         }
 
-        return redirect()->back()
+        return redirect()->route('teacher.reports.thanks')
             ->with('sent', $sent)
             ->with('failed', $failed)
             ->with('reported_at', $deadlineTs->format('F j, Y \a\t g:i A'));

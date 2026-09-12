@@ -1,5 +1,6 @@
+// impeccable-disable border-accent-on-rounded -- tactile button hard offset per DESIGN.md §3 student 48px
 import DashboardLayout from "../../Layouts/Student/DashboardLayout";
-import { Link, usePage } from "@inertiajs/react";
+import { Head, Link, usePage } from "@inertiajs/react";
 import DeadlineBanner from "@/Components/DeadlineBanner";
 import BackButton from "@/Components/Student/BackButton";
 import PageHeader from "@/Components/Student/PageHeader";
@@ -17,6 +18,9 @@ export default function Leaderboards({ leaderboard, totalStudents }) {
 
     return (
         <DashboardLayout>
+            <Head title="Leaderboard — Word-O-Matic">
+                <meta name="description" content="Leaderboard on Word-O-Matic — see your class ranking." />
+            </Head>
             <div className="mb-4 pt-2">
                 <BackButton />
             </div>
@@ -27,10 +31,7 @@ export default function Leaderboards({ leaderboard, totalStudents }) {
 
                 {/* Current user highlight */}
                 {currentEntry && (
-                    <div
-                        className="mb-6 bg-lime-400/10 border-2 border-lime-400/50 rounded-xl p-4 sm:p-5 flex items-center justify-between gap-3"
-                        style={{ boxShadow: "0 0 20px rgba(163,230,53,0.1)" }}
-                    >
+                    <div className="mb-6 bg-accent/10 border-2 border-accent/50 rounded-xl p-4 sm:p-5 flex items-center justify-between gap-3">
                         <div className="flex items-center gap-4 sm:gap-6 min-w-0">
                             <StudentAvatar
                                 url={currentEntry.avatar}
@@ -38,7 +39,7 @@ export default function Leaderboards({ leaderboard, totalStudents }) {
                                 size="lg"
                             />
                             <div className="min-w-0">
-                                <p className="text-xl sm:text-2xl font-black text-lime-400 truncate">
+                                <p className="text-xl sm:text-2xl font-black text-accent truncate">
                                     {currentUserName}
                                 </p>
                                 <p className="text-xs sm:text-sm text-on-surface-variant font-bold">
@@ -47,7 +48,7 @@ export default function Leaderboards({ leaderboard, totalStudents }) {
                             </div>
                         </div>
                         <div className="text-right shrink-0">
-                            <p className="text-2xl sm:text-3xl font-black text-lime-400">
+                            <p className="text-2xl sm:text-3xl font-black text-accent">
                                 {currentEntry.points}
                             </p>
                             <p className="text-xs text-on-surface-variant font-bold uppercase">
@@ -81,10 +82,10 @@ export default function Leaderboards({ leaderboard, totalStudents }) {
                             return (
                                 <div
                                     key={entry.user_id}
-                                    className={`flex items-center justify-between p-4 sm:p-6 rounded-xl border-2 transition-all gap-3 ${
+                                    className={`flex items-center justify-between p-4 sm:p-6 rounded-xl border-2 transition-colors gap-3 ${
                                         isCurrentUser
-                                            ? "bg-lime-400/10 border-lime-400/50"
-                                            : "bg-surface-container border-surface-variant/20"
+                                            ? "bg-accent/10 border-accent/50"
+                                            : "bg-surface-container border-outline/20"
                                     }`}
                                 >
                                     <div className="flex items-center gap-4 sm:gap-8 min-w-0">
@@ -109,7 +110,7 @@ export default function Leaderboards({ leaderboard, totalStudents }) {
                                         />
                                         <div className="min-w-0">
                                             <p
-                                                className={`font-black text-base sm:text-lg truncate ${isCurrentUser ? "text-lime-400" : "text-on-surface"}`}
+                                                className={`font-black text-base sm:text-lg truncate ${isCurrentUser ? "text-accent" : "text-on-surface"}`}
                                             >
                                                 {isCurrentUser
                                                     ? currentUserName
@@ -119,7 +120,7 @@ export default function Leaderboards({ leaderboard, totalStudents }) {
                                     </div>
                                     <div className="text-right shrink-0">
                                         <p
-                                            className={`font-black text-xl sm:text-2xl ${isCurrentUser ? "text-lime-400" : "text-on-surface"}`}
+                                            className={`font-black text-xl sm:text-2xl ${isCurrentUser ? "text-accent" : "text-on-surface"}`}
                                         >
                                             {entry.points}
                                         </p>
@@ -136,7 +137,7 @@ export default function Leaderboards({ leaderboard, totalStudents }) {
                 <div className="flex justify-center mb-12">
                     <Link
                         href="/student/dashboard"
-                        className="inline-flex items-center gap-2 bg-lime-400 text-slate-950 font-black px-8 py-4 rounded-xl text-base border-b-2 border-lime-700 hover:border-b-[3px] transition-all shadow-lg shadow-lime-400/20 uppercase tracking-wider"
+                        className="inline-flex items-center gap-2 bg-accent text-background font-black px-8 py-4 rounded-xl text-base border-b-4 border-accent-deep transition-colors uppercase tracking-wider"
                     >
                         <span
                             className="material-symbols-outlined text-xl"

@@ -1,3 +1,4 @@
+import { Head } from "@inertiajs/react";
 import { useState, useRef } from "react";
 import { router } from "@inertiajs/react";
 import DashboardLayout from "@/Layouts/Teacher/DashboardLayout";
@@ -16,11 +17,11 @@ const now = new Date();
 const minDate = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
 
 const STATUS_CONFIG = {
-    atRisk: { label: "At Risk", color: "bg-rose-500", border: "border-rose-500", text: "text-rose-400", bg: "bg-rose-500/10" },
-    support: { label: "Needs Support", color: "bg-amber-500", border: "border-amber-500", text: "text-amber-400", bg: "bg-amber-500/10" },
-    onTrack: { label: "On Track", color: "bg-lime-500", border: "border-lime-500", text: "text-lime-400", bg: "bg-lime-500/10" },
-    notStarted: { label: "Not Started", color: "bg-slate-500", border: "border-slate-500", text: "text-slate-400", bg: "bg-slate-500/10" },
-    in_progress: { label: "In Progress", color: "bg-sky-500", border: "border-sky-500", text: "text-sky-400", bg: "bg-sky-500/10" },
+    atRisk: { label: "At Risk", color: "bg-error", border: "border-error", text: "text-error", bg: "bg-error/10" },
+    support: { label: "Needs Support", color: "bg-tertiary", border: "border-tertiary", text: "text-tertiary", bg: "bg-tertiary/10" },
+    onTrack: { label: "On Track", color: "bg-accent", border: "border-accent", text: "text-accent", bg: "bg-accent/10" },
+    notStarted: { label: "Not Started", color: "bg-outline", border: "border-outline", text: "text-on-surface-variant", bg: "bg-outline/10" },
+    in_progress: { label: "In Progress", color: "bg-quest", border: "border-quest", text: "text-quest", bg: "bg-quest/10" },
 };
 
 export default function Reports({ grouped, flash, deadline, errors }) {
@@ -151,20 +152,20 @@ export default function Reports({ grouped, flash, deadline, errors }) {
         : ["atRisk", "support", "onTrack", "in_progress", "notStarted"];
 
     const renderDeadlineSetter = () => (
-        <div className="bg-slate-900 border-4 border-slate-800 p-4 sm:p-8 rounded-[2.5rem] shadow-[8px_8px_0_0_#020617] mb-8">
-            <h2 className="text-2xl font-black text-white uppercase italic mb-6 flex items-center gap-3">
-                <span className="material-symbols-outlined text-purple-400">
+        <div className="bg-surface-container border-2 border-outline/20 p-4 sm:p-6 rounded-xl mb-8">
+            <h2 className="text-xl font-black text-on-surface uppercase tracking-tight mb-4 flex items-center gap-3">
+                <span className="material-symbols-outlined text-primary" aria-hidden="true">
                     event
                 </span>
                 Report Deadline
             </h2>
-            <p className="text-slate-400 text-sm font-semibold mb-6">
+            <p className="text-on-surface-variant text-sm mb-6">
                 Set a deadline for this reporting period. Once the deadline passes, generate and send reports with the final data.
             </p>
 
             <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-4">
                 <div className="flex-1 space-y-3">
-                    <label className="text-slate-500 text-xs font-black uppercase tracking-widest block">
+                    <label className="text-on-surface-variant text-xs font-black uppercase tracking-widest block">
                         Deadline Date & Time
                     </label>
                     <div className="relative">
@@ -174,14 +175,14 @@ export default function Reports({ grouped, flash, deadline, errors }) {
                             min={minDate}
                             disabled={isDeadlineSaved}
                             onChange={(e) => setDeadlineValue(e.target.value)}
-                            className="w-full bg-slate-950 border-2 border-slate-800 rounded-xl p-4 text-white font-bold focus:border-purple-500 transition-all outline-none                             [color-scheme:dark] disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="w-full bg-surface-container-lowest border-2 border-outline/30 rounded-lg p-4 text-on-surface font-bold focus:border-accent transition-colors outline-none [color-scheme:dark] disabled:opacity-50 disabled:cursor-not-allowed"
                         />
                         {errors?.deadline && (
-                            <p className="text-rose-400 text-xs font-bold mt-2">
+                            <p className="text-error text-xs font-bold mt-2">
                                 {errors.deadline}
                             </p>
                         )}
-                        <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-purple-400 pointer-events-none">
+                        <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-primary pointer-events-none" aria-hidden="true">
                             calendar_month
                         </span>
                     </div>
@@ -189,10 +190,10 @@ export default function Reports({ grouped, flash, deadline, errors }) {
                 <button
                     onClick={saveDeadline}
                     disabled={!deadlineValue || savingDeadline || isDeadlineSaved}
-                    className={`px-8 py-4 rounded-xl font-black uppercase italic text-sm transition-all flex items-center gap-2 ${
+                    className={`px-6 py-3 rounded-xl font-black uppercase italic text-sm transition-colors flex items-center gap-2 ${
                         deadlineValue && !savingDeadline && !isDeadlineSaved
-                            ? "bg-purple-500 text-slate-950 shadow-[4px_4px_0_0_#1e1b4b] hover:translate-x-[-2px] hover:translate-y-[-2px]"
-                            : "bg-slate-800 text-slate-600 cursor-not-allowed shadow-none"
+                            ? "bg-accent text-background border-b-4 border-accent-deep hover:bg-accent-hover"
+                            : "bg-surface-container-high text-on-surface-variant/50 cursor-not-allowed"
                     }`}
                 >
                     {savingDeadline ? (
@@ -221,7 +222,7 @@ export default function Reports({ grouped, flash, deadline, errors }) {
                 {deadlineValue && (
                     <button
                         onClick={clearDeadline}
-                        className="px-6 py-4 rounded-xl font-black uppercase italic text-sm transition-all bg-slate-800 text-slate-400 hover:text-rose-400 hover:bg-slate-800/80 border-2 border-slate-700"
+                        className="px-5 py-3 rounded-xl font-black uppercase italic text-sm transition-colors bg-surface-container-high text-on-surface-variant border-2 border-outline/20 hover:text-error"
                     >
                         Clear
                     </button>
@@ -229,12 +230,12 @@ export default function Reports({ grouped, flash, deadline, errors }) {
             </div>
 
             {deadlineValue && (
-                <div className="mt-6 pt-6 border-t-2 border-slate-800">
+                <div className="mt-6 pt-6 border-t-2 border-outline/20">
                     <div className="flex items-center gap-3">
-                        <span className={`material-symbols-outlined ${isPastDeadline ? "text-lime-400" : "text-amber-400"}`}>
+                        <span className={`material-symbols-outlined ${isPastDeadline ? "text-accent" : "text-tertiary"}`} aria-hidden="true">
                             {isPastDeadline ? "check_circle" : "hourglass_empty"}
                         </span>
-                        <span className="text-slate-400 font-semibold text-sm">
+                        <span className="text-on-surface-variant font-semibold text-sm">
                             {isPastDeadline
                                 ? `Deadline passed on ${formatDate(deadlineDate)}`
                                 : `Deadline set for ${formatDate(deadlineDate)}`}
@@ -256,26 +257,26 @@ export default function Reports({ grouped, flash, deadline, errors }) {
         if (sentStudents.length === 0) return null;
 
         return (
-            <div className="mb-6 bg-slate-900 border-2 border-slate-700 rounded-2xl overflow-hidden">
+            <div className="mb-6 bg-surface-container border-2 border-outline/20 rounded-2xl overflow-hidden">
                 <button
                     onClick={() => setShowSent((prev) => !prev)}
-                    className="w-full flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 transition-colors hover:bg-slate-800/50"
+                    className="w-full flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 transition-colors hover:bg-surface-container-high/50"
                 >
                     <div className="flex items-center gap-3">
-                        <span className={`material-symbols-outlined text-slate-400 transition-transform ${showSent ? "rotate-90" : ""}`}>
+                        <span className={`material-symbols-outlined text-on-surface-variant transition-transform ${showSent ? "rotate-90" : ""}`}>
                             chevron_right
                         </span>
                         <span className="text-white font-black uppercase italic text-sm">
                             Already Sent
                         </span>
-                        <span className="text-slate-500 font-bold text-sm">
+                        <span className="text-on-surface-variant font-bold text-sm">
                             ({sentStudents.length})
                         </span>
                     </div>
                 </button>
 
                 {showSent && (
-                    <div className="divide-y divide-slate-700/30 border-t border-slate-700/50">
+                    <div className="divide-y divide-outline/20 border-t border-outline/20/50">
                         {sentStudents.map((student) => (
                                 <div
                                     key={student.id}
@@ -286,7 +287,7 @@ export default function Reports({ grouped, flash, deadline, errors }) {
                                         <span className="text-white font-bold truncate">
                                             {student.name}
                                         </span>
-                                        <span className="text-xs text-lime-400 font-black uppercase shrink-0 border border-lime-500/50 px-2 py-0.5 rounded-full">
+                                        <span className="text-xs text-accent font-black uppercase shrink-0 border border-accent/50 px-2 py-0.5 rounded-full">
                                             Sent
                                         </span>
                                         {!student.parent_email && (
@@ -296,7 +297,7 @@ export default function Reports({ grouped, flash, deadline, errors }) {
                                         )}
                                     </div>
                                 </div>
-                                <div className="text-slate-600 shrink-0">
+                                <div className="text-on-surface-variant/50 shrink-0">
                                     <span className="material-symbols-outlined text-lg">
                                         {student.parent_email ? "mail" : "mail_off"}
                                     </span>
@@ -328,7 +329,7 @@ export default function Reports({ grouped, flash, deadline, errors }) {
                             key={statusKey}
                             className={`${cfg.bg} border-2 ${cfg.border} rounded-2xl overflow-hidden`}
                         >
-                            <div className="flex items-center justify-between px-6 py-4 border-b-2 border-slate-700/50">
+                            <div className="flex items-center justify-between px-6 py-4 border-b-2 border-outline/20/50">
                                 <div className="flex items-center gap-3">
                                     <input
                                         type="checkbox"
@@ -338,24 +339,24 @@ export default function Reports({ grouped, flash, deadline, errors }) {
                                             if (el) el.indeterminate = someSelected && !allSelected;
                                         }}
                                         onChange={() => toggleGroup(students)}
-                                        className="w-5 h-5 rounded border-slate-600 bg-slate-800 text-purple-500 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="w-5 h-5 rounded border-slate-600 bg-surface-container-high text-purple-500 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
                                     />
                                     <div className={`${cfg.color} w-3 h-3 rounded-full`} />
                                     <span className="text-white font-black uppercase italic text-sm">
                                         {cfg.label}
                                     </span>
-                                    <span className="text-slate-500 font-bold text-sm">
+                                    <span className="text-on-surface-variant font-bold text-sm">
                                         ({students.length})
                                     </span>
                                 </div>
                             </div>
 
-                            <div className="divide-y divide-slate-700/30">
+                            <div className="divide-y divide-outline/20">
                                 {students.map((student) => (
                                     <div key={student.id}>
                                         <label
                                             className={`flex items-center gap-3 sm:gap-4 px-4 sm:px-6 py-3 flex-wrap transition-colors ${
-                                                isPastDeadline ? "hover:bg-slate-800/50 cursor-pointer" : "cursor-default"
+                                                isPastDeadline ? "hover:bg-surface-container-high/50 cursor-pointer" : "cursor-default"
                                             }`}
                                         >
                                             <input
@@ -363,7 +364,7 @@ export default function Reports({ grouped, flash, deadline, errors }) {
                                                 checked={selectedIds.has(student.id)}
                                                 disabled={!isPastDeadline}
                                                 onChange={() => toggleStudent(student.id)}
-                                                className="w-5 h-5 rounded border-slate-600 bg-slate-800 text-purple-500 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="w-5 h-5 rounded border-slate-600 bg-surface-container-high text-purple-500 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
                                             />
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center gap-2">
@@ -385,7 +386,7 @@ export default function Reports({ grouped, flash, deadline, errors }) {
                                                         </button>
                                                     )}
                                                 </div>
-                                                <div className="flex items-center gap-3 sm:gap-4 flex-wrap text-xs text-slate-500 font-semibold mt-0.5">
+                                                <div className="flex items-center gap-3 sm:gap-4 flex-wrap text-xs text-on-surface-variant font-semibold mt-0.5">
                                                     <span>Word Blast: {student.wordBlastAcc ?? 0}%</span>
                                                     <span>Story Quest: {student.storyQuestAcc ?? 0}%</span>
                                                     <span className="text-amber-400">Final Avg: {student.finalAverage != null ? `${student.finalAverage}%` : 'N/A'}</span>
@@ -402,8 +403,8 @@ export default function Reports({ grouped, flash, deadline, errors }) {
                                                 }}
                                                 className={`shrink-0 ${
                                                     student.parent_email
-                                                        ? "text-slate-600 cursor-default"
-                                                        : "text-slate-400 hover:text-lime-400 cursor-pointer transition-colors"
+                                                        ? "text-on-surface-variant/50 cursor-default"
+                                                        : "text-on-surface-variant hover:text-accent cursor-pointer transition-colors"
                                                 }`}
                                             >
                                                 <span className="material-symbols-outlined text-lg">
@@ -416,7 +417,7 @@ export default function Reports({ grouped, flash, deadline, errors }) {
                                             <div className="pl-4 sm:pl-[3.75rem] pr-4 sm:pr-6 pb-4 flex flex-col sm:flex-row items-stretch sm:items-start gap-3">
                                                 <div className="flex-1 min-w-0">
                                                     <div className="relative">
-                                                        <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-lime-400 pointer-events-none">
+                                                        <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-accent pointer-events-none">
                                                             mail
                                                         </span>
                                                         <input
@@ -428,10 +429,10 @@ export default function Reports({ grouped, flash, deadline, errors }) {
                                                                 if (e.key === "Enter") saveParentEmail(student.id);
                                                             }}
                                                             placeholder="parent@email.com"
-                                                            className={`w-full bg-slate-950 border-2 rounded-xl pl-10 pr-4 py-2.5 text-white font-bold text-sm focus:outline-none transition-all ${
+                                                            className={`w-full bg-surface-container-lowest border-2 rounded-xl pl-10 pr-4 py-2.5 text-white font-bold text-sm focus:outline-none transition-all ${
                                                                 showEmailError || errors?.parent_email
                                                                     ? "border-rose-500"
-                                                                    : "border-slate-800 focus:border-lime-500"
+                                                                    : "border-outline/20 focus:border-accent"
                                                             }`}
                                                         />
                                                     </div>
@@ -449,8 +450,8 @@ export default function Reports({ grouped, flash, deadline, errors }) {
                                                     disabled={!emailIsValid || savingEmail}
                                                     className={`px-5 py-2.5 rounded-xl font-black uppercase italic text-sm transition-all shrink-0 ${
                                                         emailIsValid && !savingEmail
-                                                            ? "bg-lime-400 border-2 border-slate-950 text-slate-950 shadow-[3px_3px_0_0_#3f6212] hover:translate-x-[-1px] hover:translate-y-[-1px]"
-                                                            : "bg-slate-800 text-slate-600 cursor-not-allowed shadow-none"
+                                                            ? "bg-accent border-2 border-slate-950 text-slate-950 shadow-[3px_3px_0_0_#3f6212] hover:translate-x-[-1px] hover:translate-y-[-1px]"
+                                                            : "bg-surface-container-high text-on-surface-variant/50 cursor-not-allowed shadow-none"
                                                     }`}
                                                 >
                                                     {savingEmail ? "Saving..." : "Save"}
@@ -458,7 +459,7 @@ export default function Reports({ grouped, flash, deadline, errors }) {
                                                 <button
                                                     type="button"
                                                     onClick={() => toggleEmailEditor(student.id)}
-                                                    className="px-4 py-2.5 rounded-xl font-black uppercase italic text-sm bg-slate-800 text-slate-400 border-2 border-slate-700 hover:text-white transition-all shrink-0"
+                                                    className="px-4 py-2.5 rounded-xl font-black uppercase italic text-sm bg-surface-container-high text-on-surface-variant border-2 border-outline/20 hover:text-white transition-all shrink-0"
                                                 >
                                                     Cancel
                                                 </button>
@@ -476,7 +477,7 @@ export default function Reports({ grouped, flash, deadline, errors }) {
                         <span className="material-symbols-outlined text-6xl text-slate-700 mb-4">
                             group_off
                         </span>
-                        <p className="text-slate-500 font-bold">No students found.</p>
+                        <p className="text-on-surface-variant font-bold">No students found.</p>
                     </div>
                 )}
             </div>
@@ -485,18 +486,21 @@ export default function Reports({ grouped, flash, deadline, errors }) {
 
     return (
         <DashboardLayout>
+            <Head title="Reports — Word-O-Matic">
+                <meta name="description" content="Reports and parent notifications on Word-O-Matic." />
+            </Head>
             <div className="mb-6 lg:mb-10">
                 <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white uppercase italic tracking-tighter mb-2">
                     Reports
                 </h1>
-                <p className="text-slate-500 font-black uppercase text-xs tracking-widest">
+                <p className="text-on-surface-variant font-black uppercase text-xs tracking-widest">
                     Monitor progress and send parent reports
                 </p>
             </div>
 
             {flash?.sent !== undefined && (
-                <div className="mb-6 bg-slate-900 border-2 border-slate-700 rounded-2xl p-4 flex items-center gap-3">
-                    <span className={`material-symbols-outlined ${flash.failed > 0 ? "text-amber-400" : "text-lime-400"}`}>
+                <div className="mb-6 bg-surface-container border-2 border-outline/20 rounded-2xl p-4 flex items-center gap-3">
+                    <span className={`material-symbols-outlined ${flash.failed > 0 ? "text-amber-400" : "text-accent"}`}>
                         {flash.failed > 0 ? "warning" : "check_circle"}
                     </span>
                     <p className="text-white font-bold text-sm">
@@ -521,7 +525,7 @@ export default function Reports({ grouped, flash, deadline, errors }) {
 
             {flash?.deadline_set && (
                 <div className="mb-6 bg-lime-500/10 border-2 border-lime-500 rounded-2xl p-4 flex items-center gap-3">
-                    <span className="material-symbols-outlined text-lime-400">
+                    <span className="material-symbols-outlined text-accent">
                         check_circle
                     </span>
                     <p className="text-white font-bold text-sm">
@@ -531,8 +535,8 @@ export default function Reports({ grouped, flash, deadline, errors }) {
             )}
 
             {flash?.deadline_cleared && (
-                <div className="mb-6 bg-slate-800 border-2 border-slate-700 rounded-2xl p-4 flex items-center gap-3">
-                    <span className="material-symbols-outlined text-slate-400">
+                <div className="mb-6 bg-surface-container-high border-2 border-outline/20 rounded-2xl p-4 flex items-center gap-3">
+                    <span className="material-symbols-outlined text-on-surface-variant">
                         remove_circle
                     </span>
                     <p className="text-white font-bold text-sm">
@@ -549,7 +553,7 @@ export default function Reports({ grouped, flash, deadline, errors }) {
                         href={route("teacher.reports.export")}
                         target="_blank"
                         rel="noopener"
-                        className="px-8 py-4 rounded-xl font-black uppercase italic text-sm transition-all flex items-center gap-2 bg-lime-400 border-4 border-slate-950 text-slate-950 hover:translate-y-1 hover:shadow-[4px_4px_0_0_#3f6212]"
+                        className="px-8 py-4 rounded-xl font-black uppercase italic text-sm transition-all flex items-center gap-2 bg-accent border-4 border-slate-950 text-slate-950 hover:translate-y-1 hover:shadow-[4px_4px_0_0_#3f6212]"
                     >
                         <span className="material-symbols-outlined text-lg">
                             download
@@ -559,41 +563,41 @@ export default function Reports({ grouped, flash, deadline, errors }) {
                 </div>
             )}
 
-            <div className="bg-slate-900 border-4 border-slate-800 p-4 sm:p-6 lg:p-8 rounded-2xl lg:rounded-[2.5rem] shadow-[8px_8px_0_0_#020617]">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 sm:mb-8">
-                        <h2 className="text-xl sm:text-2xl font-black text-white uppercase italic flex items-center gap-3">
-                            <span className="material-symbols-outlined text-purple-400">
+            <div className="bg-surface-container border-2 border-outline/20 p-4 sm:p-6 rounded-xl">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+                        <h2 className="text-xl font-black text-on-surface uppercase tracking-tight flex items-center gap-3">
+                            <span className="material-symbols-outlined text-primary" aria-hidden="true">
                                 mail
                             </span>
                             Notify Parents
                         </h2>
-                        <span className="text-slate-500 text-sm font-bold">
+                        <span className="text-on-surface-variant text-sm font-bold">
                             {selectedIds.size} selected
                         </span>
                     </div>
 
                     <div className="relative mb-4">
-                        <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-lime-400">
+                        <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-accent" aria-hidden="true">
                             search
                         </span>
                         <input
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full bg-slate-950 border-2 border-slate-800 rounded-xl pl-12 pr-4 py-3 text-white font-bold focus:outline-none focus:border-lime-500 transition-all text-sm"
+                            className="w-full bg-surface-container-lowest border-2 border-outline/30 rounded-lg pl-12 pr-4 py-3 text-on-surface font-bold focus:outline-none focus:border-accent transition-colors text-sm"
                             placeholder="Search student by name..."
                             type="text"
                         />
                     </div>
 
-                    <div className="flex items-center bg-slate-950 border-2 border-slate-800 p-1 sm:p-2 rounded-xl mb-6 overflow-x-auto">
+                    <div className="flex items-center bg-surface-container border-2 border-outline/20 p-1 rounded-xl mb-6 overflow-x-auto">
                         {statusTabs.map((tab) => (
                             <button
                                 key={tab.value}
                                 onClick={() => setStatusTab(tab.value)}
-                                className={`px-3 sm:px-4 py-2 font-black text-xs sm:text-sm whitespace-nowrap rounded-lg transition-all ${
+                                className={`px-3 sm:px-4 py-2 font-black text-xs sm:text-sm whitespace-nowrap rounded-lg transition-colors ${
                                     statusTab === tab.value
-                                        ? "bg-lime-400 text-slate-950 shadow-[2px_2px_0_0_#3f6212]"
-                                        : "text-slate-400 hover:text-lime-300"
+                                        ? "bg-accent text-background"
+                                        : "text-on-surface-variant hover:text-accent"
                                 }`}
                             >
                                 {tab.label}
@@ -605,10 +609,10 @@ export default function Reports({ grouped, flash, deadline, errors }) {
                         <button
                             onClick={sendEmails}
                             disabled={selectedIds.size === 0 || sending || !isPastDeadline}
-                            className={`w-full p-5 rounded-2xl font-black uppercase italic text-xl tracking-tighter shadow-[8px_8px_0_0_#3f6212] transition-all flex items-center justify-center gap-4 ${
+                            className={`w-full p-4 rounded-xl font-black uppercase italic text-lg tracking-tight transition-colors flex items-center justify-center gap-3 ${
                                 selectedIds.size === 0 || sending || !isPastDeadline
-                                    ? "bg-slate-800 text-slate-600 cursor-not-allowed shadow-none"
-                                    : "bg-lime-400 border-4 border-slate-950 text-slate-950 hover:translate-y-1 hover:shadow-[4px_4px_0_0_#3f6212]"
+                                    ? "bg-surface-container-high text-on-surface-variant/50 cursor-not-allowed"
+                                    : "bg-accent text-background border-b-4 border-accent-deep hover:bg-accent-hover"
                             }`}
                         >
                             {sending ? (

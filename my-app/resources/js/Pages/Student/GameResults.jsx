@@ -1,4 +1,4 @@
-import { Link, usePage } from "@inertiajs/react";
+import { Head, Link, usePage } from "@inertiajs/react";
 import { useState } from "react";
 import BadgeUnlockFlow from "@/Components/Student/BadgeUnlockFlow";
 import NextBadge from "@/Components/Student/NextBadge";
@@ -70,20 +70,22 @@ export default function GameResults({
 
     const renderResults = () => (
         <div className="bg-background text-on-background font-body-md">
+            <Head title="Game Results — Word-O-Matic">
+                <meta name="description" content="Your game results on Word-O-Matic." />
+            </Head>
             <div className="relative min-h-screen flex flex-col items-center justify-center px-4 xs:px-5 sm:px-6 py-8 sm:py-12">
-                <div className="absolute top-1/2 left-1/4 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-primary/10 blur-[120px] rounded-full -z-10 animate-pulse" />
+                <div className="absolute top-1/2 left-1/4 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-primary/10 blur-[80px] rounded-full -z-10" aria-hidden="true" />
 
                 {isCelebrating && (
                     <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
                         {CONFETTI.map((c, i) => (
                             <span
                                 key={i}
-                                className={`material-symbols-outlined absolute text-3xl animate-bounce ${c.color}`}
+                                className={`material-symbols-outlined absolute text-3xl ${c.color}`}
+                                aria-hidden="true"
                                 style={{
                                     left: `${10 + i * 12}%`,
                                     top: `${-10 - i * 5}%`,
-                                    animationDelay: `${i * 0.15}s`,
-                                    animationDuration: `${1 + (i % 3) * 0.5}s`,
                                     fontVariationSettings: "'FILL' 1",
                                 }}
                             >
@@ -126,7 +128,7 @@ export default function GameResults({
                         />
                     </div>
 
-                    <div className="text-center text-xl sm:text-2xl font-bold text-lime-400 flex items-center justify-center gap-2">
+                    <div className="text-center text-xl sm:text-2xl font-bold text-accent flex items-center justify-center gap-2">
                         <span
                             className="material-symbols-outlined text-2xl"
                             style={{ fontVariationSettings: "'FILL' 1" }}

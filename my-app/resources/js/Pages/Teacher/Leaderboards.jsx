@@ -1,3 +1,4 @@
+import { Head } from "@inertiajs/react";
 import DashboardLayout from "@/Layouts/Teacher/DashboardLayout";
 import { router } from "@inertiajs/react";
 import { useRef, useState } from "react";
@@ -44,26 +45,29 @@ export default function Leaderboards({ leaderboard, totalStudents, sections = []
 
     return (
         <DashboardLayout>
+            <Head title="Leaderboards — Word-O-Matic">
+                <meta name="description" content="Leaderboards on Word-O-Matic — top word-warriors." />
+            </Head>
             <div className="mb-10">
                 <h1 className="text-4xl font-black text-white uppercase italic tracking-tighter mb-2">
                     Leaderboards
                 </h1>
-                <p className="text-slate-500 font-black uppercase text-xs tracking-widest">
+                <p className="text-on-surface-variant font-black uppercase text-xs tracking-widest">
                     {auth?.user?.name || "Teacher"} • {activeStudents.length} of{" "}
                     {totalStudents} word-warriors
                 </p>
             </div>
 
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                <div className="flex bg-slate-950 border-2 border-slate-800 rounded-xl p-1 overflow-x-auto">
+                <div className="flex bg-surface-container-lowest border-2 border-outline/20 rounded-xl p-1 overflow-x-auto">
                     {TAB_CONFIG.map((tab) => (
                         <button
                             key={tab.key}
                             onClick={() => setActiveTab(tab.key)}
                             className={`px-4 py-2 font-black text-xs uppercase whitespace-nowrap rounded-lg transition-all flex items-center gap-2 ${
                                 activeTab === tab.key
-                                    ? "bg-lime-400 text-slate-950 shadow-[2px_2px_0_0_#3f6212]"
-                                    : "text-slate-400 hover:text-lime-300"
+                                    ? "bg-accent text-slate-950 shadow-[2px_2px_0_0_#3f6212]"
+                                    : "text-on-surface-variant hover:text-accent"
                             }`}
                         >
                             <span className="material-symbols-outlined text-sm">
@@ -78,7 +82,7 @@ export default function Leaderboards({ leaderboard, totalStudents, sections = []
                     <select
                         value={filters.section ?? ""}
                         onChange={handleSection}
-                        className="appearance-none bg-slate-950 border-2 border-slate-800 rounded-xl pl-4 pr-10 py-3 text-white font-bold focus:outline-none focus:border-lime-500 cursor-pointer text-sm"
+                        className="appearance-none bg-surface-container-lowest border-2 border-outline/20 rounded-xl pl-4 pr-10 py-3 text-white font-bold focus:outline-none focus:border-accent cursor-pointer text-sm"
                     >
                         <option value="">All Sections</option>
                         {sections.map((s) => (
@@ -95,18 +99,18 @@ export default function Leaderboards({ leaderboard, totalStudents, sections = []
                             placeholder="Search name..."
                             defaultValue={filters.search ?? ""}
                             onChange={handleSearch}
-                            className="w-full bg-slate-950 border-2 border-slate-800 rounded-xl pl-10 pr-4 py-3 text-white font-bold focus:outline-none focus:border-lime-500 transition-all text-sm"
+                            className="w-full bg-surface-container-lowest border-2 border-outline/20 rounded-xl pl-10 pr-4 py-3 text-white font-bold focus:outline-none focus:border-accent transition-all text-sm"
                         />
-                        <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-lg">
+                        <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-lg">
                             search
                         </span>
                     </div>
                 </div>
             </div>
 
-            <div className="bg-slate-900 border-4 border-slate-800 rounded-[2.5rem] shadow-[8px_8px_0_0_#020617] overflow-hidden">
+            <div className="bg-surface-container border-4 border-outline/20 rounded-xl  overflow-hidden">
                 {activeStudents.length === 0 ? (
-                    <div className="text-center py-16 text-slate-500">
+                    <div className="text-center py-16 text-on-surface-variant">
                         <span className="material-symbols-outlined text-5xl mb-4 block">
                             rocket_launch
                         </span>
@@ -115,7 +119,7 @@ export default function Leaderboards({ leaderboard, totalStudents, sections = []
                         </p>
                     </div>
                 ) : (
-                    <div className="divide-y-2 divide-slate-800/50">
+                    <div className="divide-y-2 divide-outline/20">
                         {activeStudents.map((s, i) => {
                             const rank = i + 1;
                             const field = metricField[activeTab];
@@ -128,7 +132,7 @@ export default function Leaderboards({ leaderboard, totalStudents, sections = []
                             return (
                                 <div
                                     key={s.id}
-                                    className="flex items-center justify-between p-4 lg:p-6 transition-colors hover:bg-slate-900/50"
+                                    className="flex items-center justify-between p-4 lg:p-6 transition-colors hover:bg-surface-container/50"
                                 >
                                     <div className="flex items-center gap-4">
                                         <span className="w-10 flex items-center justify-center">
@@ -146,13 +150,13 @@ export default function Leaderboards({ leaderboard, totalStudents, sections = []
                                                     emoji_events
                                                 </span>
                                             ) : (
-                                                <span className="text-xl font-black text-slate-400">
+                                                <span className="text-xl font-black text-on-surface-variant">
                                                     #{rank}
                                                 </span>
                                             )}
                                         </span>
 
-                                        <div className="w-12 h-12 rounded-lg bg-slate-950 border-2 border-lime-400 overflow-hidden shrink-0">
+                                        <div className="w-12 h-12 rounded-lg bg-surface-container-lowest border-2 border-accent overflow-hidden shrink-0">
                                             {s.avatar ? (
                                                 <img
                                                     src={s.avatar}
@@ -160,7 +164,7 @@ export default function Leaderboards({ leaderboard, totalStudents, sections = []
                                                     className="w-full h-full object-cover"
                                                 />
                                             ) : (
-                                                <span className="material-symbols-outlined text-xl text-slate-500">
+                                                <span className="material-symbols-outlined text-xl text-on-surface-variant">
                                                     person
                                                 </span>
                                             )}
@@ -170,7 +174,7 @@ export default function Leaderboards({ leaderboard, totalStudents, sections = []
                                             <p className="font-black text-white text-base truncate max-w-[16rem] lg:max-w-[20rem]" title={s.name}>
                                                 {s.name}
                                             </p>
-                                            <p className="text-sm text-slate-500 font-semibold">
+                                            <p className="text-sm text-on-surface-variant font-semibold">
                                                 {s.section || "No Section"} •
                                                 ID: {s.studentID}
                                             </p>

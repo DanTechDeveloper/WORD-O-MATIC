@@ -1,4 +1,4 @@
-import { usePage } from "@inertiajs/react"
+import { Head, usePage } from "@inertiajs/react"
 import { useState, useEffect } from "react"
 import DashboardLayout from "../../Layouts/Student/DashboardLayout"
 import LevelCard from "../../Components/Student/LevelCard"
@@ -47,6 +47,9 @@ export default function LevelsPage({ modules, mode, tutorialComplete = true, wor
 
     return (
             <DashboardLayout disableNav={isTutorial}>
+            <Head title={`${isRead ? "Word Blast" : "Story Quest"} Levels — Word-O-Matic`}>
+                <meta name="description" content={`${isRead ? "Word Blast" : "Story Quest"} levels on Word-O-Matic. Select a level to play.`} />
+            </Head>
             {error && (
                 <div className="mb-6 bg-error text-on-error px-6 py-3 rounded-lg text-sm font-bold flex items-center gap-3 shadow-[4px_4px_0_0_#4c1d95]">
                     <span className="material-symbols-outlined text-xl">lock</span>
@@ -70,7 +73,7 @@ export default function LevelsPage({ modules, mode, tutorialComplete = true, wor
                         <span className={`material-symbols-outlined text-2xl sm:text-3xl ${isRead ? "text-accent" : "text-quest"}`} style={{ fontVariationSettings: "'FILL' 1" }}>{isRead ? "menu_book" : "mic"}</span>
                         <span>{isRead ? "Word Blast" : "Story Quest"}</span>
                     </h2>
-                    <p className="text-on-surface-variant font-black uppercase tracking-wide text-[10px] xs:text-xs md:text-sm">
+                    <p className="text-on-surface-variant font-black uppercase tracking-wide text-xs md:text-sm">
                         Select a level to play
                     </p>
                 </div>
@@ -80,14 +83,14 @@ export default function LevelsPage({ modules, mode, tutorialComplete = true, wor
                 </div>
             </div>
 
-            {/* Level Cards Grid */}
+            {/* Level Cards Grid — 2 col on student per DESIGN.md §6 no 3 cards, linear on small */}
             {(!modules || modules.length === 0) ? (
                 <div className="flex flex-col items-center justify-center py-12 sm:py-20 text-center px-4">
                     <span className="material-symbols-outlined text-5xl sm:text-6xl mb-4 text-on-surface-variant">inbox</span>
                     <p className="text-on-surface-variant font-bold text-base sm:text-lg">No levels available yet</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 md:gap-5">
                     {modules.map((module, index) => (
                         <LevelCard
                             key={module.id}

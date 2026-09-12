@@ -1,4 +1,4 @@
-import { Link, usePage } from "@inertiajs/react";
+import { Head, Link, usePage } from "@inertiajs/react";
 import { useState } from "react";
 import AvatarSpeechBubble from "@/Components/Student/AvatarSpeechBubble";
 import BadgeUnlockFlow from "@/Components/Student/BadgeUnlockFlow";
@@ -90,9 +90,10 @@ export default function Dashboard({
         }
     };
 
+    // ponytail: bounded highlight — static ring, no pulse, keeps focus without motion overload for K-5
     const ringMap = {
-        read: "ring-4 ring-accent ring-offset-4 ring-offset-background scale-[1.03] z-10 rounded-2xl transition-all duration-500 animate-pulse motion-reduce:animate-none",
-        speak: "ring-4 ring-quest ring-offset-4 ring-offset-background scale-[1.03] z-10 rounded-2xl transition-all duration-500 animate-pulse motion-reduce:animate-none",
+        read: "ring-4 ring-accent ring-offset-4 ring-offset-background scale-[1.03] z-10 rounded-2xl transition-colors duration-200 motion-reduce:transition-none",
+        speak: "ring-4 ring-quest ring-offset-4 ring-offset-background scale-[1.03] z-10 rounded-2xl transition-colors duration-200 motion-reduce:transition-none",
     };
     const ringClass = (targetMode) => {
         const isHighlight = targetMode === "read" ? highlightRead : highlightSpeak;
@@ -107,6 +108,9 @@ export default function Dashboard({
 
     return (
         <>
+            <Head title="Pick Your Game — Word-O-Matic">
+                <meta name="description" content="Pick your game — Word Blast or Story Quest — on Word-O-Matic." />
+            </Head>
             {newBadges.length > 0 && (
                 <BadgeUnlockFlow
                     badges={newBadges}
