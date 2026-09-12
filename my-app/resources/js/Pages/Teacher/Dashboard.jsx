@@ -186,8 +186,8 @@ export default function Dashboard({
                     </span>
                     Class Health Distribution
                 </h3>
-                <div className="h-[220px] w-full">
-                    <ResponsiveContainer width="100%" height="100%">
+                <div className="h-[220px] w-full min-w-0">
+                    <ResponsiveContainer width="100%" height="100%" min-width={0}>
                         <BarChart
                             data={chartData}
                             margin={{ top: 10, right: 20, left: 0, bottom: 0 }}
@@ -508,7 +508,7 @@ export default function Dashboard({
                         className="w-full"
                         style={{ height: `${Math.max(200, filteredTopStudents.length * 50)}px` }}
                     >
-                        <ResponsiveContainer width="100%" height="100%">
+                        <ResponsiveContainer width="100%" height="100%" min-width={0}>
                             <BarChart
                                 layout="vertical"
                                 data={filteredTopStudents}
