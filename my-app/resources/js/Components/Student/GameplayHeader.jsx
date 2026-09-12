@@ -21,7 +21,7 @@ const GameplayHeader = memo(function GameplayHeader({
     return (
         <>
             {/* ───── Mobile layout ───── */}
-            <div className="mt-3 w-full max-w-7xl mx-auto flex items-center justify-between gap-2 mb-4 px-2 lg:hidden">
+            <div className="mt-3 w-full max-w-7xl mx-auto flex items-center justify-between gap-2 mb-4 px-2 md:hidden">
                 {/* Level Title */}
                 <div className="bg-on-background/10 backdrop-blur-sm px-3 py-1 rounded-full border-2 border-on-background/20 shadow-md">
                     <span className="text-on-background font-black tracking-tight text-[10px] italic uppercase">
@@ -46,7 +46,7 @@ const GameplayHeader = memo(function GameplayHeader({
             </div>
 
             {/* ───── Desktop layout ───── */}
-            <div className="hidden lg:flex mt-3 sm:mt-4 md:mt-6 w-full max-w-7xl mx-auto flex-wrap items-center justify-between gap-3 sm:gap-4 md:gap-6 mb-6 sm:mb-8 md:mb-12 px-2 sm:px-0">
+            <div className="hidden md:flex mt-3 sm:mt-4 md:mt-6 w-full max-w-7xl mx-auto flex-wrap items-center justify-between gap-3 sm:gap-4 md:gap-6 mb-6 sm:mb-8 md:mb-12 px-2 sm:px-0">
                 <div className="flex items-center gap-3 sm:gap-4 md:gap-6">
                     <div className="flex items-center gap-2 sm:gap-3 md:gap-4 bg-on-background/5 backdrop-blur-md p-2 sm:p-3 md:p-4 rounded-2xl border-2 border-on-background/10 shadow-2xl">
                         <div className="bg-primary p-1 sm:p-2 rounded-xl flex items-center justify-center shadow-[0_0_15px_rgba(var(--primary-rgb),0.5)]">
