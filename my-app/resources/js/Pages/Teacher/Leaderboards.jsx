@@ -49,28 +49,28 @@ export default function Leaderboards({ leaderboard, totalStudents, sections = []
                 <meta name="description" content="Leaderboards on Word-O-Matic — top word-warriors." />
             </Head>
             <div className="mb-10">
-                <h1 className="text-4xl font-black text-white uppercase italic tracking-tighter mb-2">
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white uppercase italic tracking-tighter mb-2 truncate" title="Leaderboards">
                     Leaderboards
                 </h1>
-                <p className="text-on-surface-variant font-black uppercase text-xs tracking-widest">
+                <p className="text-on-surface-variant font-black uppercase text-[11px] sm:text-xs tracking-widest truncate">
                     {auth?.user?.name || "Teacher"} • {activeStudents.length} of{" "}
                     {totalStudents} word-warriors
                 </p>
             </div>
 
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                <div className="flex bg-surface-container-lowest border-2 border-outline/20 rounded-xl p-1 overflow-x-auto">
+                <div className="flex bg-surface-container-lowest border-2 border-outline/20 rounded-xl p-1 overflow-x-auto gap-1">
                     {TAB_CONFIG.map((tab) => (
                         <button
                             key={tab.key}
                             onClick={() => setActiveTab(tab.key)}
-                            className={`px-4 py-2 font-black text-xs uppercase whitespace-nowrap rounded-lg transition-all flex items-center gap-2 ${
+                            className={`px-3 sm:px-4 py-1.5 sm:py-2 font-black text-[11px] sm:text-xs uppercase whitespace-nowrap rounded-lg transition-all flex items-center gap-1 sm:gap-2 ${
                                 activeTab === tab.key
                                     ? "bg-accent text-slate-950 shadow-[2px_2px_0_0_#3f6212]"
                                     : "text-on-surface-variant hover:text-accent"
                             }`}
                         >
-                            <span className="material-symbols-outlined text-sm">
+                            <span className="material-symbols-outlined text-xs sm:text-sm">
                                 {tab.icon}
                             </span>
                             {tab.label}
@@ -132,13 +132,13 @@ export default function Leaderboards({ leaderboard, totalStudents, sections = []
                             return (
                                 <div
                                     key={s.id}
-                                    className="flex items-center justify-between p-4 lg:p-6 transition-colors hover:bg-surface-container/50"
+                                    className="flex items-center justify-between gap-2 sm:gap-3 p-3 sm:p-4 lg:p-6 transition-colors hover:bg-surface-container/50"
                                 >
-                                    <div className="flex items-center gap-4">
-                                        <span className="w-10 flex items-center justify-center">
+                                    <div className="flex items-center gap-2 sm:gap-3 md:gap-4 min-w-0 flex-1">
+                                        <span className="w-8 sm:w-10 flex items-center justify-center shrink-0">
                                             {rank <= 3 ? (
                                                 <span
-                                                    className="material-symbols-outlined text-3xl"
+                                                    className="material-symbols-outlined text-2xl sm:text-3xl"
                                                     style={{
                                                         color: RANK_COLORS[
                                                             rank - 1
@@ -150,13 +150,13 @@ export default function Leaderboards({ leaderboard, totalStudents, sections = []
                                                     emoji_events
                                                 </span>
                                             ) : (
-                                                <span className="text-xl font-black text-on-surface-variant">
+                                                <span className="text-base sm:text-xl font-black text-on-surface-variant">
                                                     #{rank}
                                                 </span>
                                             )}
                                         </span>
 
-                                        <div className="w-12 h-12 rounded-lg bg-surface-container-lowest border-2 border-accent overflow-hidden shrink-0">
+                                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-surface-container-lowest border-2 border-accent overflow-hidden shrink-0">
                                             {s.avatar ? (
                                                 <img
                                                     src={s.avatar}
@@ -164,25 +164,25 @@ export default function Leaderboards({ leaderboard, totalStudents, sections = []
                                                     className="w-full h-full object-cover"
                                                 />
                                             ) : (
-                                                <span className="material-symbols-outlined text-xl text-on-surface-variant">
+                                                <span className="material-symbols-outlined text-lg sm:text-xl text-on-surface-variant">
                                                     person
                                                 </span>
                                             )}
                                         </div>
 
-                                        <div className="min-w-0">
-                                            <p className="font-black text-white text-base truncate max-w-[16rem] lg:max-w-[20rem]" title={s.name}>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="font-black text-white text-sm sm:text-base truncate max-w-[110px] sm:max-w-[14rem] md:max-w-[18rem] lg:max-w-[20rem]" title={s.name}>
                                                 {s.name}
                                             </p>
-                                            <p className="text-sm text-on-surface-variant font-semibold">
+                                            <p className="text-xs sm:text-sm text-on-surface-variant font-semibold truncate max-w-[130px] sm:max-w-none">
                                                 {s.section || "No Section"} •
                                                 ID: {s.studentID}
                                             </p>
                                         </div>
                                     </div>
 
-                                    <div className="text-right">
-                                        <p className="font-black text-xl text-white">
+                                    <div className="text-right shrink-0 ml-2">
+                                        <p className="font-black text-base sm:text-lg md:text-xl text-white">
                                             {displayValue}
                                         </p>
                                     </div>

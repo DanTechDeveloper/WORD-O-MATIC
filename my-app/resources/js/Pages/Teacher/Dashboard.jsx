@@ -28,8 +28,12 @@ export default function Dashboard({
     const [nameFilter, setNameFilter] = useState("");
     const [activeMetric, setActiveMetric] = useState("points");
     const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 640 : false);
+    const [isTablet, setIsTablet] = useState(typeof window !== 'undefined' ? window.innerWidth >= 640 && window.innerWidth < 1024 : false);
     useEffect(() => {
-        const onResize = () => setIsMobile(window.innerWidth < 640);
+        const onResize = () => {
+            setIsMobile(window.innerWidth < 640);
+            setIsTablet(window.innerWidth >= 640 && window.innerWidth < 1024);
+        };
         window.addEventListener('resize', onResize);
         return () => window.removeEventListener('resize', onResize);
     }, []);
@@ -113,6 +117,12 @@ export default function Dashboard({
         color: cat.color,
     }));
 
+    const shortHealthLabel = (label) => {
+        if (isMobile) return ({ "Not Started": "Not Strt", "Needs Support": "Support", "In Progress": "In Prog", "On Track": "On Track", "At Risk": "At Risk" }[label] ?? label);
+        if (isTablet) return ({ "Needs Support": "Needs Sup." }[label] ?? label);
+        return label;
+    };
+
     const [selectedCategory, setSelectedCategory] = useState("notStarted");
     const [selectedHealthSection, setSelectedHealthSection] = useState("");
 
@@ -156,29 +166,29 @@ export default function Dashboard({
                 <meta name="description" content="Teacher dashboard on Word-O-Matic — class health at a glance." />
             </Head>
             <div className="mb-10">
-                <h1 className="text-4xl font-black text-white uppercase italic tracking-tighter mb-2">
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white uppercase italic tracking-tighter mb-2 truncate" title={`Welcome back, ${auth?.user?.name || "Teacher"}!`}>
                     Welcome back, {auth?.user?.name || "Teacher"}!
                 </h1>
-                <p className="text-on-surface-variant font-black uppercase text-xs tracking-widest">
+                <p className="text-on-surface-variant font-black uppercase text-[11px] sm:text-xs tracking-widest">
                     System status: Operational • Sector 7 monitoring active
                 </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-10">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-10">
                 {stats.map((stat, index) => (
                     <div
                         key={index}
-                        className="bg-surface-container border-2 border-outline/20 p-5 rounded-xl"
+                        className="bg-surface-container border-2 border-outline/20 p-4 sm:p-5 rounded-xl"
                     >
                         <div className="flex items-start justify-between mb-3">
-                            <span className={`material-symbols-outlined text-2xl ${stat.color}`} aria-hidden="true">
+                            <span className={`material-symbols-outlined text-xl sm:text-2xl ${stat.color}`} aria-hidden="true">
                                 {stat.icon}
                             </span>
                         </div>
-                        <h3 className="text-on-surface-variant text-xs font-black uppercase tracking-widest mb-1">
+                        <h3 className="text-on-surface-variant text-[10px] sm:text-xs font-black uppercase tracking-widest mb-1">
                             {stat.label}
                         </h3>
-                        <p className="text-2xl font-black text-on-surface tracking-tight">
+                        <p className="text-xl sm:text-2xl font-black text-on-surface tracking-tight truncate" title={String(stat.value)}>
                             {stat.value}
                         </p>
                     </div>
@@ -192,18 +202,23 @@ export default function Dashboard({
                     </span>
                     Class Health Distribution
                 </h3>
-                <div className="h-[220px] w-full min-w-0">
+                <div className="h-[260px] sm:h-[240px] lg:h-[220px] w-full min-w-0">
                     <ResponsiveContainer width="100%" height="100%" min-width={0}>
                         <BarChart
                             data={chartData}
-                            margin={{ top: 10, right: 20, left: 0, bottom: 0 }}
+                            margin={{ top: 10, right: isMobile ? 10 : 20, left: 0, bottom: isMobile ? 35 : isTablet ? 28 : 10 }}
+                            barCategoryGap="20%"
                         >
                             <XAxis
                                 dataKey="name"
                                 stroke="#94a3b8"
-                                fontSize={11}
                                 tickLine={false}
                                 axisLine={false}
+                                interval={0}
+                                height={isMobile ? 40 : isTablet ? 32 : 30}
+                                tickMargin={8}
+                                tick={{ fontSize: isMobile ? 9 : isTablet ? 10 : 11, angle: isMobile ? -25 : isTablet ? -12 : 0, textAnchor: isMobile || isTablet ? "end" : "middle" }}
+                                tickFormatter={shortHealthLabel}
                             />
                             <YAxis
                                 stroke="#94a3b8"
@@ -235,7 +250,7 @@ export default function Dashboard({
                                 }}
                                 formatter={(value) => [`${value} Students`, "Count"]}
                             />
-                            <Bar dataKey="value" shape={<ColoredBar />} radius={[6, 6, 0, 0]} />
+                            <Bar dataKey="value" shape={<ColoredBar />} radius={[6, 6, 0, 0]} barSize={isMobile ? 18 : isTablet ? 22 : undefined} />
                         </BarChart>
                     </ResponsiveContainer>
                 </div>
@@ -283,22 +298,22 @@ export default function Dashboard({
                     </div>
                     <div className="block lg:hidden divide-y-2 divide-outline/20 -mx-4 sm:mx-0">
                         {tableStudents.length === 0 ? (
-                            <div className="p-8 text-center text-on-surface-variant font-black uppercase text-sm">No students match the current filters</div>
+                            <div className="p-8 text-center text-on-surface-variant font-black uppercase text-xs sm:text-sm">No students match the current filters</div>
                         ) : (
                             tableStudents.map((s) => {
                                 const wRisk = riskStyles[computeRisk(s.wordBlastAcc)];
                                 const pRisk = riskStyles[computeRisk(s.storyQuestAcc)];
                                 const fRisk = riskStyles[computeRisk(s.finalAverage)];
                                 return (
-                                    <div key={s.id} className="p-4 sm:p-5 flex flex-col gap-3">
-                                        <div className="flex items-center justify-between gap-3">
-                                            <span className="text-white font-bold truncate max-w-[14rem] sm:max-w-[16rem]" title={s.name}>{s.name}</span>
-                                            {statusBadge(s.status)}
+                                    <div key={s.id} className="p-3 sm:p-4 md:p-5 flex flex-col gap-2 sm:gap-3">
+                                        <div className="flex items-center justify-between gap-2 sm:gap-3">
+                                            <span className="text-white font-bold truncate max-w-[120px] sm:max-w-[14rem] md:max-w-[16rem] text-sm sm:text-base" title={s.name}>{s.name}</span>
+                                            <span className="shrink-0 scale-90 sm:scale-100">{statusBadge(s.status)}</span>
                                         </div>
-                                        <div className="flex items-center gap-4 flex-wrap">
-                                            <span className="flex items-center gap-2"><span className={`w-2.5 h-2.5 rounded-full ${wRisk.dot}`}></span><span className={`font-black italic text-xs ${wRisk.text}`}>{s.wordBlastAcc ?? 0}% Word Blast</span></span>
-                                            <span className="flex items-center gap-2"><span className={`w-2.5 h-2.5 rounded-full ${pRisk.dot}`}></span><span className={`font-black italic text-xs ${pRisk.text}`}>{s.storyQuestAcc ?? 0}% Story Quest</span></span>
-                                            <span className="flex items-center gap-2"><span className={`w-2.5 h-2.5 rounded-full ${fRisk.dot}`}></span><span className={`font-black italic text-xs ${fRisk.text}`}>{s.finalAverage != null ? `${s.finalAverage}%` : 'N/A'} Final Average</span></span>
+                                        <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
+                                            <span className="flex items-center gap-2"><span className={`w-2.5 h-2.5 rounded-full ${wRisk.dot}`}></span><span className={`font-black italic text-[11px] sm:text-xs ${wRisk.text}`}>{s.wordBlastAcc ?? 0}% Word Blast</span></span>
+                                            <span className="flex items-center gap-2"><span className={`w-2.5 h-2.5 rounded-full ${pRisk.dot}`}></span><span className={`font-black italic text-[11px] sm:text-xs ${pRisk.text}`}>{s.storyQuestAcc ?? 0}% Story Quest</span></span>
+                                            <span className="flex items-center gap-2"><span className={`w-2.5 h-2.5 rounded-full ${fRisk.dot}`}></span><span className={`font-black italic text-[11px] sm:text-xs ${fRisk.text}`}>{s.finalAverage != null ? `${s.finalAverage}%` : 'N/A'} Final Average</span></span>
                                         </div>
                                     </div>
                                 );
@@ -378,23 +393,23 @@ export default function Dashboard({
                 </div>
                 <div className="block lg:hidden divide-y-2 divide-outline/20 -mx-4 sm:mx-0">
                     {sectionPerformance.length === 0 ? (
-                        <div className="p-8 text-center text-on-surface-variant font-black uppercase text-sm">No section data available</div>
+                        <div className="p-8 text-center text-on-surface-variant font-black uppercase text-xs sm:text-sm">No section data available</div>
                     ) : (
                         sectionPerformance.map((item, idx) => {
                             const wRisk = riskStyles[computeRisk(item.avg_read)];
                             const pRisk = riskStyles[computeRisk(item.avg_speak)];
                             const fRisk = riskStyles[computeRisk(item.final_average)];
                             return (
-                                <div key={idx} className="p-4 sm:p-5 flex flex-col gap-3">
-                                    <div className="flex items-center justify-between gap-3">
-                                        <span className="text-white font-black truncate" title={item.section}>{item.section}</span>
-                                        <span className={`px-3 py-1 rounded-full border-2 text-xs font-black uppercase shrink-0 ${item.status === "On Track" ? "bg-green-900/50 text-green-400 border-green-500" : item.status === "Needs Support" ? "bg-amber-900/50 text-amber-400 border-amber-500" : item.status === "Not Started" ? "bg-surface-container-high/50 text-on-surface-variant border-outline/20" : "bg-rose-900/50 text-rose-400 border-rose-500"}`}>{item.status}</span>
+                                <div key={idx} className="p-3 sm:p-4 md:p-5 flex flex-col gap-2 sm:gap-3">
+                                    <div className="flex items-center justify-between gap-2 sm:gap-3">
+                                        <span className="text-white font-black truncate max-w-[120px] sm:max-w-[160px] text-sm sm:text-base" title={item.section}>{item.section}</span>
+                                        <span className={`px-2 sm:px-3 py-1 rounded-full border-2 text-[10px] sm:text-xs font-black uppercase shrink-0 ${item.status === "On Track" ? "bg-green-900/50 text-green-400 border-green-500" : item.status === "Needs Support" ? "bg-amber-900/50 text-amber-400 border-amber-500" : item.status === "Not Started" ? "bg-surface-container-high/50 text-on-surface-variant border-outline/20" : "bg-rose-900/50 text-rose-400 border-rose-500"}`}>{item.status}</span>
                                     </div>
-                                    <div className="text-xs text-on-surface-variant font-black uppercase">Total Students: <span className="text-white">{item.student_count}</span></div>
-                                    <div className="flex items-center gap-4 flex-wrap">
-                                        <span className="flex items-center gap-2"><span className={`w-2.5 h-2.5 rounded-full ${wRisk.dot}`}></span><span className={`font-black italic text-xs ${wRisk.text}`}>{item.avg_read}% Word Blast</span></span>
-                                        <span className="flex items-center gap-2"><span className={`w-2.5 h-2.5 rounded-full ${pRisk.dot}`}></span><span className={`font-black italic text-xs ${pRisk.text}`}>{item.avg_speak}% Story Quest</span></span>
-                                        <span className="flex items-center gap-2"><span className={`w-2.5 h-2.5 rounded-full ${fRisk.dot}`}></span><span className={`font-black italic text-xs ${fRisk.text}`}>{item.final_average != null ? `${item.final_average}%` : 'N/A'} Final Average</span></span>
+                                    <div className="text-[11px] sm:text-xs text-on-surface-variant font-black uppercase">Total Students: <span className="text-white">{item.student_count}</span></div>
+                                    <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
+                                        <span className="flex items-center gap-2"><span className={`w-2.5 h-2.5 rounded-full ${wRisk.dot}`}></span><span className={`font-black italic text-[11px] sm:text-xs ${wRisk.text}`}>{item.avg_read}% Word Blast</span></span>
+                                        <span className="flex items-center gap-2"><span className={`w-2.5 h-2.5 rounded-full ${pRisk.dot}`}></span><span className={`font-black italic text-[11px] sm:text-xs ${pRisk.text}`}>{item.avg_speak}% Story Quest</span></span>
+                                        <span className="flex items-center gap-2"><span className={`w-2.5 h-2.5 rounded-full ${fRisk.dot}`}></span><span className={`font-black italic text-[11px] sm:text-xs ${fRisk.text}`}>{item.final_average != null ? `${item.final_average}%` : 'N/A'} Final Average</span></span>
                                     </div>
                                 </div>
                             );
@@ -498,8 +513,8 @@ export default function Dashboard({
             <div className="bg-surface-container border-4 border-outline/20 p-4 sm:p-6 md:p-10 rounded-xl  mb-10">
                 <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 mb-6 lg:mb-8">
                     <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 flex-wrap">
-                        <h2 className="text-xl sm:text-2xl font-black text-white uppercase italic flex items-center gap-3">
-                            <span className="material-symbols-outlined text-yellow-400">
+                        <h2 className="text-lg sm:text-xl md:text-2xl font-black text-white uppercase italic flex items-center gap-2 sm:gap-3">
+                            <span className="material-symbols-outlined text-yellow-400 text-xl sm:text-2xl">
                                 leaderboard
                             </span>
                             Top Performing Students
@@ -509,13 +524,13 @@ export default function Dashboard({
                                 <button
                                     key={metric.key}
                                     onClick={() => setActiveMetric(metric.key)}
-                                    className={`flex items-center gap-1.5 px-4 py-2 rounded-lg font-black uppercase italic text-xs transition-all ${
+                                    className={`flex items-center gap-1 sm:gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-black uppercase italic text-[11px] sm:text-xs transition-all whitespace-nowrap ${
                                         activeMetric === metric.key
                                             ? "bg-accent text-slate-950 shadow-[2px_2px_0_0_#3f6212]"
                                             : "text-on-surface-variant hover:text-accent"
                                     }`}
                                 >
-                                    <span className="material-symbols-outlined text-sm">{metric.icon}</span>
+                                    <span className="material-symbols-outlined text-xs sm:text-sm">{metric.icon}</span>
                                     {metric.label}
                                 </button>
                             ))}
@@ -581,20 +596,21 @@ export default function Dashboard({
                                     dataKey="name"
                                     type="category"
                                     stroke="#94a3b8"
-                                    width={isMobile ? 110 : 210}
+                                    width={isMobile ? 90 : isTablet ? 140 : 210}
                                     tick={({ x, y, payload, index }) => {
                                         const s = filteredTopStudents[index];
                                         const isRank = s && s.rank <= 3;
+                                        const w = isMobile ? 90 : isTablet ? 140 : 210;
                                         return (
                                             <g transform={`translate(${x},${y})`}>
-                                                <foreignObject x={isMobile ? -110 : -210} y={-10} width={isMobile ? 110 : 210} height={22}>
-                                                    <div className="flex items-center justify-end gap-1.5 w-full h-full pr-3">
+                                                <foreignObject x={-w} y={-10} width={w} height={22}>
+                                                    <div className="flex items-center justify-end gap-1 sm:gap-1.5 w-full h-full pr-2 sm:pr-3">
                                                         {isRank && (
-                                                            <span className="material-symbols-outlined text-[15px] leading-none" style={{ color: RANK_COLORS[s.rank - 1] }}>
+                                                            <span className="material-symbols-outlined text-[13px] sm:text-[15px] leading-none" style={{ color: RANK_COLORS[s.rank - 1] }}>
                                                                 emoji_events
                                                             </span>
                                                         )}
-                                                        <span className="text-sm font-bold truncate max-w-[150px] block" style={{ color: '#e2e8f0' }} title={payload.value}>
+                                                        <span className="text-xs sm:text-sm font-bold truncate max-w-[96px] sm:max-w-[128px] md:max-w-[160px] lg:max-w-[180px] block" style={{ color: '#e2e8f0' }} title={payload.value}>
                                                             {payload.value}
                                                         </span>
                                                     </div>

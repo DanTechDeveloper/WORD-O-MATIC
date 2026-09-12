@@ -25,16 +25,16 @@ function WordChip({ word, stat, threshold, className }) {
 
     return (
         <span
-            className={`px-4 py-2 bg-surface-container border-2 border-outline/20 font-black rounded-xl text-sm transition-colors cursor-default ${className}`}
+            className={`px-3 py-1.5 sm:px-4 sm:py-2 bg-surface-container border-2 border-outline/20 font-black rounded-xl text-xs sm:text-sm transition-colors cursor-default ${className}`}
         >
             {word}
             {attention ? (
-                <span className="block mt-1 text-xs uppercase tracking-widest text-on-surface-variant">
+                <span className="block mt-1 text-[10px] sm:text-xs uppercase tracking-widest text-on-surface-variant">
                     Attempts: {attemptsShown(stat)},{" "}
                     <span className={attention.cls}>{attention.label}</span>
                 </span>
             ) : (
-                <span className="block mt-1 text-xs uppercase tracking-widest text-on-surface-variant">
+                <span className="block mt-1 text-[10px] sm:text-xs uppercase tracking-widest text-on-surface-variant">
                     Attempts: {attemptsShown(stat)}
                 </span>
             )}
@@ -50,10 +50,10 @@ function SentenceChip({ sentence, stat, threshold, className }) {
 
     return (
         <span
-            className={`px-4 py-3 bg-surface-container border-2 border-outline/20 font-black rounded-xl text-sm leading-relaxed transition-colors cursor-default block ${className}`}
+            className={`px-3 py-2 sm:px-4 sm:py-3 bg-surface-container border-2 border-outline/20 font-black rounded-xl text-xs sm:text-sm leading-relaxed transition-colors cursor-default block ${className}`}
         >
             <span className="block">{sentence}</span>
-            <span className="block mt-1 text-xs uppercase tracking-widest text-on-surface-variant">
+            <span className="block mt-1 text-[10px] sm:text-xs uppercase tracking-widest text-on-surface-variant">
                 Attempts: {attempts}
                 {attention ? (
                     <>
@@ -280,36 +280,36 @@ export default function StudentDetail({ data }) {
                             />
                         </div>
                         <div className="flex-1 min-w-0 overflow-hidden">
-                            <h1 className="text-3xl sm:text-4xl font-black text-white uppercase italic tracking-tighter truncate" title={student.name}>
+                            <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black text-white uppercase italic tracking-tighter truncate" title={student.name}>
                                 {student.name}
                             </h1>
-                            <p className="mt-2 text-on-surface-variant font-black uppercase text-sm tracking-widest">
+                            <p className="mt-2 text-on-surface-variant font-black uppercase text-xs sm:text-sm tracking-widest">
                                 Student ID: {student.id}
                             </p>
-                            <p className="text-on-surface-variant font-black uppercase text-sm tracking-widest">
+                            <p className="text-on-surface-variant font-black uppercase text-xs sm:text-sm tracking-widest">
                                 Section: {student.section}
                             </p>
                         </div>
                     </div>
 
                     <div className="flex flex-col gap-4 sm:gap-6 flex-1 w-full">
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
                             {stats.slice(0, 3).map((stat, i) => (
                                 <div
                                     key={i}
-                                    className="bg-surface-container rounded-3xl border-4 border-outline/20 p-6 "
+                                    className="bg-surface-container rounded-3xl border-4 border-outline/20 p-4 sm:p-6 "
                                 >
                                     <div className="flex justify-between items-start mb-2">
-                                        <span className="text-on-surface-variant font-black uppercase text-xs tracking-widest">
+                                        <span className="text-on-surface-variant font-black uppercase text-[10px] sm:text-xs tracking-widest">
                                             {stat.label}
                                         </span>
                                         <span
-                                            className={`material-symbols-outlined ${stat.color}`}
+                                            className={`material-symbols-outlined text-lg sm:text-xl ${stat.color}`}
                                         >
                                             {stat.icon}
                                         </span>
                                     </div>
-                                    <div className="text-2xl font-black text-white italic uppercase tracking-tighter">
+                                    <div className="text-lg sm:text-xl md:text-2xl font-black text-white italic uppercase tracking-tighter">
                                         {stat.value}
                                     </div>
                                 </div>
@@ -319,19 +319,19 @@ export default function StudentDetail({ data }) {
                             {stats.slice(3).map((stat, i) => (
                                 <div
                                     key={i + 3}
-                                    className="bg-surface-container rounded-3xl border-4 border-outline/20 p-6 "
+                                    className="bg-surface-container rounded-3xl border-4 border-outline/20 p-4 sm:p-6 "
                                 >
                                     <div className="flex justify-between items-start mb-2">
-                                        <span className="text-on-surface-variant font-black uppercase text-xs tracking-widest">
+                                        <span className="text-on-surface-variant font-black uppercase text-[10px] sm:text-xs tracking-widest">
                                             {stat.label}
                                         </span>
                                         <span
-                                            className={`material-symbols-outlined ${stat.color}`}
+                                            className={`material-symbols-outlined text-lg sm:text-xl ${stat.color}`}
                                         >
                                             {stat.icon}
                                         </span>
                                     </div>
-                                    <div className="text-2xl font-black text-white italic uppercase tracking-tighter">
+                                    <div className="text-lg sm:text-xl md:text-2xl font-black text-white italic uppercase tracking-tighter">
                                         {stat.value}
                                     </div>
                                 </div>
@@ -343,85 +343,85 @@ export default function StudentDetail({ data }) {
 
             {/* Overall Status */}
             <div className="mb-12">
-                <h2 className="text-xl font-black text-on-surface-variant uppercase italic tracking-tighter mb-6 flex items-center gap-2">
+                <h2 className="text-base sm:text-lg md:text-xl font-black text-on-surface-variant uppercase italic tracking-tighter mb-6 flex items-center gap-2">
                     <span className="w-8 h-1 bg-surface-container-high"></span> Overall
                     Status
                 </h2>
                 <div className="bg-surface-container rounded-xl border-4 border-outline/20 p-4 sm:p-6 md:p-8 mb-8">
-                    <div className="flex flex-wrap items-center gap-4 mb-8">
+                    <div className="flex flex-wrap items-center gap-3 sm:gap-4 mb-6 sm:mb-8">
                         <span
-                            className={`material-symbols-outlined text-3xl p-3 ${status.bg} ${status.color} rounded-2xl border-2 ${status.border}`}
+                            className={`material-symbols-outlined text-2xl sm:text-3xl p-2 sm:p-3 ${status.bg} ${status.color} rounded-2xl border-2 ${status.border}`}
                         >
                             {status.icon}
                         </span>
                         <div>
                             <div
-                                className={`text-4xl font-black uppercase italic tracking-tighter ${status.color}`}
+                                className={`text-2xl sm:text-3xl md:text-4xl font-black uppercase italic tracking-tighter ${status.color}`}
                             >
                                 {status.label}
                             </div>
-                            <p className="mt-1 text-on-surface-variant font-bold text-lg">
+                            <p className="mt-1 text-on-surface-variant font-bold text-base sm:text-lg">
                                 {recommendations[statusKey] || status.label}
                             </p>
                         </div>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                         <div className="bg-surface-container-lowest rounded-3xl border-4 border-outline/20 p-4 sm:p-6">
-                            <div className="text-on-surface-variant font-black uppercase text-base tracking-widest mb-4 flex items-center gap-2">
-                                <span className="material-symbols-outlined text-xl">
+                            <div className="text-on-surface-variant font-black uppercase text-sm sm:text-base tracking-widest mb-4 flex items-center gap-2">
+                                <span className="material-symbols-outlined text-lg sm:text-xl">
                                     speed
                                 </span>
                                 Performance Summary
                             </div>
                             <div className="space-y-3">
-                                <div className="flex justify-between items-center">
-                                    <span className="text-on-surface-variant font-bold text-lg">
+                                <div className="flex justify-between items-center gap-2">
+                                    <span className="text-on-surface-variant font-bold text-sm sm:text-base md:text-lg">
                                         Word Blast Accuracy
                                     </span>
-                                    <span className="text-accent font-black uppercase italic tracking-tighter text-2xl">
+                                    <span className="text-accent font-black uppercase italic tracking-tighter text-xl sm:text-2xl">
                                         {wbAcc}
                                     </span>
                                 </div>
-                                <div className="flex justify-between items-center">
-                                    <span className="text-on-surface-variant font-bold text-lg">
+                                <div className="flex justify-between items-center gap-2">
+                                    <span className="text-on-surface-variant font-bold text-sm sm:text-base md:text-lg">
                                         Story Quest Accuracy
                                     </span>
-                                    <span className="text-cyan-400 font-black uppercase italic tracking-tighter text-2xl">
+                                    <span className="text-cyan-400 font-black uppercase italic tracking-tighter text-xl sm:text-2xl">
                                         {sqAcc}
                                     </span>
                                 </div>
-                                <div className="flex justify-between items-center pt-4 mt-4 border-t-2 border-outline/20">
-                                    <span className="text-amber-400 font-black uppercase text-sm tracking-widest flex items-center gap-2">
-                                        <span className="material-symbols-outlined text-lg">star</span>
+                                <div className="flex justify-between items-center gap-2 pt-4 mt-4 border-t-2 border-outline/20">
+                                    <span className="text-amber-400 font-black uppercase text-xs sm:text-sm tracking-widest flex items-center gap-2">
+                                        <span className="material-symbols-outlined text-base sm:text-lg">star</span>
                                         Final Average
                                     </span>
-                                    <span className="text-amber-400 font-black uppercase italic tracking-tighter text-3xl bg-amber-400/10 border border-amber-400/20 rounded-xl px-3 py-1">
+                                    <span className="text-amber-400 font-black uppercase italic tracking-tighter text-xl sm:text-2xl md:text-3xl bg-amber-400/10 border border-amber-400/20 rounded-xl px-3 py-1">
                                         {data.student?.finalAverage != null ? `${data.student.finalAverage}%` : 'N/A'}
                                     </span>
                                 </div>
                             </div>
                         </div>
                         <div className="bg-surface-container-lowest rounded-3xl border-4 border-outline/20 p-4 sm:p-6">
-                            <div className="text-on-surface-variant font-black uppercase text-base tracking-widest mb-4 flex items-center gap-2">
-                                <span className="material-symbols-outlined text-xl">
+                            <div className="text-on-surface-variant font-black uppercase text-sm sm:text-base tracking-widest mb-4 flex items-center gap-2">
+                                <span className="material-symbols-outlined text-lg sm:text-xl">
                                     flag
                                 </span>
                                 Curriculum Progress
                             </div>
                             <div className="space-y-3">
-                                <div className="flex justify-between items-center">
-                                    <span className="text-on-surface-variant font-bold text-lg">
+                                <div className="flex justify-between items-center gap-2">
+                                    <span className="text-on-surface-variant font-bold text-sm sm:text-base md:text-lg">
                                         Word Blast
                                     </span>
-                                    <span className="text-accent font-black uppercase italic tracking-tighter text-2xl">
+                                    <span className="text-accent font-black uppercase italic tracking-tighter text-xl sm:text-2xl">
                                         {wbProgress}%
                                     </span>
                                 </div>
-                                <div className="flex justify-between items-center">
-                                    <span className="text-on-surface-variant font-bold text-lg">
+                                <div className="flex justify-between items-center gap-2">
+                                    <span className="text-on-surface-variant font-bold text-sm sm:text-base md:text-lg">
                                         Story Quest
                                     </span>
-                                    <span className="text-cyan-400 font-black uppercase italic tracking-tighter text-2xl">
+                                    <span className="text-cyan-400 font-black uppercase italic tracking-tighter text-xl sm:text-2xl">
                                         {sqProgress}%
                                     </span>
                                 </div>
@@ -429,27 +429,27 @@ export default function StudentDetail({ data }) {
                         </div>
                     </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
                     {modes.map((mode, i) => (
                         <div
                             key={i}
                             className="bg-surface-container rounded-xl border-4 border-outline/20 p-4 sm:p-6 md:p-8 relative overflow-hidden group"
                         >
                             <div className="relative z-10">
-                                <div className="flex justify-between items-end mb-6">
+                                <div className="flex justify-between items-end gap-2 mb-6">
                                     <div>
-                                        <div className="text-accent font-black uppercase text-xs tracking-widest mb-1">
+                                        <div className="text-accent font-black uppercase text-[10px] sm:text-xs tracking-widest mb-1">
                                             {mode.name}
                                         </div>
-                                        <div className="text-4xl font-black text-white uppercase italic tracking-tighter">
+                                        <div className="text-2xl sm:text-3xl md:text-4xl font-black text-white uppercase italic tracking-tighter">
                                             {mode.level}
                                         </div>
                                     </div>
                                     <div className="text-right">
-                                        <div className="text-on-surface-variant font-black uppercase text-xs tracking-widest mb-1">
+                                        <div className="text-on-surface-variant font-black uppercase text-[10px] sm:text-xs tracking-widest mb-1">
                                             Progress
                                         </div>
-                                        <div className="text-white font-black uppercase italic tracking-tighter">
+                                        <div className="text-white font-black uppercase italic tracking-tighter text-xs sm:text-sm">
                                             {mode.sub}
                                         </div>
                                     </div>
@@ -472,16 +472,16 @@ export default function StudentDetail({ data }) {
 
             {/* Word Blast: Mastery & Training Zones */}
             <div className="mb-12">
-                <h2 className="text-xl font-black text-white uppercase italic tracking-tighter mb-6 flex items-center gap-2">
+                <h2 className="text-base sm:text-lg md:text-xl font-black text-white uppercase italic tracking-tighter mb-6 flex items-center gap-2">
                     <span className="w-8 h-1 bg-accent"></span> Word Blast
                 </h2>
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-10">
-                    <div className="space-y-6">
-                        <div className="flex items-center gap-4">
-                            <span className="material-symbols-outlined text-accent p-3 bg-accent/10 rounded-2xl border-2 border-accent/20">
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 sm:gap-10">
+                    <div className="space-y-4 sm:space-y-6">
+                        <div className="flex items-center gap-3 sm:gap-4">
+                            <span className="material-symbols-outlined text-accent p-2 sm:p-3 bg-accent/10 rounded-2xl border-2 border-accent/20 text-xl sm:text-2xl">
                                 verified
                             </span>
-                            <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter">
+                            <h3 className="text-lg sm:text-xl md:text-2xl font-black text-white uppercase italic tracking-tighter">
                                 Mastery Zone
                             </h3>
                         </div>
@@ -510,12 +510,12 @@ export default function StudentDetail({ data }) {
                         </div>
                     </div>
 
-                    <div className="space-y-6">
-                        <div className="flex items-center gap-4">
-                            <span className="material-symbols-outlined text-orange-400 p-3 bg-orange-400/10 rounded-2xl border-2 border-orange-400/20">
+                    <div className="space-y-4 sm:space-y-6">
+                        <div className="flex items-center gap-3 sm:gap-4">
+                            <span className="material-symbols-outlined text-orange-400 p-2 sm:p-3 bg-orange-400/10 rounded-2xl border-2 border-orange-400/20 text-xl sm:text-2xl">
                                 exercise
                             </span>
-                            <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter">
+                            <h3 className="text-lg sm:text-xl md:text-2xl font-black text-white uppercase italic tracking-tighter">
                                 Training Zone
                             </h3>
                         </div>
@@ -549,16 +549,16 @@ export default function StudentDetail({ data }) {
 
             {/* Story Quest: Mastery & Training Zones */}
             <div className="mb-12">
-                <h2 className="text-xl font-black text-white uppercase italic tracking-tighter mb-6 flex items-center gap-2">
+                <h2 className="text-base sm:text-lg md:text-xl font-black text-white uppercase italic tracking-tighter mb-6 flex items-center gap-2">
                     <span className="w-8 h-1 bg-cyan-400"></span> Story Quest
                 </h2>
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-10">
-                    <div className="space-y-6">
-                        <div className="flex items-center gap-4">
-                            <span className="material-symbols-outlined text-cyan-400 p-3 bg-cyan-400/10 rounded-2xl border-2 border-cyan-400/20">
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 sm:gap-10">
+                    <div className="space-y-4 sm:space-y-6">
+                        <div className="flex items-center gap-3 sm:gap-4">
+                            <span className="material-symbols-outlined text-cyan-400 p-2 sm:p-3 bg-cyan-400/10 rounded-2xl border-2 border-cyan-400/20 text-xl sm:text-2xl">
                                 verified
                             </span>
-                            <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter">
+                            <h3 className="text-lg sm:text-xl md:text-2xl font-black text-white uppercase italic tracking-tighter">
                                 Mastery Zone
                             </h3>
                         </div>
@@ -583,12 +583,12 @@ export default function StudentDetail({ data }) {
                         </div>
                     </div>
 
-                    <div className="space-y-6">
-                        <div className="flex items-center gap-4">
-                            <span className="material-symbols-outlined text-orange-400 p-3 bg-orange-400/10 rounded-2xl border-2 border-orange-400/20">
+                    <div className="space-y-4 sm:space-y-6">
+                        <div className="flex items-center gap-3 sm:gap-4">
+                            <span className="material-symbols-outlined text-orange-400 p-2 sm:p-3 bg-orange-400/10 rounded-2xl border-2 border-orange-400/20 text-xl sm:text-2xl">
                                 exercise
                             </span>
-                            <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter">
+                            <h3 className="text-lg sm:text-xl md:text-2xl font-black text-white uppercase italic tracking-tighter">
                                 Training Zone
                             </h3>
                         </div>

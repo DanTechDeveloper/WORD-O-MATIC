@@ -88,34 +88,34 @@ export default function Badges({
                 <meta name="description" content="Monitor badge distribution on Word-O-Matic." />
             </Head>
             <div className="mb-10">
-                <h1 className="text-4xl font-black text-white uppercase italic tracking-tighter mb-2">
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white uppercase italic tracking-tighter mb-2">
                     Badges
                 </h1>
-                <p className="text-on-surface-variant font-black uppercase text-xs tracking-widest">
+                <p className="text-on-surface-variant font-black uppercase text-[11px] sm:text-xs tracking-widest">
                     {auth?.user?.name || "Teacher"} • Monitor badge distribution
                     across {totalStudents} students
                 </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6 mb-10">
+            <div className="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-6 mb-10">
                 {summaryCards.map((card, i) => (
                     <div
                         key={i}
-                        className="bg-surface-container border-2 border-outline/20 p-4 sm:p-6 rounded-2xl "
+                        className="bg-surface-container border-2 border-outline/20 p-3 sm:p-4 md:p-6 rounded-2xl "
                     >
                         <span
-                            className={`material-symbols-outlined text-2xl sm:text-3xl ${card.color} mb-3 sm:mb-4 block`}
+                            className={`material-symbols-outlined text-xl sm:text-2xl md:text-3xl ${card.color} mb-2 sm:mb-3 md:mb-4 block`}
                         >
                             {card.icon}
                         </span>
-                        <h3 className="text-on-surface-variant text-xs sm:text-xs font-black uppercase tracking-widest mb-1">
+                        <h3 className="text-on-surface-variant text-[10px] sm:text-xs font-black uppercase tracking-widest mb-1 truncate" title={card.label}>
                             {card.label}
                         </h3>
-                        <p className="text-2xl sm:text-3xl font-black text-white italic tracking-tighter">
+                        <p className="text-xl sm:text-2xl md:text-3xl font-black text-white italic tracking-tighter truncate" title={String(card.value)}>
                             {card.value}
                         </p>
                         {card.sub && (
-                            <p className="text-xs text-on-surface-variant font-semibold mt-1">
+                            <p className="text-[11px] sm:text-xs text-on-surface-variant font-semibold mt-1 truncate">
                                 {card.sub}
                             </p>
                         )}
@@ -123,14 +123,14 @@ export default function Badges({
                 ))}
             </div>
 
-            <div className="bg-surface-container border-4 border-outline/20 p-4 sm:p-8 rounded-xl sm:rounded-xl  mb-10">
-                <h2 className="text-xl sm:text-2xl font-black text-white uppercase italic flex items-center gap-3 mb-4 sm:mb-6">
-                    <span className="material-symbols-outlined text-yellow-400 text-2xl sm:text-3xl">
+            <div className="bg-surface-container border-4 border-outline/20 p-4 sm:p-6 md:p-8 rounded-xl sm:rounded-xl  mb-10">
+                <h2 className="text-lg sm:text-xl md:text-2xl font-black text-white uppercase italic flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
+                    <span className="material-symbols-outlined text-yellow-400 text-xl sm:text-2xl md:text-3xl">
                         workspace_premium
                     </span>
                     Badge Catalog
                 </h2>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3 md:gap-4">
                     {badges.map((badge) => {
                         const pct =
                             totalStudents > 0
@@ -146,19 +146,19 @@ export default function Badges({
                                   ? "bg-yellow-400"
                                   : "bg-rose-400";
                         return (
-                            <div
+                                <div
                                 key={badge.id}
-                                className="bg-surface-container-lowest border-2 border-outline/20 rounded-xl p-4 text-center group"
+                                className="bg-surface-container-lowest border-2 border-outline/20 rounded-xl p-3 sm:p-4 text-center group"
                             >
-                                <div className="w-12 h-12 mx-auto mb-2 flex items-center justify-center">
-                                    <span className="material-symbols-outlined text-3xl text-on-surface">
+                                <div className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-2 flex items-center justify-center">
+                                    <span className="material-symbols-outlined text-2xl sm:text-3xl text-on-surface">
                                         {badge.icon || "star"}
                                     </span>
                                 </div>
-                                <h3 className="text-white font-black uppercase italic text-xs mb-1 truncate">
+                                <h3 className="text-white font-black uppercase italic text-[11px] sm:text-xs mb-1 truncate" title={badge.name}>
                                     {badge.name}
                                 </h3>
-                                <p className="text-on-surface-variant font-black uppercase text-xs tracking-widest">
+                                <p className="text-on-surface-variant font-black uppercase text-[10px] sm:text-xs tracking-widest">
                                     {badge.earned_count}/{totalStudents}
                                 </p>
                                 <div className="w-full h-2.5 bg-surface-container rounded-full border border-outline/20 overflow-hidden mt-2">
@@ -175,14 +175,14 @@ export default function Badges({
 
             <div className="bg-surface-container border-4 border-outline/20 p-4 sm:p-8 rounded-xl sm:rounded-xl ">
                 <div className="flex flex-col gap-4 mb-6">
-                    <div className="flex flex-col xs:flex-row justify-between items-start xs:items-center gap-3">
-                        <h2 className="text-xl sm:text-2xl font-black text-white uppercase italic flex items-center gap-3">
-                            <span className="material-symbols-outlined text-yellow-400 text-2xl sm:text-3xl">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                        <h2 className="text-lg sm:text-xl md:text-2xl font-black text-white uppercase italic flex items-center gap-2 sm:gap-3">
+                            <span className="material-symbols-outlined text-yellow-400 text-xl sm:text-2xl md:text-3xl">
                                 leaderboard
                             </span>
                             Top Badge Earners
                         </h2>
-                        <div className="flex gap-2 sm:gap-3 w-full xs:w-auto">
+                        <div className="flex gap-2 sm:gap-3 w-full sm:w-auto">
                             <select
                                 value={filters.section ?? ""}
                                 onChange={handleSection}
@@ -221,33 +221,33 @@ export default function Badges({
                             const rank = i + 1;
                             const isTop3 = rank <= 3;
                             return (
-                                <div key={student.id} className={`p-4 sm:p-5 flex flex-col gap-3 ${student.badge_count === 0 ? "opacity-60" : ""}`}>
+                                <div key={student.id} className={`p-3 sm:p-4 md:p-5 flex flex-col gap-2 sm:gap-3 ${student.badge_count === 0 ? "opacity-60" : ""}`}>
                                     <div className="flex items-center gap-2 sm:gap-3">
                                         <div className="flex flex-col items-center shrink-0">
-                                            <span className="text-xs sm:text-xs font-black uppercase tracking-widest text-on-surface-variant">Rank</span>
-                                            <span className="flex items-center justify-center w-8 h-8">
+                                            <span className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-on-surface-variant">Rank</span>
+                                            <span className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8">
                                                 {isTop3 ? (
-                                                    <span className="material-symbols-outlined text-2xl sm:text-3xl" style={{ color: RANK_COLORS[rank - 1], fontVariationSettings: "'FILL' 1" }}>emoji_events</span>
+                                                    <span className="material-symbols-outlined text-xl sm:text-2xl md:text-3xl" style={{ color: RANK_COLORS[rank - 1], fontVariationSettings: "'FILL' 1" }}>emoji_events</span>
                                                 ) : (
-                                                    <span className="text-base sm:text-xl font-black text-on-surface-variant">#{rank}</span>
+                                                    <span className="text-sm sm:text-base md:text-xl font-black text-on-surface-variant">#{rank}</span>
                                                 )}
                                             </span>
                                         </div>
                                         <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-surface-container-lowest border-2 border-accent overflow-hidden shrink-0">
-                                            {student.avatar ? <img src={student.avatar} alt={student.name} className="w-full h-full object-cover" /> : <span className="material-symbols-outlined text-on-surface-variant text-sm sm:text-base">person</span>}
+                                            {student.avatar ? <img src={student.avatar} alt={student.name} className="w-full h-full object-cover" /> : <span className="material-symbols-outlined text-on-surface-variant text-xs sm:text-sm md:text-base">person</span>}
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-xs sm:text-xs font-black uppercase tracking-widest text-on-surface-variant">Student</p>
-                                            <span className="font-black text-white truncate max-w-[8rem] sm:max-w-[11rem] block text-sm sm:text-base" title={student.name}>{student.name}</span>
+                                            <p className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-on-surface-variant">Student</p>
+                                            <span className="font-black text-white truncate max-w-[88px] sm:max-w-[11rem] md:max-w-[14rem] block text-sm sm:text-base" title={student.name}>{student.name}</span>
                                         </div>
-                                        <div className="flex flex-col items-center shrink-0">
-                                            <span className="text-xs sm:text-xs font-black uppercase tracking-widest text-on-surface-variant">Badges</span>
-                                            <span className={`font-black text-lg sm:text-xl ${student.badge_count === 0 ? "text-on-surface-variant" : student.badge_count >= 5 ? "text-accent" : student.badge_count >= 3 ? "text-yellow-400" : "text-rose-400"}`}>{student.badge_count}</span>
+                                        <div className="flex flex-col items-center shrink-0 ml-1">
+                                            <span className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-on-surface-variant">Badges</span>
+                                            <span className={`font-black text-base sm:text-lg md:text-xl ${student.badge_count === 0 ? "text-on-surface-variant" : student.badge_count >= 5 ? "text-accent" : student.badge_count >= 3 ? "text-yellow-400" : "text-rose-400"}`}>{student.badge_count}</span>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-3 sm:gap-4 flex-wrap text-xs sm:text-sm">
-                                        <span className="text-on-surface-variant font-semibold">Section: <span className="text-on-surface">{student.section || "—"}</span></span>
-                                        <span className="text-on-surface-variant font-semibold">Last Earned: <span className="text-on-surface-variant">{formatRelativeTime(student.last_earned_at)}</span></span>
+                                    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3 md:gap-4 flex-wrap text-[11px] sm:text-xs md:text-sm">
+                                        <span className="text-on-surface-variant font-semibold truncate">Section: <span className="text-on-surface">{student.section || "—"}</span></span>
+                                        <span className="text-on-surface-variant font-semibold truncate">Last Earned: <span className="text-on-surface-variant">{formatRelativeTime(student.last_earned_at)}</span></span>
                                     </div>
                                 </div>
                             );

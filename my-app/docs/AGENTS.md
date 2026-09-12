@@ -43,8 +43,11 @@ No lint. CI (`.github/workflows/ci.yml`) now runs **PHP + JS + Caddy smoke + MyS
 
 | Role | Prefix | Middleware | Login |
 |---|---|---|---|
+| Guest (public) | `/privacy`, `/terms`, `/sitemap.xml` | none — `routes/web.php:18` guest group | — |
 | Teacher | `/teacher` | `role:teacher` | username + password |
 | Student | `/student` | `role:student` + `CheckStudentOnboarding` | name + 4-digit PIN |
+
+Launch essentials: `DESIGN.md:390` §11 + `PRODUCT.md:118` — 19 Student vs Teacher items. Ships now: SEO `app.blade.php:7` (meta + `og-image.png` + `favicon.ico`/`apple-touch-icon.png`/`site.webmanifest`), `public/robots.txt` + `public/sitemap.xml` (4 URLs), role-aware `resources/views/errors/404.blade.php`, `GET /teacher/reports/thank-you` (`Pages/Teacher/Thanks.jsx` via `ReportController::sendReportEmails` redirect), `Components/Shared/Footer.jsx` + `Skeleton.jsx` (calm pulse). Deferred `// ponytail` until public signup/analytics: marketing hero, cookie banner, analytics, real address. Homepage/Splash distilled per DESIGN §6 — no `home-grid-bg`/orb/shape-drift.
 
 Teacher login: `UserController@teacherLoginPost` — validates `username` + `password`, no email.
 Both login routes are rate-limited: student `throttle:30,1`, teacher `throttle:5,1`.

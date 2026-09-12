@@ -211,11 +211,13 @@ The application contains **14 Eloquent models**, including:
 
 | Role | Prefix | Includes |
 |:-----|:-------|:---------|
-| **Guest** | `/`, `/teacher/login` | Landing, login |
-| **Teacher** | `/teacher/*` | Dashboard · Student Management · Leaderboards · Badges · Reports · Module Management |
+| **Guest** | `/`, `/teacher/login`, `/privacy`, `/terms`, `/sitemap.xml` | Landing, login, legal, sitemap (public, no role gate — `routes/web.php:18`) |
+| **Teacher** | `/teacher/*` | Dashboard · Student Management · Leaderboards · Badges · Reports + `GET /teacher/reports/thank-you` (`Thanks.jsx` after `POST /teacher/reports/send-emails`) · Module Management |
 | **Student** | `/student/*` | Onboarding · Dashboard · Gameplay · Leaderboards · Badges · Progress Tracking |
 
 </div>
+
+> **Launch essentials (see `my-app/DESIGN.md:390` §11 + `my-app/PRODUCT.md:118`):** SEO `app.blade.php:7` meta description + OG `og-image.png` + favicon/`apple-touch-icon.png`/`site.webmanifest`, `public/robots.txt` (allow `/` `/teacher/login` `/privacy` `/terms`, disallow `/student/` `/teacher/*`, `Sitemap:`) + `public/sitemap.xml` (4 URLs), role-aware `resources/views/errors/404.blade.php`, and `Components/Shared/Footer.jsx`/`Skeleton.jsx` (calm `animate-pulse`, no shimmer). Homepage/Splash distilled per DESIGN §6 — no orbs/dotgrids/shape-drift.
 
 ---
 
