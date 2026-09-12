@@ -445,11 +445,13 @@ class StudentController extends Controller
         } else {
             $this->progressService->updateParagraphProgress($user->student, $module, $wordsSmashed, $request->words_processed, $accuracy);
         }
-        // ponytail: invalidate teacher/student caches — progress affects dashboard/leaderboards
+        // ponytail: invalidate teacher/student caches — progress affects dashboard/leaderboards + level statuses
         Cache::forget('teacher.dashboardStats');
         Cache::forget('teacher.reports');
         Cache::forget('student.leaderboards');
         Cache::forget("student.badges:{$user->id}");
+        Cache::forget("level.word:{$user->id}");
+        Cache::forget("level.paragraph:{$user->id}");
 
         $redirect = redirect()->route('student.results', ['id' => $session->id]);
 
