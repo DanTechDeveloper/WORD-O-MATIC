@@ -10,13 +10,13 @@ export default function BadgeCard({ badge, compact = false }) {
 
     return (
         <div
-            className="group relative bg-surface-container-highest p-4 rounded-xl border-4 border-primary-container/40 transition-all duration-200 hover:-translate-y-1"
-            style={{ boxShadow: "8px 8px 0px 0px #1a1a2e" }}
+            className="group relative bg-surface-container-high p-4 rounded-xl border-2 border-primary-container/40 transition-transform duration-150 hover:-translate-y-1 motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+            style={{ boxShadow: "6px 6px 0 0 #7000ff" }}
         >
             {badge.is_earned && (
                 <div
-                    className="absolute -top-3 -right-1 font-black px-2 py-1 rounded-lg border-2 rotate-12 z-10 bg-primary-container text-white border-slate-950 text-[10px] uppercase"
-                    style={{ boxShadow: "4px 4px 0px 0px rgba(0,0,0,0.5)" }}
+                    className="absolute -top-3 -right-1 font-black px-2 py-1 rounded-lg border-2 rotate-12 z-10 bg-primary-container text-background border-background text-xs uppercase"
+                    style={{ boxShadow: "4px 4px 0 0 #3f6212" }}
                 >
                     EARNED
                 </div>
@@ -41,13 +41,13 @@ export default function BadgeCard({ badge, compact = false }) {
                     </p>
                 </div>
                 <div className="w-full">
-                    <div className="flex justify-between text-[10px] font-bold text-on-surface-variant mb-1 uppercase">
+                    <div className="flex justify-between text-xs font-bold text-on-surface-variant mb-1 uppercase">
                         <span>Progress</span>
                         <span className="text-primary">
                             {badge.current_value}/{badge.threshold}
                         </span>
                     </div>
-                    <div className="w-full bg-slate-950 h-3 rounded-full border-2 border-primary-container/40 overflow-hidden">
+                    <div                     className="w-full bg-background h-3 rounded-full border-2 border-outline/20 overflow-hidden">
                         <div
                             className="h-full bg-primary transition-all duration-1000"
                             style={{

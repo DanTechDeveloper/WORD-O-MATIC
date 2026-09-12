@@ -46,26 +46,27 @@ export default function AvatarSpeechBubble({
         <div className={`${positionClass} ${className}`}>
             <button
                 onClick={onClick}
-                className={`bg-surface-container-high rounded-3xl px-6 sm:px-10 py-4 sm:py-6 shadow-2xl border-2 ${accent.border} min-w-[280px] sm:min-w-[300px] max-w-[92vw] sm:max-w-[440px] cursor-pointer hover:scale-105 active:scale-95 transition-all duration-200 text-center animate-fade-in`}
+                className={`bg-surface-container-high rounded-3xl px-6 sm:px-10 py-4 sm:py-6 shadow-[6px_6px_0_0_#7000ff] border-2 ${accent.border} min-w-[280px] sm:min-w-[300px] max-w-[92vw] sm:max-w-[440px] cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-transform duration-150 text-center animate-fade-in motion-reduce:transition-none`}
             >
-                <p className="text-3xl font-black uppercase tracking-tight text-on-surface flex items-center justify-center gap-2">
-                    <span className="material-symbols-outlined text-4xl">{emoji}</span>
+                <p className="text-2xl font-black uppercase tracking-tight text-on-surface flex items-center justify-center gap-2">
+                    <span className="material-symbols-outlined text-3xl" aria-hidden="true">{emoji}</span>
                     {title}
                 </p>
-                <p className="text-lg font-bold text-on-surface-variant mt-2 leading-snug">
+                <p className="text-base font-bold text-on-surface-variant mt-2 leading-snug">
                     {message}
                 </p>
                 {footerText !== null && (
-                    <p className={`text-sm font-black uppercase tracking-wider ${accent.text} mt-4`}>
-                        {footerText || "Tap here to continue →"}
+                    <p className={`text-xs font-black uppercase tracking-wider ${accent.text} mt-3`}>
+                        {footerText || "Tap here to continue"}
                     </p>
                 )}
             </button>
             {bodyUrl && (
                 <img
                     src={bodyUrl}
-                    alt="Your Avatar"
-                    className={`w-32 xs:w-40 sm:w-48 h-auto md:w-64 lg:w-80 object-contain ${accent.glow} animate-bounce-slow`}
+                    alt="Your avatar guide"
+                    className={`w-32 xs:w-40 sm:w-48 h-auto md:w-64 lg:w-80 object-contain motion-reduce:animate-none`}
+                    style={{ filter: "drop-shadow(0 0 20px rgba(112,0,255,0.2))" }}
                 />
             )}
         </div>

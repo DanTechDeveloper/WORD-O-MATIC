@@ -15,6 +15,13 @@ Route::middleware('guest')->group(function () {
     Route::post('/teacher/login', [UserController::class, 'teacherLoginPost'])->middleware('throttle:5,1');
 });
 
+// Public legal — guest and auth both can see, no role gate
+Route::get('/privacy', fn () => Inertia::render('Legal/Privacy'))->name('privacy');
+Route::get('/terms', fn () => Inertia::render('Legal/Terms'))->name('terms');
+Route::get('/sitemap.xml', function () {
+    return response()->file(public_path('sitemap.xml'));
+})->name('sitemap');
+
 //   Route::inertia("/", "Testing/Microphone");
 
 Route::middleware(['auth'])->group(function () {
@@ -44,6 +51,7 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/reports/export', [ReportController::class, 'exportReports'])->name('reports.export');
             Route::get('/leaderboards', [TeacherController::class, 'leaderboards'])->name('leaderboards');
             Route::get('/badges', [TeacherController::class, 'badges'])->name('badges');
+            Route::get('/reports/thank-you', fn () => Inertia::render('Teacher/Thanks'))->name('reports.thanks');
             Route::put('/students/{student}', [TeacherController::class, 'updateStudent'])->name('students.update');
             Route::delete('/students/{student}', [TeacherController::class, 'destroy'])->name('students.destroy');
         });

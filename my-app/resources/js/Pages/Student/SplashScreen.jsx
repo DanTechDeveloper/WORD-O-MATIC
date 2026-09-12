@@ -6,31 +6,15 @@ const BG_WORDS = ["BLAST", "READ", "SPEAK", "QUEST", "LEARN", "HERO", "STAR", "L
 const BG_WORD_COLORS = ["#d1bcff", "#7000ff", "#ff3bc0", "#ffb77f"];
 const BG_LEFT = ["15%", "75%", "45%", "85%", "30%"];
 
-const SHAPES = [
-    { size: 28, color: "#d1bcff", left: "8%",  delay: 0,    dur: 18, rotate: 45  },
-    { size: 44, color: "#7000ff", left: "22%", delay: 3,    dur: 22, rotate: 0   },
-    { size: 20, color: "#ff3bc0", left: "55%", delay: 1,    dur: 16, rotate: 45  },
-    { size: 36, color: "#d1bcff", left: "70%", delay: 5,    dur: 20, rotate: 22  },
-    { size: 24, color: "#ffb77f", left: "88%", delay: 2,    dur: 24, rotate: 45  },
-    { size: 32, color: "#7000ff", left: "40%", delay: 7,    dur: 19, rotate: 0   },
-    { size: 18, color: "#ff3bc0", left: "62%", delay: 4,    dur: 21, rotate: 45  },
-    { size: 40, color: "#d1bcff", left: "12%", delay: 6,    dur: 17, rotate: 30  },
-];
+// SHAPES removed — ponytail: drift shapes dropped per DESIGN.md §6 dotgrid/orb ban
 
+// ponytail: distill — keep one falling word + subtle scanlines, drop dotgrids/orb/shape drift per DESIGN.md §6
 function ArcadeGridBg() {
     const [index, setIndex] = useState(0);
-    const [exploding, setExploding] = useState(false);
 
     useEffect(() => {
-        const explodeAt = setTimeout(() => setExploding(true), 2200);
-        const nextAt = setTimeout(() => {
-            setExploding(false);
-            setIndex((i) => (i + 1) % BG_WORDS.length);
-        }, 3000);
-        return () => {
-            clearTimeout(explodeAt);
-            clearTimeout(nextAt);
-        };
+        const t = setTimeout(() => setIndex((i) => (i + 1) % BG_WORDS.length), 2500);
+        return () => clearTimeout(t);
     }, [index]);
 
     const word = BG_WORDS[index];
@@ -41,94 +25,19 @@ function ArcadeGridBg() {
         <div className="absolute inset-0 overflow-hidden pointer-events-none z-0" aria-hidden="true">
             <style>
                 {`
-                    .arcade-grid-bg {
-                        background-image: radial-gradient(circle, rgba(112,0,255,0.15) 1px, transparent 1px);
-                        background-size: 32px 32px;
-                    }
-                    .arcade-grid-fine {
-                        background-image: radial-gradient(circle, rgba(209,188,255,0.04) 1px, transparent 1px);
-                        background-size: 16px 16px;
-                    }
                     .arcade-scanlines {
-                        background: repeating-linear-gradient(
-                            0deg,
-                            transparent,
-                            transparent 3px,
-                            rgba(0,0,0,0.04) 3px,
-                            rgba(0,0,0,0.04) 4px
-                        );
+                        background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.04) 3px, rgba(0,0,0,0.04) 4px);
                     }
                     @keyframes splash-fall {
                         0% { top: -10%; opacity: 0; }
                         15% { opacity: 0.6; }
                         100% { top: 70%; opacity: 0.6; }
                     }
-                    @keyframes splash-shard {
-                        0% { transform: translate(0,0) rotate(0deg) scale(1); opacity: 0.6; }
-                        100% { transform: translate(var(--sx),var(--sy)) rotate(var(--sr)) scale(2); opacity: 0; }
-                    }
-                    @keyframes shape-drift {
-                        0%   { transform: translateY(0) rotate(var(--sr)); opacity: 0; }
-                        10%  { opacity: var(--op); }
-                        90%  { opacity: var(--op); }
-                        100% { transform: translateY(-110vh) rotate(calc(var(--sr) + 180deg)); opacity: 0; }
-                    }
-                    @keyframes glow-pulse-ring {
-                        0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.15; }
-                        50%      { transform: translate(-50%, -50%) scale(1.08); opacity: 0.25; }
-                    }
                     @media (prefers-reduced-motion: reduce) {
-                        .splash-word, .splash-shard, .splash-shape, .splash-glow {
-                            animation: none !important;
-                            opacity: 0.3 !important;
-                        }
+                        .splash-word { animation: none !important; opacity: 0.4 !important; }
                     }
                 `}
             </style>
-
-            {/* LED dot-grid texture */}
-            <div className="arcade-grid-bg absolute inset-0" />
-
-            {/* Fine secondary grid */}
-            <div className="arcade-grid-fine absolute inset-0" />
-
-            {/* Pulsing glow ring behind content */}
-            <div
-                className="splash-glow absolute rounded-full"
-                style={{
-                    width: "500px",
-                    height: "500px",
-                    left: "50%",
-                    top: "50%",
-                    transform: "translate(-50%, -50%)",
-                    background: "radial-gradient(circle, rgba(112,0,255,0.2) 0%, rgba(112,0,255,0.05) 50%, transparent 70%)",
-                    boxShadow: "0 0 80px 40px rgba(112,0,255,0.08)",
-                    animation: "glow-pulse-ring 5s ease-in-out infinite",
-                }}
-            />
-
-            {/* Floating geometric shapes */}
-            {SHAPES.map((s, i) => (
-                <div
-                    key={i}
-                    className="splash-shape absolute"
-                    style={{
-                        width: s.size,
-                        height: s.size,
-                        left: s.left,
-                        bottom: "-60px",
-                        backgroundColor: s.color,
-                        opacity: 0.12,
-                        boxShadow: `4px 4px 0 0 #4c1d95`,
-                        transform: `rotate(${s.rotate}deg)`,
-                        "--sr": `${s.rotate}deg`,
-                        "--op": 0.12 + (i % 3) * 0.04,
-                        animation: `shape-drift ${s.dur}s linear ${s.delay}s infinite`,
-                    }}
-                />
-            ))}
-
-            {/* Falling word layer */}
             <div
                 key={index}
                 className="splash-word absolute -translate-x-1/2 font-black uppercase tracking-tight text-4xl md:text-6xl whitespace-nowrap"
@@ -141,36 +50,9 @@ function ArcadeGridBg() {
                     animation: "splash-fall 2.2s ease-in forwards",
                 }}
             >
-                {word.split("").map((char, i) => {
-                    const angle = (i / Math.max(word.length, 1)) * 360;
-                    const dist = 60 + (i % 3) * 30;
-                    const sx = Math.cos((angle * Math.PI) / 180) * dist;
-                    const sy = Math.sin((angle * Math.PI) / 180) * dist - 40;
-                    const sr = (i % 2 === 0 ? 1 : -1) * (20 + (i % 5) * 15);
-                    return (
-                        <span
-                            key={i}
-                            className="inline-block"
-                            style={
-                                exploding
-                                    ? {
-                                          animation: "splash-shard 0.6s ease-out forwards",
-                                          animationDelay: `${i * 30}ms`,
-                                          "--sx": `${sx}px`,
-                                          "--sy": `${sy}px`,
-                                          "--sr": `${sr}deg`,
-                                      }
-                                    : undefined
-                            }
-                        >
-                            {char}
-                        </span>
-                    );
-                })}
+                {word}
             </div>
-
-            {/* CRT scanlines overlay */}
-            <div className="arcade-scanlines absolute inset-0" />
+            <div className="arcade-scanlines absolute inset-0 opacity-40" />
         </div>
     );
 }
@@ -215,7 +97,7 @@ export default function SplashScreen() {
                 {starting ? "Starting…" : "Play"}
             </button>
 
-            <p className="relative z-10 text-on-surface-variant font-black uppercase tracking-[0.2em] text-xs animate-pulse motion-reduce:animate-none">
+            <p className="relative z-10 text-on-surface-variant font-black uppercase tracking-[0.2em] text-xs">
                 Press play to begin
             </p>
         </div>

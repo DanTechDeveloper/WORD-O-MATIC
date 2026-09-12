@@ -7,7 +7,7 @@ function BottomNav({ disableNav }) {
     const hasNewBadge = typeof window !== 'undefined' && localStorage.getItem('hasNewBadge') === '1';
 
     return (
-        <nav className={`fixed bottom-0 left-0 right-0 h-16 sm:h-20 bg-background border-t-2 border-outline z-40 flex items-center justify-around px-2 sm:px-4 ${disableNav ? "pointer-events-none" : ""}`}>
+        <nav className={`fixed bottom-0 left-0 right-0 h-16 sm:h-20 bg-background border-t-2 border-outline/30 z-40 flex items-center justify-around px-2 sm:px-4 ${disableNav ? "pointer-events-none" : ""}`}>
             <Link
                 href="/student/dashboard"
                 className={`flex flex-col items-center gap-0.5 px-3 sm:px-6 py-1.5 sm:py-2 rounded-lg transition-colors ${
@@ -19,7 +19,7 @@ function BottomNav({ disableNav }) {
                 <span className="material-symbols-outlined text-2xl sm:text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>
                     home
                 </span>
-                <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider">Home</span>
+                <span className="text-xs font-black uppercase tracking-wider">Home</span>
             </Link>
             <Link
                 href="/student/leaderboards"
@@ -32,7 +32,7 @@ function BottomNav({ disableNav }) {
                 <span className="material-symbols-outlined text-2xl sm:text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>
                     leaderboard
                 </span>
-                <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider">Scores</span>
+                <span className="text-xs font-black uppercase tracking-wider">Scores</span>
             </Link>
             <Link
                 href="/student/badges"
@@ -50,7 +50,7 @@ function BottomNav({ disableNav }) {
                         <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-red-500 rounded-full border-2 border-surface-container-lowest shadow-[0_0_6px_rgba(239,68,68,0.6)]" />
                     )}
                 </span>
-                <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider">Badges</span>
+                <span className="text-xs font-black uppercase tracking-wider">Badges</span>
             </Link>
         </nav>
     );
@@ -59,13 +59,12 @@ function BottomNav({ disableNav }) {
 export default function DashboardLayout({ children, disableNav }) {
     return (
         <div className="bg-background text-on-background font-body-md min-h-screen relative">
-            <div className="fixed inset-0 pointer-events-none opacity-[0.03]"
+            <div className="fixed inset-0 pointer-events-none opacity-[0.02]"
                 style={{
-                    backgroundImage: `radial-gradient(circle, rgba(163,230,53,1) 1px, transparent 1px)`,
+                    backgroundImage: `radial-gradient(circle, rgba(209,188,255,0.4) 1px, transparent 1px)`,
                     backgroundSize: '32px 32px',
                 }}
             />
-            <div className="fixed inset-0 pointer-events-none bg-gradient-to-b from-lime-900/5 via-transparent to-transparent" />
             <StudentProfile disableNav={disableNav} />
             <main className="w-[92%] mx-auto pt-[72px] lg:pt-[88px] pb-24">
                 {children}

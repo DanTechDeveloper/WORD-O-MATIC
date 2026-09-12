@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import DashboardLayout from "../../Layouts/Teacher/DashboardLayout";
 import ParagraphInputModal from "../../Components/Teacher/ParagraphInputModal";
-import { router, usePage } from "@inertiajs/react";
+import { Head, router, usePage } from "@inertiajs/react";
 
 export default function Paragraph({ modules }) {
     const { auth } = usePage().props;
@@ -62,12 +62,15 @@ export default function Paragraph({ modules }) {
 
     return (
         <>
+            <Head title="Story Quest Modules — Word-O-Matic">
+                <meta name="description" content="Manage Story Quest modules on Word-O-Matic." />
+            </Head>
             <DashboardLayout>
                 <div className="mb-10">
                     <h1 className="text-3xl md:text-4xl font-black text-white uppercase italic tracking-tighter mb-2">
                         STORY QUEST's Modules
                     </h1>
-                    <p className="text-slate-500 font-black uppercase text-xs tracking-widest">
+                    <p className="text-on-surface-variant font-black uppercase text-xs tracking-widest">
                         Manage story quest's content and point values for each
                         level.
                     </p>
@@ -77,7 +80,7 @@ export default function Paragraph({ modules }) {
                     {levels.map((level) => (
                         <div
                             key={level}
-                            className={`bg-slate-900 rounded-[2.5rem] border-4 border-slate-800 p-4 sm:p-6 md:p-8 flex flex-col items-center justify-center text-center shadow-[10px_10px_0_0_#020617] transition-all group ${
+                            className={`bg-surface-container rounded-xl border-4 border-outline/20 p-4 sm:p-6 md:p-8 flex flex-col items-center justify-center text-center shadow-[10px_10px_0_0_#020617] transition-all group ${
                                 isDeadlineClosed ? "cursor-not-allowed opacity-40" : "hover:translate-x-1 hover:translate-y-1 hover:shadow-none cursor-pointer"
                             }`}
                             onClick={() => {
@@ -85,7 +88,7 @@ export default function Paragraph({ modules }) {
                                 openModal(level);
                             }}
                         >
-                            <div className="w-16 h-16 rounded-2xl bg-slate-950 border-2 border-sky-400 flex items-center justify-center mb-4 rotate-3 group-hover:rotate-0 transition-transform shadow-[4px_4px_0_0_#075985]">
+                            <div className="w-16 h-16 rounded-2xl bg-surface-container-lowest border-2 border-sky-400 flex items-center justify-center mb-4 rotate-3 group-hover:rotate-0 transition-transform shadow-[4px_4px_0_0_#075985]">
                                 <span className="text-2xl font-black text-sky-400">
                                     {level}
                                 </span>
@@ -94,7 +97,7 @@ export default function Paragraph({ modules }) {
                                 {entriesByLevel[level]?.title ||
                                     `Module ${level}`}
                             </p>
-                            <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest truncate w-full px-2">
+                            <p className="text-xs text-on-surface-variant font-black uppercase tracking-widest truncate w-full px-2">
                                 {calculateModulePoints(level)} Points Total
                             </p>
                             <button
@@ -116,7 +119,7 @@ export default function Paragraph({ modules }) {
                 {levels.length < 10 && (
                     <div
                         key="add-module"
-                        className={`bg-slate-900 rounded-[2.5rem] border-4 border-slate-800 p-4 sm:p-6 md:p-8 flex flex-col items-center justify-center text-center shadow-[10px_10px_0_0_#020617] transition-all group ${
+                        className={`bg-surface-container rounded-xl border-4 border-outline/20 p-4 sm:p-6 md:p-8 flex flex-col items-center justify-center text-center shadow-[10px_10px_0_0_#020617] transition-all group ${
                             isDeadlineClosed ? "cursor-not-allowed opacity-40" : "hover:translate-x-1 hover:translate-y-1 hover:shadow-none cursor-pointer"
                         }`}
                         onClick={() => {
@@ -124,7 +127,7 @@ export default function Paragraph({ modules }) {
                             openModal(nextLevel);
                         }}
                     >
-                        <div className="w-16 h-16 rounded-2xl bg-slate-950 border-2 border-sky-400 flex items-center justify-center mb-4 transition-transform shadow-[4px_4px_0_0_#075985]">
+                        <div className="w-16 h-16 rounded-2xl bg-surface-container-lowest border-2 border-sky-400 flex items-center justify-center mb-4 transition-transform shadow-[4px_4px_0_0_#075985]">
                             <span className="material-symbols-outlined text-2xl text-sky-400">
                                 add_box
                             </span>
@@ -132,7 +135,7 @@ export default function Paragraph({ modules }) {
                         <p className="text-lg font-black text-white uppercase italic tracking-tighter mb-1">
                             Add Module
                         </p>
-                        <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest">
+                        <p className="text-xs text-on-surface-variant font-black uppercase tracking-widest">
                             Level {nextLevel}
                         </p>
                     </div>

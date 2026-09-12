@@ -1,13 +1,12 @@
 import { Link } from "@inertiajs/react"
 import ProgressBar from "./ProgressBar"
 
-const COVER_GRADIENTS = [
-    "from-purple-600/40 to-pink-600/20",
-    "from-lime-500/40 to-teal-600/20",
-    "from-amber-500/40 to-orange-600/20",
-    "from-cyan-500/40 to-blue-600/20",
-    "from-rose-500/40 to-red-600/20",
-    "from-violet-500/40 to-indigo-600/20",
+// ponytail: solid arcade chrome tints, no harsh gradients — one of four muted solids per level
+const COVER_TINTS = [
+    "bg-primary-container/30",
+    "bg-accent/15",
+    "bg-tertiary-container/25",
+    "bg-quest/15",
 ]
 
 const LEVEL_ICONS = [
@@ -23,7 +22,7 @@ export default function LevelCard({ module, emoji, gameUrl, index, highlightTuto
         totalPoints > 0 ? Math.min((wordsSmashed / totalPoints) * 100, 100) : 0
     const isPlayable =
         module.status === "in_progress" || module.status === "current"
-    const gradient = COVER_GRADIENTS[(module.level - 1) % COVER_GRADIENTS.length]
+    const tint = COVER_TINTS[(module.level - 1) % COVER_TINTS.length]
     const displayIcon = emoji || LEVEL_ICONS[(module.level - 1) % LEVEL_ICONS.length]
 
     if (module.status === "locked") {
@@ -32,7 +31,7 @@ export default function LevelCard({ module, emoji, gameUrl, index, highlightTuto
                 className="relative rounded-2xl border-2 border-dashed border-surface-variant/40 select-none overflow-hidden bg-surface-container-low"
                 style={{ animationDelay: `${index * 80}ms` }}
             >
-                <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-30`} />
+                <div className={`absolute inset-0 ${tint}`} />
                 <div className="relative z-10 p-5 flex flex-col items-center text-center gap-3">
                     <span className="material-symbols-outlined text-5xl text-on-surface-variant">lock</span>
                     <div>
@@ -56,7 +55,7 @@ export default function LevelCard({ module, emoji, gameUrl, index, highlightTuto
 
     const cover = (
         <div
-            className={`absolute inset-0 bg-gradient-to-br ${gradient} ${
+            className={`absolute inset-0 ${tint} ${
                 isCompleted
                     ? isDeadlineClosed ? "opacity-30" : "opacity-60"
                     : isPlayable
@@ -66,15 +65,8 @@ export default function LevelCard({ module, emoji, gameUrl, index, highlightTuto
         />
     )
 
-    const shimmer = isCurrent ? (
-        <div
-            className="absolute inset-0 pointer-events-none"
-            style={{
-                background: "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%)",
-                animation: "shimmer 2.5s ease-in-out infinite",
-            }}
-        />
-    ) : null
+    // ponytail: no shimmer glass on student — calm pulse on PLAY button only when resume, gated to motion
+    const shimmer = null
 
     const inner = (
         <div className="relative z-10 p-4 sm:p-5">
@@ -116,7 +108,7 @@ export default function LevelCard({ module, emoji, gameUrl, index, highlightTuto
                             {hasResume ? "CONTINUE" : "PLAY"}
                         </span>
                     ) : (
-                        <span className={`inline-flex items-center gap-1.5 bg-accent text-surface-container-lowest font-black px-4 py-2 rounded-lg text-sm border-b-[6px] border-accent-deep group-active:border-b-[2px] group-active:translate-y-1 transition-all ${hasResume ? "animate-pulse motion-reduce:animate-none" : ""}`}>
+                        <span className="inline-flex items-center gap-1.5 bg-accent text-surface-container-lowest font-black px-4 py-2 rounded-lg text-sm border-b-[6px] border-accent-deep group-active:border-b-[2px] group-active:translate-y-1 transition-all">
                             <span className="material-symbols-outlined text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>play_arrow</span>
                             {hasResume ? "CONTINUE" : "PLAY"}
                         </span>
@@ -134,10 +126,11 @@ export default function LevelCard({ module, emoji, gameUrl, index, highlightTuto
         </div>
     )
 
+    // ponytail: bounded highlight — static ring, no pulse per DESIGN.md §3 celebration
     const highlightRing = highlightTutorial
         ? tutorialColor === "accent"
-            ? "ring-4 ring-accent ring-offset-4 ring-offset-background scale-[1.03] animate-pulse motion-reduce:animate-none"
-            : "ring-4 ring-quest ring-offset-4 ring-offset-background scale-[1.03] animate-pulse motion-reduce:animate-none"
+            ? "ring-4 ring-accent ring-offset-4 ring-offset-background scale-[1.03]"
+            : "ring-4 ring-quest ring-offset-4 ring-offset-background scale-[1.03]"
         : ""
     const wrapperClass = `group relative block rounded-2xl border-2 transition-all duration-200 overflow-hidden animate-fade-in
         ${isCompleted ? "border-accent-deep bg-accent/5" : ""}

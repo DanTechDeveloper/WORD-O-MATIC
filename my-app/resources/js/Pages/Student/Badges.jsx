@@ -1,3 +1,4 @@
+import { Head } from "@inertiajs/react";
 import { useEffect } from "react";
 import DashboardLayout from "@/Layouts/Student/DashboardLayout";
 import DeadlineBanner from "@/Components/DeadlineBanner";
@@ -7,12 +8,12 @@ import ProgressBar from "@/Components/Student/ProgressBar";
 import useDeadlineStatus from "@/hooks/Student/useDeadlineStatus";
 
 const PALETTE = {
-    accent: { bg: "bg-accent", text: "text-slate-950", border: "border-accent", title: "text-accent" },
-    quest: { bg: "bg-quest", text: "text-slate-950", border: "border-quest", title: "text-quest" },
-    primary: { bg: "bg-primary", text: "text-slate-950", border: "border-primary", title: "text-primary" },
-    secondary: { bg: "bg-secondary", text: "text-slate-950", border: "border-secondary", title: "text-secondary" },
-    tertiary: { bg: "bg-tertiary", text: "text-slate-950", border: "border-tertiary", title: "text-tertiary" },
-    error: { bg: "bg-error", text: "text-slate-950", border: "border-error", title: "text-error" },
+    accent: { bg: "bg-accent", text: "text-background", border: "border-accent", title: "text-accent" },
+    quest: { bg: "bg-quest", text: "text-background", border: "border-quest", title: "text-quest" },
+    primary: { bg: "bg-primary", text: "text-background", border: "border-primary", title: "text-primary" },
+    secondary: { bg: "bg-secondary", text: "text-background", border: "border-secondary", title: "text-secondary" },
+    tertiary: { bg: "bg-tertiary", text: "text-background", border: "border-tertiary", title: "text-tertiary" },
+    error: { bg: "bg-error", text: "text-background", border: "border-error", title: "text-error" },
 };
 
 const BADGE_UI_CONFIG = {
@@ -66,6 +67,9 @@ export default function Badges({ badges }) {
 
     return (
         <DashboardLayout>
+            <Head title="Badges — Word-O-Matic">
+                <meta name="description" content="Your badges and achievements on Word-O-Matic." />
+            </Head>
             <div className="mb-4 pt-2">
                 <BackButton />
             </div>
@@ -89,7 +93,7 @@ export default function Badges({ badges }) {
                         {earnedAchievements.map((badge) => (
                             <div
                                 key={badge.id}
-                                className="relative bg-surface-container rounded-xl border border-surface-variant/20 p-6 text-center hover:-translate-y-1 transition-all duration-200"
+                                className="relative bg-surface-container rounded-xl border border-outline/20 p-6 text-center hover:-translate-y-1 transition-transform duration-150 motion-reduce:transition-none motion-reduce:hover:translate-y-0"
                             >
                                 <div className={`absolute -top-3 right-2 text-sm font-black px-3 py-1 rounded-md ${badge.colors.bg} ${badge.colors.text} border ${badge.colors.border}`}>
                                     {badge.statusLabel}
@@ -107,7 +111,7 @@ export default function Badges({ badges }) {
                                     <ProgressBar
                                         value={badge.progress}
                                         barClassName={badge.colors.bg}
-                                        trackClassName="bg-slate-900"
+                                        trackClassName="bg-background"
                                         heightClassName="h-2.5"
                                     />
                                 </div>
@@ -128,7 +132,7 @@ export default function Badges({ badges }) {
                         {lockedAchievements.map((badge) => (
                             <div
                                 key={badge.id}
-                                className="relative bg-surface-container-low rounded-xl border border-dashed border-surface-variant/20 p-6 text-center opacity-70"
+                                className="relative bg-surface-container-low rounded-xl border border-dashed border-outline/20 p-6 text-center opacity-70"
                             >
                                 <div className="w-24 h-24 mx-auto mb-3 flex items-center justify-center grayscale opacity-60">
                                     <span className="material-symbols-outlined text-7xl text-on-surface-variant">{badge.icon}</span>
@@ -146,8 +150,8 @@ export default function Badges({ badges }) {
                                             </div>
                                             <ProgressBar
                                                 value={badge.progress}
-                                                barClassName="bg-slate-700"
-                                                trackClassName="bg-slate-900"
+                                                barClassName="bg-surface-variant"
+                                                trackClassName="bg-background"
                                                 heightClassName="h-2.5"
                                             />
                                         </div>

@@ -79,14 +79,14 @@ export default function AvatarSelection() {
                                         setSelected(avatar);
                                     }}
                                     aria-pressed={isSelected}
-                                    className={`aspect-square rounded-xl bg-surface-container-high border-4 overflow-hidden p-2 transition-all tactile-card
+                                    className={`aspect-square rounded-xl bg-surface-container-high border-4 overflow-hidden p-2 transition-colors tactile-card
                                         ${
                                             isSelected
-                                                ? "border-accent translate-y-1"
+                                                ? "border-accent"
                                                 : "border-outline hover:border-accent hover:bg-surface-bright"
                                         }
                                         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary-container focus-visible:ring-offset-2 focus-visible:ring-offset-background`}
-                                    style={isSelected ? { boxShadow: "4px 4px 0 0 #4c1d95" } : undefined}
+                                    style={isSelected ? { boxShadow: "4px 4px 0 0 #3f6212" } : undefined}
                                 >
                                     <img
                                         src={avatar.url}

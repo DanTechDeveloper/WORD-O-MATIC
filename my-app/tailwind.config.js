@@ -40,6 +40,7 @@ export default {
             animation: {
                 "bounce-slow": "bounce-slow 2s ease-in-out infinite",
                 "fade-in": "fade-in 0.4s ease-out both",
+                // ponytail: glow-pulse gated to [data-celebrate] only — never on teacher workbench
                 "glow-pulse": "glow-pulse 2s ease-in-out infinite",
                 "shimmer": "shimmer 2.5s ease-in-out infinite",
             },

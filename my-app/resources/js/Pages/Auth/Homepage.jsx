@@ -1,16 +1,5 @@
 import { Head, useForm, Link } from "@inertiajs/react";
 
-const SHAPES = [
-    { size: 28, color: "#d1bcff", left: "8%",  delay: 0,    dur: 18, rotate: 45  },
-    { size: 44, color: "#7000ff", left: "22%", delay: 3,    dur: 22, rotate: 0   },
-    { size: 20, color: "#ff3bc0", left: "55%", delay: 1,    dur: 16, rotate: 45  },
-    { size: 36, color: "#d1bcff", left: "70%", delay: 5,    dur: 20, rotate: 22  },
-    { size: 24, color: "#ffb77f", left: "88%", delay: 2,    dur: 24, rotate: 45  },
-    { size: 32, color: "#7000ff", left: "40%", delay: 7,    dur: 19, rotate: 0   },
-    { size: 18, color: "#ff3bc0", left: "62%", delay: 4,    dur: 21, rotate: 45  },
-    { size: 40, color: "#d1bcff", left: "12%", delay: 6,    dur: 17, rotate: 30  },
-];
-
 const focusRing =
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary-container focus-visible:ring-offset-2 focus-visible:ring-offset-background";
 
@@ -31,20 +20,11 @@ export default function Homepage() {
         <div className="min-h-screen bg-background text-on-background overflow-hidden">
             <Head title="Word-O-Matic - Learn Through Play" />
 
-            {/* HERO = FULL-SCREEN LOGIN */}
+            {/* HERO = FULL-SCREEN LOGIN — distill: solid indigo void, subtle scanlines only, no dotgrid/orb/shape drift per DESIGN.md §6 */}
             <section className="relative min-h-screen flex items-center justify-center pt-14 pb-20 px-4">
-                {/* Arcade background layers */}
                 <div className="absolute inset-0 pointer-events-none z-0" aria-hidden="true">
                     <style>
                         {`
-                            .home-grid-bg {
-                                background-image: radial-gradient(circle, rgba(112,0,255,0.15) 1px, transparent 1px);
-                                background-size: 32px 32px;
-                            }
-                            .home-grid-fine {
-                                background-image: radial-gradient(circle, rgba(209,188,255,0.04) 1px, transparent 1px);
-                                background-size: 16px 16px;
-                            }
                             .home-scanlines {
                                 background: repeating-linear-gradient(
                                     0deg,
@@ -54,63 +34,17 @@ export default function Homepage() {
                                     rgba(0,0,0,0.04) 4px
                                 );
                             }
-                            @keyframes home-glow-pulse {
-                                0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.15; }
-                                50%      { transform: translate(-50%, -50%) scale(1.08); opacity: 0.25; }
-                            }
-                            @keyframes home-shape-drift {
-                                0%   { transform: translateY(0) rotate(var(--sr)); opacity: 0; }
-                                10%  { opacity: var(--op); }
-                                90%  { opacity: var(--op); }
-                                100% { transform: translateY(-110vh) rotate(calc(var(--sr) + 180deg)); opacity: 0; }
-                            }
                             @media (prefers-reduced-motion: reduce) {
-                                .home-shape, .home-glow { animation: none !important; opacity: 0.3 !important; }
+                                .home-scanlines { opacity: 0.6 !important; }
                             }
                         `}
                     </style>
-                    <div className="home-grid-bg absolute inset-0" />
-                    <div className="home-grid-fine absolute inset-0" />
-                    <div
-                        className="home-glow absolute rounded-full"
-                        style={{
-                            width: "600px",
-                            height: "600px",
-                            left: "50%",
-                            top: "50%",
-                            transform: "translate(-50%, -50%)",
-                            background: "radial-gradient(circle, rgba(112,0,255,0.2) 0%, rgba(112,0,255,0.05) 50%, transparent 70%)",
-                            boxShadow: "0 0 80px 40px rgba(112,0,255,0.08)",
-                            animation: "home-glow-pulse 5s ease-in-out infinite",
-                        }}
-                    />
-                    {SHAPES.map((s, i) => (
-                        <div
-                            key={i}
-                            className="home-shape absolute"
-                            style={{
-                                width: s.size,
-                                height: s.size,
-                                left: s.left,
-                                bottom: "-60px",
-                                backgroundColor: s.color,
-                                opacity: 0.12,
-                                boxShadow: "4px 4px 0 0 #4c1d95",
-                                transform: `rotate(${s.rotate}deg)`,
-                                "--sr": `${s.rotate}deg`,
-                                "--op": 0.12 + (i % 3) * 0.04,
-                                animation: `home-shape-drift ${s.dur}s linear ${s.delay}s infinite`,
-                            }}
-                        />
-                    ))}
-                    <div className="home-scanlines absolute inset-0" />
+                    <div className="home-scanlines absolute inset-0 opacity-40" />
                 </div>
-
-                {/* Vignette */}
                 <div
                     className="absolute inset-0 z-[1] pointer-events-none"
                     style={{
-                        background: "radial-gradient(circle at center, rgba(12,12,31,0.6) 0%, rgba(12,12,31,0.2) 40%, transparent 60%)",
+                        background: "radial-gradient(circle at center, rgba(12,12,31,0.4) 0%, transparent 65%)",
                     }}
                 />
 
@@ -120,7 +54,7 @@ export default function Homepage() {
                     <h1
                         className="font-black uppercase italic tracking-tighter leading-[0.9]"
                         style={{
-                            fontSize: "clamp(2.2rem, 8vw, 3rem)",
+                            fontSize: "clamp(2.5rem, 8vw, 3rem)",
                             color: "#d1bcff",
                             textShadow: "0 0 20px rgba(209,188,255,0.3)",
                         }}
@@ -219,8 +153,8 @@ export default function Homepage() {
                 </div>
             </section>
 
-            {/* FOOTER — minimal */}
-            <footer className="fixed bottom-0 left-0 w-full z-40 border-t-2 border-outline/50 bg-background/60 backdrop-blur-sm py-3 px-4">
+            {/* FOOTER — minimal, opaque per DESIGN.md §6 no liquid glass */}
+            <footer className="fixed bottom-0 left-0 w-full z-40 border-t-2 border-outline/30 bg-background py-3 px-4">
                 <div className="max-w-6xl mx-auto flex items-center justify-between">
                     <span className="text-sm font-black text-primary/40 font-headline-xl uppercase italic tracking-tighter">
                         WORD-O-MATIC

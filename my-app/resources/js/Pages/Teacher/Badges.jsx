@@ -1,3 +1,4 @@
+import { Head } from "@inertiajs/react";
 import DashboardLayout from "@/Layouts/Teacher/DashboardLayout";
 import { router } from "@inertiajs/react";
 import { useRef } from "react";
@@ -83,11 +84,14 @@ export default function Badges({
 
     return (
         <DashboardLayout>
+            <Head title="Badges — Word-O-Matic">
+                <meta name="description" content="Monitor badge distribution on Word-O-Matic." />
+            </Head>
             <div className="mb-10">
                 <h1 className="text-4xl font-black text-white uppercase italic tracking-tighter mb-2">
                     Badges
                 </h1>
-                <p className="text-slate-500 font-black uppercase text-xs tracking-widest">
+                <p className="text-on-surface-variant font-black uppercase text-xs tracking-widest">
                     {auth?.user?.name || "Teacher"} • Monitor badge distribution
                     across {totalStudents} students
                 </p>
@@ -97,21 +101,21 @@ export default function Badges({
                 {summaryCards.map((card, i) => (
                     <div
                         key={i}
-                        className="bg-slate-900 border-2 border-slate-800 p-4 sm:p-6 rounded-2xl shadow-[4px_4px_0_0_#020617]"
+                        className="bg-surface-container border-2 border-outline/20 p-4 sm:p-6 rounded-2xl "
                     >
                         <span
                             className={`material-symbols-outlined text-2xl sm:text-3xl ${card.color} mb-3 sm:mb-4 block`}
                         >
                             {card.icon}
                         </span>
-                        <h3 className="text-slate-500 text-[10px] sm:text-xs font-black uppercase tracking-widest mb-1">
+                        <h3 className="text-on-surface-variant text-xs sm:text-xs font-black uppercase tracking-widest mb-1">
                             {card.label}
                         </h3>
                         <p className="text-2xl sm:text-3xl font-black text-white italic tracking-tighter">
                             {card.value}
                         </p>
                         {card.sub && (
-                            <p className="text-xs text-slate-500 font-semibold mt-1">
+                            <p className="text-xs text-on-surface-variant font-semibold mt-1">
                                 {card.sub}
                             </p>
                         )}
@@ -119,7 +123,7 @@ export default function Badges({
                 ))}
             </div>
 
-            <div className="bg-slate-900 border-4 border-slate-800 p-4 sm:p-8 rounded-[2rem] sm:rounded-[2.5rem] shadow-[8px_8px_0_0_#020617] mb-10">
+            <div className="bg-surface-container border-4 border-outline/20 p-4 sm:p-8 rounded-xl sm:rounded-xl  mb-10">
                 <h2 className="text-xl sm:text-2xl font-black text-white uppercase italic flex items-center gap-3 mb-4 sm:mb-6">
                     <span className="material-symbols-outlined text-yellow-400 text-2xl sm:text-3xl">
                         workspace_premium
@@ -137,27 +141,27 @@ export default function Badges({
                                 : 0;
                         const barColor =
                             pct >= 60
-                                ? "bg-lime-400"
+                                ? "bg-accent"
                                 : pct >= 30
                                   ? "bg-yellow-400"
                                   : "bg-rose-400";
                         return (
                             <div
                                 key={badge.id}
-                                className="bg-slate-950 border-2 border-slate-800 rounded-xl p-4 text-center group"
+                                className="bg-surface-container-lowest border-2 border-outline/20 rounded-xl p-4 text-center group"
                             >
                                 <div className="w-12 h-12 mx-auto mb-2 flex items-center justify-center">
-                                    <span className="material-symbols-outlined text-3xl text-slate-300">
+                                    <span className="material-symbols-outlined text-3xl text-on-surface">
                                         {badge.icon || "star"}
                                     </span>
                                 </div>
                                 <h3 className="text-white font-black uppercase italic text-xs mb-1 truncate">
                                     {badge.name}
                                 </h3>
-                                <p className="text-slate-500 font-black uppercase text-[10px] tracking-widest">
+                                <p className="text-on-surface-variant font-black uppercase text-xs tracking-widest">
                                     {badge.earned_count}/{totalStudents}
                                 </p>
-                                <div className="w-full h-2.5 bg-slate-900 rounded-full border border-slate-800 overflow-hidden mt-2">
+                                <div className="w-full h-2.5 bg-surface-container rounded-full border border-outline/20 overflow-hidden mt-2">
                                     <div
                                         className={`h-full ${barColor} rounded-full transition-all`}
                                         style={{ width: `${pct}%` }}
@@ -169,7 +173,7 @@ export default function Badges({
                 </div>
             </div>
 
-            <div className="bg-slate-900 border-4 border-slate-800 p-4 sm:p-8 rounded-[2rem] sm:rounded-[2.5rem] shadow-[8px_8px_0_0_#020617]">
+            <div className="bg-surface-container border-4 border-outline/20 p-4 sm:p-8 rounded-xl sm:rounded-xl ">
                 <div className="flex flex-col gap-4 mb-6">
                     <div className="flex flex-col xs:flex-row justify-between items-start xs:items-center gap-3">
                         <h2 className="text-xl sm:text-2xl font-black text-white uppercase italic flex items-center gap-3">
@@ -182,7 +186,7 @@ export default function Badges({
                             <select
                                 value={filters.section ?? ""}
                                 onChange={handleSection}
-                                className="appearance-none bg-slate-950 border-2 border-slate-800 rounded-xl pl-3 sm:pl-4 pr-8 sm:pr-10 py-2 text-white font-black focus:outline-none focus:border-lime-500 cursor-pointer text-xs sm:text-sm flex-1 xs:flex-none"
+                                className="appearance-none bg-surface-container-lowest border-2 border-outline/20 rounded-xl pl-3 sm:pl-4 pr-8 sm:pr-10 py-2 text-white font-black focus:outline-none focus:border-accent cursor-pointer text-xs sm:text-sm flex-1 xs:flex-none"
                             >
                                 <option value="">All Sections</option>
                                 {sections.map((s) => (
@@ -199,9 +203,9 @@ export default function Badges({
                                     placeholder="Search name..."
                                     defaultValue={filters.search ?? ""}
                                     onChange={handleSearch}
-                                    className="w-full bg-slate-950 border-2 border-slate-800 rounded-xl pl-10 pr-4 py-2 text-white font-bold focus:outline-none focus:border-lime-500 text-xs sm:text-sm"
+                                    className="w-full bg-surface-container-lowest border-2 border-outline/20 rounded-xl pl-10 pr-4 py-2 text-white font-bold focus:outline-none focus:border-accent text-xs sm:text-sm"
                                 />
-                                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-base sm:text-lg">
+                                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-base sm:text-lg">
                                     search
                                 </span>
                             </div>
@@ -209,9 +213,9 @@ export default function Badges({
                     </div>
                 </div>
 
-                <div className="block lg:hidden divide-y-2 divide-slate-800/50 -mx-4 sm:mx-0">
+                <div className="block lg:hidden divide-y-2 divide-outline/20 -mx-4 sm:mx-0">
                     {filtered.length === 0 ? (
-                        <div className="p-8 text-center text-slate-500 font-black uppercase tracking-widest text-sm">No students match the current filters</div>
+                        <div className="p-8 text-center text-on-surface-variant font-black uppercase tracking-widest text-sm">No students match the current filters</div>
                     ) : (
                         filtered.map((student, i) => {
                             const rank = i + 1;
@@ -220,30 +224,30 @@ export default function Badges({
                                 <div key={student.id} className={`p-4 sm:p-5 flex flex-col gap-3 ${student.badge_count === 0 ? "opacity-60" : ""}`}>
                                     <div className="flex items-center gap-2 sm:gap-3">
                                         <div className="flex flex-col items-center shrink-0">
-                                            <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest text-slate-500">Rank</span>
+                                            <span className="text-xs sm:text-xs font-black uppercase tracking-widest text-on-surface-variant">Rank</span>
                                             <span className="flex items-center justify-center w-8 h-8">
                                                 {isTop3 ? (
                                                     <span className="material-symbols-outlined text-2xl sm:text-3xl" style={{ color: RANK_COLORS[rank - 1], fontVariationSettings: "'FILL' 1" }}>emoji_events</span>
                                                 ) : (
-                                                    <span className="text-base sm:text-xl font-black text-slate-400">#{rank}</span>
+                                                    <span className="text-base sm:text-xl font-black text-on-surface-variant">#{rank}</span>
                                                 )}
                                             </span>
                                         </div>
-                                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-slate-950 border-2 border-lime-400 overflow-hidden shrink-0">
-                                            {student.avatar ? <img src={student.avatar} alt={student.name} className="w-full h-full object-cover" /> : <span className="material-symbols-outlined text-slate-500 text-sm sm:text-base">person</span>}
+                                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-surface-container-lowest border-2 border-accent overflow-hidden shrink-0">
+                                            {student.avatar ? <img src={student.avatar} alt={student.name} className="w-full h-full object-cover" /> : <span className="material-symbols-outlined text-on-surface-variant text-sm sm:text-base">person</span>}
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest text-slate-500">Student</p>
+                                            <p className="text-xs sm:text-xs font-black uppercase tracking-widest text-on-surface-variant">Student</p>
                                             <span className="font-black text-white truncate max-w-[8rem] sm:max-w-[11rem] block text-sm sm:text-base" title={student.name}>{student.name}</span>
                                         </div>
                                         <div className="flex flex-col items-center shrink-0">
-                                            <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest text-slate-500">Badges</span>
-                                            <span className={`font-black text-lg sm:text-xl ${student.badge_count === 0 ? "text-slate-500" : student.badge_count >= 5 ? "text-lime-400" : student.badge_count >= 3 ? "text-yellow-400" : "text-rose-400"}`}>{student.badge_count}</span>
+                                            <span className="text-xs sm:text-xs font-black uppercase tracking-widest text-on-surface-variant">Badges</span>
+                                            <span className={`font-black text-lg sm:text-xl ${student.badge_count === 0 ? "text-on-surface-variant" : student.badge_count >= 5 ? "text-accent" : student.badge_count >= 3 ? "text-yellow-400" : "text-rose-400"}`}>{student.badge_count}</span>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-3 sm:gap-4 flex-wrap text-xs sm:text-sm">
-                                        <span className="text-slate-500 font-semibold">Section: <span className="text-slate-300">{student.section || "—"}</span></span>
-                                        <span className="text-slate-500 font-semibold">Last Earned: <span className="text-slate-400">{formatRelativeTime(student.last_earned_at)}</span></span>
+                                        <span className="text-on-surface-variant font-semibold">Section: <span className="text-on-surface">{student.section || "—"}</span></span>
+                                        <span className="text-on-surface-variant font-semibold">Last Earned: <span className="text-on-surface-variant">{formatRelativeTime(student.last_earned_at)}</span></span>
                                     </div>
                                 </div>
                             );
@@ -253,30 +257,30 @@ export default function Badges({
                 <div className="hidden lg:block overflow-x-auto -mx-4 sm:mx-0">
                     <table className="w-full text-left border-collapse min-w-[600px]">
                         <thead>
-                            <tr className="border-b-4 border-slate-800">
-                                <th className="px-3 sm:px-6 py-3 sm:py-4 text-slate-500 font-black uppercase text-[10px] sm:text-xs tracking-widest">
+                            <tr className="border-b-4 border-outline/20">
+                                <th className="px-3 sm:px-6 py-3 sm:py-4 text-on-surface-variant font-black uppercase text-xs sm:text-xs tracking-widest">
                                     Rank
                                 </th>
-                                <th className="px-3 sm:px-6 py-3 sm:py-4 text-slate-500 font-black uppercase text-[10px] sm:text-xs tracking-widest">
+                                <th className="px-3 sm:px-6 py-3 sm:py-4 text-on-surface-variant font-black uppercase text-xs sm:text-xs tracking-widest">
                                     Student
                                 </th>
-                                <th className="px-3 sm:px-6 py-3 sm:py-4 text-slate-500 font-black uppercase text-[10px] sm:text-xs tracking-widest hidden sm:table-cell">
+                                <th className="px-3 sm:px-6 py-3 sm:py-4 text-on-surface-variant font-black uppercase text-xs sm:text-xs tracking-widest hidden sm:table-cell">
                                     Section
                                 </th>
-                                <th className="px-3 sm:px-6 py-3 sm:py-4 text-slate-500 font-black uppercase text-[10px] sm:text-xs tracking-widest text-center">
+                                <th className="px-3 sm:px-6 py-3 sm:py-4 text-on-surface-variant font-black uppercase text-xs sm:text-xs tracking-widest text-center">
                                     Badges
                                 </th>
-                                <th className="px-3 sm:px-6 py-3 sm:py-4 text-slate-500 font-black uppercase text-[10px] sm:text-xs tracking-widest hidden md:table-cell">
+                                <th className="px-3 sm:px-6 py-3 sm:py-4 text-on-surface-variant font-black uppercase text-xs sm:text-xs tracking-widest hidden md:table-cell">
                                     Last Earned
                                 </th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y-2 divide-slate-800/50">
+                        <tbody className="divide-y-2 divide-outline/20">
                             {filtered.length === 0 && (
                                 <tr>
                                     <td
                                         colSpan="5"
-                                        className="px-6 py-10 text-center text-slate-500 font-black uppercase tracking-widest text-sm"
+                                        className="px-6 py-10 text-center text-on-surface-variant font-black uppercase tracking-widest text-sm"
                                     >
                                         No students match the current filters
                                     </td>
@@ -288,7 +292,7 @@ export default function Badges({
                                 return (
                                     <tr
                                         key={student.id}
-                                        className={`hover:bg-slate-900/50 transition-colors ${
+                                        className={`hover:bg-surface-container/50 transition-colors ${
                                             student.badge_count === 0
                                                 ? "opacity-60"
                                                 : ""
@@ -310,7 +314,7 @@ export default function Badges({
                                                         emoji_events
                                                     </span>
                                                 ) : (
-                                                    <span className="text-base sm:text-xl font-black text-slate-400">
+                                                    <span className="text-base sm:text-xl font-black text-on-surface-variant">
                                                         #{rank}
                                                     </span>
                                                 )}
@@ -318,7 +322,7 @@ export default function Badges({
                                         </td>
                                         <td className="px-3 sm:px-6 py-3 sm:py-4">
                                             <div className="flex items-center gap-2 sm:gap-3">
-                                                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-slate-950 border-2 border-lime-400 overflow-hidden shrink-0">
+                                                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-surface-container-lowest border-2 border-accent overflow-hidden shrink-0">
                                                     {student.avatar ? (
                                                         <img
                                                             src={student.avatar}
@@ -326,7 +330,7 @@ export default function Badges({
                                                             className="w-full h-full object-cover"
                                                         />
                                                     ) : (
-                                                        <span className="material-symbols-outlined text-slate-500 text-sm sm:text-base">
+                                                        <span className="material-symbols-outlined text-on-surface-variant text-sm sm:text-base">
                                                             person
                                                         </span>
                                                     )}
@@ -337,7 +341,7 @@ export default function Badges({
                                             </div>
                                         </td>
                                         <td className="px-3 sm:px-6 py-3 sm:py-4 hidden sm:table-cell">
-                                            <span className="text-slate-500 font-semibold text-xs sm:text-sm">
+                                            <span className="text-on-surface-variant font-semibold text-xs sm:text-sm">
                                                 {student.section || "—"}
                                             </span>
                                         </td>
@@ -345,10 +349,10 @@ export default function Badges({
                                             <span
                                                 className={`font-black text-lg sm:text-xl ${
                                                     student.badge_count === 0
-                                                        ? "text-slate-500"
+                                                        ? "text-on-surface-variant"
                                                         : student.badge_count >=
                                                             5
-                                                          ? "text-lime-400"
+                                                          ? "text-accent"
                                                           : student.badge_count >=
                                                               3
                                                             ? "text-yellow-400"
@@ -359,7 +363,7 @@ export default function Badges({
                                             </span>
                                         </td>
                                         <td className="px-3 sm:px-6 py-3 sm:py-4 hidden md:table-cell">
-                                            <span className="text-slate-500 font-semibold text-xs sm:text-sm">
+                                            <span className="text-on-surface-variant font-semibold text-xs sm:text-sm">
                                                 {formatRelativeTime(
                                                     student.last_earned_at,
                                                 )}
