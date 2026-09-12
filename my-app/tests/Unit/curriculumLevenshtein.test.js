@@ -72,11 +72,11 @@ describe("Levenshtein ALONE audit — standardLevenshtein only (d<=1)", () => {
     });
 
     test("isWordMatch now = d<=1 (Levenshtein alone) — cot/cat true, kat/cat true, tabl/table true", () => {
-        // Under d<=1 alone, lahat ng 1-edit papasa — pati leading/trailing na dati blocked
+        // With first/last penalty, kat/cat and fist/fish are false
         expect(isWordMatch("cot", "cat")).toBe(true);
-        expect(isWordMatch("kat", "cat")).toBe(true);
+        expect(isWordMatch("kat", "cat")).toBe(false);
         expect(isWordMatch("tabl", "table")).toBe(true);
-        expect(isWordMatch("fish", "fist")).toBe(true);
+        expect(isWordMatch("fish", "fist")).toBe(false);
         expect(isWordMatch("bird", "bard")).toBe(true);
         // 2+ edits still false
         expect(isWordMatch("category", "cat")).toBe(false);
@@ -120,7 +120,7 @@ describe("Levenshtein ALONE audit — standardLevenshtein only (d<=1)", () => {
 
         // Random salpak demo: new word "grip" vs "fish" d=4 false → hindi pabor, pero grip vs target grip true
         expect(isWordMatch("grip", "grip")).toBe(true);
-        expect(isWordMatch("fist", "fish")).toBe(true); // fist still d=1 to fish, but fist not in curriculum anymore
+        expect(isWordMatch("fist", "fish")).toBe(false); // last-letter penalty
     });
 
     test("tutorial not scored but same d<=1", () => {
