@@ -18,7 +18,8 @@ const PALETTE = {
 const BADGE_UI_CONFIG = {
     "first-steps": { statusLabel: "STARTED", colors: PALETTE.accent },
     "word-master": { statusLabel: "MASTERED", colors: PALETTE.tertiary },
-    "story-finisher": { statusLabel: "FINISHED", colors: PALETTE.quest },
+    "halfway-hero": { statusLabel: "HALFWAY", colors: PALETTE.quest },
+    "story-explorer": { statusLabel: "EXPLORER", colors: PALETTE.accent },
     "on-fire": { statusLabel: "STREAK", colors: PALETTE.error },
     "blazing-streak": { statusLabel: "STREAK", colors: PALETTE.tertiary },
     "unstoppable": { statusLabel: "STREAK", colors: PALETTE.primary },
