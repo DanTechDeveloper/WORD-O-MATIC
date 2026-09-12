@@ -502,7 +502,7 @@ class TeacherController extends Controller
         $search = $request->input('search', '');
         $cacheKey = "teacher.leaderboards:{$section}:{$search}";
 
-        return Cache::remember($cacheKey, 60, function () use ($section, $search) {
+        $data = Cache::remember($cacheKey, 60, function () use ($section, $search) {
             $allStudents = StudentProfile::join('users', 'users.id', '=', 'students.user_id')
             ->where('users.role', 'student')
             ->select(
@@ -553,7 +553,7 @@ class TeacherController extends Controller
 
         $isDeadlineClosed = (bool) $this->reportService->deadline()?->isPast();
 
-            return Inertia::render('Teacher/Leaderboards', [
+            return [
                 'leaderboard' => [
                     'points' => $students->sortByDesc('points')->values(),
                     'wordBlast' => $students->sortByDesc('wordBlastAcc')->values(),
@@ -566,8 +566,10 @@ class TeacherController extends Controller
                     'section' => $section,
                     'search' => $search,
                 ],
-            ]);
+            ];
         });
+
+        return Inertia::render('Teacher/Leaderboards', $data);
     }
 
     public function badges(Request $request)
@@ -576,10 +578,10 @@ class TeacherController extends Controller
         $search = $request->input('search', '');
         $cacheKey = "teacher.badges:{$section}:{$search}";
 
-        return Cache::remember($cacheKey, 60, function () use ($section, $search) {
+        $data = Cache::remember($cacheKey, 60, function () use ($section, $search) {
             // ponytail: checkAllEligibleBadges removed — was 100×5 queries = 30s timeout on sfo→iad1. Badges awarded on gameplay (StudentController:finishRound), not on teacher view.
 
-        $totalStudents = User::where('role', 'student')->count();
+            $totalStudents = User::where('role', 'student')->count();
 
         $badges = Badges::withCount('users')->get()->map(fn ($b) => [
             'id' => $b->id,
@@ -635,7 +637,7 @@ class TeacherController extends Controller
 
         $isDeadlineClosed = (bool) $this->reportService->deadline()?->isPast();
 
-        return Inertia::render('Teacher/Badges', [
+            return [
                 'badges' => $badges,
                 'topEarners' => $students,
                 'totalStudents' => $totalStudents,
@@ -648,8 +650,10 @@ class TeacherController extends Controller
                     'section' => $section,
                     'search' => $search,
                 ],
-            ]);
+            ];
         });
+
+        return Inertia::render('Teacher/Badges', $data);
     }
 
     public function updateStudent(Request $request, $id)
