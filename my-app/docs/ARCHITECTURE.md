@@ -25,9 +25,11 @@
 | Charts | Recharts 3.8 |
 | HTTP | Inertia `router`/`useForm` for pages; axios for the 2 JSON mastery endpoints (`response()->noContent()`) |
 | Audio | Client-side BGM + SFX in `resources/js/utils/sounds.js` — see GAMEPLAY.md §Audio |
-| Pages | `resources/js/Pages/{Auth,Student,Teacher,Testing}/` |
-| Components | `resources/js/Components/` |
+| Pages | `resources/js/Pages/{Auth,Student,Teacher,Legal,Testing}/` + `Pages/Teacher/Thanks.jsx` (post `POST /teacher/reports/send-emails` thank-you) |
+| Components | `resources/js/Components/` + `Components/Shared/Footer.jsx` + `Components/Shared/Skeleton.jsx` (calm `animate-pulse`) |
 | Hooks | `resources/js/hooks/` |
+| SEO/PWA | `resources/views/app.blade.php:7` meta+OG+favicon/`apple-touch-icon.png`/`site.webmanifest` + `public/robots.txt` + `public/sitemap.xml` + `resources/views/errors/404.blade.php` (role-aware) — see `DESIGN.md:390` §11 |
+| Public routes | `GET /privacy` (`Pages/Legal/Privacy.jsx`), `GET /terms` (`Pages/Legal/Terms.jsx`), `GET /sitemap.xml` (guest, no role gate `routes/web.php:18`); `GET /teacher/reports/thank-you` (teacher) |
 
 ## Data Flow
 

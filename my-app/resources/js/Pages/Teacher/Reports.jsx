@@ -153,19 +153,19 @@ export default function Reports({ grouped, flash, deadline, errors }) {
 
     const renderDeadlineSetter = () => (
         <div className="bg-surface-container border-2 border-outline/20 p-4 sm:p-6 rounded-xl mb-8">
-            <h2 className="text-xl font-black text-on-surface uppercase tracking-tight mb-4 flex items-center gap-3">
-                <span className="material-symbols-outlined text-primary" aria-hidden="true">
+            <h2 className="text-lg sm:text-xl font-black text-on-surface uppercase tracking-tight mb-4 flex items-center gap-2 sm:gap-3">
+                <span className="material-symbols-outlined text-primary text-xl sm:text-2xl" aria-hidden="true">
                     event
                 </span>
                 Report Deadline
             </h2>
-            <p className="text-on-surface-variant text-sm mb-6">
+            <p className="text-on-surface-variant text-xs sm:text-sm mb-6">
                 Set a deadline for this reporting period. Once the deadline passes, generate and send reports with the final data.
             </p>
 
             <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-4">
                 <div className="flex-1 space-y-3">
-                    <label className="text-on-surface-variant text-xs font-black uppercase tracking-widest block">
+                    <label className="text-on-surface-variant text-[10px] sm:text-xs font-black uppercase tracking-widest block">
                         Deadline Date & Time
                     </label>
                     <div className="relative">
@@ -175,7 +175,7 @@ export default function Reports({ grouped, flash, deadline, errors }) {
                             min={minDate}
                             disabled={isDeadlineSaved}
                             onChange={(e) => setDeadlineValue(e.target.value)}
-                            className="w-full bg-surface-container-lowest border-2 border-outline/30 rounded-lg p-4 text-on-surface font-bold focus:border-accent transition-colors outline-none [color-scheme:dark] disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="w-full bg-surface-container-lowest border-2 border-outline/30 rounded-lg p-3 sm:p-4 text-on-surface font-bold text-sm sm:text-base focus:border-accent transition-colors outline-none [color-scheme:dark] disabled:opacity-50 disabled:cursor-not-allowed"
                         />
                         {errors?.deadline && (
                             <p className="text-error text-xs font-bold mt-2">
@@ -190,7 +190,7 @@ export default function Reports({ grouped, flash, deadline, errors }) {
                 <button
                     onClick={saveDeadline}
                     disabled={!deadlineValue || savingDeadline || isDeadlineSaved}
-                    className={`px-6 py-3 rounded-xl font-black uppercase italic text-sm transition-colors flex items-center gap-2 ${
+                    className={`px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl font-black uppercase italic text-xs sm:text-sm transition-colors flex items-center gap-2 shrink-0 ${
                         deadlineValue && !savingDeadline && !isDeadlineSaved
                             ? "bg-accent text-background border-b-4 border-accent-deep hover:bg-accent-hover"
                             : "bg-surface-container-high text-on-surface-variant/50 cursor-not-allowed"
@@ -222,7 +222,7 @@ export default function Reports({ grouped, flash, deadline, errors }) {
                 {deadlineValue && (
                     <button
                         onClick={clearDeadline}
-                        className="px-5 py-3 rounded-xl font-black uppercase italic text-sm transition-colors bg-surface-container-high text-on-surface-variant border-2 border-outline/20 hover:text-error"
+                        className="px-5 py-2.5 sm:py-3 rounded-xl font-black uppercase italic text-xs sm:text-sm transition-colors bg-surface-container-high text-on-surface-variant border-2 border-outline/20 hover:text-error shrink-0"
                     >
                         Clear
                     </button>
@@ -280,11 +280,11 @@ export default function Reports({ grouped, flash, deadline, errors }) {
                         {sentStudents.map((student) => (
                                 <div
                                     key={student.id}
-                                    className="flex items-center gap-3 sm:gap-4 px-4 sm:px-6 py-3"
+                                    className="flex items-center gap-2 sm:gap-3 md:gap-4 px-3 sm:px-4 md:px-6 py-3"
                             >
                                 <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-white font-bold truncate">
+                                    <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                                        <span className="text-white font-bold truncate max-w-[140px] sm:max-w-[18rem] md:max-w-none text-sm sm:text-base" title={student.name}>
                                             {student.name}
                                         </span>
                                         <span className="text-xs text-accent font-black uppercase shrink-0 border border-accent/50 px-2 py-0.5 rounded-full">
@@ -329,8 +329,8 @@ export default function Reports({ grouped, flash, deadline, errors }) {
                             key={statusKey}
                             className={`${cfg.bg} border-2 ${cfg.border} rounded-2xl overflow-hidden`}
                         >
-                            <div className="flex items-center justify-between px-6 py-4 border-b-2 border-outline/20/50">
-                                <div className="flex items-center gap-3">
+                            <div className="flex items-center justify-between px-3 sm:px-4 md:px-6 py-3 sm:py-4 border-b-2 border-outline/20/50 gap-2">
+                                <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                                     <input
                                         type="checkbox"
                                         checked={allSelected}
@@ -339,13 +339,13 @@ export default function Reports({ grouped, flash, deadline, errors }) {
                                             if (el) el.indeterminate = someSelected && !allSelected;
                                         }}
                                         onChange={() => toggleGroup(students)}
-                                        className="w-5 h-5 rounded border-slate-600 bg-surface-container-high text-purple-500 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="w-5 h-5 rounded border-slate-600 bg-surface-container-high text-purple-500 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
                                     />
-                                    <div className={`${cfg.color} w-3 h-3 rounded-full`} />
-                                    <span className="text-white font-black uppercase italic text-sm">
+                                    <div className={`${cfg.color} w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full shrink-0`} />
+                                    <span className="text-white font-black uppercase italic text-xs sm:text-sm truncate" title={cfg.label}>
                                         {cfg.label}
                                     </span>
-                                    <span className="text-on-surface-variant font-bold text-sm">
+                                    <span className="text-on-surface-variant font-bold text-xs sm:text-sm shrink-0">
                                         ({students.length})
                                     </span>
                                 </div>
@@ -355,7 +355,7 @@ export default function Reports({ grouped, flash, deadline, errors }) {
                                 {students.map((student) => (
                                     <div key={student.id}>
                                         <label
-                                            className={`flex items-center gap-3 sm:gap-4 px-4 sm:px-6 py-3 flex-wrap transition-colors ${
+                                            className={`flex items-center gap-2 sm:gap-3 md:gap-4 px-3 sm:px-4 md:px-6 py-3 flex-wrap transition-colors ${
                                                 isPastDeadline ? "hover:bg-surface-container-high/50 cursor-pointer" : "cursor-default"
                                             }`}
                                         >
@@ -364,11 +364,11 @@ export default function Reports({ grouped, flash, deadline, errors }) {
                                                 checked={selectedIds.has(student.id)}
                                                 disabled={!isPastDeadline}
                                                 onChange={() => toggleStudent(student.id)}
-                                                className="w-5 h-5 rounded border-slate-600 bg-surface-container-high text-purple-500 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="w-5 h-5 rounded border-slate-600 bg-surface-container-high text-purple-500 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
                                             />
                                             <div className="flex-1 min-w-0">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-white font-bold truncate">
+                                                <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                                                    <span className="text-white font-bold truncate max-w-[130px] sm:max-w-[16rem] md:max-w-none text-sm sm:text-base" title={student.name}>
                                                         {student.name}
                                                     </span>
                                                     {!student.parent_email && (
@@ -386,7 +386,7 @@ export default function Reports({ grouped, flash, deadline, errors }) {
                                                         </button>
                                                     )}
                                                 </div>
-                                                <div className="flex items-center gap-3 sm:gap-4 flex-wrap text-xs text-on-surface-variant font-semibold mt-0.5">
+                                                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3 md:gap-4 flex-wrap text-[11px] sm:text-xs text-on-surface-variant font-semibold mt-0.5">
                                                     <span>Word Blast: {student.wordBlastAcc ?? 0}%</span>
                                                     <span>Story Quest: {student.storyQuestAcc ?? 0}%</span>
                                                     <span className="text-amber-400">Final Avg: {student.finalAverage != null ? `${student.finalAverage}%` : 'N/A'}</span>
