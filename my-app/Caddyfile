@@ -3,7 +3,7 @@
     encode zstd gzip
     @assets path /build/*
     header @assets Cache-Control "public, max-age=31536000, immutable"
-    @sfx path /Sound\ Effects/*
+    @sfx path "/Sound Effects/*"
     header @sfx Cache-Control "public, max-age=31536000, immutable"
 
     php_server {
