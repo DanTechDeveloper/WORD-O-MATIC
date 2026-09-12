@@ -53,13 +53,13 @@ COPY --chown=www-data:www-data Caddyfile /etc/frankenphp/Caddyfile
 RUN setcap CAP_NET_BIND_SERVICE=+eip /usr/local/bin/frankenphp \
     && chown -R www-data:www-data /config/caddy /data/caddy
 
-# ponytail: cookie (session) + database (cache) — session 0 DB queries, cache persists 60s across cold (was array, not persistent)
+# ponytail: cookie + array — 0 DB queries for session/cache, YAGNI for 100 rows (was database cache for 60s). Deepgram token re-grants per cold, acceptable.
 # Aiven MySQL 8.4 on DigitalOcean sfo requires SSL (REQUIRED) — ca.pem is copied via `COPY . .` above if present
 ENV PORT=80 \
     APP_ENV=production \
     APP_DEBUG=false \
     LOG_CHANNEL=stderr \
-    CACHE_STORE=database \
+    CACHE_STORE=array \
     SESSION_DRIVER=cookie \
     QUEUE_CONNECTION=sync \
     MYSQL_ATTR_SSL_CA=/app/ca.pem

@@ -12,7 +12,6 @@ use App\Services\BadgeService;
 use App\Services\ProgressService;
 use App\Services\ReportService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
@@ -28,10 +27,7 @@ class TeacherController extends Controller
 
     public function dashboard()
     {
-        // ponytail: 60s cache — store arrays (Collection → IncompleteClass on database driver). v3 to flush old.
-        $stats = Cache::remember('teacher.dashboardStats:v3', 60, fn () => $this->dashboardStats());
-
-        return Inertia::render('Teacher/Dashboard', $stats);
+        return Inertia::render('Teacher/Dashboard', $this->dashboardStats());
     }
 
     public function students(Request $request)
@@ -314,8 +310,6 @@ class TeacherController extends Controller
             'gender' => $request->gender,
             'parent_email' => $request->parent_email,
         ]);
-        Cache::forget('teacher.dashboardStats:v3');
-        Cache::forget('teacher.reports:v2');
 
         return redirect()->back();
     }
@@ -489,88 +483,34 @@ class TeacherController extends Controller
     {
         $section = $request->input('section', '');
         $search = $request->input('search', '');
-        $cacheKey = "teacher.leaderboards:v2:{$section}:{$search}";
 
-        $data = Cache::remember($cacheKey, 60, function () use ($section, $search) {
-            $allStudents = StudentProfile::join('users', 'users.id', '=', 'students.user_id')
+        $allStudents = StudentProfile::join('users', 'users.id', '=', 'students.user_id')
             ->where('users.role', 'student')
-            ->select(
-                'students.user_id',
-                'users.name',
-                'users.student_id',
-                'students.section',
-                'students.points',
-                'students.wordBlastAcc',
-                'students.storyQuestAcc',
-                'students.avatar',
-                'students.read_level',
-                'students.speak_level',
-                'students.status'
-            )
-            ->get()
-            ->map(function ($s) {
-                // ponytail: finalAverage via accessor needs model hydration; compute here
+            ->select('students.user_id','users.name','users.student_id','students.section','students.points','students.wordBlastAcc','students.storyQuestAcc','students.avatar','students.read_level','students.speak_level','students.status')
+            ->get()->map(function ($s) {
                 $fa = ($s->wordBlastAcc ?? 0) == 0 || ($s->storyQuestAcc ?? 0) == 0 ? null : (int) round(($s->wordBlastAcc + $s->storyQuestAcc) / 2);
-                return [
-                    'id' => $s->user_id,
-                    'name' => $s->name,
-                    'studentID' => $s->student_id,
-                    'section' => $s->section ?? '',
-                    'points' => $s->points ?? 0,
-                    'wordBlastAcc' => $s->wordBlastAcc ?? 0,
-                    'storyQuestAcc' => $s->storyQuestAcc ?? 0,
-                    'finalAverage' => $fa,
-                    'avatar' => $s->avatar,
-                    'readLevel' => $s->read_level ?? 1,
-                    'speakLevel' => $s->speak_level ?? 1,
-                    'status' => $s->status ?? 'notStarted',
-                ];
+                return ['id'=>$s->user_id,'name'=>$s->name,'studentID'=>$s->student_id,'section'=>$s->section??'','points'=>$s->points??0,'wordBlastAcc'=>$s->wordBlastAcc??0,'storyQuestAcc'=>$s->storyQuestAcc??0,'finalAverage'=>$fa,'avatar'=>$s->avatar,'readLevel'=>$s->read_level??1,'speakLevel'=>$s->speak_level??1,'status'=>$s->status??'notStarted'];
             });
 
         $sections = $allStudents->pluck('section')->unique()->filter()->sort()->values()->toArray();
-
-        $students = $allStudents;
-        if ($section) {
-            $students = $students->where('section', $section);
-        }
-
-        if ($search) {
-            $students = $students->filter(
-                fn ($s) => str_contains(strtolower($s['name']), strtolower($search))
-            );
-        }
-
+        $students = $allStudents; if ($section) $students = $students->where('section',$section); if ($search) $students = $students->filter(fn($s)=>str_contains(strtolower($s['name']),strtolower($search)));
         $isDeadlineClosed = (bool) $this->reportService->deadline()?->isPast();
 
-            return [
-                'leaderboard' => [
-                    'points' => $students->sortByDesc('points')->values()->toArray(),
-                    'wordBlast' => $students->sortByDesc('wordBlastAcc')->values()->toArray(),
-                    'storyQuest' => $students->sortByDesc('storyQuestAcc')->values()->toArray(),
-                ],
-                'totalStudents' => $allStudents->count(),
-                'sections' => $sections,
-                'isDeadlineClosed' => $isDeadlineClosed,
-                'filters' => [
-                    'section' => $section,
-                    'search' => $search,
-                ],
-            ];
-        });
-
-        return Inertia::render('Teacher/Leaderboards', $data);
+        return Inertia::render('Teacher/Leaderboards', [
+            'leaderboard' => ['points'=>$students->sortByDesc('points')->values()->toArray(),'wordBlast'=>$students->sortByDesc('wordBlastAcc')->values()->toArray(),'storyQuest'=>$students->sortByDesc('storyQuestAcc')->values()->toArray()],
+            'totalStudents' => $allStudents->count(),
+            'sections' => $sections,
+            'isDeadlineClosed' => $isDeadlineClosed,
+            'filters' => ['section'=>$section,'search'=>$search],
+        ]);
     }
 
     public function badges(Request $request)
     {
         $section = $request->input('section', '');
         $search = $request->input('search', '');
-        $cacheKey = "teacher.badges:v2:{$section}:{$search}";
 
-        $data = Cache::remember($cacheKey, 60, function () use ($section, $search) {
-            // ponytail: checkAllEligibleBadges removed — was 100×5 queries = 30s timeout on sfo→iad1. Badges awarded on gameplay (StudentController:finishRound), not on teacher view.
-
-            $totalStudents = User::where('role', 'student')->count();
+        $totalStudents = User::where('role', 'student')->count();
 
         $badges = Badges::withCount('users')->get()->map(fn ($b) => [
             'id' => $b->id,
@@ -626,23 +566,17 @@ class TeacherController extends Controller
 
         $isDeadlineClosed = (bool) $this->reportService->deadline()?->isPast();
 
-            return [
-                'badges' => $badges->toArray(),
-                'topEarners' => $students->toArray(),
-                'totalStudents' => $totalStudents,
-                'totalBadges' => $totalBadges,
-                'totalEarned' => $totalEarned,
-                'mostEarnedBadge' => $mostEarnedBadge,
-                'sections' => $sections,
-                'isDeadlineClosed' => $isDeadlineClosed,
-                'filters' => [
-                    'section' => $section,
-                    'search' => $search,
-                ],
-            ];
-        });
-
-        return Inertia::render('Teacher/Badges', $data);
+        return Inertia::render('Teacher/Badges', [
+            'badges' => $badges->toArray(),
+            'topEarners' => $students->toArray(),
+            'totalStudents' => $totalStudents,
+            'totalBadges' => $totalBadges,
+            'totalEarned' => $totalEarned,
+            'mostEarnedBadge' => $mostEarnedBadge,
+            'sections' => $sections,
+            'isDeadlineClosed' => $isDeadlineClosed,
+            'filters' => ['section'=>$section,'search'=>$search],
+        ]);
     }
 
     public function updateStudent(Request $request, $id)
@@ -691,8 +625,6 @@ class TeacherController extends Controller
         }
 
         $user->student()->update($studentData);
-        Cache::forget('teacher.dashboardStats:v3');
-        Cache::forget('teacher.reports:v2');
 
         return redirect()->back()->with('success', 'Student updated successfully.');
     }
@@ -700,8 +632,6 @@ class TeacherController extends Controller
     public function destroy($id)
     {
         User::where('role', 'student')->findOrFail($id)->delete();
-        Cache::forget('teacher.dashboardStats:v3');
-        Cache::forget('teacher.reports:v2');
 
         return redirect()->back()->with('success', 'Student deleted successfully.');
     }
