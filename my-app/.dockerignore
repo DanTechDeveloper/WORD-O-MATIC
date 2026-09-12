@@ -1,0 +1,15 @@
+.git
+.env
+.env.*
+!.env.example
+database/database.sqlite
+node_modules
+tests
+vendor
+storage/logs/*
+storage/framework/cache/*
+bootstrap/cache/*
+.gitignore
+.github
+.kilo
+.opencode

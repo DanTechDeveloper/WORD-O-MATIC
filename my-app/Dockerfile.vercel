@@ -1,0 +1,66 @@
+FROM dunglas/frankenphp:1-php8.4-bookworm AS base
+
+# Use production php.ini + required extensions
+RUN cp "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini" \
+    && install-php-extensions intl zip pdo_mysql pdo_pgsql bcmath
+
+WORKDIR /app
+
+FROM base AS dependencies
+
+# Node.js + npm needed for Vite build (bookworm)
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends nodejs npm \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+COPY composer.json composer.lock ./
+
+# Install PHP deps first (layer cache) — skip scripts until app copied
+RUN composer install \
+    --no-dev \
+    --no-interaction \
+    --no-progress \
+    --no-scripts \
+    --optimize-autoloader \
+    --prefer-dist
+
+# Copy rest of app
+COPY . .
+
+# Build frontend — laravel-vite-plugin reads vite.config.js:7
+RUN npm install --ignore-scripts \
+    && npm run build
+
+# Writable dirs + Laravel caches that don't depend on runtime env
+RUN mkdir -p \
+        storage/framework/cache \
+        storage/framework/sessions \
+        storage/framework/views \
+        bootstrap/cache \
+    && composer dump-autoload --no-dev --classmap-authoritative \
+    && php artisan event:cache || true \
+    && php artisan view:cache || true
+# ponytail: config:cache / optimize intentionally skipped — Vercel injects env at runtime (guide forbids)
+
+FROM base AS runtime
+
+COPY --from=dependencies --chown=www-data:www-data /app /app
+COPY --chown=www-data:www-data Caddyfile /etc/frankenphp/Caddyfile
+
+RUN setcap CAP_NET_BIND_SERVICE=+eip /usr/local/bin/frankenphp \
+    && chown -R www-data:www-data /config/caddy /data/caddy
+
+# Guide minimal uses array/sync — we keep database-backed sessions via external DB
+ENV PORT=80 \
+    APP_ENV=production \
+    APP_DEBUG=false \
+    LOG_CHANNEL=stderr \
+    CACHE_STORE=database \
+    SESSION_DRIVER=database \
+    QUEUE_CONNECTION=sync
+
+USER www-data
+
+CMD ["frankenphp", "run", "--config", "/etc/frankenphp/Caddyfile"]
