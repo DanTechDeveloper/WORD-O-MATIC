@@ -570,8 +570,7 @@ class TeacherController extends Controller
         $cacheKey = "teacher.badges:{$section}:{$search}";
 
         return Cache::remember($cacheKey, 60, function () use ($section, $search) {
-            User::where('role', 'student')->get()
-                ->each(fn ($u) => $this->badgeService->checkAllEligibleBadges($u));
+            // ponytail: checkAllEligibleBadges removed — was 100×5 queries = 30s timeout on sfo→iad1. Badges awarded on gameplay (StudentController:finishRound), not on teacher view.
 
         $totalStudents = User::where('role', 'student')->count();
 
