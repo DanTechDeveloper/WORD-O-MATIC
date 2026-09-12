@@ -132,6 +132,8 @@ export default function GameplayReadMode({ module, tutorialComplete = true }) {
         if (isTutorial && isMispronounced) {
             setCoachLeaving(false);
             setCoachActive(true);
+            const t = setTimeout(() => setCoachActive(false), 1500);
+            return () => clearTimeout(t);
         }
     }, [isTutorial, isMispronounced]);
 
