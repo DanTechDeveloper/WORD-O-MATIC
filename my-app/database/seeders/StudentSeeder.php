@@ -211,7 +211,9 @@ class StudentSeeder extends Seeder
             if ($sAcc === 100) {
                 StudentParagraphMastery::where('user_id', $user->id)->where('status', 'training')->update(['status' => 'mastered']);
             }
-            $status = ProgressService::classify($wAcc, $sAcc, $wAcc != 0, $sAcc != 0);
+            $hasWordProgress = $wAcc != 0 || StudentWordProgress::where('user_id', $user->id)->exists();
+            $hasParaProgress = $sAcc != 0 || StudentParagraphProgress::where('user_id', $user->id)->exists();
+            $status = ProgressService::classify($wAcc, $sAcc, $hasWordProgress, $hasParaProgress);
 
             $user->student()->create([
                 'points' => $totalWordsSmashed,

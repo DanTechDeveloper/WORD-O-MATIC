@@ -237,14 +237,16 @@ export function processWordModeResult(
     // ponytail: BF29b — Deepgram isFinal/speechFinal on a non-matching transcript
     // is the authoritative wrong-word verdict. Fire immediately instead of waiting
     // 1500ms for the interim settle (the user's "the moment DO leaves the mouth"
-    // case). B guard: within 350ms of a target switch, defer to the settle so a
-    // fast correct ("dog" at 200ms) can cancel the stale wrong settle.
+    // case). B guard: within 1000ms of a target switch, defer to the settle so a
+    // fast correct ("dog" at 200ms) can cancel the stale wrong settle. 350ms was
+    // too short — kids need ~800ms to read new word, so random noise at 400ms
+    // was hatol kaagad.
     const isAuthoritative = !!result.isFinal || !!result.speechFinal;
     if (
         isAuthoritative &&
         !stateRefs.current.mispronouncedInWord &&
         !isWordMatch(transcript, target) &&
-        sinceSwitch >= 350
+        sinceSwitch >= 1000
     ) {
         stateRefs.current.mispronouncedInWord = true;
         propsRef.current.onMispronounced?.(transcript);
