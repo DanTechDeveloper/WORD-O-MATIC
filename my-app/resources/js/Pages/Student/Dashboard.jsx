@@ -117,9 +117,9 @@ export default function Dashboard({
                 />
             )}
             <DashboardLayout disableNav={showGuide}>
-                <div className="flex flex-col justify-center py-10 lg:py-14 space-y-8">
+                <div className="flex flex-col justify-center py-6 sm:py-8 lg:py-14 space-y-6 sm:space-y-8">
                 <header className="text-center lg:text-left">
-                    <h1 className="text-4xl lg:text-5xl font-black uppercase italic tracking-[-0.04em] text-on-surface">
+                    <h1 className="text-2xl xs:text-3xl sm:text-4xl lg:text-5xl font-black uppercase italic tracking-[-0.04em] text-on-surface">
                         Pick Your Game
                     </h1>
                     <p className="mt-2 text-on-surface-variant text-base lg:text-lg">
@@ -155,7 +155,7 @@ export default function Dashboard({
                     />
                 )}
 
-                <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <section className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                     {MODES.map((m) => {
                         const s = MODE_STYLES[m.mode];
                         const p = points[m.mode];
@@ -173,19 +173,19 @@ export default function Dashboard({
                                 as={isDimmed || blockTarget ? "div" : "a"}
                                 data-sfx="major"
                                 aria-label={`Play ${m.title}`}
-                                className={`group relative flex flex-col rounded-2xl bg-surface ${s.border} border-2 p-6 lg:p-8 ${isDimmed || blockTarget ? "opacity-40 pointer-events-none select-none" : "tactile-card transition-transform duration-150 hover:-translate-y-1 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-secondary-container motion-reduce:transition-none motion-reduce:hover:translate-y-0 z-10"} ${highlightClass}`}
+                                className={`group relative flex flex-col rounded-2xl bg-surface ${s.border} border-2 p-4 sm:p-6 lg:p-8 ${isDimmed || blockTarget ? "opacity-40 pointer-events-none select-none" : "tactile-card transition-transform duration-150 hover:-translate-y-1 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-secondary-container motion-reduce:transition-none motion-reduce:hover:translate-y-0 z-10"} ${highlightClass}`}
                             >
-                                <div className="flex items-center gap-5">
-                                    <div className={`w-20 h-20 lg:w-24 lg:h-24 shrink-0 rounded-2xl bg-background/40 border-2 ${s.border} flex items-center justify-center`}>
+                                <div className="flex items-center gap-4 sm:gap-5">
+                                    <div className={`w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 shrink-0 rounded-2xl bg-background/40 border-2 ${s.border} flex items-center justify-center`}>
                                         <span
-                                            className={`material-symbols-outlined text-4xl lg:text-5xl ${s.iconColor}`}
+                                            className={`material-symbols-outlined text-3xl sm:text-4xl lg:text-5xl ${s.iconColor}`}
                                             style={{ fontVariationSettings: "'FILL' 1" }}
                                         >
                                             {s.icon}
                                         </span>
                                     </div>
-                                    <div className="flex-1">
-                                        <h2 className="text-2xl lg:text-3xl font-black uppercase text-on-surface">
+                                    <div className="flex-1 min-w-0">
+                                        <h2 className="text-xl sm:text-2xl lg:text-3xl font-black uppercase text-on-surface truncate">
                                             {m.title}
                                         </h2>
                                         <p className="text-on-surface-variant text-sm font-bold mt-1">

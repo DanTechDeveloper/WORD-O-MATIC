@@ -93,21 +93,21 @@ export default function Badges({
                 </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-10">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6 mb-10">
                 {summaryCards.map((card, i) => (
                     <div
                         key={i}
-                        className="bg-slate-900 border-2 border-slate-800 p-6 rounded-2xl shadow-[4px_4px_0_0_#020617]"
+                        className="bg-slate-900 border-2 border-slate-800 p-4 sm:p-6 rounded-2xl shadow-[4px_4px_0_0_#020617]"
                     >
                         <span
-                            className={`material-symbols-outlined text-3xl ${card.color} mb-4 block`}
+                            className={`material-symbols-outlined text-2xl sm:text-3xl ${card.color} mb-3 sm:mb-4 block`}
                         >
                             {card.icon}
                         </span>
-                        <h3 className="text-slate-500 text-xs font-black uppercase tracking-widest mb-1">
+                        <h3 className="text-slate-500 text-[10px] sm:text-xs font-black uppercase tracking-widest mb-1">
                             {card.label}
                         </h3>
-                        <p className="text-3xl font-black text-white italic tracking-tighter">
+                        <p className="text-2xl sm:text-3xl font-black text-white italic tracking-tighter">
                             {card.value}
                         </p>
                         {card.sub && (
@@ -119,14 +119,14 @@ export default function Badges({
                 ))}
             </div>
 
-            <div className="bg-slate-900 border-4 border-slate-800 p-8 rounded-[2.5rem] shadow-[8px_8px_0_0_#020617] mb-10">
-                <h2 className="text-2xl font-black text-white uppercase italic flex items-center gap-3 mb-6">
-                    <span className="material-symbols-outlined text-yellow-400">
+            <div className="bg-slate-900 border-4 border-slate-800 p-4 sm:p-8 rounded-[2rem] sm:rounded-[2.5rem] shadow-[8px_8px_0_0_#020617] mb-10">
+                <h2 className="text-xl sm:text-2xl font-black text-white uppercase italic flex items-center gap-3 mb-4 sm:mb-6">
+                    <span className="material-symbols-outlined text-yellow-400 text-2xl sm:text-3xl">
                         workspace_premium
                     </span>
                     Badge Catalog
                 </h2>
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
                     {badges.map((badge) => {
                         const pct =
                             totalStudents > 0
@@ -169,61 +169,63 @@ export default function Badges({
                 </div>
             </div>
 
-            <div className="bg-slate-900 border-4 border-slate-800 p-8 rounded-[2.5rem] shadow-[8px_8px_0_0_#020617]">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-                    <h2 className="text-2xl font-black text-white uppercase italic flex items-center gap-3">
-                        <span className="material-symbols-outlined text-yellow-400">
-                            leaderboard
-                        </span>
-                        Top Badge Earners
-                    </h2>
-                    <div className="flex gap-3 w-full md:w-auto">
-                        <select
-                            value={filters.section ?? ""}
-                            onChange={handleSection}
-                            className="appearance-none bg-slate-950 border-2 border-slate-800 rounded-xl pl-4 pr-10 py-2 text-white font-black focus:outline-none focus:border-lime-500 cursor-pointer text-sm flex-1 md:flex-none"
-                        >
-                            <option value="">All Sections</option>
-                            {sections.map((s) => (
-                                <option key={s} value={s}>
-                                    {s}
-                                </option>
-                            ))}
-                        </select>
-
-                        <div className="relative w-56">
-                            <input
-                                ref={searchRef}
-                                type="text"
-                                placeholder="Search name..."
-                                defaultValue={filters.search ?? ""}
-                                onChange={handleSearch}
-                                className="w-full bg-slate-950 border-2 border-slate-800 rounded-xl pl-10 pr-4 py-2 text-white font-bold focus:outline-none focus:border-lime-500 text-sm"
-                            />
-                            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-lg">
-                                search
+            <div className="bg-slate-900 border-4 border-slate-800 p-4 sm:p-8 rounded-[2rem] sm:rounded-[2.5rem] shadow-[8px_8px_0_0_#020617]">
+                <div className="flex flex-col gap-4 mb-6">
+                    <div className="flex flex-col xs:flex-row justify-between items-start xs:items-center gap-3">
+                        <h2 className="text-xl sm:text-2xl font-black text-white uppercase italic flex items-center gap-3">
+                            <span className="material-symbols-outlined text-yellow-400 text-2xl sm:text-3xl">
+                                leaderboard
                             </span>
+                            Top Badge Earners
+                        </h2>
+                        <div className="flex gap-2 sm:gap-3 w-full xs:w-auto">
+                            <select
+                                value={filters.section ?? ""}
+                                onChange={handleSection}
+                                className="appearance-none bg-slate-950 border-2 border-slate-800 rounded-xl pl-3 sm:pl-4 pr-8 sm:pr-10 py-2 text-white font-black focus:outline-none focus:border-lime-500 cursor-pointer text-xs sm:text-sm flex-1 xs:flex-none"
+                            >
+                                <option value="">All Sections</option>
+                                {sections.map((s) => (
+                                    <option key={s} value={s}>
+                                        {s}
+                                    </option>
+                                ))}
+                            </select>
+
+                            <div className="relative flex-1 xs:w-40 sm:w-56">
+                                <input
+                                    ref={searchRef}
+                                    type="text"
+                                    placeholder="Search name..."
+                                    defaultValue={filters.search ?? ""}
+                                    onChange={handleSearch}
+                                    className="w-full bg-slate-950 border-2 border-slate-800 rounded-xl pl-10 pr-4 py-2 text-white font-bold focus:outline-none focus:border-lime-500 text-xs sm:text-sm"
+                                />
+                                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-base sm:text-lg">
+                                    search
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
+                <div className="overflow-x-auto -mx-4 sm:mx-0">
+                    <table className="w-full text-left border-collapse min-w-[600px]">
                         <thead>
                             <tr className="border-b-4 border-slate-800">
-                                <th className="px-6 py-4 text-slate-500 font-black uppercase text-xs tracking-widest">
+                                <th className="px-3 sm:px-6 py-3 sm:py-4 text-slate-500 font-black uppercase text-[10px] sm:text-xs tracking-widest">
                                     Rank
                                 </th>
-                                <th className="px-6 py-4 text-slate-500 font-black uppercase text-xs tracking-widest">
+                                <th className="px-3 sm:px-6 py-3 sm:py-4 text-slate-500 font-black uppercase text-[10px] sm:text-xs tracking-widest">
                                     Student
                                 </th>
-                                <th className="px-6 py-4 text-slate-500 font-black uppercase text-xs tracking-widest">
+                                <th className="px-3 sm:px-6 py-3 sm:py-4 text-slate-500 font-black uppercase text-[10px] sm:text-xs tracking-widest hidden sm:table-cell">
                                     Section
                                 </th>
-                                <th className="px-6 py-4 text-slate-500 font-black uppercase text-xs tracking-widest text-center">
+                                <th className="px-3 sm:px-6 py-3 sm:py-4 text-slate-500 font-black uppercase text-[10px] sm:text-xs tracking-widest text-center">
                                     Badges
                                 </th>
-                                <th className="px-6 py-4 text-slate-500 font-black uppercase text-xs tracking-widest">
+                                <th className="px-3 sm:px-6 py-3 sm:py-4 text-slate-500 font-black uppercase text-[10px] sm:text-xs tracking-widest hidden md:table-cell">
                                     Last Earned
                                 </th>
                             </tr>
@@ -251,11 +253,11 @@ export default function Badges({
                                                 : ""
                                         }`}
                                     >
-                                        <td className="px-6 py-4">
+                                        <td className="px-3 sm:px-6 py-3 sm:py-4">
                                             <span className="flex items-center justify-center w-8 h-8">
                                                 {isTop3 ? (
                                                     <span
-                                                        className="material-symbols-outlined text-3xl"
+                                                        className="material-symbols-outlined text-2xl sm:text-3xl"
                                                         style={{
                                                             color: RANK_COLORS[
                                                                 rank - 1
@@ -267,15 +269,15 @@ export default function Badges({
                                                         emoji_events
                                                     </span>
                                                 ) : (
-                                                    <span className="text-xl font-black text-slate-400">
+                                                    <span className="text-base sm:text-xl font-black text-slate-400">
                                                         #{rank}
                                                     </span>
                                                 )}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-lg bg-slate-950 border-2 border-lime-400 overflow-hidden">
+                                        <td className="px-3 sm:px-6 py-3 sm:py-4">
+                                            <div className="flex items-center gap-2 sm:gap-3">
+                                                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-slate-950 border-2 border-lime-400 overflow-hidden shrink-0">
                                                     {student.avatar ? (
                                                         <img
                                                             src={student.avatar}
@@ -283,24 +285,24 @@ export default function Badges({
                                                             className="w-full h-full object-cover"
                                                         />
                                                     ) : (
-                                                        <span className="material-symbols-outlined text-slate-500">
+                                                        <span className="material-symbols-outlined text-slate-500 text-sm sm:text-base">
                                                             person
                                                         </span>
                                                     )}
                                                 </div>
-                                                <span className="font-black text-white truncate max-w-[14rem] block" title={student.name}>
+                                                <span className="font-black text-white truncate max-w-[8rem] sm:max-w-[14rem] block text-sm sm:text-base" title={student.name}>
                                                     {student.name}
                                                 </span>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4">
-                                            <span className="text-slate-500 font-semibold">
+                                        <td className="px-3 sm:px-6 py-3 sm:py-4 hidden sm:table-cell">
+                                            <span className="text-slate-500 font-semibold text-xs sm:text-sm">
                                                 {student.section || "—"}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 text-center">
+                                        <td className="px-3 sm:px-6 py-3 sm:py-4 text-center">
                                             <span
-                                                className={`font-black text-xl ${
+                                                className={`font-black text-lg sm:text-xl ${
                                                     student.badge_count === 0
                                                         ? "text-slate-500"
                                                         : student.badge_count >=
@@ -315,8 +317,8 @@ export default function Badges({
                                                 {student.badge_count}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4">
-                                            <span className="text-slate-500 font-semibold text-sm">
+                                        <td className="px-3 sm:px-6 py-3 sm:py-4 hidden md:table-cell">
+                                            <span className="text-slate-500 font-semibold text-xs sm:text-sm">
                                                 {formatRelativeTime(
                                                     student.last_earned_at,
                                                 )}

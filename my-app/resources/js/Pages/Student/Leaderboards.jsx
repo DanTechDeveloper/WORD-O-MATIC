@@ -28,26 +28,26 @@ export default function Leaderboards({ leaderboard, totalStudents }) {
                 {/* Current user highlight */}
                 {currentEntry && (
                     <div
-                        className="mb-6 bg-lime-400/10 border-2 border-lime-400/50 rounded-xl p-5 flex items-center justify-between"
+                        className="mb-6 bg-lime-400/10 border-2 border-lime-400/50 rounded-xl p-4 sm:p-5 flex items-center justify-between gap-3"
                         style={{ boxShadow: "0 0 20px rgba(163,230,53,0.1)" }}
                     >
-                        <div className="flex items-center gap-6">
+                        <div className="flex items-center gap-4 sm:gap-6 min-w-0">
                             <StudentAvatar
                                 url={currentEntry.avatar}
                                 alt=""
                                 size="lg"
                             />
-                            <div>
-                                <p className="text-2xl font-black text-lime-400">
+                            <div className="min-w-0">
+                                <p className="text-xl sm:text-2xl font-black text-lime-400 truncate">
                                     {currentUserName}
                                 </p>
-                                <p className="text-sm text-on-surface-variant font-bold">
+                                <p className="text-xs sm:text-sm text-on-surface-variant font-bold">
                                     That's you!
                                 </p>
                             </div>
                         </div>
-                        <div className="text-right">
-                            <p className="text-3xl font-black text-lime-400">
+                        <div className="text-right shrink-0">
+                            <p className="text-2xl sm:text-3xl font-black text-lime-400">
                                 {currentEntry.points}
                             </p>
                             <p className="text-xs text-on-surface-variant font-bold uppercase">
@@ -81,17 +81,17 @@ export default function Leaderboards({ leaderboard, totalStudents }) {
                             return (
                                 <div
                                     key={entry.user_id}
-                                    className={`flex items-center justify-between p-6 rounded-xl border-2 transition-all ${
+                                    className={`flex items-center justify-between p-4 sm:p-6 rounded-xl border-2 transition-all gap-3 ${
                                         isCurrentUser
                                             ? "bg-lime-400/10 border-lime-400/50"
                                             : "bg-surface-container border-surface-variant/20"
                                     }`}
                                 >
-                                    <div className="flex items-center gap-8">
-                                        <span className="w-14 flex items-center justify-center">
+                                    <div className="flex items-center gap-4 sm:gap-8 min-w-0">
+                                        <span className="w-10 sm:w-14 flex items-center justify-center shrink-0">
                                             {isTop3 ? (
                                                 <span
-                                                    className={`material-symbols-outlined text-4xl ${medalColors[i]}`}
+                                                    className={`material-symbols-outlined text-2xl sm:text-4xl ${medalColors[i]}`}
                                                     style={{
                                                         fontVariationSettings:
                                                             "'FILL' 1",
@@ -100,16 +100,16 @@ export default function Leaderboards({ leaderboard, totalStudents }) {
                                                     emoji_events
                                                 </span>
                                             ) : (
-                                                <span className="text-4xl font-black">{`#${rank}`}</span>
+                                                <span className="text-2xl sm:text-4xl font-black">{`#${rank}`}</span>
                                             )}
                                         </span>
                                         <StudentAvatar
                                             url={entry.avatar}
                                             alt=""
                                         />
-                                        <div>
+                                        <div className="min-w-0">
                                             <p
-                                                className={`font-black text-lg ${isCurrentUser ? "text-lime-400" : "text-on-surface"}`}
+                                                className={`font-black text-base sm:text-lg truncate ${isCurrentUser ? "text-lime-400" : "text-on-surface"}`}
                                             >
                                                 {isCurrentUser
                                                     ? currentUserName
@@ -117,9 +117,9 @@ export default function Leaderboards({ leaderboard, totalStudents }) {
                                             </p>
                                         </div>
                                     </div>
-                                    <div className="text-right">
+                                    <div className="text-right shrink-0">
                                         <p
-                                            className={`font-black text-2xl ${isCurrentUser ? "text-lime-400" : "text-on-surface"}`}
+                                            className={`font-black text-xl sm:text-2xl ${isCurrentUser ? "text-lime-400" : "text-on-surface"}`}
                                         >
                                             {entry.points}
                                         </p>
