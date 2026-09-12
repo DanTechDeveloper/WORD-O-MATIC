@@ -2,6 +2,7 @@ FROM dunglas/frankenphp:1-php8.4-bookworm AS base
 
 # Use production php.ini + required extensions (maatwebsite/excel needs gd+zip, laravel needs intl/bcmath)
 RUN cp "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini" \
+    && echo "max_execution_time=60" >> "$PHP_INI_DIR/php.ini" \
     && install-php-extensions intl zip gd pdo_mysql pdo_pgsql bcmath
 
 WORKDIR /app
