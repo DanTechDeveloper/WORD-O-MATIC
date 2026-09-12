@@ -181,17 +181,18 @@ class ReportController extends Controller
         $wordTitles = WordModule::where('is_tutorial', false)->pluck('title', 'level');
         $paraTitles = ParagraphModule::where('is_tutorial', false)->pluck('title', 'level');
 
-        $formattedStudents = $students->map(function ($user) use ($cutoff, $wordTitles, $paraTitles) {
+        // ponytail: batched 2 queries vs 200 (100×2) — was 60s timeout on sfo 70ms
+        $userIds = $students->pluck('id')->all();
+        $wordCurriculums = WordModule::curriculumForUsers($userIds, $cutoff);
+        $paraCurriculums = ParagraphModule::curriculumForUsers($userIds, $cutoff);
+
+        $formattedStudents = $students->map(function ($user) use ($wordCurriculums, $paraCurriculums, $wordTitles, $paraTitles) {
             $readLevel = $user->student?->read_level ?? 1;
             $speakLevel = $user->student?->speak_level ?? 1;
 
-            // Same single-source-per-student read as sendReportEmails(): one
-            // curriculum per mode feeds Top Struggle and the drill-down rows,
-            // so the export can never disagree with the emailed report.
-            // Story Quest is sentence-based (approach B).
             $rows = array_merge(
-                $this->struggleRows('Word Blast', WordModule::curriculumForUser($user->id, $cutoff)),
-                $this->sentenceStruggleRows('Story Quest', ParagraphModule::curriculumForUser($user->id, $cutoff)),
+                $this->struggleRows('Word Blast', $wordCurriculums[$user->id] ?? []),
+                $this->sentenceStruggleRows('Story Quest', $paraCurriculums[$user->id] ?? []),
             );
 
             usort($rows, fn ($a, $b) => $b['attempts'] <=> $a['attempts']);

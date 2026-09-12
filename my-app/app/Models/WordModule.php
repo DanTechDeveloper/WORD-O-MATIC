@@ -100,13 +100,17 @@ class WordModule extends Model
 
     public static function curriculumForUser(int $userId, ?string $cutoff = null): array
     {
-        $query = DB::table('student_word_mastery')->where('user_id', $userId);
+        return self::curriculumForUsers([$userId], $cutoff)[$userId] ?? [];
+    }
 
-        if ($cutoff) {
-            $query->where('created_at', '<=', Carbon::parse($cutoff)->format('Y-m-d H:i:s'));
-        }
+    public static function curriculumForUsers(array $userIds, ?string $cutoff = null): array
+    {
+        $modules = self::modules();
+        $masteryByUser = self::masteryQuery($userIds, $cutoff)->get()->groupBy('user_id');
 
-        return self::buildLevels(self::modules(), $query->get()->keyBy('word_id'));
+        return collect($userIds)->mapWithKeys(fn ($id) => [
+            $id => self::buildLevels($modules, ($masteryByUser->get($id) ?? collect())->keyBy('word_id')),
+        ])->all();
     }
 
     public static function saveWithWords(array $data): void
