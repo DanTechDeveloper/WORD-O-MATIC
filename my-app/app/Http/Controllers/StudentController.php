@@ -106,14 +106,14 @@ class StudentController extends Controller
 
     public function leaderboards()
     {
-        // ponytail: global, 60s — same for all students
-        [$leaderboard, $total] = Cache::remember('student.leaderboards', 60, function () {
+        // ponytail: global, 60s — cache array (Collection serializes to IncompleteClass on database driver) v2 to flush old
+        [$leaderboard, $total] = Cache::remember('student.leaderboards:v2', 60, function () {
             $lb = StudentProfile::with('user:id,name,student_id')
                 ->whereHas('user', fn ($q) => $q->where('role', 'student'))
                 ->orderBy('points', 'desc')
                 ->get(['user_id', 'points', 'avatar']);
 
-            return [$lb, $lb->count()];
+            return [$lb->toArray(), $lb->count()];
         });
 
         return Inertia::render('Student/Leaderboards', [
@@ -125,35 +125,33 @@ class StudentController extends Controller
     public function badges()
     {
         $user = auth()->user();
-        $cacheKey = "student.badges:{$user->id}";
+        $cacheKey = "student.badges:v2:{$user->id}";
         $badges = Cache::remember($cacheKey, 60, function () use ($user) {
             $student = $user->student;
 
             return Badges::withExists(['users as is_earned' => function ($query) use ($user) {
-            $query->where('student_badges.user_id', $user->id);
-        }])->get()->map(function ($badge) use ($user, $student) {
-            $badge->threshold = $badge->threshold_score;
+                $query->where('student_badges.user_id', $user->id);
+            }])->get()->map(function ($badge) use ($user, $student) {
+                $badge->threshold = $badge->threshold_score;
 
-            if ($badge->threshold_score !== null) {
-                $sessionQuery = GameSession::where('user_id', $user->id)
-                    ->where('is_deadline_hit', false);
+                if ($badge->threshold_score !== null) {
+                    $sessionQuery = GameSession::where('user_id', $user->id)
+                        ->where('is_deadline_hit', false);
 
-                $badge->current_value = match ($badge->metric) {
-                    'total_points' => $student ? $student->points : 0,
-                    'streak' => $sessionQuery->max('streak') ?? 0,
-                    // Same source as BadgeService::checkAllEligibleBadges so the page
-                    // shows the value the awarding logic actually checks (was session max).
-                    'accuracy' => $student ? max((float) $student->wordBlastAcc, (float) $student->storyQuestAcc) : 0,
-                    'paragraph_completion' => $this->badgeService->calculateModuleCompletion($user, 'paragraph'),
-                    'word_completion' => $this->badgeService->calculateModuleCompletion($user, 'word'),
-                    default => 0,
-                };
-            } else {
-                $badge->current_value = null;
-            }
+                    $badge->current_value = match ($badge->metric) {
+                        'total_points' => $student ? $student->points : 0,
+                        'streak' => $sessionQuery->max('streak') ?? 0,
+                        'accuracy' => $student ? max((float) $student->wordBlastAcc, (float) $student->storyQuestAcc) : 0,
+                        'paragraph_completion' => $this->badgeService->calculateModuleCompletion($user, 'paragraph'),
+                        'word_completion' => $this->badgeService->calculateModuleCompletion($user, 'word'),
+                        default => 0,
+                    };
+                } else {
+                    $badge->current_value = null;
+                }
 
                 return $badge;
-            });
+            })->toArray();
         });
 
         return Inertia::render('Student/Badges', [
@@ -446,12 +444,12 @@ class StudentController extends Controller
             $this->progressService->updateParagraphProgress($user->student, $module, $wordsSmashed, $request->words_processed, $accuracy);
         }
         // ponytail: invalidate teacher/student caches — progress affects dashboard/leaderboards + level statuses
-        Cache::forget('teacher.dashboardStats');
-        Cache::forget('teacher.reports');
-        Cache::forget('student.leaderboards');
-        Cache::forget("student.badges:{$user->id}");
-        Cache::forget("level.word:{$user->id}");
-        Cache::forget("level.paragraph:{$user->id}");
+        Cache::forget('teacher.dashboardStats:v2');
+        Cache::forget('teacher.reports:v2');
+        Cache::forget('student.leaderboards:v2');
+        Cache::forget("student.badges:v2:{$user->id}");
+        Cache::forget("level:v2.word:{$user->id}");
+        Cache::forget("level:v2.paragraph:{$user->id}");
 
         $redirect = redirect()->route('student.results', ['id' => $session->id]);
 

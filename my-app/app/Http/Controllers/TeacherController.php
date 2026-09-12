@@ -28,8 +28,8 @@ class TeacherController extends Controller
 
     public function dashboard()
     {
-        // ponytail: 60s cache — dashboardStats hits 4 queries + sfo→iad1 70ms each (was 2s warm). Array not persistent across Vercel cold, so database cache.
-        $stats = Cache::remember('teacher.dashboardStats', 60, fn () => $this->dashboardStats());
+        // ponytail: 60s cache — array (Collection IncompleteClass on database driver). v2 key to flush old Closure/IncompleteClass entries.
+        $stats = Cache::remember('teacher.dashboardStats:v2', 60, fn () => $this->dashboardStats());
 
         return Inertia::render('Teacher/Dashboard', $stats);
     }
@@ -42,7 +42,7 @@ class TeacherController extends Controller
         $search = $request->input('search', '');
         $status = $request->input('status', '');
         $page = $request->input('page', 1);
-        $cacheKey = "teacher.students:{$sort}:{$direction}:{$section}:{$status}:{$search}:page{$page}";
+        $cacheKey = "teacher.students:v2:{$sort}:{$direction}:{$section}:{$status}:{$search}:page{$page}";
 
         // ponytail: paginator with through() contains Closure — cannot serialize for database cache. Cache raw paginator then apply through outside.
         $cached = Cache::remember($cacheKey, 30, function () use ($sort, $direction, $section, $search, $status) {
@@ -325,8 +325,8 @@ class TeacherController extends Controller
             'gender' => $request->gender,
             'parent_email' => $request->parent_email,
         ]);
-        Cache::forget('teacher.dashboardStats');
-        Cache::forget('teacher.reports');
+        Cache::forget('teacher.dashboardStats:v2');
+        Cache::forget('teacher.reports:v2');
 
         return redirect()->back();
     }
@@ -500,7 +500,7 @@ class TeacherController extends Controller
     {
         $section = $request->input('section', '');
         $search = $request->input('search', '');
-        $cacheKey = "teacher.leaderboards:{$section}:{$search}";
+        $cacheKey = "teacher.leaderboards:v2:{$section}:{$search}";
 
         $data = Cache::remember($cacheKey, 60, function () use ($section, $search) {
             $allStudents = StudentProfile::join('users', 'users.id', '=', 'students.user_id')
@@ -538,7 +538,7 @@ class TeacherController extends Controller
                 ];
             });
 
-        $sections = $allStudents->pluck('section')->unique()->filter()->sort()->values();
+        $sections = $allStudents->pluck('section')->unique()->filter()->sort()->values()->toArray();
 
         $students = $allStudents;
         if ($section) {
@@ -555,9 +555,9 @@ class TeacherController extends Controller
 
             return [
                 'leaderboard' => [
-                    'points' => $students->sortByDesc('points')->values(),
-                    'wordBlast' => $students->sortByDesc('wordBlastAcc')->values(),
-                    'storyQuest' => $students->sortByDesc('storyQuestAcc')->values(),
+                    'points' => $students->sortByDesc('points')->values()->toArray(),
+                    'wordBlast' => $students->sortByDesc('wordBlastAcc')->values()->toArray(),
+                    'storyQuest' => $students->sortByDesc('storyQuestAcc')->values()->toArray(),
                 ],
                 'totalStudents' => $allStudents->count(),
                 'sections' => $sections,
@@ -576,7 +576,7 @@ class TeacherController extends Controller
     {
         $section = $request->input('section', '');
         $search = $request->input('search', '');
-        $cacheKey = "teacher.badges:{$section}:{$search}";
+        $cacheKey = "teacher.badges:v2:{$section}:{$search}";
 
         $data = Cache::remember($cacheKey, 60, function () use ($section, $search) {
             // ponytail: checkAllEligibleBadges removed — was 100×5 queries = 30s timeout on sfo→iad1. Badges awarded on gameplay (StudentController:finishRound), not on teacher view.
@@ -633,13 +633,13 @@ class TeacherController extends Controller
         $totalBadges = $badges->count();
         $totalEarned = $badges->sum('earned_count');
         $mostEarnedBadge = $badges->where('earned_count', '>=', 2)->sortByDesc('earned_count')->first();
-        $sections = $this->sectionList();
+        $sections = $this->sectionList()->toArray();
 
         $isDeadlineClosed = (bool) $this->reportService->deadline()?->isPast();
 
             return [
-                'badges' => $badges,
-                'topEarners' => $students,
+                'badges' => $badges->toArray(),
+                'topEarners' => $students->toArray(),
                 'totalStudents' => $totalStudents,
                 'totalBadges' => $totalBadges,
                 'totalEarned' => $totalEarned,
@@ -702,8 +702,8 @@ class TeacherController extends Controller
         }
 
         $user->student()->update($studentData);
-        Cache::forget('teacher.dashboardStats');
-        Cache::forget('teacher.reports');
+        Cache::forget('teacher.dashboardStats:v2');
+        Cache::forget('teacher.reports:v2');
 
         return redirect()->back()->with('success', 'Student updated successfully.');
     }
@@ -711,8 +711,8 @@ class TeacherController extends Controller
     public function destroy($id)
     {
         User::where('role', 'student')->findOrFail($id)->delete();
-        Cache::forget('teacher.dashboardStats');
-        Cache::forget('teacher.reports');
+        Cache::forget('teacher.dashboardStats:v2');
+        Cache::forget('teacher.reports:v2');
 
         return redirect()->back()->with('success', 'Student deleted successfully.');
     }
