@@ -88,7 +88,7 @@ export default function Leaderboards({ leaderboard, totalStudents, sections = []
                         ))}
                     </select>
 
-                    <div className="relative w-64">
+                    <div className="relative w-full sm:w-64">
                         <input
                             ref={searchRef}
                             type="text"

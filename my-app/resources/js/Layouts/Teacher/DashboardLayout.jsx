@@ -83,27 +83,27 @@ export default function DashboardLayout({ children }) {
                 />
             )}
 
-            <header className="fixed top-0 right-0 left-0 md:left-64 h-20 flex items-center justify-between px-4 md:px-8 z-40 bg-background border-b-4 border-outline/30 shadow-[0_4px_0_0_#1e1b4b]">
-                <div className="flex items-center gap-4 w-full md:w-1/3">
+            <header className="fixed top-0 right-0 left-0 md:left-64 h-16 sm:h-20 flex items-center justify-between px-3 sm:px-4 md:px-8 z-40 bg-background border-b-4 border-outline/30 shadow-[0_4px_0_0_#1e1b4b]">
+                <div className="flex flex-1 min-w-0 sm:min-w-[180px] md:w-1/3 items-center gap-2 sm:gap-3 lg:gap-4">
                     <button
                         onClick={() => setSidebarOpen(true)}
                         className="md:hidden p-2 text-on-surface-variant/60 hover:text-primary active:scale-95 transition-all"
                     >
                         <span className="material-symbols-outlined">menu</span>
                     </button>
-                    <div className="relative w-full hidden md:block">
+                    <div className="relative w-full block">
                         <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">
                             search
                         </span>
                         <input
-                            className="w-full bg-surface-container-lowest border-2 border-outline/40 rounded-lg py-2 pl-10 pr-4 focus:ring-2 focus:ring-secondary-container focus:border-secondary-container text-sm font-body-md text-on-surface transition-all"
+                            className="w-full bg-surface-container-lowest border-2 border-outline/40 rounded-lg py-2 sm:py-2.5 pl-8 sm:pl-10 pr-3 sm:pr-4 focus:ring-2 focus:ring-secondary-container focus:border-secondary-container text-xs sm:text-sm font-body-md text-on-surface transition-all"
                             placeholder="Search the galaxy..."
                             type="text"
                         />
                     </div>
                 </div>
                 <div className="flex items-center gap-3 md:gap-6">
-                    <div className="hidden sm:flex items-center gap-4 text-on-surface-variant/60">
+                    <div className="flex items-center gap-2 sm:gap-3 lg:gap-4 text-on-surface-variant/60">
                         <div ref={notifRef} className="relative">
                             <button
                                 onClick={() => setShowNotifs(!showNotifs)}
@@ -117,14 +117,14 @@ export default function DashboardLayout({ children }) {
                                 )}
                             </button>
                             {showNotifs && (
-                                <div className="absolute top-full right-0 mt-2 w-80 bg-surface-container-high border-2 border-outline/40 rounded-2xl shadow-[8px_8px_0_0_#1e1b4b] overflow-hidden z-50">
-                                    <div className="p-4 border-b-2 border-outline/40">
+                                <div className="absolute top-full left-1/2 -translate-x-1/2 sm:left-auto sm:translate-x-0 sm:right-0 mt-2 w-[92vw] sm:w-80 max-w-[90vw] max-h-[60vh] sm:max-h-[70vh] overflow-y-auto bg-surface-container-high border-2 border-outline/40 rounded-2xl shadow-[8px_8px_0_0_#1e1b4b] z-50">
+                                    <div className="p-3 sm:p-4 border-b-2 border-outline/40">
                                         <p className="font-black text-sm text-on-surface uppercase tracking-widest">
                                             Alerts
                                         </p>
                                     </div>
                                     {alerts.length === 0 ? (
-                                        <div className="p-6 text-center text-on-surface-variant text-sm font-bold">
+                                        <div className="p-4 sm:p-6 text-center text-on-surface-variant text-sm font-bold">
                                             All good!
                                         </div>
                                     ) : (
@@ -133,7 +133,7 @@ export default function DashboardLayout({ children }) {
                                                 <Link
                                                     key={i}
                                                     href={a.href}
-                                                    className="flex items-center gap-3 p-4 hover:bg-surface-container-low/60 transition-colors"
+                                                     className="flex items-center gap-2 sm:gap-3 p-3 sm:p-4 hover:bg-surface-container-low/60 transition-colors"
                                                     onClick={() =>
                                                         setShowNotifs(false)
                                                     }
@@ -162,13 +162,13 @@ export default function DashboardLayout({ children }) {
                         </div>
                     </div>
                     <div className="flex items-center gap-3 pl-3 md:pl-6 border-l-2 border-outline/25">
-                        <span className="hidden lg:inline font-headline-md text-sm font-bold tracking-tight text-on-surface">
+                        <span className="hidden md:inline font-headline-md text-[10px] sm:text-xs lg:text-sm font-bold tracking-tight text-on-surface truncate max-w-[100px] sm:max-w-[140px] lg:max-w-none">
                             WORD-O-MATIC Dashboard
                         </span>
                     </div>
                 </div>
             </header>
-            <main className="md:ml-64 pt-28 pb-12 px-4 md:px-8 min-h-screen bg-background">
+            <main className="md:ml-64 pt-28 pb-12 px-4 md:px-8 min-h-screen bg-background overflow-x-hidden min-w-0">
                 <DeadlineBanner
                     isDeadlineClosed={showDeadlineBanner}
                     message={deadlineMessage}

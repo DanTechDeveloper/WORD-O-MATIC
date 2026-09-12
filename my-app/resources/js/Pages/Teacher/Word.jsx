@@ -65,11 +65,11 @@ export default function Word({ modules }) {
                 </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6">
                 {levels.map((level) => (
                     <div
                         key={level}
-                        className={`bg-slate-900 rounded-[2.5rem] border-4 border-slate-800 p-6 md:p-8 flex flex-col items-center justify-center text-center shadow-[10px_10px_0_0_#020617] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all group ${
+                        className={`bg-slate-900 rounded-[2.5rem] border-4 border-slate-800 p-4 sm:p-6 md:p-8 flex flex-col items-center justify-center text-center shadow-[10px_10px_0_0_#020617] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all group ${
                             isDeadlineClosed ? "cursor-not-allowed opacity-40" : "cursor-pointer"
                         }`}
                         onClick={() => {
@@ -108,7 +108,7 @@ export default function Word({ modules }) {
                 {levels.length < 10 && (
                     <div
                         key="add-module"
-                        className={`bg-slate-900 rounded-[2.5rem] border-4 border-slate-800 p-6 md:p-8 flex flex-col items-center justify-center text-center shadow-[10px_10px_0_0_#020617] transition-all group ${
+                        className={`bg-slate-900 rounded-[2.5rem] border-4 border-slate-800 p-4 sm:p-6 md:p-8 flex flex-col items-center justify-center text-center shadow-[10px_10px_0_0_#020617] transition-all group ${
                             isDeadlineClosed ? "cursor-not-allowed opacity-40" : "hover:translate-x-1 hover:translate-y-1 hover:shadow-none cursor-pointer"
                         }`}
                         onClick={() => {

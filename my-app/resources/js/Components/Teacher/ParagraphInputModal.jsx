@@ -44,7 +44,7 @@ export default function ParagraphInputModal({
 
     return (
         <div className="fixed inset-0 bg-background/80 flex items-center justify-center z-50 p-4">
-            <div className="bg-slate-900 p-6 md:p-10 rounded-[2.5rem] border-4 border-slate-800 shadow-[8px_8px_0_0_#020617] md:shadow-[12px_12px_0_0_#020617] w-full max-w-xl max-h-[90vh] flex flex-col">
+            <div className="bg-slate-900 p-4 sm:p-6 md:p-10 rounded-[2.5rem] border-4 border-slate-800 shadow-[8px_8px_0_0_#020617] md:shadow-[12px_12px_0_0_#020617] w-full max-w-xl max-h-[90vh] flex flex-col">
                 <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0">
                     <div>
                         <h2 className="text-2xl md:text-3xl font-black text-white uppercase italic tracking-tighter">
@@ -87,7 +87,7 @@ export default function ParagraphInputModal({
                                 setCurrentEntry(e.target.value);
                             }}
                             rows={8}
-                            className="w-full bg-slate-950 border-2 border-slate-800 rounded-2xl px-5 py-4 text-white font-bold focus:outline-none focus:border-sky-500 transition-all resize-none text-xl leading-relaxed"
+                            className="w-full bg-slate-950 border-2 border-slate-800 rounded-2xl px-4 sm:px-5 py-3 sm:py-4 text-white font-bold focus:outline-none focus:border-sky-500 transition-all resize-none text-base sm:text-lg lg:text-xl leading-relaxed"
                             placeholder="Enter paragraph content here..."
                         />
                     </div>
