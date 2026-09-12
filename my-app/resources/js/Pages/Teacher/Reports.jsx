@@ -512,6 +512,13 @@ export default function Reports({ grouped, flash, deadline, errors }) {
                 </div>
             )}
 
+            {flash?.error && (
+                <div className="mb-6 bg-rose-500/10 border-2 border-rose-500 rounded-2xl p-4 flex items-center gap-3">
+                    <span className="material-symbols-outlined text-rose-400">error</span>
+                    <p className="text-white font-bold text-sm">{flash.error}</p>
+                </div>
+            )}
+
             {flash?.deadline_set && (
                 <div className="mb-6 bg-lime-500/10 border-2 border-lime-500 rounded-2xl p-4 flex items-center gap-3">
                     <span className="material-symbols-outlined text-lime-400">
