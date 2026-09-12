@@ -194,7 +194,8 @@ const ReadModeMainContent = memo(function ReadModeMainContent({
                                 }`}
                                 style={{
                                     fontFamily: '"Courier New", "Consolas", "Monaco", monospace',
-                                    fontSize: `clamp(1.4rem, ${Math.max(1.4, 6 - word.word.length * 0.3)}vw, 7rem)`,
+                                    // ponytail: rem breakpoints to match SpeakMode text-2xl→7xl, not vw continuous — mobile 22px vs laptop 72px now ±2px
+                                    fontSize: `clamp(1.5rem, ${Math.max(1.5, 4.5 - word.word.length * 0.2)}rem, 4.5rem)`,
                                     textShadow: isMispronounced
                                         ? `
                                             0 0 10px rgba(244,63,94,0.6),
