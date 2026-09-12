@@ -23,37 +23,38 @@ class ReportController extends Controller
 
     public function reports()
     {
-        // ponytail: 60s global — reports page is heavy (100 rows)
-        [$students, $grouped] = Cache::remember('teacher.reports', 60, function () {
+        // ponytail: 60s global — cache array (Collection → IncompleteClass on database driver) + v2 key to flush old
+        [$studentsArray, $grouped] = Cache::remember('teacher.reports:v2', 60, function () {
             $students = User::with('student')
                 ->where('role', 'student')
                 ->orderBy('name', 'asc')
                 ->get();
 
-        $students = $students->map(fn ($user) => [
-            'id' => $user->id,
-            'name' => $user->name,
-            'section' => $user->student?->section ?? '',
-            'wordBlastAcc' => $user->student?->wordBlastAcc ?? 0,
-            'storyQuestAcc' => $user->student?->storyQuestAcc ?? 0,
-            'finalAverage' => $user->student?->finalAverage,
-            'read_level' => $user->student?->read_level ?? 1,
-            'speak_level' => $user->student?->speak_level ?? 1,
-            'status' => $user->student?->status ?? 'notStarted',
-            'parent_email' => $user->student?->parent_email,
-            'report_sent_at' => $user->student?->report_sent_at,
-        ]);
+            $students = $students->map(fn ($user) => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'section' => $user->student?->section ?? '',
+                'wordBlastAcc' => $user->student?->wordBlastAcc ?? 0,
+                'storyQuestAcc' => $user->student?->storyQuestAcc ?? 0,
+                'finalAverage' => $user->student?->finalAverage,
+                'read_level' => $user->student?->read_level ?? 1,
+                'speak_level' => $user->student?->speak_level ?? 1,
+                'status' => $user->student?->status ?? 'notStarted',
+                'parent_email' => $user->student?->parent_email,
+                'report_sent_at' => $user->student?->report_sent_at,
+            ]);
 
             $grouped = [
-                'atRisk' => $students->where('status', 'atRisk')->values(),
-                'support' => $students->where('status', 'support')->values(),
-                'onTrack' => $students->where('status', 'onTrack')->values(),
-                'notStarted' => $students->where('status', 'notStarted')->values(),
-                'in_progress' => $students->where('status', 'in_progress')->values(),
+                'atRisk' => $students->where('status', 'atRisk')->values()->toArray(),
+                'support' => $students->where('status', 'support')->values()->toArray(),
+                'onTrack' => $students->where('status', 'onTrack')->values()->toArray(),
+                'notStarted' => $students->where('status', 'notStarted')->values()->toArray(),
+                'in_progress' => $students->where('status', 'in_progress')->values()->toArray(),
             ];
 
-            return [$students, $grouped];
+            return [$students->toArray(), $grouped];
         });
+        $students = $studentsArray;
 
         return Inertia::render('Teacher/Reports', [
             'grouped' => $grouped,

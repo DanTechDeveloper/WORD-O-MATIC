@@ -23,11 +23,11 @@ class LevelService
 
     private function getModuleStatuses(int $userId, string $moduleClass, string $progressClass, string $fk): Collection
     {
-        // ponytail: 60s per-user — was 2 queries per call, isModuleAccessible called it twice (4 queries) per gameplay page
+        // ponytail: 60s per-user — was 2 queries per call, isModuleAccessible called it twice (4 queries) per gameplay page. Cache array to avoid Collection serialization IncompleteClass.
         $type = str_contains($moduleClass, 'Word') ? 'word' : 'paragraph';
-        $cacheKey = "level.{$type}:{$userId}";
+        $cacheKey = "level:v2.{$type}:{$userId}";
 
-        return Cache::remember($cacheKey, 60, function () use ($moduleClass, $progressClass, $fk, $userId) {
+        $array = Cache::remember($cacheKey, 60, function () use ($moduleClass, $progressClass, $fk, $userId) {
             $modules = $moduleClass::select(['id', 'level', 'title', 'is_tutorial'])
                 ->where('is_tutorial', false)
                 ->withCount('words')
@@ -38,8 +38,10 @@ class LevelService
                 ->get()
                 ->keyBy($fk);
 
-            return $this->mapStatuses($modules, $progressRecords);
+            return $this->mapStatuses($modules, $progressRecords)->toArray();
         });
+
+        return collect($array);
     }
 
     private function mapStatuses(Collection $modules, Collection $progressRecords): Collection
