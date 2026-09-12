@@ -6,12 +6,13 @@ RUN cp "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini" \
 
 WORKDIR /app
 
+FROM node:20-bookworm AS node
 FROM base AS dependencies
 
-# Node.js + npm needed for Vite build (bookworm)
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends nodejs npm \
-    && rm -rf /var/lib/apt/lists/*
+COPY --from=node /usr/local/bin/node /usr/local/bin/node
+COPY --from=node /usr/local/lib/node_modules /usr/local/lib/node_modules
+RUN ln -sf /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
+    && node -v && npm -v
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
