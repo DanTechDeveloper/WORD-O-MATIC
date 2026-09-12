@@ -209,7 +209,48 @@ export default function Badges({
                     </div>
                 </div>
 
-                <div className="overflow-x-auto -mx-4 sm:mx-0">
+                <div className="block lg:hidden divide-y-2 divide-slate-800/50 -mx-4 sm:mx-0">
+                    {filtered.length === 0 ? (
+                        <div className="p-8 text-center text-slate-500 font-black uppercase tracking-widest text-sm">No students match the current filters</div>
+                    ) : (
+                        filtered.map((student, i) => {
+                            const rank = i + 1;
+                            const isTop3 = rank <= 3;
+                            return (
+                                <div key={student.id} className={`p-4 sm:p-5 flex flex-col gap-3 ${student.badge_count === 0 ? "opacity-60" : ""}`}>
+                                    <div className="flex items-center gap-2 sm:gap-3">
+                                        <div className="flex flex-col items-center shrink-0">
+                                            <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest text-slate-500">Rank</span>
+                                            <span className="flex items-center justify-center w-8 h-8">
+                                                {isTop3 ? (
+                                                    <span className="material-symbols-outlined text-2xl sm:text-3xl" style={{ color: RANK_COLORS[rank - 1], fontVariationSettings: "'FILL' 1" }}>emoji_events</span>
+                                                ) : (
+                                                    <span className="text-base sm:text-xl font-black text-slate-400">#{rank}</span>
+                                                )}
+                                            </span>
+                                        </div>
+                                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-slate-950 border-2 border-lime-400 overflow-hidden shrink-0">
+                                            {student.avatar ? <img src={student.avatar} alt={student.name} className="w-full h-full object-cover" /> : <span className="material-symbols-outlined text-slate-500 text-sm sm:text-base">person</span>}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest text-slate-500">Student</p>
+                                            <span className="font-black text-white truncate max-w-[8rem] sm:max-w-[11rem] block text-sm sm:text-base" title={student.name}>{student.name}</span>
+                                        </div>
+                                        <div className="flex flex-col items-center shrink-0">
+                                            <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest text-slate-500">Badges</span>
+                                            <span className={`font-black text-lg sm:text-xl ${student.badge_count === 0 ? "text-slate-500" : student.badge_count >= 5 ? "text-lime-400" : student.badge_count >= 3 ? "text-yellow-400" : "text-rose-400"}`}>{student.badge_count}</span>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-3 sm:gap-4 flex-wrap text-xs sm:text-sm">
+                                        <span className="text-slate-500 font-semibold">Section: <span className="text-slate-300">{student.section || "—"}</span></span>
+                                        <span className="text-slate-500 font-semibold">Last Earned: <span className="text-slate-400">{formatRelativeTime(student.last_earned_at)}</span></span>
+                                    </div>
+                                </div>
+                            );
+                        })
+                    )}
+                </div>
+                <div className="hidden lg:block overflow-x-auto -mx-4 sm:mx-0">
                     <table className="w-full text-left border-collapse min-w-[600px]">
                         <thead>
                             <tr className="border-b-4 border-slate-800">

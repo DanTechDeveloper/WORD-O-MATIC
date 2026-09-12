@@ -138,17 +138,17 @@ export default function Students({ data, sections, filters, existingStudentIds }
                             Monitoring {meta.total ?? 0} word-warriors
                         </p>
                     </div>
-                    <div className="flex flex-col sm:flex-row gap-3 lg:gap-4">
+                    <div className="flex flex-col gap-3 lg:gap-4 lg:flex-row lg:items-center">
                         <button
                             onClick={() => setIsAddModalOpen(true)}
-                            className="bg-purple-500 text-white px-4 sm:px-6 py-3 rounded-2xl border-4 border-slate-950 shadow-[6px_6px_0_0_#4c1d95] font-black uppercase italic text-sm tracking-tighter hover:translate-y-1 hover:shadow-[3px_3px_0_0_#4c1d95] transition-all flex items-center justify-center gap-2"
+                            className="w-full sm:w-auto bg-purple-500 text-white px-4 sm:px-6 py-3 rounded-2xl border-4 border-slate-950 shadow-[6px_6px_0_0_#4c1d95] font-black uppercase italic text-sm tracking-tighter hover:translate-y-1 hover:shadow-[3px_3px_0_0_#4c1d95] transition-all flex items-center justify-center gap-2"
                         >
                             <span className="material-symbols-outlined">
                                 add_circle
                             </span>
                             Add Student
                         </button>
-                        <div className="flex items-center bg-slate-900 rounded-2xl border-4 border-slate-800 p-1 sm:p-2 shadow-[4px_4px_0_0_#020617] overflow-x-auto">
+                        <div className="flex items-center flex-1 min-w-0 max-w-full bg-slate-900 rounded-2xl border-4 border-slate-800 p-1 sm:p-2 shadow-[4px_4px_0_0_#020617] overflow-x-auto">
                             {statusTabs.map((tab) => (
                                 <button
                                     key={tab.value}
@@ -167,7 +167,7 @@ export default function Students({ data, sections, filters, existingStudentIds }
                 </div>
 
                 <div className="bg-slate-900 rounded-2xl lg:rounded-[2.5rem] border-4 border-slate-800 p-4 lg:p-6 mb-6 lg:mb-10 flex flex-col lg:flex-row flex-wrap gap-4 items-stretch lg:items-center shadow-[8px_8px_0_0_#020617]">
-                    <div className="flex-1 min-w-0 lg:min-w-[300px] relative">
+                    <div className="flex-1 min-w-0 sm:min-w-[280px] lg:min-w-[300px] relative">
                         <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-lime-400">
                             search
                         </span>

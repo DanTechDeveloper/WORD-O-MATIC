@@ -151,7 +151,7 @@ export default function Reports({ grouped, flash, deadline, errors }) {
         : ["atRisk", "support", "onTrack", "in_progress", "notStarted"];
 
     const renderDeadlineSetter = () => (
-        <div className="bg-slate-900 border-4 border-slate-800 p-8 rounded-[2.5rem] shadow-[8px_8px_0_0_#020617] mb-8">
+        <div className="bg-slate-900 border-4 border-slate-800 p-4 sm:p-8 rounded-[2.5rem] shadow-[8px_8px_0_0_#020617] mb-8">
             <h2 className="text-2xl font-black text-white uppercase italic mb-6 flex items-center gap-3">
                 <span className="material-symbols-outlined text-purple-400">
                     event
@@ -162,7 +162,7 @@ export default function Reports({ grouped, flash, deadline, errors }) {
                 Set a deadline for this reporting period. Once the deadline passes, generate and send reports with the final data.
             </p>
 
-            <div className="flex items-end gap-4">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-4">
                 <div className="flex-1 space-y-3">
                     <label className="text-slate-500 text-xs font-black uppercase tracking-widest block">
                         Deadline Date & Time
@@ -259,7 +259,7 @@ export default function Reports({ grouped, flash, deadline, errors }) {
             <div className="mb-6 bg-slate-900 border-2 border-slate-700 rounded-2xl overflow-hidden">
                 <button
                     onClick={() => setShowSent((prev) => !prev)}
-                    className="w-full flex items-center justify-between px-6 py-4 transition-colors hover:bg-slate-800/50"
+                    className="w-full flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 transition-colors hover:bg-slate-800/50"
                 >
                     <div className="flex items-center gap-3">
                         <span className={`material-symbols-outlined text-slate-400 transition-transform ${showSent ? "rotate-90" : ""}`}>
@@ -277,9 +277,9 @@ export default function Reports({ grouped, flash, deadline, errors }) {
                 {showSent && (
                     <div className="divide-y divide-slate-700/30 border-t border-slate-700/50">
                         {sentStudents.map((student) => (
-                            <div
-                                key={student.id}
-                                className="flex items-center gap-4 px-6 py-3"
+                                <div
+                                    key={student.id}
+                                    className="flex items-center gap-3 sm:gap-4 px-4 sm:px-6 py-3"
                             >
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2">
@@ -354,7 +354,7 @@ export default function Reports({ grouped, flash, deadline, errors }) {
                                 {students.map((student) => (
                                     <div key={student.id}>
                                         <label
-                                            className={`flex items-center gap-4 px-6 py-3 transition-colors ${
+                                            className={`flex items-center gap-3 sm:gap-4 px-4 sm:px-6 py-3 flex-wrap transition-colors ${
                                                 isPastDeadline ? "hover:bg-slate-800/50 cursor-pointer" : "cursor-default"
                                             }`}
                                         >
@@ -385,7 +385,7 @@ export default function Reports({ grouped, flash, deadline, errors }) {
                                                         </button>
                                                     )}
                                                 </div>
-                                                <div className="flex items-center gap-4 text-xs text-slate-500 font-semibold mt-0.5">
+                                                <div className="flex items-center gap-3 sm:gap-4 flex-wrap text-xs text-slate-500 font-semibold mt-0.5">
                                                     <span>Word Blast: {student.wordBlastAcc ?? 0}%</span>
                                                     <span>Story Quest: {student.storyQuestAcc ?? 0}%</span>
                                                     <span className="text-amber-400">Final Avg: {student.finalAverage != null ? `${student.finalAverage}%` : 'N/A'}</span>
@@ -413,7 +413,7 @@ export default function Reports({ grouped, flash, deadline, errors }) {
                                         </label>
 
                                         {emailEditId === student.id && (
-                                            <div className="pl-[3.75rem] pr-6 pb-4 flex items-start gap-3">
+                                            <div className="pl-4 sm:pl-[3.75rem] pr-4 sm:pr-6 pb-4 flex flex-col sm:flex-row items-stretch sm:items-start gap-3">
                                                 <div className="flex-1 min-w-0">
                                                     <div className="relative">
                                                         <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-lime-400 pointer-events-none">
@@ -485,8 +485,8 @@ export default function Reports({ grouped, flash, deadline, errors }) {
 
     return (
         <DashboardLayout>
-            <div className="mb-10">
-                <h1 className="text-4xl font-black text-white uppercase italic tracking-tighter mb-2">
+            <div className="mb-6 lg:mb-10">
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white uppercase italic tracking-tighter mb-2">
                     Reports
                 </h1>
                 <p className="text-slate-500 font-black uppercase text-xs tracking-widest">
@@ -559,9 +559,9 @@ export default function Reports({ grouped, flash, deadline, errors }) {
                 </div>
             )}
 
-            <div className="bg-slate-900 border-4 border-slate-800 p-8 rounded-[2.5rem] shadow-[8px_8px_0_0_#020617]">
-                    <div className="flex items-center justify-between mb-8">
-                        <h2 className="text-2xl font-black text-white uppercase italic flex items-center gap-3">
+            <div className="bg-slate-900 border-4 border-slate-800 p-4 sm:p-6 lg:p-8 rounded-2xl lg:rounded-[2.5rem] shadow-[8px_8px_0_0_#020617]">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 sm:mb-8">
+                        <h2 className="text-xl sm:text-2xl font-black text-white uppercase italic flex items-center gap-3">
                             <span className="material-symbols-outlined text-purple-400">
                                 mail
                             </span>
@@ -585,12 +585,12 @@ export default function Reports({ grouped, flash, deadline, errors }) {
                         />
                     </div>
 
-                    <div className="flex items-center bg-slate-950 border-2 border-slate-800 p-1 rounded-xl mb-6 overflow-x-auto">
+                    <div className="flex items-center bg-slate-950 border-2 border-slate-800 p-1 sm:p-2 rounded-xl mb-6 overflow-x-auto">
                         {statusTabs.map((tab) => (
                             <button
                                 key={tab.value}
                                 onClick={() => setStatusTab(tab.value)}
-                                className={`px-4 py-2 font-black text-xs whitespace-nowrap rounded-lg transition-all ${
+                                className={`px-3 sm:px-4 py-2 font-black text-xs sm:text-sm whitespace-nowrap rounded-lg transition-all ${
                                     statusTab === tab.value
                                         ? "bg-lime-400 text-slate-950 shadow-[2px_2px_0_0_#3f6212]"
                                         : "text-slate-400 hover:text-lime-300"
