@@ -444,7 +444,7 @@ class StudentController extends Controller
             $this->progressService->updateParagraphProgress($user->student, $module, $wordsSmashed, $request->words_processed, $accuracy);
         }
         // ponytail: invalidate teacher/student caches — progress affects dashboard/leaderboards + level statuses
-        Cache::forget('teacher.dashboardStats:v2');
+        Cache::forget('teacher.dashboardStats:v3');
         Cache::forget('teacher.reports:v2');
         Cache::forget('student.leaderboards:v2');
         Cache::forget("student.badges:v2:{$user->id}");

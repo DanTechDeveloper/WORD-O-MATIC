@@ -28,8 +28,8 @@ class TeacherController extends Controller
 
     public function dashboard()
     {
-        // ponytail: 60s cache — array (Collection IncompleteClass on database driver). v2 key to flush old Closure/IncompleteClass entries.
-        $stats = Cache::remember('teacher.dashboardStats:v2', 60, fn () => $this->dashboardStats());
+        // ponytail: 60s cache — store arrays (Collection → IncompleteClass on database driver). v3 to flush old.
+        $stats = Cache::remember('teacher.dashboardStats:v3', 60, fn () => $this->dashboardStats());
 
         return Inertia::render('Teacher/Dashboard', $stats);
     }
@@ -255,9 +255,9 @@ class TeacherController extends Controller
             ->get();
 
         $topStudents = [
-            'points' => $baseQuery('students.points desc'),
-            'wordBlast' => $baseQuery('students.wordBlastAcc desc'),
-            'storyQuest' => $baseQuery('students.storyQuestAcc desc'),
+            'points' => $baseQuery('students.points desc')->toArray(),
+            'wordBlast' => $baseQuery('students.wordBlastAcc desc')->toArray(),
+            'storyQuest' => $baseQuery('students.storyQuestAcc desc')->toArray(),
         ];
 
         return [
@@ -267,7 +267,7 @@ class TeacherController extends Controller
             'avgSpeakAccuracy' => (int) round($avgSpeakAccuracy),
             'avgFinalAccuracy' => (int) round($avgFinalAccuracy),
             'totalClassPoints' => $totalClassPoints,
-            'sectionPerformance' => $sectionPerformance,
+            'sectionPerformance' => $sectionPerformance->toArray(),
             'students' => $students,
             'chartCounts' => $counts,
         ];
@@ -325,7 +325,7 @@ class TeacherController extends Controller
             'gender' => $request->gender,
             'parent_email' => $request->parent_email,
         ]);
-        Cache::forget('teacher.dashboardStats:v2');
+        Cache::forget('teacher.dashboardStats:v3');
         Cache::forget('teacher.reports:v2');
 
         return redirect()->back();
@@ -702,7 +702,7 @@ class TeacherController extends Controller
         }
 
         $user->student()->update($studentData);
-        Cache::forget('teacher.dashboardStats:v2');
+        Cache::forget('teacher.dashboardStats:v3');
         Cache::forget('teacher.reports:v2');
 
         return redirect()->back()->with('success', 'Student updated successfully.');
@@ -711,7 +711,7 @@ class TeacherController extends Controller
     public function destroy($id)
     {
         User::where('role', 'student')->findOrFail($id)->delete();
-        Cache::forget('teacher.dashboardStats:v2');
+        Cache::forget('teacher.dashboardStats:v3');
         Cache::forget('teacher.reports:v2');
 
         return redirect()->back()->with('success', 'Student deleted successfully.');
