@@ -41,10 +41,11 @@ Speaking-focused storytelling activity<br>
 
 | Layer | Technology |
 |:------|:-----------|
-| **Backend** | PHP 8.3, Laravel 13 (session-based auth via `UserController`) |
-| **Frontend** | React 18, Inertia.js v2, Tailwind CSS v3 |
-| **Speech Recognition** | Deepgram streaming ASR (nova-3) via `useDeepgramRecognition.js` |
-| **Database** | MySQL (Production), SQLite `:memory:` (Testing) |
+| **Backend** | PHP 8.3, Laravel 13 (session-based auth via `UserController`) · `dunglas/frankenphp:1-php8.4` on Vercel Container |
+| **Frontend** | React 18, Inertia.js v2, Tailwind CSS v3 · Vite 8 · `Caddy` `immutable` for `/build/*` + `/Sound Effects/*` |
+| **Speech Recognition** | Deepgram streaming ASR (nova-3) via `useDeepgramRecognition.js` · `DEEPGRAM_REGION=au` (`api.au.deepgram.com`) |
+| **Database** | MySQL 8.4 **Aiven `sfo`** (`mysql-683a80a:12299`, `ssl-mode=REQUIRED`, `ca.pem`) — `51734` prod, SQLite `:memory:` (Testing) · Indexes `students(status,section)` `06b648f` |
+| **Cache/Session/Queue** | `CACHE_STORE=array` + `SESSION_DRIVER=cookie` (0 DB queries, YAGNI for 100 rows, was `database` `5b38537`) · `QUEUE_CONNECTION=sync` (no worker on Vercel Hobby) |
 | **Charts** | Recharts (BarChart on Web) · Native Excel Charts (Pie Chart & Bar Chart on Excel export) |
 | **HTTP** | Inertia router/useForm for pages · axios for JSON mastery endpoints |
 | **Icons** | Material Symbols Outlined (filled `1` when active) |
@@ -73,6 +74,8 @@ Install all dependencies and prepare the application:
 ```bash
 composer run setup
 ```
+
+Prod deploy: `Vercel Container` (`my-app/Dockerfile.vercel:1`, `my-app/Caddyfile:1`, `my-app/ca.pem` `sfo`, `vercel.json:1` `root:"my-app"`) + `Aiven` env (`DB_HOST:12299`, `MYSQL_ATTR_SSL_CA=/app/ca.pem`, `DEEPGRAM_API_KEY` `au`, `MAIL_*` for `Reports` send) — see `my-app/docs/DEPLOYMENT.md:48` `Version 1.3`.
 
 <details>
 <summary><b>What this command does</b></summary>

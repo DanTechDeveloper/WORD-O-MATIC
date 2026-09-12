@@ -17,12 +17,12 @@ All migrations in `database/migrations/`. No raw SQL. All foreign keys on `user_
 
 | Table | Key Fields | Notes |
 |---|---|---|
-| `students` | `user_id, points, read_progress, avatar, speak_progress, status, wordBlastAcc, storyQuestAcc, read_level, speak_level, section, gender, parent_email, tutorial_completed_at, report_sent_at` | Denormalized stats, best-score-only updates. `status` (values `notStarted`/`in_progress`/`support`/`atRisk`/`onTrack`) is a stored **read-SOT**, written only by `ProgressService::recalculateStatus()` via `classify()` — read paths never re-derive it. `report_sent_at` set when parent report email is queued. Cascade on `user_id`. (`words_smashed` dropped 2026-06-29) |
+| `students` | `user_id, points, read_progress, avatar, speak_progress, status, wordBlastAcc, storyQuestAcc, read_level, speak_level, section, gender, parent_email, tutorial_completed_at, report_sent_at` | Denormalized stats, best-score-only updates. `status` (values `notStarted`/`in_progress`/`support`/`atRisk`/`onTrack`) is a stored **read-SOT**, written only by `ProgressService::recalculateStatus()` via `classify()` — read paths never re-derive it. `report_sent_at` set when parent report email is queued. Cascade on `user_id`. (`words_smashed` dropped 2026-06-29). **Indexes** `students_status_section_index (status,section)` + `students_points_index (points)` added `06b648f` for `Teacher students` filter/sort (`sfo` 70ms). |
 | `student_word_progress` | `user_id, word_module_id, status, words_smashed, accuracy` | Overwritten on best score. Cascade. |
 | `student_paragraph_progress` | `user_id, paragraph_module_id, status, words_smashed, accuracy` | Overwritten on best score. Cascade. |
 | `student_word_mastery` | `user_id, word_id, status` | Per-word mastery toggle. Word Blast stays word-based (10 unique words/level, no dedup). Cascade. |
 | `student_paragraph_mastery` | `user_id, paragraph_word_id, status` | Per-word storage, sentence-based reporting — `ParagraphModule::buildLevels` derives `sentence_stats{ sentence, mastery=sum(all words mastered ? mastered:training), failed_attempts=sum(word)}` via `sentencesFromContent` (no `paragraph_sentences` table). Display via `utils/masteryLabels.js` `attemptsShown` (`mastered ? failed+1 : failed`) so `0` failures shows `1` when encountered. Cascade. |
-| `student_badges` | `user_id, badge_id, earned_at, progress, status, unlocked_session_id` | Pivot with progress. Cascade. |
+| `student_badges` | `user_id, badge_id, earned_at, progress, status, unlocked_session_id` | Pivot with progress. Cascade. **Index** `student_badges_user_badge_index (user_id,badge_id)` added `06b648f`. |
 
 ### Modules
 
@@ -77,3 +77,8 @@ No orphan records. One `$user->delete()` cleans everything.
 computing `round((wordBlastAcc + storyQuestAcc) / 2, 2)`, returning `null` while
 either accuracy is `0` (i.e. the student has not started one skill yet). It
 mirrors `ProgressService::finalAverage()` (the logical SOT, `app/Services/ProgressService.php`).
+
+## Prod Notes
+
+- **Aiven MySQL 8.4 `sfo` (San Francisco)** — `1 CPU / 1GB RAM / 1GB storage` free, `CA` `my-app/ca.pem` (`5cf09a70` 2026-2036), `ssl-mode=REQUIRED`, `MYSQL_ATTR_SSL_CA=/app/ca.pem`, `CACHE_STORE=array` (YAGNI for 100 rows, was `database` `5b38537`), `SESSION_DRIVER=cookie` (0 session queries), `QUEUE_CONNECTION=sync` (no worker on Vercel Hobby).
+- **Indexes** `06b648f` live on `sfo` and local `word-o-matic` (`43ms local, 1s sfo`).

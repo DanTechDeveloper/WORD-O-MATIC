@@ -2,17 +2,18 @@
 
 > Version 2.0
 
-## Backend
+## Backend — Vercel Container (FrankenPHP) + Aiven sfo
 
 | Layer | Role |
 |---|---|
-| Controllers | `UserController`, `StudentController`, `TeacherController`, `ReportController` — thin, delegate to services |
-| Services | `ProgressService`, `BadgeService`, `LevelService`, `ReportService` |
+| Controllers | `UserController`, `StudentController`, `TeacherController`, `ReportController` — thin, delegate to services. `TeacherController` no longer uses `Cache::remember` for 100 rows (YAGNI, erased `5b38537` — `dashboardStats`/`leaderboards`/`badges` direct, `students` `paginate(8)` direct, `Report export` batched `f62b557` `curriculumForUsers` 2 queries vs 200) |
+| Services | `ProgressService`, `BadgeService`, `LevelService` (now direct, no `level:v2` cache), `ReportService` |
 | Middleware | `HandleInertiaRequests` (global data), `EnsureUserRole` (role gate), `CheckStudentOnboarding` (avatar) |
 | Models | 14 Eloquent models — `StudentProfile` exposes an appended `finalAverage` accessor (`round((wb+sq)/2, 2)`, null when either accuracy is 0, mirroring `ProgressService::finalAverage`) |
 | Validation | Inline `$request->validate()` in controllers |
 | Auth | Middleware-based (`role:teacher` / `role:student`), no Policy files |
-| Notifications | Laravel Mail queued (`Mail::to()->queue()`) |
+| Notifications | Laravel Mail queued (`Mail::to()->queue()`) — `QUEUE_CONNECTION=sync` on Vercel Hobby (inline), `database` locally |
+| Infra | `dunglas/frankenphp:1-php8.4` `my-app/Dockerfile.vercel:1` + `my-app/Caddyfile:1` `immutable` for `/build/*` + `/Sound Effects/*` (`59de1b8`), `trustProxies('*')` `my-app/bootstrap/app.php:18`, `my-app/ca.pem` `sfo` |
 
 ## Frontend
 
@@ -68,6 +69,7 @@ Axios JSON endpoints (mastery toggles) bypass Inertia and return `noContent()`.
 | Badge-celebration silence | `BadgeUnlockModal` sets `bgmSilenced` and pauses BGM; BGM + tap sounds resume only on the last claimed badge |
 | Two-tier click SFX | `data-sfx="major"` actions get a loud click + BGM duck; un-tagged interactive elements get a soft blip (vol 0.35, no duck). Default is soft — a forgotten tag fails safely |
 | Numeric Final Average | Derived, not stored — `ProgressService::finalAverage()` (logical SOT) + `StudentProfile::finalAverage` accessor compute `(wb+sq)/2`, null until both skills started (mirrors `classify`), so a one-sided `(80+0)/2=40` never misleads. Surfaced across dashboard/students/leaderboards/reports/emails/Excel |
+| N+1 guard + slow query log | `AppServiceProvider:34` `Model::preventLazyLoading(!isProduction())` + `DB::whenQueryingForLongerThan(500)` prod log (`bd66b49`) — `isLocal` throws on `$user->student` without `with()`, prod logs `N+1 lazy load` + `Slow query >500ms` to `Vercel Logs` (`LOG_CHANNEL=stderr`) for `sfo→iad1` 70ms tracing |
 
 ## Auth Flow
 
