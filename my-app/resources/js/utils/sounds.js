@@ -89,7 +89,7 @@ const FEEDBACK_FILES = {
     "Perfect" : "Perfect.wav",
     
     "Nope!": "Nope.wav", 
-    "Not Quite!": "Not_Quite.wav",
+    "Not Quite!": "Not Quite.wav",
     "Again!": "Again.wav", 
     "Keep Trying!": "Keep Trying.wav",
     "Try Again" : "Try Again.wav"

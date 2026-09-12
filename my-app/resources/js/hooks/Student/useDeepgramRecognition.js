@@ -493,10 +493,9 @@ export function useDeepgramRecognition({
         timeoutRefs.current.prevTarget = timeoutRefs.current.target;
         timeoutRefs.current.targetChangedAt = Date.now();
         timeoutRefs.current.target = null;
-        // ponytail: 50ms grace absorbs the targetWord re-render tick, NOT 500ms
-        // of user speech. A 500ms grace silently drops correct first-word finals
-        // (fast readers finish "cat" in 200-400ms), then armWordTimeout fires
-        // onMispronounced at 5s for a word the student said right.
+        // ponytail: 50ms grace absorbs targetWord re-render tick only — NOT kid
+        // read time (that's sinceSwitch 1000). Keep 50 so fast correct at 200ms
+        // still wins; 500 would drop it and cause 5s timeout false mispronounce.
         timeoutRefs.current.graceEnd = Date.now() + 50;
         timeoutRefs.current.restartCount = 0;
         gateStateRef.current.isOpen = false;

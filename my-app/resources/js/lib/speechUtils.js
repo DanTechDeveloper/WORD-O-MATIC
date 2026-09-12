@@ -51,16 +51,19 @@ function isValidFuzzyMatch(spokenWord, targetWord) {
     if (Math.abs(targetLen - spokenLen) > 2) return false;
 
     const rawDist = standardLevenshtein(spokenWord, targetWord);
-    const maxAllowedError = Math.min(
-        2,
-        Math.max(1, Math.floor(targetLen * 0.2)),
-    );
+    // ponytail: any-word catch — 6+ letters allow 2 edits (was 1 for 1-9 via 0.2).
+    // preview 7 → preveiw/perview/prevue dist2 now true, bawas false-negative
+    // sa ASR hallucination kahit tama bata. 1-5 stays 1 to keep short words strict.
+    const maxAllowedError = targetLen >= 6 ? 2 : 1;
 
     if (rawDist > maxAllowedError) return false;
 
     // LAST-LETTER PENALTY: Dagdag penalty (+1) kapag mali ang dulong letra.
+    // ponytail: only for same-length substitutions — insertion/deletion at tail
+    // (e.g. previews/preview, tabl/table) already counts in rawDist; double
+    // penalty made valid d=1 into d=2.
     let adjustedDist = rawDist;
-    if (spokenWord.charAt(spokenLen - 1) !== targetWord.charAt(targetLen - 1)) {
+    if (spokenLen === targetLen && spokenWord.charAt(spokenLen - 1) !== targetWord.charAt(targetLen - 1)) {
         adjustedDist += 1;
     }
     return adjustedDist <= maxAllowedError;
