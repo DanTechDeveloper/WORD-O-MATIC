@@ -14,6 +14,15 @@ defaults:
 jobs:
   build-verify-and-migrate:
     runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: secret
+          MYSQL_DATABASE: wordomatic_test
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping -h localhost -psecret" --health-interval=10s --health-timeout=5s --health-retries=5
 
     steps:
       - uses: actions/checkout@v5
@@ -51,6 +60,24 @@ jobs:
 
       - name: Run Tests
         run: php artisan test
+
+      - name: Run JS unit tests
+        run: npx vitest run
+
+      - name: Vercel build smoke - Caddy immutable headers
+        run: grep -q 'immutable' my-app/Caddyfile && echo "Caddy immutable OK"
+
+      - name: Run MySQL index tests (Branch C)
+        env:
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: wordomatic_test
+          DB_USERNAME: root
+          DB_PASSWORD: secret
+        run: |
+          php artisan migrate:fresh --force
+          php artisan test --filter=IndexesExistTest
 
       # STEP 2: Manual-only while Railway is paused (expired trial) — restore
       # the DB + secrets, then run this workflow via workflow_dispatch.
