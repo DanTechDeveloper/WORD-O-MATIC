@@ -1,6 +1,8 @@
 :{$PORT:80} {
     root * /app/public
     encode zstd gzip
+    @assets path /build/*
+    header @assets Cache-Control "public, max-age=31536000, immutable"
 
     php_server {
         try_files {path} index.php
