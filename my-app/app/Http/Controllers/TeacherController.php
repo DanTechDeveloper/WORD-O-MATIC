@@ -12,6 +12,7 @@ use App\Services\BadgeService;
 use App\Services\ProgressService;
 use App\Services\ReportService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
@@ -27,9 +28,10 @@ class TeacherController extends Controller
 
     public function dashboard()
     {
-        return Inertia::render('Teacher/Dashboard',
-            $this->dashboardStats()
-        );
+        // ponytail: 60s cache — dashboardStats hits 4 queries + sfo→iad1 70ms each (was 2s warm). Array not persistent across Vercel cold, so database cache.
+        $stats = Cache::remember('teacher.dashboardStats', 60, fn () => $this->dashboardStats());
+
+        return Inertia::render('Teacher/Dashboard', $stats);
     }
 
     public function students(Request $request)
