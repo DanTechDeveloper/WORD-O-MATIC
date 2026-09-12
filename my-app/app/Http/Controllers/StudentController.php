@@ -106,23 +106,30 @@ class StudentController extends Controller
 
     public function leaderboards()
     {
-        $leaderboard = StudentProfile::with('user:id,name,student_id')
-            ->whereHas('user', fn ($q) => $q->where('role', 'student'))
-            ->orderBy('points', 'desc')
-            ->get(['user_id', 'points', 'avatar']);
+        // ponytail: global, 60s — same for all students
+        [$leaderboard, $total] = Cache::remember('student.leaderboards', 60, function () {
+            $lb = StudentProfile::with('user:id,name,student_id')
+                ->whereHas('user', fn ($q) => $q->where('role', 'student'))
+                ->orderBy('points', 'desc')
+                ->get(['user_id', 'points', 'avatar']);
+
+            return [$lb, $lb->count()];
+        });
 
         return Inertia::render('Student/Leaderboards', [
             'leaderboard' => $leaderboard,
-            'totalStudents' => $leaderboard->count(),
+            'totalStudents' => $total,
         ]);
     }
 
     public function badges()
     {
         $user = auth()->user();
-        $student = $user->student;
+        $cacheKey = "student.badges:{$user->id}";
+        $badges = Cache::remember($cacheKey, 60, function () use ($user) {
+            $student = $user->student;
 
-        $badges = Badges::withExists(['users as is_earned' => function ($query) use ($user) {
+            return Badges::withExists(['users as is_earned' => function ($query) use ($user) {
             $query->where('student_badges.user_id', $user->id);
         }])->get()->map(function ($badge) use ($user, $student) {
             $badge->threshold = $badge->threshold_score;
@@ -145,7 +152,8 @@ class StudentController extends Controller
                 $badge->current_value = null;
             }
 
-            return $badge;
+                return $badge;
+            });
         });
 
         return Inertia::render('Student/Badges', [
@@ -437,6 +445,11 @@ class StudentController extends Controller
         } else {
             $this->progressService->updateParagraphProgress($user->student, $module, $wordsSmashed, $request->words_processed, $accuracy);
         }
+        // ponytail: invalidate teacher/student caches — progress affects dashboard/leaderboards
+        Cache::forget('teacher.dashboardStats');
+        Cache::forget('teacher.reports');
+        Cache::forget('student.leaderboards');
+        Cache::forget("student.badges:{$user->id}");
 
         $redirect = redirect()->route('student.results', ['id' => $session->id]);
 

@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Models\WordModule;
 use App\Services\ReportService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
 use Maatwebsite\Excel\Facades\Excel;
@@ -22,10 +23,12 @@ class ReportController extends Controller
 
     public function reports()
     {
-        $students = User::with('student')
-            ->where('role', 'student')
-            ->orderBy('name', 'asc')
-            ->get();
+        // ponytail: 60s global — reports page is heavy (100 rows)
+        [$students, $grouped] = Cache::remember('teacher.reports', 60, function () {
+            $students = User::with('student')
+                ->where('role', 'student')
+                ->orderBy('name', 'asc')
+                ->get();
 
         $students = $students->map(fn ($user) => [
             'id' => $user->id,
@@ -41,13 +44,16 @@ class ReportController extends Controller
             'report_sent_at' => $user->student?->report_sent_at,
         ]);
 
-        $grouped = [
-            'atRisk' => $students->where('status', 'atRisk')->values(),
-            'support' => $students->where('status', 'support')->values(),
-            'onTrack' => $students->where('status', 'onTrack')->values(),
-            'notStarted' => $students->where('status', 'notStarted')->values(),
-            'in_progress' => $students->where('status', 'in_progress')->values(),
-        ];
+            $grouped = [
+                'atRisk' => $students->where('status', 'atRisk')->values(),
+                'support' => $students->where('status', 'support')->values(),
+                'onTrack' => $students->where('status', 'onTrack')->values(),
+                'notStarted' => $students->where('status', 'notStarted')->values(),
+                'in_progress' => $students->where('status', 'in_progress')->values(),
+            ];
+
+            return [$students, $grouped];
+        });
 
         return Inertia::render('Teacher/Reports', [
             'grouped' => $grouped,
