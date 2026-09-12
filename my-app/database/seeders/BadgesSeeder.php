@@ -10,11 +10,12 @@ class BadgesSeeder extends Seeder
     public function run(): void
     {
         // ponytail: thresholds are >= ; action badges have null threshold (checked via BadgeService::$actionBadges, not meetsThreshold)
+        Badges::whereIn('slug', ['story-finisher', 'word-blast-finisher'])->delete();
         $badges = [
             ['name' => 'First Steps', 'slug' => 'first-steps', 'description' => 'Great start! You have accumulated your first 5 total points.', 'metric' => 'total_points', 'threshold_score' => 5, 'icon' => 'eco'],
             ['name' => 'Word Master', 'slug' => 'word-master', 'description' => 'Recognized for mastering words across modules by earning 50 total points.', 'metric' => 'total_points', 'threshold_score' => 50, 'icon' => 'emoji_events'],
-            ['name' => 'Story Quest Finisher', 'slug' => 'story-finisher', 'description' => 'Awarded for completing all paragraph modules.', 'metric' => 'paragraph_completion', 'threshold_score' => 100, 'icon' => 'auto_stories'],
-            ['name' => 'Word Blast Finisher', 'slug' => 'word-blast-finisher', 'description' => 'Awarded for completing all word modules. Every word smashed!', 'metric' => 'word_completion', 'threshold_score' => 100, 'icon' => 'sports_esports'],
+            ['name' => 'Halfway Hero', 'slug' => 'halfway-hero', 'description' => 'Halfway there! Completed 5 Word Blast levels.', 'metric' => 'word_completion', 'threshold_score' => 50, 'icon' => 'flag'],
+            ['name' => 'Story Explorer', 'slug' => 'story-explorer', 'description' => 'Exploring stories! Completed 5 Story Quest levels.', 'metric' => 'paragraph_completion', 'threshold_score' => 50, 'icon' => 'explore'],
             ['name' => 'On Fire', 'slug' => 'on-fire', 'description' => 'Nice! Got 3 correct in a row.', 'metric' => 'streak', 'threshold_score' => 3, 'icon' => 'local_fire_department'],
             ['name' => 'Blazing Streak', 'slug' => 'blazing-streak', 'description' => 'On a roll! Got 5 correct in a row.', 'metric' => 'streak', 'threshold_score' => 5, 'icon' => 'whatshot'],
             ['name' => 'Unstoppable', 'slug' => 'unstoppable', 'description' => 'Incredible! Got 7 correct in a row.', 'metric' => 'streak', 'threshold_score' => 7, 'icon' => 'bolt'],

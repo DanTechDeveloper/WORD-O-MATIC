@@ -3,6 +3,7 @@ import { router } from "@inertiajs/react";
 import { useRef } from "react";
 
 const RANK_COLORS = ["#fbbf24", "#94a3b8", "#d97706"];
+// ponytail: Halfway Hero / Story Explorer 50% (was 100% finisher) — forgiving for ASR, 11 badges stay
 
 export default function Badges({
     badges,
