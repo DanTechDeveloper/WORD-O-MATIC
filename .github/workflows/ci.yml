@@ -65,7 +65,7 @@ jobs:
         run: npx vitest run
 
       - name: Vercel build smoke - Caddy immutable headers
-        run: grep -q 'immutable' my-app/Caddyfile && echo "Caddy immutable OK"
+        run: grep -q 'immutable' Caddyfile && echo "Caddy immutable OK"
 
       - name: Run MySQL index tests (Branch C)
         env:
