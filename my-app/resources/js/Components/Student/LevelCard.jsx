@@ -77,21 +77,21 @@ export default function LevelCard({ module, emoji, gameUrl, index, highlightTuto
     ) : null
 
     const inner = (
-        <div className="relative z-10 p-5">
+        <div className="relative z-10 p-4 sm:p-5">
             {/* Level badge */}
-            <div className="flex items-center justify-between mb-3">
-                <span className={`text-xs font-black uppercase px-2.5 py-1 rounded-full border
+            <div className="flex items-center justify-between mb-2 sm:mb-3 gap-2">
+                <span className={`text-[10px] sm:text-xs font-black uppercase px-2 sm:px-2.5 py-1 rounded-full border shrink-0
                     ${isCompleted ? "bg-accent/20 text-accent border-accent/30" : ""}
                     ${isCurrent ? "bg-secondary-container/20 text-secondary-container border-secondary-container/30" : ""}
                     ${isPlayable && !isCurrent && !isCompleted ? "bg-surface-container-high/50 text-on-surface-variant border-surface-variant/50" : ""}
                 `}>
                     {isCompleted ? "COMPLETE" : `LEVEL ${module.level}`}
                 </span>
-                <span className="material-symbols-outlined text-3xl">{displayIcon}</span>
+                <span className="material-symbols-outlined text-2xl sm:text-3xl shrink-0">{displayIcon}</span>
             </div>
 
             {/* Title */}
-            <h3 className="text-on-surface font-black text-lg mb-1 truncate">
+            <h3 className="text-on-surface font-black text-base sm:text-lg mb-1 truncate">
                 {module.title}
             </h3>
 

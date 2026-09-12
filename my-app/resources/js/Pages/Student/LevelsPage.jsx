@@ -63,31 +63,31 @@ export default function LevelsPage({ modules, mode, tutorialComplete = true, wor
             )}
             <DeadlineBanner isDeadlineClosed={isDeadlineClosed} />
             {/* Header */}
-            <div className="flex items-center gap-3 md:gap-4 mb-6 pt-2">
+            <div className="flex items-center gap-2 sm:gap-3 md:gap-4 mb-6 pt-2">
                 <BackButton />
                 <div className="flex-1 min-w-0">
-                    <h2 className="text-on-surface text-2xl md:text-3xl font-black uppercase truncate flex items-center gap-2">
-                        <span className={`material-symbols-outlined text-3xl ${isRead ? "text-accent" : "text-quest"}`} style={{ fontVariationSettings: "'FILL' 1" }}>{isRead ? "menu_book" : "mic"}</span>
+                    <h2 className="text-on-surface text-xl xs:text-2xl md:text-3xl font-black uppercase truncate flex items-center gap-1.5 sm:gap-2">
+                        <span className={`material-symbols-outlined text-2xl sm:text-3xl ${isRead ? "text-accent" : "text-quest"}`} style={{ fontVariationSettings: "'FILL' 1" }}>{isRead ? "menu_book" : "mic"}</span>
                         <span>{isRead ? "Word Blast" : "Story Quest"}</span>
                     </h2>
-                    <p className="text-on-surface-variant font-black uppercase tracking-wide text-xs md:text-sm">
+                    <p className="text-on-surface-variant font-black uppercase tracking-wide text-[10px] xs:text-xs md:text-sm">
                         Select a level to play
                     </p>
                 </div>
-                <div className={`${isRead ? "bg-accent text-surface-container-lowest border-2 border-accent-deep/50" : "bg-quest text-surface-container-lowest border-2 border-quest-deep/50"} px-3 md:px-4 py-1.5 md:py-2 rounded-lg font-black text-sm md:text-base flex items-center gap-1.5 flex-shrink-0`}>
-                    <span className="material-symbols-outlined text-base md:text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
+                <div className={`${isRead ? "bg-accent text-surface-container-lowest border-2 border-accent-deep/50" : "bg-quest text-surface-container-lowest border-2 border-quest-deep/50"} px-2 sm:px-3 md:px-4 py-1 sm:py-1.5 md:py-2 rounded-lg font-black text-xs sm:text-sm md:text-base flex items-center gap-1 sm:gap-1.5 flex-shrink-0`}>
+                    <span className="material-symbols-outlined text-sm sm:text-base md:text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
                     {totalStars}
                 </div>
             </div>
 
             {/* Level Cards Grid */}
             {(!modules || modules.length === 0) ? (
-                <div className="flex flex-col items-center justify-center py-20 text-center">
-                    <span className="material-symbols-outlined text-6xl mb-4 text-on-surface-variant">inbox</span>
-                    <p className="text-on-surface-variant font-bold text-lg">No levels available yet</p>
+                <div className="flex flex-col items-center justify-center py-12 sm:py-20 text-center px-4">
+                    <span className="material-symbols-outlined text-5xl sm:text-6xl mb-4 text-on-surface-variant">inbox</span>
+                    <p className="text-on-surface-variant font-bold text-base sm:text-lg">No levels available yet</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-5">
                     {modules.map((module, index) => (
                         <LevelCard
                             key={module.id}
