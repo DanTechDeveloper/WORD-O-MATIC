@@ -22,7 +22,7 @@ const HEADLINES = {
         "FIRST TRY DONE, LET'S GO!",
         "EVERY WORD COUNTS!",
     ],
-    low: ["YOU GOT THIS!", "KEEP GOING!", "PRACTICE MAKES PROGRESS!"],
+    low: ["YOU GOT THIS!", "KEEP GOING!", "GOOD TRY — KEEP PRACTICING!"],
     mid: ["GREAT JOB!", "NICE WORK!", "KEEP IT UP!"],
     high: ["INCREDIBLE!", "OUTSTANDING!", "AMAZING!"],
 };
@@ -133,7 +133,15 @@ export default function GameResults({
                         >
                             sentiment_very_satisfied
                         </span>
-                        {isPerfect ? "Amazing!" : "You're doing great!"}
+                        {isPerfect
+                            ? "Amazing!"
+                            : accuracyPct >= 80
+                              ? "Outstanding — keep shining!"
+                              : accuracyPct >= 60
+                                ? "Great progress!"
+                                : accuracyPct >= 40
+                                  ? "Good try — practice makes progress!"
+                                  : "Every try counts — keep going!"}
                     </div>
 
                     {!deadlineHit && nextBadge && (
