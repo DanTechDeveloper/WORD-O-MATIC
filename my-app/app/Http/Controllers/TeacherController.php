@@ -41,103 +41,92 @@ class TeacherController extends Controller
         $section = $request->input('section', '');
         $search = $request->input('search', '');
         $status = $request->input('status', '');
-        $page = $request->input('page', 1);
-        $cacheKey = "teacher.students:v2:{$sort}:{$direction}:{$section}:{$status}:{$search}:page{$page}";
 
-        // ponytail: paginator with through() contains Closure — cannot serialize for database cache. Cache raw paginator then apply through outside.
-        $cached = Cache::remember($cacheKey, 30, function () use ($sort, $direction, $section, $search, $status) {
-            $query = User::with([
-                'student.wordProgress.wordModule',
-                'student.paragraphProgress.paragraphModule',
-            ])->where('role', 'student');
+        $query = User::with([
+            'student.wordProgress.wordModule',
+            'student.paragraphProgress.paragraphModule',
+        ])->where('role', 'student');
 
-            if ($section) {
-                $query->whereHas('student', fn ($q) => $q->where('section', $section));
-            }
+        if ($section) {
+            $query->whereHas('student', fn ($q) => $q->where('section', $section));
+        }
 
-            if ($status === 'no_email') {
-                $query->whereHas('student', fn ($q) => $q->whereNull('parent_email')->orWhere('parent_email', ''));
-            } elseif ($status) {
-                $query->whereHas('student', fn ($q) => $q->where('status', $status));
-            }
+        if ($status === 'no_email') {
+            $query->whereHas('student', fn ($q) => $q->whereNull('parent_email')->orWhere('parent_email', ''));
+        } elseif ($status) {
+            $query->whereHas('student', fn ($q) => $q->where('status', $status));
+        }
 
-            if ($search) {
-                $query->where(function ($q) use ($search) {
-                    $q->where('name', 'like', "%{$search}%")
-                        ->orWhere('student_id', 'like', "%{$search}%");
-                });
-            }
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('student_id', 'like', "%{$search}%");
+            });
+        }
 
-            $sortMap = [
-                'name' => ['users.name', $direction],
-                'level' => ['students.read_level', 'asc'],
-            ];
+        $sortMap = [
+            'name' => ['users.name', $direction],
+            'level' => ['students.read_level', 'asc'],
+        ];
 
-            [$sortCol, $sortDir] = $sortMap[$sort] ?? ['users.name', 'asc'];
+        [$sortCol, $sortDir] = $sortMap[$sort] ?? ['users.name', 'asc'];
 
-            $query->join('students', 'users.id', '=', 'students.user_id')
-                ->select('users.*');
+        $query->join('students', 'users.id', '=', 'students.user_id')
+            ->select('users.*');
 
-            if ($sort === 'risk' || $sort === 'finalAverage') {
-                $query->orderByRaw('(COALESCE(students.wordBlastAcc,0) + COALESCE(students.storyQuestAcc,0)) / 2 desc');
-            } else {
-                $query->orderBy($sortCol, $sortDir);
-            }
+        if ($sort === 'risk' || $sort === 'finalAverage') {
+            $query->orderByRaw('(COALESCE(students.wordBlastAcc,0) + COALESCE(students.storyQuestAcc,0)) / 2 desc');
+        } else {
+            $query->orderBy($sortCol, $sortDir);
+        }
 
-            $paginator = $query->paginate(8);
+        $students = $query->paginate(8)
+            ->through(function ($user) {
+                $student = $user->student;
+                $readLevel = $student?->read_level ?? 1;
+                $speakLevel = $student?->speak_level ?? 1;
 
-            return [
-                'paginator' => $paginator,
-                'sections' => $this->sectionList(),
-                'existingStudentIds' => User::where('role', 'student')->whereNotNull('student_id')->pluck('student_id'),
-                'filters' => [
-                    'sort' => $sort,
-                    'direction' => $direction,
-                    'section' => $section,
-                    'search' => $search,
-                    'status' => $status,
-                ],
-            ];
-        });
+                $currentWordAcc = $student?->wordProgress
+                    ->filter(fn ($p) => $p->wordModule?->level === $readLevel)
+                    ->avg('accuracy');
 
-        $students = $cached['paginator']->through(function ($user) {
-            $student = $user->student;
-            $readLevel = $student?->read_level ?? 1;
-            $speakLevel = $student?->speak_level ?? 1;
+                $currentStoryAcc = $student?->paragraphProgress
+                    ->filter(fn ($p) => $p->paragraphModule?->level === $speakLevel)
+                    ->avg('accuracy');
 
-            $currentWordAcc = $student?->wordProgress
-                ->filter(fn ($p) => $p->wordModule?->level === $readLevel)
-                ->avg('accuracy');
+                return [
+                    'id' => $user->id,
+                    'fullName' => $user->name,
+                    'studentID' => $user->student_id,
+                    'avatar' => $student?->avatar,
+                    'section' => $student?->section ?? '',
+                    'gender' => $student?->gender ?? '',
+                    'parent_email' => $student?->parent_email ?? '',
+                    'rotation' => 'rotate-['.rand(-3, 3).'deg]',
+                    'currentWordBlastAcc' => $currentWordAcc ? (int) round($currentWordAcc) : null,
+                    'currentStoryQuestAcc' => $currentStoryAcc ? (int) round($currentStoryAcc) : null,
+                    'wordBlastAcc' => $student?->wordBlastAcc,
+                    'storyQuestAcc' => $student?->storyQuestAcc,
+                    'finalAverage' => $student?->finalAverage,
+                    'readLevel' => $readLevel,
+                    'speakLevel' => $speakLevel,
+                    'status' => $this->computeStatus($student?->status ?? 'notStarted'),
+                ];
+            });
 
-            $currentStoryAcc = $student?->paragraphProgress
-                ->filter(fn ($p) => $p->paragraphModule?->level === $speakLevel)
-                ->avg('accuracy');
-
-            return [
-                'id' => $user->id,
-                'fullName' => $user->name,
-                'studentID' => $user->student_id,
-                'avatar' => $student?->avatar,
-                'section' => $student?->section ?? '',
-                'gender' => $student?->gender ?? '',
-                'parent_email' => $student?->parent_email ?? '',
-                'rotation' => 'rotate-['.rand(-3, 3).'deg]',
-                'currentWordBlastAcc' => $currentWordAcc ? (int) round($currentWordAcc) : null,
-                'currentStoryQuestAcc' => $currentStoryAcc ? (int) round($currentStoryAcc) : null,
-                'wordBlastAcc' => $student?->wordBlastAcc,
-                'storyQuestAcc' => $student?->storyQuestAcc,
-                'finalAverage' => $student?->finalAverage,
-                'readLevel' => $readLevel,
-                'speakLevel' => $speakLevel,
-                'status' => $this->computeStatus($student?->status ?? 'notStarted'),
-            ];
-        });
+        $sections = $this->sectionList();
 
         return Inertia::render('Teacher/Students', [
             'data' => $students,
-            'sections' => $cached['sections'],
-            'existingStudentIds' => $cached['existingStudentIds'],
-            'filters' => $cached['filters'],
+            'sections' => $sections,
+            'existingStudentIds' => User::where('role', 'student')->whereNotNull('student_id')->pluck('student_id'),
+            'filters' => [
+                'sort' => $sort,
+                'direction' => $direction,
+                'section' => $section,
+                'search' => $search,
+                'status' => $status,
+            ],
         ]);
     }
 
