@@ -54,11 +54,11 @@ export default function BadgeUnlockModal({
                 }}
             />
 
-            <div className="relative z-10 flex flex-col items-center text-center px-6 max-w-2xl mx-auto animate-fade-in">
+            <div className="relative z-10 flex flex-col items-center text-center px-4 xs:px-5 sm:px-6 max-w-[92vw] sm:max-w-2xl mx-auto animate-fade-in max-h-[90vh] overflow-y-auto">
                 {total > 1 && (
-                    <div className="relative z-10 mb-12 flex flex-col items-center gap-2">
-                        <span className="text-accent font-black text-xl uppercase tracking-[0.12em] flex items-center justify-center gap-2">
-                            <span className="material-symbols-outlined text-2xl" aria-hidden="true">
+                    <div className="relative z-10 mb-6 sm:mb-12 flex flex-col items-center gap-2">
+                        <span className="text-accent font-black text-base sm:text-xl uppercase tracking-[0.12em] flex items-center justify-center gap-2">
+                            <span className="material-symbols-outlined text-xl sm:text-2xl" aria-hidden="true">
                                 celebration
                             </span>
                             You unlocked {total} new badges!
@@ -66,7 +66,7 @@ export default function BadgeUnlockModal({
                     </div>
                 )}
 
-                <div className="relative mb-8">
+                <div className="relative mb-6 sm:mb-8">
                     <div
                         className="absolute inset-0 rounded-full"
                         style={{
@@ -75,7 +75,7 @@ export default function BadgeUnlockModal({
                         }}
                     />
                     <span
-                        className="material-symbols-outlined text-accent text-[10rem] leading-none block relative badge-pop"
+                        className="material-symbols-outlined text-accent text-[6rem] xs:text-[8rem] sm:text-[10rem] leading-none block relative badge-pop"
                         aria-hidden="true"
                     >
                         {badge.icon}
@@ -83,12 +83,12 @@ export default function BadgeUnlockModal({
                 </div>
 
                 <div
-                    className="bg-accent text-surface-container-lowest font-black px-8 py-3 rounded-xl border-2 border-surface-container-lowest text-lg uppercase tracking-[0.12em] mb-6 shadow-[6px_6px_0_0_#4c1d95]"
+                    className="bg-accent text-surface-container-lowest font-black px-6 sm:px-8 py-2 sm:py-3 rounded-xl border-2 border-surface-container-lowest text-base sm:text-lg uppercase tracking-[0.12em] mb-4 sm:mb-6 shadow-[4px_4px_0_0_#4c1d95] sm:shadow-[6px_6px_0_0_#4c1d95]"
                 >
                     New Badge Unlocked!
                 </div>
 
-                <h1 className="text-5xl md:text-7xl font-black text-accent uppercase tracking-tight mb-4 drop-shadow-[0_0_30px_rgba(163,230,53,0.5)]">
+                <h1 className="text-3xl xs:text-4xl sm:text-5xl md:text-7xl font-black text-accent uppercase tracking-tight mb-3 sm:mb-4 drop-shadow-[0_0_30px_rgba(163,230,53,0.5)] break-words px-2">
                     {badge.name}
                 </h1>
 

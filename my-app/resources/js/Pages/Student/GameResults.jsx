@@ -70,7 +70,7 @@ export default function GameResults({
 
     const renderResults = () => (
         <div className="bg-background text-on-background font-body-md">
-            <div className="relative min-h-screen flex flex-col items-center justify-center px-6 py-12">
+            <div className="relative min-h-screen flex flex-col items-center justify-center px-4 xs:px-5 sm:px-6 py-8 sm:py-12">
                 <div className="absolute top-1/2 left-1/4 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-primary/10 blur-[120px] rounded-full -z-10 animate-pulse" />
 
                 {isCelebrating && (
@@ -92,9 +92,9 @@ export default function GameResults({
                         ))}
                     </div>
                 )}
-                <div className="w-full max-w-lg mx-auto flex flex-col gap-8 animate-fade-in">
-                    <div className="text-center">
-                        <h1 className="text-6xl sm:text-7xl font-black text-primary uppercase leading-tight">
+                <div className="w-full max-w-[92vw] sm:max-w-lg mx-auto flex flex-col gap-6 sm:gap-8 animate-fade-in px-1 sm:px-0">
+                    <div className="text-center px-2 sm:px-0">
+                        <h1 className="text-4xl xs:text-5xl sm:text-6xl md:text-7xl font-black text-primary uppercase leading-tight break-words">
                             {deadlineHit ? "TIME'S UP!" : headline}
                         </h1>
                         <p className="text-lg font-bold text-on-surface-variant uppercase tracking-wider mt-2">
@@ -109,7 +109,7 @@ export default function GameResults({
                         />
                     )}
 
-                    <div className="flex gap-4">
+                    <div className="flex gap-3 sm:gap-4">
                         <StatTile
                             label={deadlineHit ? "You played" : "Score"}
                             value={displayScore}
@@ -152,7 +152,7 @@ export default function GameResults({
                         <div className="flex gap-4">
                             <Link
                                 href="/student/dashboard"
-                                className="flex-1 bg-primary text-on-primary font-bold py-5 rounded-2xl border border-surface-variant/20 text-base uppercase tracking-wider active:scale-[0.97] transition-all hover:brightness-110 text-center flex items-center justify-center"
+                                className="flex-1 bg-primary text-on-primary font-bold py-4 sm:py-5 rounded-2xl border border-surface-variant/20 text-sm sm:text-base uppercase tracking-wider active:scale-[0.97] transition-all hover:brightness-110 text-center flex items-center justify-center"
                             >
                                 <span className="material-symbols-outlined mr-2">
                                     home
@@ -161,11 +161,11 @@ export default function GameResults({
                             </Link>
                         </div>
                     ) : (
-                        <div className="flex gap-4">
+                        <div className="flex flex-col xs:flex-row gap-3 sm:gap-4">
                             <Link
                                 href={`/student/gameplay${session.module_type === "word" ? "Read" : "Speak"}Mode/${moduleLevel}`}
                                 data-sfx="major"
-                                className="flex-1 bg-surface-container-high text-on-surface font-bold py-5 rounded-2xl border border-surface-variant/20 text-base uppercase tracking-wider active:scale-[0.97] transition-all hover:bg-surface-container-highest text-center flex items-center justify-center"
+                                className="flex-1 bg-surface-container-high text-on-surface font-bold py-4 sm:py-5 rounded-2xl border border-surface-variant/20 text-sm sm:text-base uppercase tracking-wider active:scale-[0.97] transition-all hover:bg-surface-container-highest text-center flex items-center justify-center"
                             >
                                 <span className="material-symbols-outlined mr-2">
                                     replay
@@ -177,7 +177,7 @@ export default function GameResults({
                                     <Link
                                         href={`/student/gameplay${session.module_type === "word" ? "Read" : "Speak"}Mode/${nextModuleLevel}`}
                                         data-sfx="major"
-                                        className="flex-1 bg-primary text-on-primary font-bold py-5 rounded-2xl border border-surface-variant/20 text-base uppercase tracking-wider active:scale-[0.97] transition-all hover:brightness-110 text-center flex items-center justify-center"
+                                        className="flex-1 bg-primary text-on-primary font-bold py-4 sm:py-5 rounded-2xl border border-surface-variant/20 text-sm sm:text-base uppercase tracking-wider active:scale-[0.97] transition-all hover:brightness-110 text-center flex items-center justify-center"
                                     >
                                         <span className="material-symbols-outlined mr-2">
                                             arrow_forward
@@ -187,7 +187,7 @@ export default function GameResults({
                                 ) : (
                                     <Link
                                         href="/student/readModeLevels"
-                                        className="flex-1 bg-surface-container-high text-on-surface font-bold py-5 rounded-2xl border border-surface-variant/20 text-base uppercase tracking-wider active:scale-[0.97] transition-all hover:bg-surface-container-highest text-center flex items-center justify-center"
+                                        className="flex-1 bg-surface-container-high text-on-surface font-bold py-4 sm:py-5 rounded-2xl border border-surface-variant/20 text-sm sm:text-base uppercase tracking-wider active:scale-[0.97] transition-all hover:bg-surface-container-highest text-center flex items-center justify-center"
                                     >
                                         <span
                                             className="material-symbols-outlined mr-2"
@@ -203,7 +203,7 @@ export default function GameResults({
                                 ))}
                             <Link
                                 href="/student/dashboard"
-                                className="flex-1 bg-surface-container-high text-on-surface font-bold py-5 rounded-2xl border border-surface-variant/20 text-base uppercase tracking-wider active:scale-[0.97] transition-all hover:bg-surface-container-highest text-center flex items-center justify-center"
+                                className="flex-1 bg-surface-container-high text-on-surface font-bold py-4 sm:py-5 rounded-2xl border border-surface-variant/20 text-sm sm:text-base uppercase tracking-wider active:scale-[0.97] transition-all hover:bg-surface-container-highest text-center flex items-center justify-center"
                             >
                                 <span className="material-symbols-outlined mr-2">
                                     home
