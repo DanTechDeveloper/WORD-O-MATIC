@@ -74,19 +74,19 @@ const SpeakModeMainContent = memo(function SpeakModeMainContent({
             {gameState === "IDLE" ? (
                 <div className="flex-1 flex" />
             ) : gameState === "COUNTDOWN" ? (
-                <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-6xl sm:text-8xl md:text-[12rem] font-black text-quest italic animate-bounce drop-shadow-[0_0_50px_rgba(56,189,248,0.8)]">
+                <div className="absolute inset-0 flex items-center justify-center px-4">
+                    <span className="text-5xl xs:text-6xl sm:text-8xl md:text-[10rem] lg:text-[12rem] font-black text-quest italic animate-bounce drop-shadow-[0_0_50px_rgba(56,189,248,0.8)] text-center">
                         {countdownValue}
                     </span>
                 </div>
             ) : (
                 <div className="flex-1 flex flex-col relative">
-                    <div className="flex-1 flex items-start justify-center overflow-y-auto px-4 sm:px-8 pt-15 pb-16">
+                    <div className="flex-1 flex items-start justify-center overflow-y-auto px-3 xs:px-4 sm:px-6 md:px-8 pt-12 sm:pt-15 pb-12 sm:pb-16">
                         <div className="relative w-full max-w-7xl my-auto">
-                            <div className="sticky top-2 z-30 flex items-center justify-center gap-4 mb-3 min-h-10" />
+                            <div className="sticky top-2 z-30 flex items-center justify-center gap-2 sm:gap-4 mb-2 sm:mb-3 min-h-8 sm:min-h-10" />
 
                             <div
-                                className={`font-headline-xl text-left leading-relaxed tracking-tight select-none text-4xl md:text-5xl lg:text-7xl flex flex-wrap gap-x-4 gap-y-8`}
+                                className={`font-headline-xl text-left leading-relaxed tracking-tight select-none text-2xl xs:text-3xl sm:text-4xl md:text-5xl lg:text-7xl flex flex-wrap gap-x-2 xs:gap-x-3 sm:gap-x-4 gap-y-4 sm:gap-y-6 md:gap-y-8`}
                             >
                                 {words.map((word, index) => (
                                     <span
@@ -109,7 +109,7 @@ const SpeakModeMainContent = memo(function SpeakModeMainContent({
                                         {index === currentIndex &&
                                             feedbackType && (
                                                 <span
-                                                    className={`absolute left-1/2 -translate-x-1/2 -top-8 sm:-top-10 z-30 flex items-center gap-2 font-black italic whitespace-nowrap text-xl sm:text-2xl md:text-3xl rounded-full px-3 py-1 border bg-slate-900/85 animate-feedback-pop ${
+                                                    className={`absolute left-1/2 -translate-x-1/2 -top-6 xs:-top-7 sm:-top-8 md:-top-10 z-30 flex items-center gap-1 xs:gap-1.5 sm:gap-2 font-black italic whitespace-nowrap text-base xs:text-lg sm:text-xl md:text-2xl lg:text-3xl rounded-full px-2 xs:px-2.5 sm:px-3 py-1 border bg-slate-900/85 animate-feedback-pop max-w-[90vw] justify-center ${
                                                         feedbackType ===
                                                         "correct"
                                                             ? "text-yellow-300 border-amber-400/60"

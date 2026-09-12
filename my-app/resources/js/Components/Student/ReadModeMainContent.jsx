@@ -34,10 +34,10 @@ const ReadModeMainContent = memo(function ReadModeMainContent({
     const chars = word ? word.word.split("") : [];
 
     return (
-        <div className="flex-1 w-full relative overflow-hidden pointer-events-none">
+        <div className="flex-1 w-full relative overflow-hidden pointer-events-none px-2 sm:px-4">
             {gameState === "COUNTDOWN" ? (
-                <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-6xl sm:text-8xl md:text-[12rem] font-black text-accent italic animate-bounce drop-shadow-[0_0_50px_rgba(163,230,53,0.6)]">
+                <div className="absolute inset-0 flex items-center justify-center px-4">
+                    <span className="text-5xl xs:text-6xl sm:text-8xl md:text-[10rem] lg:text-[12rem] font-black text-accent italic animate-bounce drop-shadow-[0_0_50px_rgba(163,230,53,0.6)] text-center break-words">
                         {countdownValue}
                     </span>
                 </div>
@@ -144,9 +144,9 @@ const ReadModeMainContent = memo(function ReadModeMainContent({
 
                     <div
                         key={`${currentIndex}-${word.word}`}
-                        className="absolute flex flex-col items-center justify-center animate-holo-rise max-w-[90vw] px-2"
+                        className="absolute flex flex-col items-center justify-center animate-holo-rise w-[92vw] sm:w-auto sm:max-w-[90vw] px-2 sm:px-4 left-1/2 sm:left-auto"
                         style={{
-                            left: randomLeft,
+                            left: window.innerWidth < 640 ? "50%" : randomLeft,
                             transform: "translateX(-50%)",
                         }}
                     >
@@ -187,14 +187,14 @@ const ReadModeMainContent = memo(function ReadModeMainContent({
                                 />
                             )}
                             <p
-                                className={`font-black tracking-tight uppercase whitespace-nowrap text-center opacity-100 blur-0 transition-all duration-500 ${
+                                className={`font-black tracking-tight uppercase text-center opacity-100 blur-0 transition-all duration-500 break-words max-w-full px-2 sm:px-0 sm:whitespace-nowrap ${
                                     isMispronounced
-                                        ? "inline-block text-rose-400 bg-slate-900/80 border-2 border-rose-500 rounded-xl px-3 py-2"
+                                        ? "inline-block text-rose-400 bg-slate-900/80 border-2 border-rose-500 rounded-xl py-2"
                                         : ""
                                 }`}
                                 style={{
                                     fontFamily: '"Courier New", "Consolas", "Monaco", monospace',
-                                    fontSize: `clamp(2rem, ${Math.max(2, 8 - word.word.length * 0.4)}rem, 8rem)`,
+                                    fontSize: `clamp(1.4rem, ${Math.max(1.4, 6 - word.word.length * 0.3)}vw, 7rem)`,
                                     textShadow: isMispronounced
                                         ? `
                                             0 0 10px rgba(244,63,94,0.6),
