@@ -318,6 +318,8 @@ class TeacherController extends Controller
             'gender' => $request->gender,
             'parent_email' => $request->parent_email,
         ]);
+        Cache::forget('teacher.dashboardStats');
+        Cache::forget('teacher.reports');
 
         return redirect()->back();
     }
@@ -491,8 +493,10 @@ class TeacherController extends Controller
     {
         $section = $request->input('section', '');
         $search = $request->input('search', '');
+        $cacheKey = "teacher.leaderboards:{$section}:{$search}";
 
-        $allStudents = StudentProfile::join('users', 'users.id', '=', 'students.user_id')
+        return Cache::remember($cacheKey, 60, function () use ($section, $search) {
+            $allStudents = StudentProfile::join('users', 'users.id', '=', 'students.user_id')
             ->where('users.role', 'student')
             ->select(
                 'students.user_id',
@@ -542,29 +546,32 @@ class TeacherController extends Controller
 
         $isDeadlineClosed = (bool) $this->reportService->deadline()?->isPast();
 
-        return Inertia::render('Teacher/Leaderboards', [
-            'leaderboard' => [
-                'points' => $students->sortByDesc('points')->values(),
-                'wordBlast' => $students->sortByDesc('wordBlastAcc')->values(),
-                'storyQuest' => $students->sortByDesc('storyQuestAcc')->values(),
-            ],
-            'totalStudents' => $allStudents->count(),
-            'sections' => $sections,
-            'isDeadlineClosed' => $isDeadlineClosed,
-            'filters' => [
-                'section' => $section,
-                'search' => $search,
-            ],
-        ]);
+            return Inertia::render('Teacher/Leaderboards', [
+                'leaderboard' => [
+                    'points' => $students->sortByDesc('points')->values(),
+                    'wordBlast' => $students->sortByDesc('wordBlastAcc')->values(),
+                    'storyQuest' => $students->sortByDesc('storyQuestAcc')->values(),
+                ],
+                'totalStudents' => $allStudents->count(),
+                'sections' => $sections,
+                'isDeadlineClosed' => $isDeadlineClosed,
+                'filters' => [
+                    'section' => $section,
+                    'search' => $search,
+                ],
+            ]);
+        });
     }
 
     public function badges(Request $request)
     {
         $section = $request->input('section', '');
         $search = $request->input('search', '');
+        $cacheKey = "teacher.badges:{$section}:{$search}";
 
-        User::where('role', 'student')->get()
-            ->each(fn ($u) => $this->badgeService->checkAllEligibleBadges($u));
+        return Cache::remember($cacheKey, 60, function () use ($section, $search) {
+            User::where('role', 'student')->get()
+                ->each(fn ($u) => $this->badgeService->checkAllEligibleBadges($u));
 
         $totalStudents = User::where('role', 'student')->count();
 
@@ -623,19 +630,20 @@ class TeacherController extends Controller
         $isDeadlineClosed = (bool) $this->reportService->deadline()?->isPast();
 
         return Inertia::render('Teacher/Badges', [
-            'badges' => $badges,
-            'topEarners' => $students,
-            'totalStudents' => $totalStudents,
-            'totalBadges' => $totalBadges,
-            'totalEarned' => $totalEarned,
-            'mostEarnedBadge' => $mostEarnedBadge,
-            'sections' => $sections,
-            'isDeadlineClosed' => $isDeadlineClosed,
-            'filters' => [
-                'section' => $section,
-                'search' => $search,
-            ],
-        ]);
+                'badges' => $badges,
+                'topEarners' => $students,
+                'totalStudents' => $totalStudents,
+                'totalBadges' => $totalBadges,
+                'totalEarned' => $totalEarned,
+                'mostEarnedBadge' => $mostEarnedBadge,
+                'sections' => $sections,
+                'isDeadlineClosed' => $isDeadlineClosed,
+                'filters' => [
+                    'section' => $section,
+                    'search' => $search,
+                ],
+            ]);
+        });
     }
 
     public function updateStudent(Request $request, $id)
@@ -684,6 +692,8 @@ class TeacherController extends Controller
         }
 
         $user->student()->update($studentData);
+        Cache::forget('teacher.dashboardStats');
+        Cache::forget('teacher.reports');
 
         return redirect()->back()->with('success', 'Student updated successfully.');
     }
@@ -691,6 +701,8 @@ class TeacherController extends Controller
     public function destroy($id)
     {
         User::where('role', 'student')->findOrFail($id)->delete();
+        Cache::forget('teacher.dashboardStats');
+        Cache::forget('teacher.reports');
 
         return redirect()->back()->with('success', 'Student deleted successfully.');
     }
