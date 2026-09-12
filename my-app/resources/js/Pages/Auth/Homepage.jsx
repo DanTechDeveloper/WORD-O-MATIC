@@ -120,7 +120,7 @@ export default function Homepage() {
                     <h1
                         className="font-black uppercase italic tracking-tighter leading-[0.9]"
                         style={{
-                            fontSize: "clamp(2.5rem, 10vw, 3rem)",
+                            fontSize: "clamp(2.2rem, 8vw, 3rem)",
                             color: "#d1bcff",
                             textShadow: "0 0 20px rgba(209,188,255,0.3)",
                         }}
@@ -133,7 +133,7 @@ export default function Homepage() {
 
                     {/* Login card — centered */}
                     <div className="w-full">
-                            <div className="relative bg-surface-container-high border-4 border-primary-container tactile-card rounded-2xl p-6 md:p-10">
+                            <div className="relative bg-surface-container-high border-4 border-primary-container tactile-card rounded-2xl p-4 sm:p-6 md:p-10">
                                 <header className="text-center mb-6">
                                     <h2 className="text-2xl md:text-3xl font-black uppercase italic tracking-tighter text-on-surface">
                                         Student{" "}

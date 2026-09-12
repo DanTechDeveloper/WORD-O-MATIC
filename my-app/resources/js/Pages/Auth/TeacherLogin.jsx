@@ -24,7 +24,7 @@ export default function TeacherLogin() {
             <Head title="Teacher Login - Word-O-Matic" />
 
             <main className="relative w-full max-w-lg z-10">
-                <section className="bg-surface-container-high border-4 border-outline rounded-2xl p-8 md:p-10 tactile-card">
+                <section className="bg-surface-container-high border-4 border-outline rounded-2xl p-4 sm:p-6 md:p-10 tactile-card">
                     <header className="text-center mb-8">
                         <h1 className="text-3xl font-black uppercase italic tracking-tighter text-on-surface">
                             Teacher <span className="text-accent">Login</span>
