@@ -7,6 +7,7 @@ use App\Models\StudentParagraphProgress;
 use App\Models\StudentWordProgress;
 use App\Models\WordModule;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 
 class LevelService
 {
@@ -22,17 +23,23 @@ class LevelService
 
     private function getModuleStatuses(int $userId, string $moduleClass, string $progressClass, string $fk): Collection
     {
-        $modules = $moduleClass::select(['id', 'level', 'title', 'is_tutorial'])
-            ->where('is_tutorial', false)
-            ->withCount('words')
-            ->orderBy('level', 'asc')
-            ->get();
+        // ponytail: 60s per-user — was 2 queries per call, isModuleAccessible called it twice (4 queries) per gameplay page
+        $type = str_contains($moduleClass, 'Word') ? 'word' : 'paragraph';
+        $cacheKey = "level.{$type}:{$userId}";
 
-        $progressRecords = $progressClass::where('user_id', $userId)
-            ->get()
-            ->keyBy($fk);
+        return Cache::remember($cacheKey, 60, function () use ($moduleClass, $progressClass, $fk, $userId) {
+            $modules = $moduleClass::select(['id', 'level', 'title', 'is_tutorial'])
+                ->where('is_tutorial', false)
+                ->withCount('words')
+                ->orderBy('level', 'asc')
+                ->get();
 
-        return $this->mapStatuses($modules, $progressRecords);
+            $progressRecords = $progressClass::where('user_id', $userId)
+                ->get()
+                ->keyBy($fk);
+
+            return $this->mapStatuses($modules, $progressRecords);
+        });
     }
 
     private function mapStatuses(Collection $modules, Collection $progressRecords): Collection

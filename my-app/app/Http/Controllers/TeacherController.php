@@ -41,11 +41,14 @@ class TeacherController extends Controller
         $section = $request->input('section', '');
         $search = $request->input('search', '');
         $status = $request->input('status', '');
+        $page = $request->input('page', 1);
+        $cacheKey = "teacher.students:{$sort}:{$direction}:{$section}:{$status}:{$search}:page{$page}";
 
-        $query = User::with([
-            'student.wordProgress.wordModule',
-            'student.paragraphProgress.paragraphModule',
-        ])->where('role', 'student');
+        $payload = Cache::remember($cacheKey, 30, function () use ($sort, $direction, $section, $search, $status) {
+            $query = User::with([
+                'student.wordProgress.wordModule',
+                'student.paragraphProgress.paragraphModule',
+            ])->where('role', 'student');
 
         if ($section) {
             $query->whereHas('student', fn ($q) => $q->where('section', $section));
@@ -118,20 +121,23 @@ class TeacherController extends Controller
                 ];
             });
 
-        $sections = $this->sectionList();
+            $sections = $this->sectionList();
 
-        return Inertia::render('Teacher/Students', [
-            'data' => $students,
-            'sections' => $sections,
-            'existingStudentIds' => User::where('role', 'student')->whereNotNull('student_id')->pluck('student_id'),
-            'filters' => [
-                'sort' => $sort,
-                'direction' => $direction,
-                'section' => $section,
-                'search' => $search,
-                'status' => $status,
-            ],
-        ]);
+            return [
+                'data' => $students,
+                'sections' => $sections,
+                'existingStudentIds' => User::where('role', 'student')->whereNotNull('student_id')->pluck('student_id'),
+                'filters' => [
+                    'sort' => $sort,
+                    'direction' => $direction,
+                    'section' => $section,
+                    'search' => $search,
+                    'status' => $status,
+                ],
+            ];
+        });
+
+        return Inertia::render('Teacher/Students', $payload);
     }
 
     private function computeStatus(string $status): array
