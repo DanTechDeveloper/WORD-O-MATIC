@@ -37,7 +37,7 @@ export default function AvatarSpeechBubble({
         position === "center"
             ? "flex flex-col items-center gap-6 animate-fade-in px-4"
             : position === "bottom-right"
-              ? "fixed z-50 bottom-8 right-6 flex flex-col items-center gap-4"
+              ? "fixed z-50 bottom-4 sm:bottom-8 left-1/2 sm:left-auto -translate-x-1/2 sm:translate-x-0 right-auto sm:right-6 flex flex-col items-center gap-4 w-[92vw] sm:w-auto"
               : position === "bottom-left"
                 ? "fixed z-50 bottom-8 left-6 flex flex-col items-center gap-4"
                 : "fixed z-50 bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-4";
@@ -46,7 +46,7 @@ export default function AvatarSpeechBubble({
         <div className={`${positionClass} ${className}`}>
             <button
                 onClick={onClick}
-                className={`bg-surface-container-high rounded-3xl px-10 py-6 shadow-2xl border-2 ${accent.border} min-w-[300px] max-w-[440px] cursor-pointer hover:scale-105 active:scale-95 transition-all duration-200 text-center animate-fade-in`}
+                className={`bg-surface-container-high rounded-3xl px-6 sm:px-10 py-4 sm:py-6 shadow-2xl border-2 ${accent.border} min-w-[280px] sm:min-w-[300px] max-w-[92vw] sm:max-w-[440px] cursor-pointer hover:scale-105 active:scale-95 transition-all duration-200 text-center animate-fade-in`}
             >
                 <p className="text-3xl font-black uppercase tracking-tight text-on-surface flex items-center justify-center gap-2">
                     <span className="material-symbols-outlined text-4xl">{emoji}</span>
@@ -65,7 +65,7 @@ export default function AvatarSpeechBubble({
                 <img
                     src={bodyUrl}
                     alt="Your Avatar"
-                    className={`w-48 h-auto md:w-64 lg:w-80 object-contain ${accent.glow} animate-bounce-slow`}
+                    className={`w-32 xs:w-40 sm:w-48 h-auto md:w-64 lg:w-80 object-contain ${accent.glow} animate-bounce-slow`}
                 />
             )}
         </div>
