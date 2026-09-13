@@ -1,5 +1,5 @@
 import { Head, Link, usePage } from "@inertiajs/react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import AvatarSpeechBubble from "@/Components/Student/AvatarSpeechBubble";
 import BadgeUnlockFlow from "@/Components/Student/BadgeUnlockFlow";
 import ProgressBar from "@/Components/Student/ProgressBar";
@@ -60,6 +60,18 @@ export default function Dashboard({
     const hasTutorialBadge = newBadges.some(
         (b) => b?.slug === "tutorial-complete" || b?.name === "Tutorial Complete"
     );
+
+    // ponytail: tutorial-complete flash is consumed on GameResults (L0→results), so trigger congrats via persistent tutorialComplete prop
+    useEffect(() => {
+        if (tutorialComplete && bodyUrl && !showTutorialCongrats && newBadges.length === 0) {
+            const justCompleted = wordTutorialDone && speakTutorialDone;
+            const wasSeen = typeof window !== "undefined" && sessionStorage.getItem("tutorialCongratsSeen");
+            if (justCompleted && !wasSeen) {
+                setShowTutorialCongrats(true);
+                sessionStorage.setItem("tutorialCongratsSeen", "1");
+            }
+        }
+    }, [tutorialComplete, wordTutorialDone, speakTutorialDone, bodyUrl, showTutorialCongrats, newBadges.length]);
     const showGuide = !tutorialComplete && bodyUrl;
     const showGuideBubble = showGuide && !guideDone;
     const highlightRead = showGuide && !wordTutorialDone;
@@ -153,7 +165,10 @@ export default function Dashboard({
                         message="Tutorial complete — you're ready to play!"
                         bodyUrl={bodyUrl}
                         color="accent"
-                        onClick={() => setShowTutorialCongrats(false)}
+                        onClick={() => {
+                            sessionStorage.setItem("tutorialCongratsSeen", "1");
+                            setShowTutorialCongrats(false);
+                        }}
                         position="bottom-right"
                         footerText="Tap to continue →"
                     />

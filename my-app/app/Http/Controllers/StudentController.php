@@ -234,6 +234,7 @@ class StudentController extends Controller
         $data = [
             'module' => $module,
             'tutorialComplete' => (bool) $user->student?->tutorial_completed_at,
+            'wordTutorialDone' => $this->tutorialState($user)['wordTutorialDone'],
         ];
 
 

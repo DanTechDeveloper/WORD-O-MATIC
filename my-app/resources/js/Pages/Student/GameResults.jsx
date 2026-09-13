@@ -1,4 +1,4 @@
-import { Head, Link, usePage } from "@inertiajs/react";
+import { Head, Link, usePage, router } from "@inertiajs/react";
 import { useState } from "react";
 import BadgeUnlockFlow from "@/Components/Student/BadgeUnlockFlow";
 import NextBadge from "@/Components/Student/NextBadge";
@@ -62,6 +62,7 @@ export default function GameResults({
     const newBadges =
         badgeProgress?.filter((b) => newBadgeSlugs.includes(b.slug)) ?? [];
     const [badgeFlowDone, setBadgeFlowDone] = useState(false);
+    const [showBadge, setShowBadge] = useState(false);
 
     const nextBadge =
         badgeProgress
@@ -172,16 +173,30 @@ export default function GameResults({
                         </div>
                     ) : isTutorial ? (
                         <div className="flex gap-4">
-                            <Link
-                                href="/student/dashboard"
-                                data-sfx="major"
-                                className="flex-1 bg-primary text-on-primary font-bold py-4 sm:py-5 rounded-2xl border border-surface-variant/20 text-sm sm:text-base uppercase tracking-wider active:scale-[0.97] transition-all hover:brightness-110 text-center flex items-center justify-center"
-                            >
-                                <span className="material-symbols-outlined mr-2">
-                                    arrow_forward
-                                </span>
-                                Continue
-                            </Link>
+                            {newBadges.length > 0 ? (
+                                <button
+                                    type="button"
+                                    data-sfx="major"
+                                    onClick={() => setShowBadge(true)}
+                                    className="flex-1 bg-primary text-on-primary font-bold py-4 sm:py-5 rounded-2xl border border-surface-variant/20 text-sm sm:text-base uppercase tracking-wider active:scale-[0.97] transition-all hover:brightness-110 text-center flex items-center justify-center"
+                                >
+                                    <span className="material-symbols-outlined mr-2">
+                                        arrow_forward
+                                    </span>
+                                    Continue
+                                </button>
+                            ) : (
+                                <Link
+                                    href="/student/dashboard"
+                                    data-sfx="major"
+                                    className="flex-1 bg-primary text-on-primary font-bold py-4 sm:py-5 rounded-2xl border border-surface-variant/20 text-sm sm:text-base uppercase tracking-wider active:scale-[0.97] transition-all hover:brightness-110 text-center flex items-center justify-center"
+                                >
+                                    <span className="material-symbols-outlined mr-2">
+                                        arrow_forward
+                                    </span>
+                                    Continue
+                                </Link>
+                            )}
                         </div>
                     ) : (
                         <div className="flex flex-col xs:flex-row gap-3 sm:gap-4">
@@ -240,12 +255,23 @@ export default function GameResults({
         </div>
     );
 
-    if (newBadges.length > 0 && !badgeFlowDone) {
+    if (newBadges.length > 0 && !badgeFlowDone && !isTutorial) {
         return (
             <div className="bg-background text-on-background font-body-md">
                 <BadgeUnlockFlow
                     badges={newBadges}
                     onDone={() => setBadgeFlowDone(true)}
+                />
+            </div>
+        );
+    }
+
+    if (showBadge && newBadges.length > 0) {
+        return (
+            <div className="bg-background text-on-background font-body-md">
+                <BadgeUnlockFlow
+                    badges={newBadges}
+                    onDone={() => router.visit("/student/dashboard")}
                 />
             </div>
         );

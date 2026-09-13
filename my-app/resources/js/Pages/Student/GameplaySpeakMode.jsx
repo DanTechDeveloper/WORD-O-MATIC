@@ -20,7 +20,7 @@ const GUIDE_STEPS = [
     { title: "TAP TO PLAY!", message: "Tap the mic below when you're ready. 3-2-1 countdown, then go!", emoji: "mic", color: "quest" },
 ];
 
-export default function GameplaySpeakMode({ module, tutorialComplete = true }) {
+export default function GameplaySpeakMode({ module, tutorialComplete = true, wordTutorialDone = false }) {
     const { auth } = usePage().props;
     const isTutorial = !!module?.is_tutorial && !tutorialComplete;
     const isTutorialModule = !!module?.is_tutorial;
@@ -116,7 +116,7 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true }) {
     const { permissionState, requestPermission } = useMicrophonePermission();
 
     const [guideStep, setGuideStep] = useState(0);
-    const [guideDone, setGuideDone] = useState(() => !isTutorial || isResume);
+    const [guideDone, setGuideDone] = useState(() => !isTutorial || wordTutorialDone || isResume);
 
     useEffect(() => {
         if (permissionState === "denied") {
