@@ -1,7 +1,7 @@
 import { useState } from "react";
 import BadgeUnlockModal from "./BadgeUnlockModal";
 
-export default function BadgeUnlockFlow({ badges = [], markNewBadge = true, onDone }) {
+export default function BadgeUnlockFlow({ badges = [], onDone }) {
     const [index, setIndex] = useState(0);
     const badge = badges[index];
     if (!badge) return null;
@@ -17,7 +17,7 @@ export default function BadgeUnlockFlow({ badges = [], markNewBadge = true, onDo
             buttonText={isLast ? "TAP TO CONTINUE" : "TAP FOR NEXT BADGE"}
             onContinue={() => {
                 if (isLast) {
-                    if (markNewBadge) localStorage.setItem("hasNewBadge", "1");
+                    // ponytail: hasNewBadge dot removed — keep modal flow, no localStorage
                     onDone?.();
                 }
                 setIndex(index + 1);
