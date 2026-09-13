@@ -64,12 +64,13 @@ jobs:
       - name: Run JS unit tests
         run: npx vitest run
 
-      # ponytail: auto-prune VCR keep last 5 to avoid maximum images 125 on every push (not just workflow_dispatch)
+      # ponytail: auto-prune VCR keep last 5 to avoid maximum images 125 on every push (B: long-lived vercel_ token, not vcp_)
       - name: Prune VCR keep last 5 (unblock registry quota)
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: |
           if [ -z "$VERCEL_TOKEN" ]; then echo "VERCEL_TOKEN not set, skip VCR prune"; exit 0; fi
+          if [[ "$VERCEL_TOKEN" == vcp_* ]]; then echo "ERROR: VERCEL_TOKEN is vcp_ (Container Registry push token) — need vercel_... from vercel.com/account/tokens Scope dantechdeveloper, not vcp_ from Container Registry. Update GitHub Secrets -> VERCEL_TOKEN=vercel_..."; exit 1; fi
           npm i -g vercel@latest >/dev/null 2>&1
           vercel vcr image ls app --project word-o-matic --format json > /tmp/vcr.json 2>&1 || { echo "No VCR images, skip"; cat /tmp/vcr.json; exit 0; }
           jq -r '.[].id // empty' /tmp/vcr.json | tail -n +6 > /tmp/old.txt || true
