@@ -5,6 +5,8 @@ const GameplayHeader = memo(function GameplayHeader({
     isActive,
     scoreEmphasize,
     wordsSmashed = 0,
+    currentIndex = 0,
+    totalWords = 0,
     onTimeUp,
     showPointsFeedback,
     pointsFeedbackValue,
@@ -17,6 +19,8 @@ const GameplayHeader = memo(function GameplayHeader({
     const totalTime = 60;
     const percentage = (timeLeft / totalTime) * 100;
     const isLowTime = timeLeft <= 10;
+    const progressText = totalWords ? `${Math.min(currentIndex + 1, totalWords)}/${totalWords}` : "0/0";
+    const progressPct = totalWords ? (Math.min(currentIndex + 1, totalWords) / totalWords) * 100 : 0;
 
     return (
         <>
@@ -26,6 +30,13 @@ const GameplayHeader = memo(function GameplayHeader({
                 <div className="bg-on-background/10 backdrop-blur-sm px-3 py-1 rounded-full border-2 border-on-background/20 shadow-md">
                     <span className="text-on-background font-black tracking-tight text-[10px] italic uppercase">
                         {level}
+                    </span>
+                </div>
+
+                {/* Progress 1/10 */}
+                <div className="bg-on-background/10 backdrop-blur-sm px-3 py-1 rounded-full border-2 border-on-background/20 shadow-md">
+                    <span className={`font-black tracking-widest text-[10px] italic uppercase ${mode === "read" ? "text-accent" : "text-quest"}`}>
+                        {progressText}
                     </span>
                 </div>
 
@@ -87,6 +98,15 @@ const GameplayHeader = memo(function GameplayHeader({
                         <span className="text-on-background font-black tracking-tight text-sm italic uppercase">
                             {`LEVEL ${level}`}
                         </span>
+                    </div>
+                    <div className={`px-3 py-1 rounded-full border-2 border-on-background/20 text-[10px] font-black tracking-widest uppercase ${mode === "read" ? "bg-accent/20 text-accent border-accent/30" : "bg-quest/20 text-quest border-quest/30"}`}>
+                        {progressText}
+                    </div>
+                    <div className="w-24 h-1.5 bg-on-background/10 rounded-full overflow-hidden mt-1">
+                        <div
+                            className={`h-full rounded-full transition-all duration-500 ${mode === "read" ? "bg-accent" : "bg-quest"}`}
+                            style={{ width: `${progressPct}%` }}
+                        />
                     </div>
                 </div>
 

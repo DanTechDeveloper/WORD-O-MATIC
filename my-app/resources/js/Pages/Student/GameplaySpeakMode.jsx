@@ -206,6 +206,8 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true }) {
         level: module ? `${module.level} - ${module.title}` : "",
         isActive: gameState === "ACTIVE",
         wordsSmashed: wordsSmashed,
+        currentIndex: currentWordIndex,
+        totalWords: totalWords,
         onTimeUp: handleTimeUp,
         scoreEmphasize,
         showPointsFeedback,
