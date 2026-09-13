@@ -36,6 +36,7 @@ export default function GameResults({
     nextModuleLevel,
     isMaxLevel,
     deadlineHit,
+    bestScore = 0,
 }) {
     const displayScore = parseInt(session.score) || 0;
     const accuracyPct = parseFloat(session.accuracy) || 0;
@@ -113,18 +114,20 @@ export default function GameResults({
 
                     <div className="flex gap-3 sm:gap-4">
                         <StatTile
+                            label="Best"
+                            value={`${bestScore}/${totalItems}`}
+                            valueClassName="text-quest"
+                            note={bestScore > displayScore ? "Your best" : bestScore === displayScore && bestScore > 0 ? "New best!" : undefined}
+                        />
+                        <StatTile
                             label={deadlineHit ? "You played" : "Score"}
-                            value={displayScore}
+                            value={`${displayScore}/${totalItems}`}
+                            valueClassName={deadlineHit ? "text-on-surface-variant" : "text-accent"}
                             note={
                                 deadlineHit
                                     ? "Points not counted — deadline passed"
                                     : undefined
                             }
-                        />
-                        <StatTile
-                            label="Words"
-                            value={totalItems}
-                            valueClassName="text-on-surface"
                         />
                     </div>
 

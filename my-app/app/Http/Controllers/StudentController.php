@@ -499,6 +499,13 @@ class StudentController extends Controller
 
         $isMaxLevel = $maxLevel !== null && $module->level >= $maxLevel;
 
+        // ponytail: best score is MAX(score) for this module/user, deadline-hit excluded — no new table, indexed query
+        $bestScore = GameSession::where('user_id', auth()->id())
+            ->where('module_id', $module->id)
+            ->where('module_type', $session->module_type)
+            ->where('is_deadline_hit', false)
+            ->max('score') ?? 0;
+
         return Inertia::render('Student/GameResults', [
             'session' => $session,
             'moduleTitle' => $module->title,
@@ -508,6 +515,7 @@ class StudentController extends Controller
             'nextModuleLevel' => $nextModule?->level,
             'isMaxLevel' => $isMaxLevel,
             'deadlineHit' => (bool) $session->is_deadline_hit,
+            'bestScore' => (int) $bestScore,
         ]);
     }
 
