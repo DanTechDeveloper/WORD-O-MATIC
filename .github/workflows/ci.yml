@@ -64,6 +64,14 @@ jobs:
       - name: Run JS unit tests
         run: npx vitest run
 
+      - name: Prune VCR keep last 5 (unblock registry quota)
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          npm i -g vercel@latest >/dev/null 2>&1
+          vercel vcr image ls app --json 2>/dev/null | jq -r '.[].digest' 2>/dev/null | tail -n +6 | xargs -r -I {} vercel vcr image rm app {} --yes 2>&1 | head -20 || echo "VCR prune skipped (no token or jq)"
+
       - name: Vercel build smoke - Caddy immutable headers
         run: grep -q 'immutable' Caddyfile && echo "Caddy immutable OK"
 
