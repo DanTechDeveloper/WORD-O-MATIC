@@ -396,13 +396,16 @@ class StudentController extends Controller
         $isTutorial = $module->is_tutorial && ! $user->student?->tutorial_completed_at;
 
         if ($isTutorial) {
+            $totalPossible = $module->words()->count();
+            $wordsSmashed = min($request->words_smashed, $totalPossible);
+            $accuracy = $totalPossible > 0 ? (int) round(min(($wordsSmashed / $totalPossible) * 100, 100)) : 0;
+            $session = GameSession::logSession($user->id, $module->id, $type, $wordsSmashed, $accuracy, $request->streak ?? 0, false);
             if ($type === 'word') {
                 $this->progressService->updateWordProgress($user->student, $module, 0, $request->words_processed, 0, isTutorial: true);
             } else {
                 $this->progressService->updateParagraphProgress($user->student, $module, 0, $request->words_processed, 0, isTutorial: true);
             }
-
-            $redirect = redirect()->route('student.dashboard');
+            $redirect = redirect()->route('student.results', ['id' => $session->id]);
             $badgesData = $this->checkTutorialCompletion($user);
 
             return $badgesData ? $redirect->with('new_badges', [$badgesData]) : $redirect;
@@ -516,6 +519,7 @@ class StudentController extends Controller
             'isMaxLevel' => $isMaxLevel,
             'deadlineHit' => (bool) $session->is_deadline_hit,
             'bestScore' => (int) $bestScore,
+            'isTutorial' => (bool) $module->is_tutorial,
         ]);
     }
 
