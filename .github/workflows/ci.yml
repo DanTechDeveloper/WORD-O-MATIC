@@ -5,6 +5,7 @@ on:
     branches: ["main", "master"]
   pull_request:
     branches: ["main", "master"]
+  workflow_dispatch: # manual runs: enables the gated Railway migration step
 
 defaults:
   run:
@@ -13,33 +14,25 @@ defaults:
 jobs:
   build-verify-and-migrate:
     runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: secret
+          MYSQL_DATABASE: wordomatic_test
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping -h localhost -psecret" --health-interval=10s --health-timeout=5s --health-retries=5
 
     steps:
-      - uses: actions/checkout@v4
-
-      # ponytail: prune VCR keep last 5 to avoid "maximum allowed number of images" buildah push 125
-      - name: Prune VCR (keep last 5 images)
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: |
-          if [ -z "$VERCEL_TOKEN" ]; then echo "VERCEL_TOKEN not set, skip VCR prune"; exit 0; fi
-          npm i -g vercel@latest > /dev/null 2>&1
-          echo "Listing VCR images for app..."
-          vercel vcr image ls app --project word-o-matic --format json > /tmp/vcr.json 2>&1 || { echo "No VCR images or not linked, skip"; cat /tmp/vcr.json; exit 0; }
-          # Keep newest 5, delete oldest (order is newest first per docs sort updatedAt desc)
-          jq -r '.[].id // empty' /tmp/vcr.json | tail -n +6 > /tmp/old.txt || true
-          if [ -s /tmp/old.txt ]; then
-            echo "Pruning $(wc -l < /tmp/old.txt) old images..."
-            while read id; do echo "rm $id"; vercel vcr image rm app --project word-o-matic "$id" --yes || true; done < /tmp/old.txt
-          else
-            echo "No old images to prune (<=5 total)"
-          fi
+      - uses: actions/checkout@v5
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: "8.3"
-          extensions: mbstring, xml, ctype, iconv, mysql, bcmath, sqlite, pdo_sqlite
+          # zip + gd: required by maatwebsite/excel (phpspreadsheet)
+          extensions: mbstring, xml, ctype, iconv, mysql, bcmath, sqlite, pdo_sqlite, zip, gd
 
       - name: Install Composer Dependencies
         run: composer install --no-interaction --prefer-dist
@@ -56,9 +49,9 @@ jobs:
         run: php artisan migrate --force
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Install & Build Frontend
         run: |
@@ -68,8 +61,39 @@ jobs:
       - name: Run Tests
         run: php artisan test
 
-      # STEP 2: Kapag nakapasa sa test, i-inject ang live Railway credentials at mag-migrate
+      - name: Run JS unit tests
+        run: npx vitest run
+
+      # ponytail: auto-prune VCR keep last 5 to avoid maximum images 125 on every push (not just workflow_dispatch)
+      - name: Prune VCR keep last 5 (unblock registry quota)
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          if [ -z "$VERCEL_TOKEN" ]; then echo "VERCEL_TOKEN not set, skip VCR prune"; exit 0; fi
+          npm i -g vercel@latest >/dev/null 2>&1
+          vercel vcr image ls app --project word-o-matic --format json > /tmp/vcr.json 2>&1 || { echo "No VCR images, skip"; cat /tmp/vcr.json; exit 0; }
+          jq -r '.[].id // empty' /tmp/vcr.json | tail -n +6 > /tmp/old.txt || true
+          if [ -s /tmp/old.txt ]; then echo "Pruning $(wc -l < /tmp/old.txt) old images..."; while read id; do echo "rm $id"; vercel vcr image rm app --project word-o-matic "$id" --yes || true; done < /tmp/old.txt; else echo "No old images to prune (<=5)"; fi
+
+      - name: Vercel build smoke - Caddy immutable headers
+        run: grep -q 'immutable' Caddyfile && echo "Caddy immutable OK"
+
+      - name: Run MySQL index tests (Branch C)
+        env:
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: wordomatic_test
+          DB_USERNAME: root
+          DB_PASSWORD: secret
+        run: |
+          php artisan migrate:fresh --force
+          php artisan test --filter=IndexesExistTest
+
+      # STEP 2: Manual-only while Railway is paused (expired trial) — restore
+      # the DB + secrets, then run this workflow via workflow_dispatch.
       - name: Run Live Production Migration on Railway
+        if: github.event_name == 'workflow_dispatch'
         env:
           DB_CONNECTION: mysql
           DB_HOST: ${{ secrets.RAILWAY_DB_HOST }}
