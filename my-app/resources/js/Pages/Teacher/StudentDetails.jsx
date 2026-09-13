@@ -280,13 +280,13 @@ export default function StudentDetail({ data }) {
                             />
                         </div>
                         <div className="flex-1 min-w-0 overflow-hidden">
-                            <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black text-white uppercase italic tracking-tighter truncate" title={student.name}>
+                            <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black text-white uppercase italic tracking-tighter whitespace-normal break-words [overflow-wrap:anywhere] leading-tight block" title={student.name}>
                                 {student.name}
                             </h1>
                             <p className="mt-2 text-on-surface-variant font-black uppercase text-xs sm:text-sm tracking-widest">
                                 Student ID: {student.id}
                             </p>
-                            <p className="text-on-surface-variant font-black uppercase text-xs sm:text-sm tracking-widest">
+                            <p className="text-on-surface-variant font-black uppercase text-xs sm:text-sm tracking-widest whitespace-normal break-words [overflow-wrap:anywhere] leading-tight">
                                 Section: {student.section}
                             </p>
                         </div>

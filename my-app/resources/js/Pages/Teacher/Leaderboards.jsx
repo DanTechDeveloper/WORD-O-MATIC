@@ -171,10 +171,10 @@ export default function Leaderboards({ leaderboard, totalStudents, sections = []
                                         </div>
 
                                         <div className="min-w-0 flex-1">
-                                            <p className="font-black text-white text-sm sm:text-base truncate max-w-[110px] sm:max-w-[14rem] md:max-w-[18rem] lg:max-w-[20rem]" title={s.name}>
+                                            <p className="font-black text-white text-sm sm:text-base whitespace-normal break-words [overflow-wrap:anywhere] leading-tight block" title={s.name}>
                                                 {s.name}
                                             </p>
-                                            <p className="text-xs sm:text-sm text-on-surface-variant font-semibold truncate max-w-[130px] sm:max-w-none">
+                                            <p className="text-xs sm:text-sm text-on-surface-variant font-semibold whitespace-normal break-words leading-tight">
                                                 {s.section || "No Section"} •
                                                 ID: {s.studentID}
                                             </p>

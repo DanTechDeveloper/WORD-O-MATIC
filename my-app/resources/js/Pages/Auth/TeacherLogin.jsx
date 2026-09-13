@@ -21,7 +21,9 @@ export default function TeacherLogin() {
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-background text-on-background p-4 relative">
-            <Head title="Teacher Login - Word-O-Matic" />
+            <Head title="Teacher Login - Word-O-Matic">
+                <meta head-key="robots" name="robots" content="noindex, nofollow, noarchive" />
+            </Head>
 
             <main className="relative w-full max-w-lg z-10">
                 <section className="bg-surface-container-high border-4 border-outline rounded-2xl p-4 sm:p-6 md:p-10 tactile-card">

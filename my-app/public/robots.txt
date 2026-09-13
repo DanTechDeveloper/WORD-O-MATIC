@@ -1,9 +1,7 @@
 User-agent: *
 Allow: /
-Allow: /teacher/login
 Allow: /privacy
 Allow: /terms
 Disallow: /student/
 Disallow: /teacher/
-Disallow: /teacher/reports/
 Sitemap: /sitemap.xml

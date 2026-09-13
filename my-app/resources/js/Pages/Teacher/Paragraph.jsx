@@ -93,11 +93,11 @@ export default function Paragraph({ modules }) {
                                     {level}
                                 </span>
                             </div>
-                            <p className="text-lg font-black text-white uppercase italic tracking-tighter mb-1 truncate w-full px-2">
+                            <p className="text-lg font-black text-white uppercase italic tracking-tighter mb-1 whitespace-normal break-words [overflow-wrap:anywhere] leading-tight w-full px-2 min-w-0 block" title={entriesByLevel[level]?.title || `Module ${level}`}>
                                 {entriesByLevel[level]?.title ||
                                     `Module ${level}`}
                             </p>
-                            <p className="text-xs text-on-surface-variant font-black uppercase tracking-widest truncate w-full px-2">
+                            <p className="text-xs text-on-surface-variant font-black uppercase tracking-widest w-full px-2">
                                 {calculateModulePoints(level)} Points Total
                             </p>
                             <button

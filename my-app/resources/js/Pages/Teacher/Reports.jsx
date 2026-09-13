@@ -284,7 +284,7 @@ export default function Reports({ grouped, flash, deadline, errors }) {
                             >
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                                        <span className="text-white font-bold truncate max-w-[140px] sm:max-w-[18rem] md:max-w-none text-sm sm:text-base" title={student.name}>
+                                        <span className="text-white font-bold whitespace-normal break-words [overflow-wrap:anywhere] leading-tight block text-sm sm:text-base" title={student.name}>
                                             {student.name}
                                         </span>
                                         <span className="text-xs text-accent font-black uppercase shrink-0 border border-accent/50 px-2 py-0.5 rounded-full">
@@ -368,7 +368,7 @@ export default function Reports({ grouped, flash, deadline, errors }) {
                                             />
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                                                    <span className="text-white font-bold truncate max-w-[130px] sm:max-w-[16rem] md:max-w-none text-sm sm:text-base" title={student.name}>
+                                                    <span className="text-white font-bold whitespace-normal break-words [overflow-wrap:anywhere] leading-tight block text-sm sm:text-base" title={student.name}>
                                                         {student.name}
                                                     </span>
                                                     {!student.parent_email && (
