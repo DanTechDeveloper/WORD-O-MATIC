@@ -187,15 +187,13 @@ const ReadModeMainContent = memo(function ReadModeMainContent({
                                 />
                             )}
                             <p
-                                className={`font-black tracking-tight uppercase text-center opacity-100 blur-0 transition-all duration-500 break-words max-w-full px-2 sm:px-0 sm:whitespace-nowrap ${
+                                className={`font-black tracking-tight uppercase text-center opacity-100 blur-0 transition-all duration-500 whitespace-normal break-words [overflow-wrap:anywhere] max-w-[92vw] sm:max-w-[90vw] px-2 leading-none font-headline-xl text-3xl xs:text-4xl sm:text-5xl md:text-6xl lg:text-8xl ${
                                     isMispronounced
                                         ? "inline-block text-rose-400 bg-slate-900/80 border-2 border-rose-500 rounded-xl py-2"
                                         : ""
                                 }`}
                                 style={{
-                                    fontFamily: '"Courier New", "Consolas", "Monaco", monospace',
-                                    // ponytail: rem breakpoints to match SpeakMode text-2xl→7xl, not vw continuous — mobile 22px vs laptop 72px now ±2px
-                                    fontSize: `clamp(1.5rem, ${Math.max(1.5, 4.5 - word.word.length * 0.2)}rem, 4.5rem)`,
+                                    // ponytail: unified to SpeakMode breakpoints +1 step (2xl→3xl) — no len clamp, Level 10 no longer shrinks
                                     textShadow: isMispronounced
                                         ? `
                                             0 0 10px rgba(244,63,94,0.6),

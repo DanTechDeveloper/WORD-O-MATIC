@@ -267,7 +267,7 @@ export default function StudentDetail({ data }) {
                     <span className="material-symbols-outlined text-sm">
                         arrow_back
                     </span>
-                    Back to Fleet Command
+                    Back to Students
                 </Link>
 
                 <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 lg:gap-8 items-start">
