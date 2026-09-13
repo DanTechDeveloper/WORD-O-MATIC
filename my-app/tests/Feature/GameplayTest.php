@@ -353,20 +353,26 @@ class GameplayTest extends TestCase
             'position' => 1,
         ]);
 
-        $this->actingAs($this->student)
+        $response = $this->actingAs($this->student)
             ->post(route('student.saveWordProgress'), [
                 'module_id' => $tutorialModule->id,
                 'words_smashed' => 1,
                 'words_processed' => 1,
-            ])
-            ->assertRedirect(route('student.dashboard'));
+            ]);
+        // ponytail: tutorial now reuses GameResults (WB 1/10 → results → dashboard flow) — session is logged even when deadline passed
+        $response->assertRedirect();
+        $this->assertStringContainsString('/student/results/', $response->headers->get('Location'));
 
         $this->assertDatabaseHas('student_word_progress', [
             'user_id' => $this->student->id,
             'word_module_id' => $tutorialModule->id,
             'status' => 'completed',
         ]);
-        $this->assertDatabaseMissing('game_sessions', ['user_id' => $this->student->id]);
+        $this->assertDatabaseHas('game_sessions', [
+            'user_id' => $this->student->id,
+            'module_id' => $tutorialModule->id,
+            'is_deadline_hit' => false,
+        ]);
     }
 
     // Post-onboarding tutorial replay: with tutorial_completed_at set,

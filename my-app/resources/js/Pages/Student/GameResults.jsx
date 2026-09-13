@@ -37,6 +37,7 @@ export default function GameResults({
     isMaxLevel,
     deadlineHit,
     bestScore = 0,
+    isTutorial = false,
 }) {
     const displayScore = parseInt(session.score) || 0;
     const accuracyPct = parseFloat(session.accuracy) || 0;
@@ -49,10 +50,12 @@ export default function GameResults({
               : accuracyPct >= 60
                 ? HEADLINES.mid
                 : HEADLINES.low;
-    const headline = isPerfect
-        ? "PERFECT!"
-        : headlinePool[session.id % headlinePool.length];
-    const isCelebrating = !deadlineHit && accuracyPct >= 80;
+    const headline = isTutorial
+        ? "TUTORIAL COMPLETE!"
+        : isPerfect
+          ? "PERFECT!"
+          : headlinePool[session.id % headlinePool.length];
+    const isCelebrating = !deadlineHit && (isTutorial || accuracyPct >= 80);
     const { flash } = usePage().props;
     const isDeadlineClosed = useDeadlineStatus();
     const newBadgeSlugs = flash?.new_badges?.map((b) => b.slug) ?? [];
@@ -112,24 +115,26 @@ export default function GameResults({
                         />
                     )}
 
-                    <div className="flex gap-3 sm:gap-4">
-                        <StatTile
-                            label="Best"
-                            value={`${bestScore}/${totalItems}`}
-                            valueClassName="text-quest"
-                            note={bestScore > displayScore ? "Your best" : bestScore === displayScore && bestScore > 0 ? "New best!" : undefined}
-                        />
-                        <StatTile
-                            label={deadlineHit ? "You played" : "Score"}
-                            value={`${displayScore}/${totalItems}`}
-                            valueClassName={deadlineHit ? "text-on-surface-variant" : "text-accent"}
-                            note={
-                                deadlineHit
-                                    ? "Points not counted — deadline passed"
-                                    : undefined
-                            }
-                        />
-                    </div>
+                    {!isTutorial && (
+                        <div className="flex gap-3 sm:gap-4">
+                            <StatTile
+                                label="Best"
+                                value={`${bestScore}/${totalItems}`}
+                                valueClassName="text-quest"
+                                note={bestScore > displayScore ? "Your best" : bestScore === displayScore && bestScore > 0 ? "New best!" : undefined}
+                            />
+                            <StatTile
+                                label={deadlineHit ? "You played" : "Score"}
+                                value={`${displayScore}/${totalItems}`}
+                                valueClassName={deadlineHit ? "text-on-surface-variant" : "text-accent"}
+                                note={
+                                    deadlineHit
+                                        ? "Points not counted — deadline passed"
+                                        : undefined
+                                }
+                            />
+                        </div>
+                    )}
 
                     <div className="text-center text-xl sm:text-2xl font-bold text-accent flex items-center justify-center gap-2">
                         <span
@@ -149,7 +154,7 @@ export default function GameResults({
                                   : "Every try counts — keep going!"}
                     </div>
 
-                    {!deadlineHit && nextBadge && (
+                    {!deadlineHit && !isTutorial && nextBadge && (
                         <NextBadge badge={nextBadge} />
                     )}
 
@@ -163,6 +168,19 @@ export default function GameResults({
                                     home
                                 </span>
                                 Home
+                            </Link>
+                        </div>
+                    ) : isTutorial ? (
+                        <div className="flex gap-4">
+                            <Link
+                                href="/student/dashboard"
+                                data-sfx="major"
+                                className="flex-1 bg-primary text-on-primary font-bold py-4 sm:py-5 rounded-2xl border border-surface-variant/20 text-sm sm:text-base uppercase tracking-wider active:scale-[0.97] transition-all hover:brightness-110 text-center flex items-center justify-center"
+                            >
+                                <span className="material-symbols-outlined mr-2">
+                                    arrow_forward
+                                </span>
+                                Continue
                             </Link>
                         </div>
                     ) : (
