@@ -86,7 +86,7 @@ const SpeakModeMainContent = memo(function SpeakModeMainContent({
                             <div className="sticky top-2 z-30 flex items-center justify-center gap-2 sm:gap-4 mb-2 sm:mb-3 min-h-8 sm:min-h-10" />
 
                             <div
-                                className={`font-headline-xl text-left leading-relaxed tracking-tight select-none text-2xl xs:text-3xl sm:text-4xl md:text-5xl lg:text-7xl flex flex-wrap gap-x-2 xs:gap-x-3 sm:gap-x-4 gap-y-4 sm:gap-y-6 md:gap-y-8`}
+                                    className={`font-headline-xl text-left leading-relaxed tracking-tight select-none text-3xl xs:text-4xl sm:text-5xl md:text-6xl lg:text-7xl flex flex-wrap gap-x-2 xs:gap-x-3 sm:gap-x-4 gap-y-4 sm:gap-y-6 md:gap-y-8`}
                             >
                                 {words.map((word, index) => (
                                     <span

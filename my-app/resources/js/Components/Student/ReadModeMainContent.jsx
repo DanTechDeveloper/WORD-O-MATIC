@@ -187,13 +187,13 @@ const ReadModeMainContent = memo(function ReadModeMainContent({
                                 />
                             )}
                             <p
-                                className={`font-black tracking-tight uppercase text-center opacity-100 blur-0 transition-all duration-500 whitespace-normal break-words [overflow-wrap:anywhere] max-w-[92vw] sm:max-w-[90vw] px-2 leading-none font-headline-xl text-3xl xs:text-4xl sm:text-5xl md:text-6xl lg:text-8xl ${
+                                className={`font-black tracking-tight uppercase text-center opacity-100 blur-0 transition-all duration-500 whitespace-normal break-words [overflow-wrap:anywhere] max-w-[92vw] sm:max-w-[90vw] px-2 leading-none font-headline-xl text-4xl xs:text-5xl sm:text-6xl md:text-7xl lg:text-8xl ${
                                     isMispronounced
                                         ? "inline-block text-rose-400 bg-slate-900/80 border-2 border-rose-500 rounded-xl py-2"
                                         : ""
                                 }`}
                                 style={{
-                                    // ponytail: unified to SpeakMode breakpoints +1 step (2xl→3xl) — no len clamp, Level 10 no longer shrinks
+                                    // ponytail: mobile/tablet +1 tier (3xl→4xl) — tutorial bubble is fixed bottom so not overlapped, Level 10 now 36px/72px vs 24px before
                                     textShadow: isMispronounced
                                         ? `
                                             0 0 10px rgba(244,63,94,0.6),

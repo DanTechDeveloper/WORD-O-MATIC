@@ -1,5 +1,4 @@
 import { Head } from "@inertiajs/react";
-import { useEffect } from "react";
 import DashboardLayout from "@/Layouts/Student/DashboardLayout";
 import DeadlineBanner from "@/Components/DeadlineBanner";
 import BackButton from "@/Components/Student/BackButton";
@@ -33,10 +32,6 @@ const BADGE_UI_CONFIG = {
 
 export default function Badges({ badges }) {
     const isDeadlineClosed = useDeadlineStatus();
-
-    useEffect(() => {
-        localStorage.removeItem('hasNewBadge');
-    }, []);
 
     const dynamicAchievements = (badges || []).map((badge) => {
         const ui = BADGE_UI_CONFIG[badge.slug] || BADGE_UI_CONFIG.default;
