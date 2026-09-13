@@ -38,8 +38,8 @@ export default function Leaderboards({ leaderboard, totalStudents }) {
                                 alt=""
                                 size="lg"
                             />
-                            <div className="min-w-0">
-                                <p className="text-xl sm:text-2xl font-black text-accent truncate">
+                            <div className="min-w-0 flex-1">
+                                <p className="text-xl sm:text-2xl font-black text-accent whitespace-normal break-words [overflow-wrap:anywhere] leading-tight block" title={currentUserName}>
                                     {currentUserName}
                                 </p>
                                 <p className="text-xs sm:text-sm text-on-surface-variant font-bold">
@@ -108,9 +108,10 @@ export default function Leaderboards({ leaderboard, totalStudents }) {
                                             url={entry.avatar}
                                             alt=""
                                         />
-                                        <div className="min-w-0">
+                                        <div className="min-w-0 flex-1">
                                             <p
-                                                className={`font-black text-base sm:text-lg truncate ${isCurrentUser ? "text-accent" : "text-on-surface"}`}
+                                                className={`font-black text-base sm:text-lg whitespace-normal break-words [overflow-wrap:anywhere] leading-tight block ${isCurrentUser ? "text-accent" : "text-on-surface"}`}
+                                                title={isCurrentUser ? currentUserName : entry.user.name}
                                             >
                                                 {isCurrentUser
                                                     ? currentUserName

@@ -8,7 +8,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
-use Inertia\Response;
+use Inertia\Response as InertiaResponse;
+use Symfony\Component\HttpFoundation\Response;
 
 class UserController extends Controller
 {
@@ -25,14 +26,19 @@ class UserController extends Controller
         return redirect()->route('login');
     }
 
-    public function index(): Response
+    public function index(): InertiaResponse
     {
         return Inertia::render('Auth/Homepage');
     }
 
-    public function teacherLogin(): Response
+    public function teacherLogin(Request $request): Response
     {
-        return Inertia::render('Auth/TeacherLogin');
+        // ponytail: X-Robots-Tag header is belt to <meta robots> suspenders — both cover crawler variants
+        $inertia = Inertia::render('Auth/TeacherLogin');
+        $response = $inertia->toResponse($request);
+        $response->headers->set('X-Robots-Tag', 'noindex, nofollow, noarchive');
+
+        return $response;
     }
 
     public function teacherLoginPost(Request $request)

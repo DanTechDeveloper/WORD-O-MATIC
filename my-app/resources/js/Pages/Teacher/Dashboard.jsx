@@ -307,7 +307,7 @@ export default function Dashboard({
                                 return (
                                     <div key={s.id} className="p-3 sm:p-4 md:p-5 flex flex-col gap-2 sm:gap-3">
                                         <div className="flex items-center justify-between gap-2 sm:gap-3">
-                                            <span className="text-white font-bold truncate max-w-[120px] sm:max-w-[14rem] md:max-w-[16rem] text-sm sm:text-base" title={s.name}>{s.name}</span>
+                                            <span className="text-white font-bold whitespace-normal break-words [overflow-wrap:anywhere] leading-tight text-sm sm:text-base flex-1 min-w-0 block" title={s.name}>{s.name}</span>
                                             <span className="shrink-0 scale-90 sm:scale-100">{statusBadge(s.status)}</span>
                                         </div>
                                         <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
@@ -351,7 +351,7 @@ export default function Dashboard({
                                             key={s.id}
                                             className="hover:bg-surface-container/50 transition-colors"
                                         >
-                                            <td className="px-4 py-3 text-white font-bold max-w-[14rem] truncate" title={s.name}>{s.name}</td>
+                                            <td className="px-4 py-3 text-white font-bold whitespace-normal break-words [overflow-wrap:anywhere] leading-tight" title={s.name}>{s.name}</td>
                                             <td className="px-4 py-3">
                                                 <div className="flex items-center justify-end gap-2">
                                                     <div className={`w-2.5 h-2.5 rounded-full ${wRisk.dot}`}></div>
@@ -402,7 +402,7 @@ export default function Dashboard({
                             return (
                                 <div key={idx} className="p-3 sm:p-4 md:p-5 flex flex-col gap-2 sm:gap-3">
                                     <div className="flex items-center justify-between gap-2 sm:gap-3">
-                                        <span className="text-white font-black truncate max-w-[120px] sm:max-w-[160px] text-sm sm:text-base" title={item.section}>{item.section}</span>
+                                        <span className="text-white font-black whitespace-normal break-words [overflow-wrap:anywhere] leading-tight text-sm sm:text-base flex-1 min-w-0 block" title={item.section}>{item.section}</span>
                                         <span className={`px-2 sm:px-3 py-1 rounded-full border-2 text-[10px] sm:text-xs font-black uppercase shrink-0 ${item.status === "On Track" ? "bg-green-900/50 text-green-400 border-green-500" : item.status === "Needs Support" ? "bg-amber-900/50 text-amber-400 border-amber-500" : item.status === "Not Started" ? "bg-surface-container-high/50 text-on-surface-variant border-outline/20" : "bg-rose-900/50 text-rose-400 border-rose-500"}`}>{item.status}</span>
                                     </div>
                                     <div className="text-[11px] sm:text-xs text-on-surface-variant font-black uppercase">Total Students: <span className="text-white">{item.student_count}</span></div>
@@ -596,21 +596,21 @@ export default function Dashboard({
                                     dataKey="name"
                                     type="category"
                                     stroke="#94a3b8"
-                                    width={isMobile ? 90 : isTablet ? 140 : 210}
+                                    width={isMobile ? 110 : isTablet ? 160 : 210}
                                     tick={({ x, y, payload, index }) => {
                                         const s = filteredTopStudents[index];
                                         const isRank = s && s.rank <= 3;
-                                        const w = isMobile ? 90 : isTablet ? 140 : 210;
+                                        const w = isMobile ? 110 : isTablet ? 160 : 210;
                                         return (
                                             <g transform={`translate(${x},${y})`}>
-                                                <foreignObject x={-w} y={-10} width={w} height={22}>
+                                                <foreignObject x={-w} y={-12} width={w} height={28}>
                                                     <div className="flex items-center justify-end gap-1 sm:gap-1.5 w-full h-full pr-2 sm:pr-3">
                                                         {isRank && (
                                                             <span className="material-symbols-outlined text-[13px] sm:text-[15px] leading-none" style={{ color: RANK_COLORS[s.rank - 1] }}>
                                                                 emoji_events
                                                             </span>
                                                         )}
-                                                        <span className="text-xs sm:text-sm font-bold truncate max-w-[96px] sm:max-w-[128px] md:max-w-[160px] lg:max-w-[180px] block" style={{ color: '#e2e8f0' }} title={payload.value}>
+                                                        <span className="text-xs sm:text-sm font-bold whitespace-normal break-words [overflow-wrap:anywhere] leading-tight block" style={{ color: '#e2e8f0' }} title={payload.value}>
                                                             {payload.value}
                                                         </span>
                                                     </div>

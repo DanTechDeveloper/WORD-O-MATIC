@@ -1,4 +1,4 @@
-import { Head, useForm, Link } from "@inertiajs/react";
+import { Head, useForm } from "@inertiajs/react";
 
 const focusRing =
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary-container focus-visible:ring-offset-2 focus-visible:ring-offset-background";
@@ -154,17 +154,12 @@ export default function Homepage() {
             </section>
 
             {/* FOOTER — minimal, opaque per DESIGN.md §6 no liquid glass */}
+            {/* ponytail: teacher link removed — obscure via direct URL, security is role middleware not obscurity */}
             <footer className="fixed bottom-0 left-0 w-full z-40 border-t-2 border-outline/30 bg-background py-3 px-4">
-                <div className="max-w-6xl mx-auto flex items-center justify-between">
+                <div className="max-w-6xl mx-auto flex items-center justify-center">
                     <span className="text-sm font-black text-primary/40 font-headline-xl uppercase italic tracking-tighter">
                         WORD-O-MATIC
                     </span>
-                    <Link
-                        href="/teacher/login"
-                        className={`text-sm font-bold text-on-surface-variant/50 hover:text-accent transition-colors rounded ${focusRing}`}
-                    >
-                        Teacher Login
-                    </Link>
                 </div>
             </footer>
         </div>

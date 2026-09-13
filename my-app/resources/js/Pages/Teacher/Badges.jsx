@@ -238,7 +238,7 @@ export default function Badges({
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <p className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-on-surface-variant">Student</p>
-                                            <span className="font-black text-white truncate max-w-[88px] sm:max-w-[11rem] md:max-w-[14rem] block text-sm sm:text-base" title={student.name}>{student.name}</span>
+                                            <span className="font-black text-white whitespace-normal break-words [overflow-wrap:anywhere] leading-tight block text-sm sm:text-base" title={student.name}>{student.name}</span>
                                         </div>
                                         <div className="flex flex-col items-center shrink-0 ml-1">
                                             <span className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-on-surface-variant">Badges</span>
@@ -335,7 +335,7 @@ export default function Badges({
                                                         </span>
                                                     )}
                                                 </div>
-                                                <span className="font-black text-white truncate max-w-[8rem] sm:max-w-[14rem] block text-sm sm:text-base" title={student.name}>
+                                                <span className="font-black text-white whitespace-normal break-words [overflow-wrap:anywhere] leading-tight block text-sm sm:text-base" title={student.name}>
                                                     {student.name}
                                                 </span>
                                             </div>

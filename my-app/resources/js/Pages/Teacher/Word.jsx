@@ -86,10 +86,10 @@ export default function Word({ modules }) {
                                 {level}
                             </span>
                         </div>
-                        <p className="text-lg font-black text-white uppercase italic tracking-tighter mb-1">
+                        <p className="text-lg font-black text-white uppercase italic tracking-tighter mb-1 whitespace-normal break-words [overflow-wrap:anywhere] leading-tight w-full px-2 min-w-0 block" title={wordsByLevel[level]?.title || `Module ${level}`}>
                             {wordsByLevel[level]?.title || `Module ${level}`}
                         </p>
-                        <p className="text-xs text-on-surface-variant font-black uppercase tracking-widest truncate w-full px-2">
+                        <p className="text-xs text-on-surface-variant font-black uppercase tracking-widest w-full px-2">
                             {wordsByLevel[level]?.words?.length || 0} / 10 Words
                             • {wordsByLevel[level]?.totalPoints || 0} PTS
                         </p>
