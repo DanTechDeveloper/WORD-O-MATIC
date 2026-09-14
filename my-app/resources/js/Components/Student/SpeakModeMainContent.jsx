@@ -109,7 +109,7 @@ const SpeakModeMainContent = memo(function SpeakModeMainContent({
                                         {index === currentIndex &&
                                             feedbackType && (
                                                 <span
-                                                    className={`absolute left-1/2 -translate-x-1/2 -top-6 xs:-top-7 sm:-top-8 md:-top-10 z-30 flex items-center gap-1 xs:gap-1.5 sm:gap-2 font-black italic whitespace-nowrap text-base xs:text-lg sm:text-xl md:text-2xl lg:text-3xl rounded-full px-2 xs:px-2.5 sm:px-3 py-1 border bg-slate-900/85 animate-feedback-pop max-w-[90vw] justify-center ${
+                                                    className={`absolute left-1/2 -translate-x-1/2 -top-5 xs:-top-6 sm:-top-7 md:-top-9 z-30 flex items-center gap-1 sm:gap-1.5 font-black italic whitespace-normal text-center leading-tight text-sm xs:text-sm sm:text-base md:text-lg lg:text-xl rounded-full px-3 sm:px-3.5 py-1 sm:py-1.5 border bg-slate-900/85 animate-feedback-pop w-max max-w-[88vw] sm:max-w-[380px] md:max-w-[420px] justify-center ${
                                                         feedbackType ===
                                                         "correct"
                                                             ? "text-yellow-300 border-amber-400/60"
@@ -126,16 +126,16 @@ const SpeakModeMainContent = memo(function SpeakModeMainContent({
                                                     {feedbackMessage}
                                                     {feedbackType ===
                                                         "correct" && (
-                                                        <span className="flex items-center gap-1.5 sm:gap-2">
+                                                        <span className="flex flex-wrap items-center justify-center gap-1 sm:gap-1.5">
                                                             <span
-                                                                className="material-symbols-outlined text-2xl sm:text-3xl"
+                                                                className="material-symbols-outlined text-lg xs:text-xl sm:text-2xl md:text-2xl"
                                                                 style={{
                                                                     color:
                                                                         streak >=
                                                                         5
                                                                             ? "#ff4444"
                                                                             : streak >=
-                                                                                3
+                                                                                 3
                                                                               ? "#ff8800"
                                                                               : "#ffcc00",
                                                                     filter: `drop-shadow(0 0 6px ${streak >= 5 ? "#ff444488" : streak >= 3 ? "#ff880088" : "#ffcc0088"})`,
@@ -143,10 +143,10 @@ const SpeakModeMainContent = memo(function SpeakModeMainContent({
                                                             >
                                                                 local_fire_department
                                                             </span>
-                                                            <span className="text-xs sm:text-sm font-black uppercase tracking-widest text-amber-200/90">
+                                                            <span className="text-[10px] xs:text-xs sm:text-xs md:text-sm font-black uppercase tracking-widest text-amber-200/90">
                                                                 STREAK!
                                                             </span>
-                                                            <span className="text-2xl sm:text-3xl md:text-4xl font-black text-white">
+                                                            <span className="text-xl xs:text-xl sm:text-2xl md:text-3xl font-black text-white">
                                                                 {streak}
                                                             </span>
                                                         </span>
