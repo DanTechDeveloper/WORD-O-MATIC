@@ -254,7 +254,7 @@ export default function Students({ data, sections, filters, existingStudentIds }
                                             />
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <div className="font-headline-md text-sm sm:text-base text-white truncate max-w-[14rem] sm:max-w-[16rem]" title={student.fullName}>
+                                            <div className="font-headline-md text-sm sm:text-base text-white whitespace-normal break-words [overflow-wrap:anywhere] leading-tight block min-w-0" title={student.fullName}>
                                                 {student.fullName}
                                             </div>
                                             <div className="text-xs text-on-surface-variant font-label-bold">
@@ -392,7 +392,7 @@ export default function Students({ data, sections, filters, existingStudentIds }
                                                     />
                                                 </div>
                                                 <div className="min-w-0">
-                                                    <div className="font-headline-md text-base text-white truncate max-w-[14rem] lg:max-w-[18rem]" title={student.fullName}>
+                                                    <div className="font-headline-md text-base text-white whitespace-normal break-words [overflow-wrap:anywhere] leading-tight block min-w-0" title={student.fullName}>
                                                         {student.fullName}
                                                     </div>
                                                     <div className="text-xs text-on-surface-variant font-label-bold">

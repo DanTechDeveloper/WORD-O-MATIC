@@ -49,10 +49,10 @@ export default function Leaderboards({ leaderboard, totalStudents, sections = []
                 <meta name="description" content="Leaderboards on Word-O-Matic — top word-warriors." />
             </Head>
             <div className="mb-10">
-                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white uppercase italic tracking-tighter mb-2 truncate" title="Leaderboards">
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white uppercase italic tracking-tighter mb-2 whitespace-normal break-words [overflow-wrap:anywhere] leading-tight block" title="Leaderboards">
                     Leaderboards
                 </h1>
-                <p className="text-on-surface-variant font-black uppercase text-[11px] sm:text-xs tracking-widest truncate">
+                <p className="text-on-surface-variant font-black uppercase text-[11px] sm:text-xs tracking-widest whitespace-normal break-words [overflow-wrap:anywhere] leading-tight block">
                     {auth?.user?.name || "Teacher"} • {activeStudents.length} of{" "}
                     {totalStudents} word-warriors
                 </p>

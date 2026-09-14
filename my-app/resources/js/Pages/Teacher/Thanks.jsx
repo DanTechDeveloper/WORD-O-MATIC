@@ -29,7 +29,7 @@ export default function Thanks() {
                         </div>
                         <div className="bg-background rounded-xl p-3 border-2 border-outline/20">
                             <p className="text-xs font-black uppercase tracking-widest text-on-surface-variant">When</p>
-                            <p className="text-xs font-bold text-on-surface truncate">{reportedAt ?? "—"}</p>
+                            <p className="text-xs font-bold text-on-surface whitespace-normal break-words [overflow-wrap:anywhere] leading-tight block">{reportedAt ?? "—"}</p>
                         </div>
                     </div>
                     <div className="mt-6 flex justify-center gap-3">

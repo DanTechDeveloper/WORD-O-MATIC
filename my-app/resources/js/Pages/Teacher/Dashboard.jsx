@@ -166,7 +166,7 @@ export default function Dashboard({
                 <meta name="description" content="Teacher dashboard on Word-O-Matic — class health at a glance." />
             </Head>
             <div className="mb-10">
-                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white uppercase italic tracking-tighter mb-2 truncate" title={`Welcome back, ${auth?.user?.name || "Teacher"}!`}>
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white uppercase italic tracking-tighter mb-2 whitespace-normal break-words [overflow-wrap:anywhere] leading-tight block" title={`Welcome back, ${auth?.user?.name || "Teacher"}!`}>
                     Welcome back, {auth?.user?.name || "Teacher"}!
                 </h1>
                 <p className="text-on-surface-variant font-black uppercase text-[11px] sm:text-xs tracking-widest">
@@ -188,7 +188,7 @@ export default function Dashboard({
                         <h3 className="text-on-surface-variant text-[10px] sm:text-xs font-black uppercase tracking-widest mb-1">
                             {stat.label}
                         </h3>
-                        <p className="text-xl sm:text-2xl font-black text-on-surface tracking-tight truncate" title={String(stat.value)}>
+                        <p className="text-xl sm:text-2xl font-black text-on-surface tracking-tight whitespace-normal break-words [overflow-wrap:anywhere] leading-tight block" title={String(stat.value)}>
                             {stat.value}
                         </p>
                     </div>

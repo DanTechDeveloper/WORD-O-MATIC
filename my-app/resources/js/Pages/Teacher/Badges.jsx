@@ -108,14 +108,14 @@ export default function Badges({
                         >
                             {card.icon}
                         </span>
-                        <h3 className="text-on-surface-variant text-[10px] sm:text-xs font-black uppercase tracking-widest mb-1 truncate" title={card.label}>
+                        <h3 className="text-on-surface-variant text-[10px] sm:text-xs font-black uppercase tracking-widest mb-1 whitespace-normal break-words [overflow-wrap:anywhere] leading-tight block" title={card.label}>
                             {card.label}
                         </h3>
-                        <p className="text-xl sm:text-2xl md:text-3xl font-black text-white italic tracking-tighter truncate" title={String(card.value)}>
+                        <p className="text-xl sm:text-2xl md:text-3xl font-black text-white italic tracking-tighter whitespace-normal break-words [overflow-wrap:anywhere] leading-tight block" title={String(card.value)}>
                             {card.value}
                         </p>
                         {card.sub && (
-                            <p className="text-[11px] sm:text-xs text-on-surface-variant font-semibold mt-1 truncate">
+                            <p className="text-[11px] sm:text-xs text-on-surface-variant font-semibold mt-1 whitespace-normal break-words [overflow-wrap:anywhere] leading-tight block">
                                 {card.sub}
                             </p>
                         )}
@@ -155,7 +155,7 @@ export default function Badges({
                                         {badge.icon || "star"}
                                     </span>
                                 </div>
-                                <h3 className="text-white font-black uppercase italic text-[11px] sm:text-xs mb-1 truncate" title={badge.name}>
+                                <h3 className="text-white font-black uppercase italic text-[11px] sm:text-xs mb-1 whitespace-normal break-words [overflow-wrap:anywhere] leading-tight block" title={badge.name}>
                                     {badge.name}
                                 </h3>
                                 <p className="text-on-surface-variant font-black uppercase text-[10px] sm:text-xs tracking-widest">
@@ -246,8 +246,8 @@ export default function Badges({
                                         </div>
                                     </div>
                                     <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3 md:gap-4 flex-wrap text-[11px] sm:text-xs md:text-sm">
-                                        <span className="text-on-surface-variant font-semibold truncate">Section: <span className="text-on-surface">{student.section || "—"}</span></span>
-                                        <span className="text-on-surface-variant font-semibold truncate">Last Earned: <span className="text-on-surface-variant">{formatRelativeTime(student.last_earned_at)}</span></span>
+                                        <span className="text-on-surface-variant font-semibold whitespace-normal break-words [overflow-wrap:anywhere] leading-tight">Section: <span className="text-on-surface">{student.section || "—"}</span></span>
+                                        <span className="text-on-surface-variant font-semibold whitespace-normal break-words [overflow-wrap:anywhere] leading-tight">Last Earned: <span className="text-on-surface-variant">{formatRelativeTime(student.last_earned_at)}</span></span>
                                     </div>
                                 </div>
                             );

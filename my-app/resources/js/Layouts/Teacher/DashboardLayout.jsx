@@ -173,7 +173,7 @@ export default function DashboardLayout({ children }) {
                         </div>
                     </div>
                     <div className="flex items-center gap-3 pl-3 md:pl-6 border-l-2 border-outline/25">
-                        <span className="hidden md:inline font-headline-md text-[10px] sm:text-xs lg:text-sm font-bold tracking-tight text-on-surface truncate max-w-[100px] sm:max-w-[140px] lg:max-w-none">
+                        <span className="hidden md:inline font-headline-md text-[10px] sm:text-xs lg:text-sm font-bold tracking-tight text-on-surface whitespace-normal break-words [overflow-wrap:anywhere] leading-tight block max-w-[100px] sm:max-w-[140px] lg:max-w-none">
                             WORD-O-MATIC Dashboard
                         </span>
                     </div>

@@ -344,7 +344,7 @@ export default function Reports({ grouped, flash, deadline, errors }) {
                                         className="w-5 h-5 rounded border-slate-600 bg-surface-container-high text-purple-500 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
                                     />
                                     <div className={`${cfg.color} w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full shrink-0`} />
-                                    <span className="text-white font-black uppercase italic text-xs sm:text-sm truncate" title={cfg.label}>
+                                    <span className="text-white font-black uppercase italic text-xs sm:text-sm whitespace-normal break-words [overflow-wrap:anywhere] leading-tight block min-w-0" title={cfg.label}>
                                         {cfg.label}
                                     </span>
                                     <span className="text-on-surface-variant font-bold text-xs sm:text-sm shrink-0">
