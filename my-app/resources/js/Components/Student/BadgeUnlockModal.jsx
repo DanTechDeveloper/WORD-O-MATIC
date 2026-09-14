@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { usePage } from "@inertiajs/react";
+import useDeadlineStatus from "@/hooks/Student/useDeadlineStatus";
 import { playBadgeUnlockSound, playClickSound, pauseBackgroundMusic, startBackgroundMusic, setBgmSilenced } from "@/utils/sounds";
 
 export default function BadgeUnlockModal({
@@ -10,8 +10,7 @@ export default function BadgeUnlockModal({
     current,
     total,
 }) {
-    const { auth } = usePage().props;
-    const deadlineClosed = auth?.deadline && new Date(auth.deadline) <= new Date();
+    const deadlineClosed = useDeadlineStatus();
 
     useEffect(() => {
         if (show) {
