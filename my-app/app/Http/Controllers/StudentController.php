@@ -122,6 +122,9 @@ class StudentController extends Controller
         $user = auth()->user();
         $student = $user->student;
 
+        // ponytail: idempotent catch-up so 7/5 can't stay locked until next module
+        $this->badgeService->checkAllEligibleBadges($user);
+
         $badges = Badges::withExists(['users as is_earned' => function ($query) use ($user) {
             $query->where('student_badges.user_id', $user->id);
         }])->get()->map(function ($badge) use ($user, $student) {

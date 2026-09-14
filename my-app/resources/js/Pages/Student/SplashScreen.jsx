@@ -3,38 +3,45 @@ import { useEffect, useState } from "react";
 import { startBackgroundMusic } from "@/utils/sounds";
 
 const BG_WORDS = ["BLAST", "READ", "SPEAK", "QUEST", "LEARN", "HERO", "STAR", "LEVEL", "PLAY", "WIN"];
-const BG_WORD_COLORS = ["#d1bcff", "#7000ff", "#ff3bc0", "#ffb77f"];
-const BG_LEFT = ["15%", "75%", "45%", "85%", "30%"];
+const BG_COLORS = ["#d1bcff", "#7000ff", "#ff3bc0"];
+const BG_LEFT = ["20%", "80%", "50%"];
 
-// SHAPES removed — ponytail: drift shapes dropped per DESIGN.md §6 dotgrid/orb ban
-
-// ponytail: distill — keep one falling word + subtle scanlines, drop dotgrids/orb/shape drift per DESIGN.md §6
-function ArcadeGridBg() {
+// ponytail: OG FallingWordBg shard restored (b2ce0af) — one word falls then shards explode, bounded 1/3s
+function FallingWordBg() {
     const [index, setIndex] = useState(0);
+    const [exploding, setExploding] = useState(false);
 
     useEffect(() => {
-        const t = setTimeout(() => setIndex((i) => (i + 1) % BG_WORDS.length), 2500);
-        return () => clearTimeout(t);
+        const explodeAt = setTimeout(() => setExploding(true), 2200);
+        const nextAt = setTimeout(() => {
+            setExploding(false);
+            setIndex((i) => (i + 1) % BG_WORDS.length);
+        }, 3000);
+        return () => {
+            clearTimeout(explodeAt);
+            clearTimeout(nextAt);
+        };
     }, [index]);
 
     const word = BG_WORDS[index];
-    const color = BG_WORD_COLORS[index % BG_WORD_COLORS.length];
+    const color = BG_COLORS[index % BG_COLORS.length];
     const left = BG_LEFT[index % BG_LEFT.length];
 
     return (
         <div className="absolute inset-0 overflow-hidden pointer-events-none z-0" aria-hidden="true">
             <style>
                 {`
-                    .arcade-scanlines {
-                        background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.04) 3px, rgba(0,0,0,0.04) 4px);
-                    }
                     @keyframes splash-fall {
                         0% { top: -10%; opacity: 0; }
-                        15% { opacity: 0.6; }
-                        100% { top: 70%; opacity: 0.6; }
+                        15% { opacity: 0.5; }
+                        100% { top: 75%; opacity: 0.5; }
+                    }
+                    @keyframes splash-shard {
+                        0% { transform: translate(0,0) rotate(0deg) scale(1); opacity: 0.5; }
+                        100% { transform: translate(var(--sx),var(--sy)) rotate(var(--sr)) scale(2); opacity: 0; }
                     }
                     @media (prefers-reduced-motion: reduce) {
-                        .splash-word { animation: none !important; opacity: 0.4 !important; }
+                        .splash-word, .splash-shard { animation: none !important; opacity: 0.4 !important; }
                     }
                 `}
             </style>
@@ -50,9 +57,33 @@ function ArcadeGridBg() {
                     animation: "splash-fall 2.2s ease-in forwards",
                 }}
             >
-                {word}
+                {word.split("").map((char, i) => {
+                    const angle = (i / Math.max(word.length, 1)) * 360;
+                    const dist = 60 + (i % 3) * 30;
+                    const sx = Math.cos((angle * Math.PI) / 180) * dist;
+                    const sy = Math.sin((angle * Math.PI) / 180) * dist - 40;
+                    const sr = (i % 2 === 0 ? 1 : -1) * (20 + (i % 5) * 15);
+                    return (
+                        <span
+                            key={i}
+                            className="inline-block"
+                            style={
+                                exploding
+                                    ? {
+                                          animation: "splash-shard 0.6s ease-out forwards",
+                                          animationDelay: `${i * 30}ms`,
+                                          "--sx": `${sx}px`,
+                                          "--sy": `${sy}px`,
+                                          "--sr": `${sr}deg`,
+                                      }
+                                    : undefined
+                            }
+                        >
+                            {char}
+                        </span>
+                    );
+                })}
             </div>
-            <div className="arcade-scanlines absolute inset-0 opacity-40" />
         </div>
     );
 }
@@ -69,7 +100,7 @@ export default function SplashScreen() {
 
     return (
         <div className="fixed inset-0 z-50 bg-background flex flex-col items-center justify-center gap-10 select-none overflow-hidden px-6">
-            <ArcadeGridBg />
+            <FallingWordBg />
 
             <div
                 className="absolute inset-0 z-[1] pointer-events-none"
