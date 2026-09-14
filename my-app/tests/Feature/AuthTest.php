@@ -113,8 +113,8 @@ class AuthTest extends TestCase
         // Subukan pumasok sa teacher reports
         $response = $this->get(route('teacher.reports'));
 
-        // Dapat ma-block
-        $response->assertStatus(403);
+        // Dapat ma-redirect sa student dashboard (hindi 403)
+        $response->assertRedirect(route('student.dashboard'));
     }
 
     public function test_teacher_cannot_access_student_page(): void
@@ -127,7 +127,7 @@ class AuthTest extends TestCase
 
         $response = $this->get(route('student.dashboard'));
 
-        $response->assertStatus(403);
+        $response->assertRedirect(route('teacher.dashboard'));
     }
 
     public function test_guest_is_redirected_to_login(): void

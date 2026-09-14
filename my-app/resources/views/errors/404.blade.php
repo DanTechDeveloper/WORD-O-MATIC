@@ -18,7 +18,7 @@
         $role = auth()->check() ? auth()->user()->role : null;
         $isStudent = $role === 'student';
         $home = $isStudent ? '/student/dashboard' : ($role === 'teacher' ? '/teacher/dashboard' : '/');
-        $label = $isStudent ? 'GO HOME' : 'Go to dashboard';
+        $label = $role === 'teacher' ? 'Go to dashboard' : ($isStudent ? 'GO HOME' : 'Go to login');
     @endphp
 
     @if($isStudent)

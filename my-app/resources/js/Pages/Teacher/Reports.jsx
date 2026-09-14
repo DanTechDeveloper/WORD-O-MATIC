@@ -1,7 +1,7 @@
 import { Head, usePage, Link, router } from "@inertiajs/react";
 import { useState, useRef } from "react";
 import DashboardLayout from "@/Layouts/Teacher/DashboardLayout";
-import ConfirmDeleteModal from "@/Components/Teacher/ConfirmDeleteModal";
+import ConfirmModal from "@/Components/Teacher/ConfirmModal";
 
 const formatDate = (date) =>
     date?.toLocaleDateString("en-US", {
@@ -658,7 +658,7 @@ export default function Reports({ grouped, flash, deadline, errors }) {
 
                     {renderStudentList()}
                 </div>
-            <ConfirmDeleteModal
+            <ConfirmModal
                 isOpen={confirmClearOpen}
                 onClose={() => setConfirmClearOpen(false)}
                 onConfirm={confirmClearDeadline}

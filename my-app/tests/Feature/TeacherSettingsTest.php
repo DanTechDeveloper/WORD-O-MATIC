@@ -248,7 +248,7 @@ class TeacherSettingsTest extends TestCase
         $student = User::factory()->create(['role' => 'student', 'password' => bcrypt('password')]);
         $student->student()->create(['avatar' => '/images/avatars/ana/head.png', 'tutorial_completed_at' => now()]);
         $this->actingAs($student)->put(route('teacher.settings.sender'), ['email' => 'a@b.com', 'name' => 'X'])
-            ->assertForbidden();
+            ->assertRedirect(route('student.dashboard'));
         $response = $this->put(route('teacher.settings.sender'), ['email' => 'a@b.com', 'name' => 'X']);
         $this->assertTrue(in_array($response->status(), [302, 303, 401, 403], true));
     }
