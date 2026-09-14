@@ -38,6 +38,8 @@ class HandleInertiaRequests extends Middleware
                     'sent' => fn () => $request->session()->get('sent'),
                     'failed' => fn () => $request->session()->get('failed'),
                     'reported_at' => fn () => $request->session()->get('reported_at'),
+                    'deadline_set' => fn () => $request->session()->get('deadline_set'),
+                    'deadline_cleared' => fn () => $request->session()->get('deadline_cleared'),
                 ],
 
             'teacher' => fn () => $request->user() && $request->user()->isTeacher() ? [
@@ -45,6 +47,9 @@ class HandleInertiaRequests extends Middleware
                     'has_word_modules' => WordModule::exists(),
                     'has_paragraph_modules' => ParagraphModule::exists(),
                     'attention_threshold' => ReportService::NEEDS_ATTENTION_ATTEMPTS,
+                    'email' => $request->user()->email,
+                    'name' => $request->user()->name,
+                    'has_email' => ! empty($request->user()->email),
                 ] : null,
         ];
     }

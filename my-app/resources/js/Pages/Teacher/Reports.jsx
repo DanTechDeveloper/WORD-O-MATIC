@@ -1,4 +1,4 @@
-import { Head } from "@inertiajs/react";
+import { Head, usePage, Link } from "@inertiajs/react";
 import { useState, useRef } from "react";
 import { router } from "@inertiajs/react";
 import DashboardLayout from "@/Layouts/Teacher/DashboardLayout";
@@ -25,6 +25,8 @@ const STATUS_CONFIG = {
 };
 
 export default function Reports({ grouped, flash, deadline, errors }) {
+    const { teacher } = usePage().props;
+    const hasTeacherEmail = !!teacher?.has_email;
     const [selectedIds, setSelectedIds] = useState(new Set());
     const [sending, setSending] = useState(false);
     const sendingRef = useRef(false);
@@ -605,12 +607,18 @@ export default function Reports({ grouped, flash, deadline, errors }) {
                         ))}
                     </div>
 
+                    {!hasTeacherEmail && (
+                        <div className="mb-4 bg-amber-500/10 border-2 border-amber-500 rounded-xl p-3 flex items-start gap-2">
+                            <span className="material-symbols-outlined text-amber-500 text-lg" aria-hidden="true">mail</span>
+                            <p className="text-amber-400 text-xs font-bold leading-snug">Set sender email in <Link href="/teacher/settings" className="underline text-white">Settings</Link> so parents can reply to you{isPastDeadline ? " — sending is blocked until set" : ""}.</p>
+                        </div>
+                    )}
                     <div className="mb-6">
                         <button
                             onClick={sendEmails}
-                            disabled={selectedIds.size === 0 || sending || !isPastDeadline}
+                            disabled={selectedIds.size === 0 || sending || !isPastDeadline || (isPastDeadline && !hasTeacherEmail)}
                             className={`w-full p-4 rounded-xl font-black uppercase italic text-lg tracking-tight transition-colors flex items-center justify-center gap-3 ${
-                                selectedIds.size === 0 || sending || !isPastDeadline
+                                selectedIds.size === 0 || sending || !isPastDeadline || (isPastDeadline && !hasTeacherEmail)
                                     ? "bg-surface-container-high text-on-surface-variant/50 cursor-not-allowed"
                                     : "bg-accent text-background border-b-4 border-accent-deep hover:bg-accent-hover"
                             }`}

@@ -54,6 +54,9 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/reports/thank-you', fn () => Inertia::render('Teacher/Thanks'))->name('reports.thanks');
             Route::put('/students/{student}', [TeacherController::class, 'updateStudent'])->name('students.update');
             Route::delete('/students/{student}', [TeacherController::class, 'destroy'])->name('students.destroy');
+            Route::get('/settings', [TeacherController::class, 'settings'])->name('settings');
+            Route::put('/settings/sender', [TeacherController::class, 'updateSender'])->name('settings.sender');
+            Route::put('/settings/password', [TeacherController::class, 'updatePassword'])->name('settings.password');
         });
 
     Route::prefix('student')
