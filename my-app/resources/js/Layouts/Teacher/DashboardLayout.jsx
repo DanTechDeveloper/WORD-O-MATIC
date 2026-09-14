@@ -128,7 +128,7 @@ export default function DashboardLayout({ children }) {
                                 )}
                             </button>
                             {showNotifs && (
-                                <div className="absolute top-full left-1/2 -translate-x-1/2 sm:left-auto sm:translate-x-0 sm:right-0 mt-2 w-[92vw] sm:w-80 max-w-[90vw] max-h-[60vh] sm:max-h-[70vh] overflow-y-auto bg-surface-container-high border-2 border-outline/30 rounded-xl shadow-[4px_4px_0_0_#1e1b4b] z-50">
+                                <div className="fixed sm:absolute top-16 sm:top-full inset-x-4 sm:inset-x-auto sm:left-auto sm:right-0 mt-0 sm:mt-2 w-auto sm:w-80 md:w-96 max-w-none sm:max-w-[90vw] max-h-[60vh] sm:max-h-[65vh] md:max-h-[70vh] overflow-y-auto bg-surface-container-high border-2 border-outline/30 rounded-xl shadow-[4px_4px_0_0_#1e1b4b] z-50">
                                     <div className="p-3 sm:p-4 border-b-2 border-outline/40">
                                         <p className="font-black text-sm text-on-surface uppercase tracking-widest">
                                             Alerts
