@@ -15,10 +15,17 @@ class BadgeService
     // Best streak/accuracy counts only non-deadline-hit sessions, so a post-deadline
     // round can't inflate badge progress — even if the deadline is later cleared
     // (doc: CAVEATS BF7/BF10). The flag is baked in at log time, so this is sticky.
+    // ponytail: tutorial sessions excluded — streak/ON FIRE must not leak from onboarding (BadgesSeeder 19-21)
     private function bestSessionMetric(User $user, string $column): int
     {
+        $tutIds = array_filter([
+            WordModule::where('is_tutorial', true)->value('id'),
+            ParagraphModule::where('is_tutorial', true)->value('id'),
+        ]);
+
         return (int) GameSession::where('user_id', $user->id)
             ->where('is_deadline_hit', false)
+            ->when($tutIds, fn ($q) => $q->whereNotIn('module_id', $tutIds))
             ->max($column) ?? 0;
     }
     public function awardOnboardingBadge(User $user, string $slug): ?array
@@ -178,7 +185,7 @@ class BadgeService
         $student = $user->student;
         $earnedBadgeIds = $user->badges()->pluck('badges.id')->toArray();
 
-        $badges = Badges::whereIn('metric', ['total_points', 'streak', 'accuracy', 'paragraph_completion', 'word_completion'])->get();
+        $badges = Badges::whereIn('metric', ['total_points', 'streak', 'accuracy', 'paragraph_completion', 'word_completion', 'action'])->get();
 
         $progress = [];
 
@@ -189,6 +196,7 @@ class BadgeService
                 'accuracy' => (int) round((float) $session->accuracy),
                 'paragraph_completion' => $this->calculateModuleCompletion($user, 'paragraph'),
                 'word_completion' => $this->calculateModuleCompletion($user, 'word'),
+                'action' => null,
                 default => 0,
             };
 

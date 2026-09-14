@@ -13,12 +13,14 @@
     </style>
 </head>
 <body>
-    {{-- ponytail: single 404 with role branch — kid gets big arcade, teacher gets dense workbench. Both share one Lime GO HOME. --}}
+    {{-- ponytail: single 404 with role branch — kid gets big arcade, teacher gets dense workbench. Both share one Lime GO TO DASHBOARD. --}}
     @php
-        $role = auth()->check() ? auth()->user()->role : null;
+        // ponytail: auth() can be null in error views before session middleware finishes — fallback to request()->user()
+        $user = auth()->user() ?? (function_exists('request') ? request()->user() : null);
+        $role = $user?->role;
         $isStudent = $role === 'student';
         $home = $isStudent ? '/student/dashboard' : ($role === 'teacher' ? '/teacher/dashboard' : '/');
-        $label = $role === 'teacher' ? 'Go to dashboard' : ($isStudent ? 'GO HOME' : 'Go to login');
+        $label = $role ? 'GO TO DASHBOARD' : 'Go to login';
     @endphp
 
     @if($isStudent)
@@ -26,7 +28,7 @@
             <h1 style="font-family:'Lexend',sans-serif;font-weight:900;font-style:italic;font-size:clamp(3rem,14vw,9rem);letter-spacing:-0.04em;line-height:0.9;color:#d1bcff">404</h1>
             <p style="margin-top:8px;font-size:1.25rem;font-weight:700;color:#ccc3da">Oops, we lost that level.</p>
             <p style="margin-top:4px;font-size:0.95rem;color:#958da3">Ask your teacher if you need help.</p>
-            <a href="{{ $home }}" style="margin-top:28px;display:inline-flex;align-items:center;gap:8px;background:#a3e635;color:#0c0c1f;font-weight:900;text-transform:uppercase;font-style:italic;letter-spacing:-0.02em;padding:16px 32px;border-radius:0.75rem;border-bottom:6px solid #3f6212;text-decoration:none">Go home</a>
+            <a href="{{ $home }}" style="margin-top:28px;display:inline-flex;align-items:center;gap:8px;background:#a3e635;color:#0c0c1f;font-weight:900;text-transform:uppercase;font-style:italic;letter-spacing:-0.02em;padding:16px 32px;border-radius:0.75rem;border-bottom:6px solid #3f6212;text-decoration:none">{{ $label }}</a>
             <img src="{{ asset('images/avatars/ana/head.png') }}" alt="Friendly Word-O-Matic character waving" style="margin-top:24px;width:96px;height:96px;object-fit:cover;border-radius:1rem;border:2px solid #7000ff;background:#1e1e32">
         </main>
     @else
@@ -47,5 +49,19 @@
         <span style="font-weight:900;letter-spacing:-0.02em;font-style:italic">WORD-O-MATIC</span>
     </footer>
     @endif
+    <script>
+    // ponytail: client fallback — if server rendered Go to login but session exists (exception before StartSession), fix to GO TO DASHBOARD
+    (function(){
+        var a=document.querySelector('a[href="/"]');
+        if(!a||a.textContent.trim()!=='Go to login') return;
+        fetch('/auth/check',{credentials:'same-origin',headers:{'Accept':'application/json'}})
+            .then(function(r){return r.ok?r.json():Promise.reject();})
+            .then(function(j){
+                var s=j.role==='student';
+                a.href=s?'/student/dashboard':'/teacher/dashboard';
+                a.textContent='GO TO DASHBOARD';
+            }).catch(function(){});
+    })();
+    </script>
 </body>
 </html>
