@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 import DashboardLayout from "../../Layouts/Teacher/DashboardLayout";
 import ParagraphInputModal from "../../Components/Teacher/ParagraphInputModal";
-import { Head, router, usePage } from "@inertiajs/react";
+import { Head, router } from "@inertiajs/react";
+import useDeadlineStatus from "@/hooks/Student/useDeadlineStatus";
 
 export default function Paragraph({ modules }) {
-    const { auth } = usePage().props;
-    const isDeadlineClosed = auth?.deadline && new Date(auth.deadline) <= new Date();
+    const isDeadlineClosed = useDeadlineStatus();
     const levels = modules?.map((m) => m.level).filter((l) => l > 0).sort((a, b) => a - b) ?? [];
     const nextLevel = levels.length > 0 ? Math.max(...levels) + 1 : 1;
     const transformModules = (modulesData) => {

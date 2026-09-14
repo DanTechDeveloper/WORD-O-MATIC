@@ -170,7 +170,7 @@ export default function Dashboard({
                     Welcome back, {auth?.user?.name || "Teacher"}!
                 </h1>
                 <p className="text-on-surface-variant font-black uppercase text-[11px] sm:text-xs tracking-widest">
-                    System status: Operational • Sector 7 monitoring active
+                    All set • Tracking your classes
                 </p>
             </div>
 

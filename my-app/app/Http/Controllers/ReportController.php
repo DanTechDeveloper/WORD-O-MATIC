@@ -60,6 +60,8 @@ class ReportController extends Controller
     {
         if (empty($request->deadline)) {
             Setting::where('key', 'report_deadline')->delete();
+            // ponytail: CLEAR = new period — un-stale Already Sent so Juan returns to selectable list
+            \App\Models\StudentProfile::query()->update(['report_sent_at' => null]);
 
             return redirect()->back()->with('deadline_cleared', true);
         }

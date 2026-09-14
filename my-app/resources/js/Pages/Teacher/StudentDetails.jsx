@@ -69,6 +69,15 @@ export default function StudentDetail({ data }) {
     const attentionThreshold =
         usePage().props.teacher?.attention_threshold ?? 3;
 
+    const _readCurriculum = data.readCurriculum || [];
+    const _speakCurriculum = data.speakCurriculum || [];
+    const wbMasteredAll = _readCurriculum.flatMap((l) => aggregateZoneRows(l.word_stats).mastered);
+    const wbTrainingAll = _readCurriculum.flatMap((l) => aggregateZoneRows(l.word_stats).training);
+    const sqMasteredAll = _speakCurriculum.flatMap((l) => (l.sentence_stats || []).filter((s) => s.mastery === 'mastered'));
+    const sqTrainingAll = _speakCurriculum.flatMap((l) => (l.sentence_stats || []).filter((s) => s.mastery === 'training' && Number(s.failed_attempts || 0) > 0));
+    const hasWbModules = _readCurriculum.length > 0;
+    const hasSqModules = _speakCurriculum.length > 0;
+
     const student = {
         id: data.student_id,
         section: data.student?.section,
@@ -486,27 +495,35 @@ export default function StudentDetail({ data }) {
                             </h3>
                         </div>
                         <div className="bg-surface-container-lowest rounded-xl border-4 border-outline/20 p-4 sm:p-6 md:p-8 min-h-[400px] max-h-[600px] overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-surface-container-high [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-accent">
-                            {student.readCurriculum.map((level, i) => {
-                                const zone = aggregateZoneRows(level.word_stats);
+                            {wbMasteredAll.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center py-16 text-center">
+                                    <span className="material-symbols-outlined text-4xl text-on-surface-variant/40 mb-3" aria-hidden="true">verified</span>
+                                    <p className="text-on-surface-variant font-black uppercase text-xs tracking-widest">{!hasWbModules ? "No Word Blast modules yet" : "No words mastered yet"}</p>
+                                    <p className="text-on-surface-variant/60 text-xs font-semibold mt-1">{!hasWbModules ? "Create Level 1 in Word Blast to get started." : "Mastered words will appear here."}</p>
+                                </div>
+                            ) : (
+                                student.readCurriculum.map((level, i) => {
+                                    const zone = aggregateZoneRows(level.word_stats);
 
-                                return (
-                                    <div key={i} className="mb-8 last:mb-0">
-                                        {zone.mastered.length > 0 && (
-                                            <>
-                                                <div className="text-accent font-black uppercase text-xs tracking-widest mb-4 flex items-center gap-2">
-                                                    <div className="w-2 h-2 rounded-full bg-accent shadow-[0_0_8px_#4ade80]"></div>
-                                                    {level.level}
-                                                </div>
-                                                <div className="flex flex-wrap gap-2">
-                                                    {zone.mastered.map((row) => (
-                                                        <WordChip key={row.word} word={row.word} stat={row} threshold={attentionThreshold} className="text-white hover:border-accent" />
-                                                    ))}
-                                                </div>
-                                            </>
-                                        )}
-                                    </div>
-                                );
-                            })}
+                                    return (
+                                        <div key={i} className="mb-8 last:mb-0">
+                                            {zone.mastered.length > 0 && (
+                                                <>
+                                                    <div className="text-accent font-black uppercase text-xs tracking-widest mb-4 flex items-center gap-2">
+                                                        <div className="w-2 h-2 rounded-full bg-accent shadow-[0_0_8px_#4ade80]"></div>
+                                                        {level.level}
+                                                    </div>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {zone.mastered.map((row) => (
+                                                            <WordChip key={row.word} word={row.word} stat={row} threshold={attentionThreshold} className="text-white hover:border-accent" />
+                                                        ))}
+                                                    </div>
+                                                </>
+                                            )}
+                                        </div>
+                                    );
+                                })
+                            )}
                         </div>
                     </div>
 
@@ -520,27 +537,35 @@ export default function StudentDetail({ data }) {
                             </h3>
                         </div>
                         <div className="bg-surface-container-lowest rounded-xl border-4 border-outline/20 p-4 sm:p-6 md:p-8 min-h-[400px] max-h-[600px] overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-surface-container-high [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-orange-400">
-                            {student.readCurriculum.map((level, i) => {
-                                const zone = aggregateZoneRows(level.word_stats);
+                            {wbTrainingAll.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center py-16 text-center">
+                                    <span className="material-symbols-outlined text-4xl text-on-surface-variant/40 mb-3" aria-hidden="true">exercise</span>
+                                    <p className="text-on-surface-variant font-black uppercase text-xs tracking-widest">{!hasWbModules ? "No Word Blast modules yet" : "No words in training"}</p>
+                                    <p className="text-on-surface-variant/60 text-xs font-semibold mt-1">{!hasWbModules ? "Create Level 1 in Word Blast to get started." : "Training words will appear here when practice starts."}</p>
+                                </div>
+                            ) : (
+                                student.readCurriculum.map((level, i) => {
+                                    const zone = aggregateZoneRows(level.word_stats);
 
-                                return (
-                                    <div key={i} className="mb-8 last:mb-0">
-                                        {zone.training.length > 0 && (
-                                            <>
-                                                <div className="text-orange-400 font-black uppercase text-xs tracking-widest mb-4 flex items-center gap-2">
-                                                    <div className="w-2 h-2 rounded-full bg-orange-400 shadow-[0_0_8px_#fb923c]"></div>
-                                                    {level.level}
-                                                </div>
-                                                <div className="flex flex-wrap gap-2">
-                                                    {zone.training.map((row) => (
-                                                        <WordChip key={row.word} word={row.word} stat={row} threshold={attentionThreshold} className="text-on-surface-variant hover:border-orange-400" />
-                                                    ))}
-                                                </div>
-                                            </>
-                                        )}
-                                    </div>
-                                );
-                            })}
+                                    return (
+                                        <div key={i} className="mb-8 last:mb-0">
+                                            {zone.training.length > 0 && (
+                                                <>
+                                                    <div className="text-orange-400 font-black uppercase text-xs tracking-widest mb-4 flex items-center gap-2">
+                                                        <div className="w-2 h-2 rounded-full bg-orange-400 shadow-[0_0_8px_#fb923c]"></div>
+                                                        {level.level}
+                                                    </div>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {zone.training.map((row) => (
+                                                            <WordChip key={row.word} word={row.word} stat={row} threshold={attentionThreshold} className="text-on-surface-variant hover:border-orange-400" />
+                                                        ))}
+                                                    </div>
+                                                </>
+                                            )}
+                                        </div>
+                                    );
+                                })
+                            )}
                         </div>
                     </div>
                 </div>
@@ -563,23 +588,31 @@ export default function StudentDetail({ data }) {
                             </h3>
                         </div>
                         <div className="bg-surface-container-lowest rounded-xl border-4 border-outline/20 p-4 sm:p-6 md:p-8 min-h-[400px] max-h-[600px] overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-surface-container-high [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-cyan-400">
-                            {student.speakCurriculum.map((level, i) => {
-                                const mastered = (level.sentence_stats || []).filter((s) => s.mastery === 'mastered');
-                                if (mastered.length === 0) return <div key={i} className="mb-8 last:mb-0" />;
-                                return (
-                                    <div key={i} className="mb-8 last:mb-0">
-                                        <div className="text-cyan-400 font-black uppercase text-xs tracking-widest mb-4 flex items-center gap-2">
-                                            <div className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_#22d3ee]"></div>
-                                            {level.level}
+                            {sqMasteredAll.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center py-16 text-center">
+                                    <span className="material-symbols-outlined text-4xl text-on-surface-variant/40 mb-3" aria-hidden="true">verified</span>
+                                    <p className="text-on-surface-variant font-black uppercase text-xs tracking-widest">{!hasSqModules ? "No Story Quest modules yet" : "No sentences mastered yet"}</p>
+                                    <p className="text-on-surface-variant/60 text-xs font-semibold mt-1">{!hasSqModules ? "Create Level 1 in Story Quest to get started." : "Mastered sentences will appear here."}</p>
+                                </div>
+                            ) : (
+                                student.speakCurriculum.map((level, i) => {
+                                    const mastered = (level.sentence_stats || []).filter((s) => s.mastery === 'mastered');
+                                    if (mastered.length === 0) return <div key={i} className="mb-8 last:mb-0" />;
+                                    return (
+                                        <div key={i} className="mb-8 last:mb-0">
+                                            <div className="text-cyan-400 font-black uppercase text-xs tracking-widest mb-4 flex items-center gap-2">
+                                                <div className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_#22d3ee]"></div>
+                                                {level.level}
+                                            </div>
+                                            <div className="flex flex-col gap-3">
+                                                {mastered.map((row) => (
+                                                    <SentenceChip key={row.sentence} sentence={row.sentence} stat={row} threshold={attentionThreshold} className="text-white hover:border-cyan-400" />
+                                                ))}
+                                            </div>
                                         </div>
-                                        <div className="flex flex-col gap-3">
-                                            {mastered.map((row) => (
-                                                <SentenceChip key={row.sentence} sentence={row.sentence} stat={row} threshold={attentionThreshold} className="text-white hover:border-cyan-400" />
-                                            ))}
-                                        </div>
-                                    </div>
-                                );
-                            })}
+                                    );
+                                })
+                            )}
                         </div>
                     </div>
 
@@ -593,23 +626,31 @@ export default function StudentDetail({ data }) {
                             </h3>
                         </div>
                         <div className="bg-surface-container-lowest rounded-xl border-4 border-outline/20 p-4 sm:p-6 md:p-8 min-h-[400px] max-h-[600px] overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-surface-container-high [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-orange-400">
-                            {student.speakCurriculum.map((level, i) => {
-                                const training = (level.sentence_stats || []).filter((s) => s.mastery === 'training' && Number(s.failed_attempts || 0) > 0);
-                                if (training.length === 0) return <div key={i} className="mb-8 last:mb-0" />;
-                                return (
-                                    <div key={i} className="mb-8 last:mb-0">
-                                        <div className="text-orange-400 font-black uppercase text-xs tracking-widest mb-4 flex items-center gap-2">
-                                            <div className="w-2 h-2 rounded-full bg-orange-400 shadow-[0_0_8px_#fb923c]"></div>
-                                            {level.level}
-                                        </div>
-                                        <div className="flex flex-col gap-3">
-                                            {training.map((row) => (
-                                                <SentenceChip key={row.sentence} sentence={row.sentence} stat={row} threshold={attentionThreshold} className="text-on-surface-variant hover:border-orange-400" />
-                                            ))}
-                                        </div>
+                            {sqTrainingAll.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center py-16 text-center">
+                                    <span className="material-symbols-outlined text-4xl text-on-surface-variant/40 mb-3" aria-hidden="true">exercise</span>
+                                    <p className="text-on-surface-variant font-black uppercase text-xs tracking-widest">{!hasSqModules ? "No Story Quest modules yet" : "No sentences in training"}</p>
+                                    <p className="text-on-surface-variant/60 text-xs font-semibold mt-1">{!hasSqModules ? "Create Level 1 in Story Quest to get started." : "Training sentences will appear here when practice starts."}</p>
+                                </div>
+                            ) : (
+                                student.speakCurriculum.map((level, i) => {
+                                    const training = (level.sentence_stats || []).filter((s) => s.mastery === 'training' && Number(s.failed_attempts || 0) > 0);
+                                    if (training.length === 0) return <div key={i} className="mb-8 last:mb-0" />;
+                                    return (
+                                        <div key={i} className="mb-8 last:mb-0">
+                                            <div className="text-orange-400 font-black uppercase text-xs tracking-widest mb-4 flex items-center gap-2">
+                                                <div className="w-2 h-2 rounded-full bg-orange-400 shadow-[0_0_8px_#fb923c]"></div>
+                                                {level.level}
+                                            </div>
+                                            <div className="flex flex-col gap-3">
+                                                {training.map((row) => (
+                                                    <SentenceChip key={row.sentence} sentence={row.sentence} stat={row} threshold={attentionThreshold} className="text-on-surface-variant hover:border-orange-400" />
+                                                ))}
+                                            </div>
                                     </div>
                                 );
-                            })}
+                            })
+                            )}
                         </div>
                     </div>
                 </div>

@@ -1,7 +1,7 @@
-import { Head, usePage, Link } from "@inertiajs/react";
+import { Head, usePage, Link, router } from "@inertiajs/react";
 import { useState, useRef } from "react";
-import { router } from "@inertiajs/react";
 import DashboardLayout from "@/Layouts/Teacher/DashboardLayout";
+import ConfirmDeleteModal from "@/Components/Teacher/ConfirmDeleteModal";
 
 const formatDate = (date) =>
     date?.toLocaleDateString("en-US", {
@@ -33,6 +33,7 @@ export default function Reports({ grouped, flash, deadline, errors }) {
     const [deadlineValue, setDeadlineValue] = useState(deadline || "");
     const [savingDeadline, setSavingDeadline] = useState(false);
 
+    const [confirmClearOpen, setConfirmClearOpen] = useState(false);
     const isPastDeadline = deadlineValue && new Date(deadlineValue) <= new Date();
     const isDeadlineSet = !!deadlineValue;
     const isDeadlineSaved = !!deadline;
@@ -92,7 +93,9 @@ export default function Reports({ grouped, flash, deadline, errors }) {
         );
     };
 
-    const clearDeadline = () => {
+    const clearDeadline = () => setConfirmClearOpen(true);
+    const confirmClearDeadline = () => {
+        setConfirmClearOpen(false);
         setDeadlineValue("");
         router.post(
             route("teacher.reports.deadline"),
@@ -525,28 +528,6 @@ export default function Reports({ grouped, flash, deadline, errors }) {
                 </div>
             )}
 
-            {flash?.deadline_set && (
-                <div className="mb-6 bg-lime-500/10 border-2 border-lime-500 rounded-2xl p-4 flex items-center gap-3">
-                    <span className="material-symbols-outlined text-accent">
-                        check_circle
-                    </span>
-                    <p className="text-white font-bold text-sm">
-                        Report deadline has been saved.
-                    </p>
-                </div>
-            )}
-
-            {flash?.deadline_cleared && (
-                <div className="mb-6 bg-surface-container-high border-2 border-outline/20 rounded-2xl p-4 flex items-center gap-3">
-                    <span className="material-symbols-outlined text-on-surface-variant">
-                        remove_circle
-                    </span>
-                    <p className="text-white font-bold text-sm">
-                        Report deadline has been removed.
-                    </p>
-                </div>
-            )}
-
             {renderDeadlineSetter()}
 
             {isDeadlineSaved && isPastDeadline && (
@@ -677,6 +658,20 @@ export default function Reports({ grouped, flash, deadline, errors }) {
 
                     {renderStudentList()}
                 </div>
+            <ConfirmDeleteModal
+                isOpen={confirmClearOpen}
+                onClose={() => setConfirmClearOpen(false)}
+                onConfirm={confirmClearDeadline}
+                title="Clear Deadline?"
+                message={
+                    <p>
+                        Clear the deadline? <span className="text-accent">Already Sent</span> students will move back to the selectable list for the next period. This cannot be undone.
+                    </p>
+                }
+                confirmText="Clear Deadline"
+                confirmIcon="event_busy"
+                variant="neutral"
+            />
         </DashboardLayout>
     );
 }
