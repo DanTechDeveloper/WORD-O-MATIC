@@ -30,6 +30,8 @@ export default function LevelsPage({ modules, mode, tutorialComplete = true, wor
             if (m.status !== "locked") return sum + (m.words_smashed || 0)
             return sum
         }, 0) || 0
+    const totalPossibleStars =
+        modules?.reduce((sum, m) => sum + (m.total_points || 0), 0) || 0
 
     const gameUrl =
         mode === "read" ? "student/gameplayReadMode" : "student/gameplaySpeakMode"
@@ -77,9 +79,14 @@ export default function LevelsPage({ modules, mode, tutorialComplete = true, wor
                         Select a level to play
                     </p>
                 </div>
-                <div className={`${isRead ? "bg-accent text-surface-container-lowest border-2 border-accent-deep/50" : "bg-quest text-surface-container-lowest border-2 border-quest-deep/50"} px-2 sm:px-3 md:px-4 py-1 sm:py-1.5 md:py-2 rounded-lg font-black text-xs sm:text-sm md:text-base flex items-center gap-1 sm:gap-1.5 flex-shrink-0`}>
-                    <span className="material-symbols-outlined text-sm sm:text-base md:text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
-                    {totalStars}
+                <div className={`${isRead ? "bg-accent text-surface-container-lowest border-2 border-accent-deep/50" : "bg-quest text-surface-container-lowest border-2 border-quest-deep/50"} px-2 xs:px-2.5 sm:px-3 md:px-4 py-1 sm:py-1.5 md:py-2 rounded-lg font-black text-xs sm:text-sm md:text-base flex items-center gap-1 sm:gap-1.5 flex-shrink-0 whitespace-nowrap`} aria-label={`${totalStars} of ${totalPossibleStars} stars collected`}>
+                    <span className="material-symbols-outlined text-sm sm:text-base md:text-lg shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
+                    <span className="flex items-baseline gap-1">
+                        <span>{totalStars}</span>
+                        <span className="opacity-70 font-bold text-[10px] xs:text-xs">of</span>
+                        <span>{totalPossibleStars}</span>
+                        <span className="hidden xs:inline opacity-80 font-bold text-[10px] xs:text-xs">stars</span>
+                    </span>
                 </div>
             </div>
 

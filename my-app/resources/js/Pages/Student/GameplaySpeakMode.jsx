@@ -175,13 +175,13 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true, wor
     const [coachLeaving, setCoachLeaving] = useState(false);
 
     useEffect(() => {
-        if (isTutorial && isMispronounced) {
+        if (isMispronounced) {
             setCoachLeaving(false);
             setCoachActive(true);
-            const t = setTimeout(() => setCoachActive(false), 1500);
+            const t = setTimeout(() => setCoachActive(false), isTutorial ? 1500 : 1200);
             return () => clearTimeout(t);
         }
-    }, [isTutorial, isMispronounced]);
+    }, [isMispronounced, isTutorial]);
 
     useEffect(() => {
         if (feedbackType === "correct" && coachActive) {
@@ -243,7 +243,7 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true, wor
                     footerText={coachActive ? null : (guideStep < GUIDE_STEPS.length - 1 ? "Tap here to continue →" : "Tap to finish!")}
                 />
             )}
-            {isTutorial && coachActive && bodyUrl && (
+            {coachActive && bodyUrl && (
                 <AvatarSpeechBubble
                     emoji="sentiment_very_satisfied"
                     title="NICE TRY!"
@@ -251,6 +251,7 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true, wor
                     bodyUrl={bodyUrl}
                     color="quest"
                     position="bottom-right"
+                    variant={isTutorial ? "full" : "mini"}
                     footerText={null}
                     className={coachLeaving ? "opacity-0 transition-opacity duration-300" : ""}
                 />

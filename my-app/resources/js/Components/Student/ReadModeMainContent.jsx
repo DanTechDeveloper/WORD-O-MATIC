@@ -144,7 +144,7 @@ const ReadModeMainContent = memo(function ReadModeMainContent({
 
                     <div
                         key={`${currentIndex}-${word.word}`}
-                        className="absolute flex flex-col items-center justify-center animate-holo-rise w-[92vw] sm:w-auto sm:max-w-[90vw] px-2 sm:px-4 left-1/2 sm:left-auto"
+                        className="absolute flex flex-col items-center justify-center animate-holo-rise w-auto max-w-[95vw] sm:max-w-[90vw] px-2 sm:px-4 left-1/2 sm:left-auto"
                         style={{
                             left: window.innerWidth < 640 ? "50%" : randomLeft,
                             transform: "translateX(-50%)",
@@ -187,7 +187,13 @@ const ReadModeMainContent = memo(function ReadModeMainContent({
                                 />
                             )}
                             <p
-                                className={`font-extrabold lg:font-black tracking-tight uppercase text-center opacity-100 blur-0 transition-all duration-500 whitespace-normal break-words [overflow-wrap:anywhere] max-w-[92vw] sm:max-w-[90vw] px-2 leading-none font-headline-xl text-4xl xs:text-5xl sm:text-6xl md:text-7xl lg:text-8xl ${
+                                className={`font-extrabold lg:font-black tracking-tight uppercase text-center opacity-100 blur-0 transition-all duration-500 whitespace-nowrap max-w-[95vw] sm:max-w-[90vw] px-2 leading-none font-headline-xl overflow-visible ${
+                                    chars.length > 12
+                                        ? "text-3xl xs:text-4xl sm:text-5xl md:text-5xl lg:text-6xl"
+                                        : chars.length > 8
+                                          ? "text-4xl xs:text-4xl sm:text-5xl md:text-6xl lg:text-7xl"
+                                          : "text-4xl xs:text-5xl sm:text-6xl md:text-7xl lg:text-8xl"
+                                } ${
                                     isMispronounced
                                         ? "inline-block text-rose-400 bg-slate-900/80 border-2 border-rose-500 rounded-xl py-2"
                                         : ""

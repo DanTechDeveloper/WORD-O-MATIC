@@ -22,7 +22,7 @@ const HEADLINES = {
         "FIRST TRY DONE, LET'S GO!",
         "EVERY WORD COUNTS!",
     ],
-    low: ["YOU GOT THIS!", "KEEP GOING!", "GOOD TRY — KEEP PRACTICING!"],
+    low: ["YOU GOT THIS!", "KEEP GOING!", "GOOD TRY! KEEP PRACTICING!"],
     mid: ["GREAT JOB!", "NICE WORK!", "KEEP IT UP!"],
     high: ["INCREDIBLE!", "OUTSTANDING!", "AMAZING!"],
 };
@@ -105,8 +105,8 @@ export default function GameResults({
                     </div>
                 )}
                 <div className="w-full max-w-[92vw] sm:max-w-lg mx-auto flex flex-col gap-6 sm:gap-8 animate-fade-in px-1 sm:px-0">
-                    <div className="text-center px-2 sm:px-0">
-                        <h1 className="text-4xl xs:text-5xl sm:text-6xl md:text-7xl font-black text-primary uppercase leading-tight break-words">
+                    <div className="text-center px-2 sm:px-0 max-w-[98vw] sm:max-w-[64ch] mx-auto overflow-visible">
+                        <h1 className="font-black text-primary uppercase leading-none tracking-tight whitespace-nowrap overflow-visible text-[clamp(1rem,5.2vw,2.8rem)] xs:text-[clamp(1.1rem,5vw,3rem)] sm:text-[clamp(1.5rem,4.5vw,3.5rem)] md:text-[clamp(2rem,4vw,4rem)]">
                             {deadlineHit ? "TIME'S UP!" : headline}
                         </h1>
                         <p className="text-lg font-bold text-on-surface-variant uppercase tracking-wider mt-2">
@@ -142,9 +142,9 @@ export default function GameResults({
                         </div>
                     )}
 
-                    <div className="text-center text-xl sm:text-2xl font-bold text-accent flex items-center justify-center gap-2">
+                    <div className="text-center font-bold text-accent flex items-center justify-center gap-1.5 sm:gap-2 whitespace-nowrap max-w-[96vw] overflow-visible mx-auto text-[clamp(0.75rem,3.8vw,1.25rem)] xs:text-[clamp(0.85rem,3.5vw,1.3rem)] sm:text-[clamp(0.875rem,3.2vw,1.4rem)] md:text-[clamp(1rem,2.2vw,1.5rem)]">
                         <span
-                            className="material-symbols-outlined text-2xl"
+                            className="material-symbols-outlined text-xl sm:text-2xl shrink-0"
                             style={{ fontVariationSettings: "'FILL' 1" }}
                         >
                             sentiment_very_satisfied
@@ -152,12 +152,12 @@ export default function GameResults({
                         {isPerfect
                             ? "Amazing!"
                             : accuracyPct >= 80
-                              ? "Outstanding — keep shining!"
+                              ? "Outstanding keep shining!"
                               : accuracyPct >= 60
                                 ? "Great progress!"
                                 : accuracyPct >= 40
-                                  ? "Good try — practice makes progress!"
-                                  : "Every try counts — keep going!"}
+                                  ? "Good try practice makes progress!"
+                                  : "Every try counts keep going!"}
                     </div>
 
                     {!deadlineHit && !isTutorial && nextBadge && (
