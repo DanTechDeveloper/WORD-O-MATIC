@@ -69,14 +69,18 @@ jobs:
 
       # ponytail: VCR via SECRETS (you put TEAM+TOKEN in SECRETS) — vars fallback in team param
       - name: Log in to VCR (OIDC, no long-lived token)
-        if: ${{ secrets.VERCEL_TEAM_ID != '' }}
+        if: env.VERCEL_TEAM_ID != ''
+        env:
+          VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }}
         uses: vercel/vcr-action/login@v1
         with:
-          team: ${{ secrets.VERCEL_TEAM_ID || vars.VERCEL_TEAM_ID }}
+          team: ${{ env.VERCEL_TEAM_ID }}
         continue-on-error: true
 
       - name: Prune VCR keep last 5 (unblock registry quota)
-        if: ${{ secrets.VERCEL_TEAM_ID != '' }}
+        if: env.VERCEL_TEAM_ID != ''
+        env:
+          VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }}
         continue-on-error: true
         run: |
           vercel vcr image ls app --project word-o-matic --format json > /tmp/vcr.json 2>&1 || { echo "No VCR images, skip"; cat /tmp/vcr.json; exit 0; }
@@ -103,10 +107,10 @@ jobs:
         if: github.event_name == 'workflow_dispatch'
         env:
           DB_CONNECTION: mysql
-          DB_HOST: ${{ secrets.AIVEN_DB_HOST || secrets.RAILWAY_DB_HOST || secrets.DB_HOST }}
-          DB_PORT: ${{ secrets.AIVEN_DB_PORT || secrets.RAILWAY_DB_PORT || secrets.DB_PORT }}
-          DB_DATABASE: ${{ secrets.AIVEN_DB_DATABASE || secrets.RAILWAY_DB_DATABASE || secrets.DB_DATABASE }}
-          DB_USERNAME: ${{ secrets.AIVEN_DB_USERNAME || secrets.RAILWAY_DB_USERNAME || secrets.DB_USERNAME }}
-          DB_PASSWORD: ${{ secrets.AIVEN_DB_PASSWORD || secrets.RAILWAY_DB_PASSWORD || secrets.DB_PASSWORD }}
+          DB_HOST: ${{ secrets.AIVEN_DB_HOST }}
+          DB_PORT: ${{ secrets.AIVEN_DB_PORT }}
+          DB_DATABASE: ${{ secrets.AIVEN_DB_DATABASE }}
+          DB_USERNAME: ${{ secrets.AIVEN_DB_USERNAME }}
+          DB_PASSWORD: ${{ secrets.AIVEN_DB_PASSWORD }}
         run: |
           php artisan migrate:fresh --seed --force
