@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { usePage, Link } from "@inertiajs/react";
 import Sidebar from "../../Components/Teacher/Sidebar";
 import DeadlineBanner from "@/Components/DeadlineBanner";
+import Toast from "@/Components/Shared/Toast";
 import Footer from "@/Components/Shared/Footer";
 
 export default function DashboardLayout({ children }) {
@@ -35,6 +36,15 @@ export default function DashboardLayout({ children }) {
                             msg: "No report deadline set",
                             href: "/teacher/reports",
                             icon: "event",
+                        },
+                    ]
+                  : []),
+              ...(!teacher.has_email
+                  ? [
+                        {
+                            msg: "Sender email not set — reports reply to system address",
+                            href: "/teacher/settings",
+                            icon: "mail",
                         },
                     ]
                   : []),
@@ -176,6 +186,7 @@ export default function DashboardLayout({ children }) {
                 />
                 {children}
             </main>
+            <Toast />
             <div className="fixed bottom-0 left-0 right-0 md:left-64 z-30 bg-background">
                 <Footer />
             </div>

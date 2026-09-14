@@ -311,7 +311,7 @@ class TeacherController extends Controller
             'parent_email' => $request->parent_email,
         ]);
 
-        return redirect()->back();
+        return redirect()->back()->with('success', 'Student added successfully.');
     }
 
     private function normalizeStudentRow(mixed $row): array
@@ -447,7 +447,7 @@ class TeacherController extends Controller
 
         WordModule::saveWithWords($request->all());
 
-        return redirect()->back();
+        return redirect()->back()->with('success', 'Word Blast module saved.');
     }
 
     public function paragraphModules()
@@ -476,7 +476,7 @@ class TeacherController extends Controller
 
         ParagraphModule::saveWithContent($request->all());
 
-        return redirect()->back();
+        return redirect()->back()->with('success', 'Story Quest module saved.');
     }
 
     public function leaderboards(Request $request)
@@ -634,5 +634,39 @@ class TeacherController extends Controller
         User::where('role', 'student')->findOrFail($id)->delete();
 
         return redirect()->back()->with('success', 'Student deleted successfully.');
+    }
+
+    public function settings(){
+        return Inertia::render('Teacher/Settings');
+    }
+
+    public function updateSender(Request $request){
+        $request->validate([
+            'email' => 'required|email|max:255',
+            'name' => 'required|string|max:255',
+        ]);
+
+        $user = $request->user();
+        $user->update([
+            'email' => strtolower(trim($request->email)),
+            'name' => trim($request->name),
+        ]);
+
+        return redirect()->back()->with('success', 'Sender identity updated.');
+    }
+
+    public function updatePassword(Request $request){
+        $request->validate([
+            'current_password' => 'required|string',
+            'password' => 'required|string|min:8|confirmed',
+        ]);
+
+        if (! Hash::check($request->current_password, $request->user()->password)) {
+            throw ValidationException::withMessages(['current_password' => 'Current password is incorrect.']);
+        }
+
+        $request->user()->update(['password' => Hash::make($request->password)]);
+
+        return redirect()->back()->with('success', 'Password updated.');
     }
 }

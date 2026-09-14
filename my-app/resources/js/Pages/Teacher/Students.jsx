@@ -3,6 +3,7 @@ import { Head, Link, router } from "@inertiajs/react";
 import { useRef, useState } from "react";
 import AddStudentModal from "@/Components/Teacher/AddStudentModal";
 import EditStudentModal from "@/Components/Teacher/EditStudentModal";
+import ConfirmDeleteModal from "@/Components/Teacher/ConfirmDeleteModal";
 
 const sortOptions = [
     { value: "risk", label: "Risk Level" },
@@ -37,6 +38,7 @@ export default function Students({ data, sections, filters, existingStudentIds }
 
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [editStudent, setEditStudent] = useState(null);
+    const [confirmStudent, setConfirmStudent] = useState(null);
     const [statusTab, setStatusTab] = useState(filters.status ?? "");
     const searchRef = useRef(null);
     const debounceRef = useRef(null);
@@ -322,21 +324,7 @@ export default function Students({ data, sections, filters, existingStudentIds }
                                                 Edit
                                             </button>
                                             <button
-                                                onClick={() => {
-                                                    if (
-                                                        window.confirm(
-                                                            `Delete ${student.fullName}? This cannot be undone.`,
-                                                        )
-                                                    ) {
-                                                        router.delete(
-                                                            `/teacher/students/${student.id}`,
-                                                            {
-                                                                preserveState: true,
-                                                                preserveScroll: true,
-                                                            },
-                                                        );
-                                                    }
-                                                }}
+                                                onClick={() => setConfirmStudent(student)}
                                                 className="bg-rose-600 text-white px-4 py-2 rounded-xl border-3 border-slate-950 shadow-[4px_4px_0_0_#7f1d1d] font-black uppercase italic text-xs tracking-tighter hover:translate-y-0.5 hover:shadow-[2px_2px_0_0_#7f1d1d] transition-all"
                                             >
                                                 Delete
@@ -474,21 +462,7 @@ export default function Students({ data, sections, filters, existingStudentIds }
                                                     Edit
                                                 </button>
                                                 <button
-                                                    onClick={() => {
-                                                        if (
-                                                            window.confirm(
-                                                                `Delete ${student.fullName}? This cannot be undone.`,
-                                                            )
-                                                        ) {
-                                                            router.delete(
-                                                                `/teacher/students/${student.id}`,
-                                                                {
-                                                                    preserveState: true,
-                                                                    preserveScroll: true,
-                                                                },
-                                                            );
-                                                        }
-                                                    }}
+                                                    onClick={() => setConfirmStudent(student)}
                                                     className="bg-rose-600 text-white px-6 py-3 rounded-2xl border-4 border-slate-950 shadow-[6px_6px_0_0_#7f1d1d] font-black uppercase italic text-xs tracking-tighter hover:translate-y-0.5 hover:shadow-[3px_3px_0_0_#7f1d1d] transition-all flex items-center justify-center gap-2"
                                                 >
                                                     Delete
@@ -571,6 +545,16 @@ export default function Students({ data, sections, filters, existingStudentIds }
                 isOpen={!!editStudent}
                 onClose={() => setEditStudent(null)}
                 student={editStudent}
+            />
+            <ConfirmDeleteModal
+                isOpen={!!confirmStudent}
+                student={confirmStudent}
+                onClose={() => setConfirmStudent(null)}
+                onConfirm={() => {
+                    const id = confirmStudent?.id;
+                    setConfirmStudent(null);
+                    if (id) router.delete(`/teacher/students/${id}`, { preserveState: true, preserveScroll: true });
+                }}
             />
         </>
     );

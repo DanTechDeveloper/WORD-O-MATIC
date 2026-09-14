@@ -90,6 +90,10 @@ class ReportController extends Controller
             return redirect()->back()->with('error', 'Report deadline has not yet been reached.')->withErrors(['Report deadline has not yet been reached.']);
         }
 
+        if ($deadlineTs->isPast() && empty($request->user()->email)) {
+            return redirect()->back()->with('error', 'Set your sender email in Settings before sending reports.')->withErrors(['Set your sender email in Settings before sending reports.']);
+        }
+
         $students = User::with('student')
             ->whereIn('id', $request->student_ids)
             ->get();
@@ -130,6 +134,8 @@ class ReportController extends Controller
                 'wordAttempts' => $this->reportService->trainingAttemptsFrom($wbCurriculum),
                 'paragraphWordAttempts' => $this->reportService->trainingSentenceAttemptsFrom($sqCurriculum),
                 'reported_at' => $deadlineTs->format('F j, Y \a\t g:i A'),
+                'teacher_email' => $request->user()->email ?? config('mail.from.address'),
+                'teacher_name' => $request->user()->name ?? config('mail.from.name'),
             ]));
 
             $user->student->update(['report_sent_at' => now()]);
@@ -156,7 +162,7 @@ class ReportController extends Controller
                 : null,
         ]);
 
-        return redirect()->back();
+        return redirect()->back()->with('success', 'Parent email saved.');
     }
 
     public function exportReports(Request $request)

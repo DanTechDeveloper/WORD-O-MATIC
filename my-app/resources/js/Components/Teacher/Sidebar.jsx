@@ -30,6 +30,7 @@ export default function Sidebar({ isOpen, onClose }) {
             icon: "Trophy",
         },
         { label: "Reports", href: "/teacher/reports", icon: "assessment" },
+        { label: "Settings", href: "/teacher/settings", icon: "settings" }, 
     ];
 
     return (
