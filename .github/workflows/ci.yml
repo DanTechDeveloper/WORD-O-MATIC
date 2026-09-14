@@ -67,16 +67,16 @@ jobs:
       - name: Run JS unit tests
         run: npx vitest run
 
-      # ponytail: auto-prune VCR keep last 5 via OIDC (no vcp_/vercel_ long-lived) — vercel.com/docs/container-registry/github-actions
+      # ponytail: VCR via SECRETS (you put TEAM+TOKEN in SECRETS) — vars fallback in team param
       - name: Log in to VCR (OIDC, no long-lived token)
-        if: vars.VERCEL_TEAM_ID != '' || secrets.VERCEL_TEAM_ID != ''
+        if: ${{ secrets.VERCEL_TEAM_ID != '' }}
         uses: vercel/vcr-action/login@v1
         with:
-          team: ${{ vars.VERCEL_TEAM_ID || secrets.VERCEL_TEAM_ID }}
+          team: ${{ secrets.VERCEL_TEAM_ID || vars.VERCEL_TEAM_ID }}
         continue-on-error: true
 
       - name: Prune VCR keep last 5 (unblock registry quota)
-        if: vars.VERCEL_TEAM_ID != '' || secrets.VERCEL_TEAM_ID != ''
+        if: ${{ secrets.VERCEL_TEAM_ID != '' }}
         continue-on-error: true
         run: |
           vercel vcr image ls app --project word-o-matic --format json > /tmp/vcr.json 2>&1 || { echo "No VCR images, skip"; cat /tmp/vcr.json; exit 0; }
