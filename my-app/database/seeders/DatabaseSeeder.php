@@ -12,7 +12,7 @@ class DatabaseSeeder extends Seeder
         User::create([
             'name' => 'Admin Teacher',
             'username' => 'admin',
-            'email' => 'teacher@wordomatic.edu',
+            'email' => null,
             'password' => bcrypt('password'),
             'role' => 'teacher',
         ]);

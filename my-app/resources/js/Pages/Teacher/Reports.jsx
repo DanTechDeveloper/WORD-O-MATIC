@@ -550,18 +550,26 @@ export default function Reports({ grouped, flash, deadline, errors }) {
             {renderDeadlineSetter()}
 
             {isDeadlineSaved && isPastDeadline && (
-                <div className="mb-8 flex gap-4">
-                    <a
-                        href={route("teacher.reports.export")}
-                        target="_blank"
-                        rel="noopener"
-                        className="px-8 py-4 rounded-xl font-black uppercase italic text-sm transition-all flex items-center gap-2 bg-accent border-4 border-slate-950 text-slate-950 hover:translate-y-1 hover:shadow-[4px_4px_0_0_#3f6212]"
-                    >
-                        <span className="material-symbols-outlined text-lg">
-                            download
-                        </span>
-                        Export to Excel
-                    </a>
+                <div className="mb-8">
+                    <div className="flex gap-4">
+                        <a
+                            href={route("teacher.reports.export")}
+                            target="_blank"
+                            rel="noopener"
+                            title={hasTeacherEmail ? "Download class report" : "Export works without sender email only Send needs email"}
+                            className="px-8 py-4 rounded-xl font-black uppercase italic text-sm transition-all flex items-center gap-2 bg-accent border-4 border-slate-950 text-slate-950 hover:translate-y-1 hover:shadow-[4px_4px_0_0_#3f6212]"
+                        >
+                            <span className="material-symbols-outlined text-lg">
+                                download
+                            </span>
+                            Export to Excel
+                        </a>
+                    </div>
+                    {!hasTeacherEmail && (
+                        <p className="text-on-surface-variant/60 text-xs font-bold mt-2">
+                            Export works without sender email only <span className="text-white">Send Reports</span> needs it. <Link href="/teacher/settings" className="underline text-accent hover:text-accent-hover">Set email in Settings</Link> for replies.
+                        </p>
+                    )}
                 </div>
             )}
 
