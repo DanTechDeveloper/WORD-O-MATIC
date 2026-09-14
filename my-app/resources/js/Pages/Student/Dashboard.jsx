@@ -57,18 +57,21 @@ export default function Dashboard({
     const bodyUrl = avatarUrl?.replace("/head.png", "/body.png");
     const newBadges = flash?.new_badges ?? [];
     const [showTutorialCongrats, setShowTutorialCongrats] = useState(false);
+    const [badgeFlowDone, setBadgeFlowDone] = useState(false);
     const hasTutorialBadge = newBadges.some(
         (b) => b?.slug === "tutorial-complete" || b?.name === "Tutorial Complete"
     );
 
     // ponytail: tutorial-complete flash is consumed on GameResults (L0→results), so trigger congrats via persistent tutorialComplete prop
+    // T1: per-user key so PROFILE PIONEER fix doesn't permanently block YOU DID IT after SQ tutorial
     useEffect(() => {
         if (tutorialComplete && bodyUrl && !showTutorialCongrats && newBadges.length === 0) {
             const justCompleted = wordTutorialDone && speakTutorialDone;
-            const wasSeen = typeof window !== "undefined" && sessionStorage.getItem("tutorialCongratsSeen");
-            if (justCompleted && !wasSeen) {
+            const key = `tutorialCongratsSeen:${auth.user.id}`;
+            const wasSeen = typeof window !== "undefined" && sessionStorage.getItem(key);
+            if (justCompleted && wasSeen !== "1") {
                 setShowTutorialCongrats(true);
-                sessionStorage.setItem("tutorialCongratsSeen", "1");
+                sessionStorage.setItem(key, "1");
             }
         }
     }, [tutorialComplete, wordTutorialDone, speakTutorialDone, bodyUrl, showTutorialCongrats, newBadges.length]);
@@ -123,12 +126,18 @@ export default function Dashboard({
             <Head title="Pick Your Game — Word-O-Matic">
                 <meta name="description" content="Pick your game — Word Blast or Story Quest — on Word-O-Matic." />
             </Head>
-            {newBadges.length > 0 && (
+            {newBadges.length > 0 && !badgeFlowDone && (
                 <BadgeUnlockFlow
                     badges={newBadges}
                     markNewBadge={false}
                     onDone={() => {
-                        if (hasTutorialBadge) setShowTutorialCongrats(true);
+                        setBadgeFlowDone(true);
+                        const shouldCongrats = hasTutorialBadge || (tutorialComplete && wordTutorialDone && speakTutorialDone);
+                        if (shouldCongrats) {
+                            setShowTutorialCongrats(true);
+                            const key = `tutorialCongratsSeen:${auth.user.id}`;
+                            sessionStorage.setItem(key, "1");
+                        }
                     }}
                 />
             )}
@@ -166,7 +175,8 @@ export default function Dashboard({
                         bodyUrl={bodyUrl}
                         color="accent"
                         onClick={() => {
-                            sessionStorage.setItem("tutorialCongratsSeen", "1");
+                            const key = `tutorialCongratsSeen:${auth.user.id}`;
+                            sessionStorage.setItem(key, "1");
                             setShowTutorialCongrats(false);
                         }}
                         position="bottom-right"

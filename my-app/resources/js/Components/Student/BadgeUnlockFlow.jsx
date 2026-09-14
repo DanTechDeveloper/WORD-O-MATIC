@@ -19,6 +19,7 @@ export default function BadgeUnlockFlow({ badges = [], onDone }) {
                 if (isLast) {
                     // ponytail: hasNewBadge dot removed — keep modal flow, no localStorage
                     onDone?.();
+                    return;
                 }
                 setIndex(index + 1);
             }}

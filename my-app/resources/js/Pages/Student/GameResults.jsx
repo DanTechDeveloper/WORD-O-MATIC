@@ -59,8 +59,13 @@ export default function GameResults({
     const { flash } = usePage().props;
     const isDeadlineClosed = useDeadlineStatus();
     const newBadgeSlugs = flash?.new_badges?.map((b) => b.slug) ?? [];
-    const newBadges =
-        badgeProgress?.filter((b) => newBadgeSlugs.includes(b.slug)) ?? [];
+    const rawFlashBadges = flash?.new_badges ?? [];
+    // ponytail: tutorial-complete is metric=action — include via badgeProgress now, fallback to raw flash so SQ tutorial Continue triggers modal
+    const newBadges = isTutorial
+        ? (badgeProgress?.filter((b) => newBadgeSlugs.includes(b.slug))?.length
+            ? badgeProgress.filter((b) => newBadgeSlugs.includes(b.slug))
+            : rawFlashBadges)
+        : (badgeProgress?.filter((b) => newBadgeSlugs.includes(b.slug)) ?? []);
     const [badgeFlowDone, setBadgeFlowDone] = useState(false);
     const [showBadge, setShowBadge] = useState(false);
 

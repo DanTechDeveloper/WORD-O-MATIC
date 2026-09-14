@@ -25,6 +25,9 @@ Route::get('/sitemap.xml', function () {
 //   Route::inertia("/", "Testing/Microphone");
 
 Route::middleware(['auth'])->group(function () {
+    Route::get('/auth/check', function (Illuminate\Http\Request $request) {
+        return response()->json(['role' => $request->user()->role]);
+    })->name('auth.check');
     Route::post('/logout', [UserController::class, 'logout'])->name('logout');
 
     Route::prefix('teacher')
@@ -83,4 +86,9 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/results/{id}', [StudentController::class, 'results'])->name('results');
             Route::get('/deepgram-token', [StudentController::class, 'deepgramToken'])->name('deepgramToken');
         });
+});
+
+// ponytail: fallback renders 404 within web middleware so auth()->user()/request()->user() is available — fixes false Go to login
+Route::fallback(function (Illuminate\Http\Request $request) {
+    return response()->view('errors.404', [], 404);
 });

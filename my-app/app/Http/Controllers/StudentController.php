@@ -131,8 +131,13 @@ class StudentController extends Controller
             $badge->threshold = $badge->threshold_score;
 
             if ($badge->threshold_score !== null) {
+                $tutIds = array_filter([
+                    WordModule::where('is_tutorial', true)->value('id'),
+                    ParagraphModule::where('is_tutorial', true)->value('id'),
+                ]);
                 $sessionQuery = GameSession::where('user_id', $user->id)
-                    ->where('is_deadline_hit', false);
+                    ->where('is_deadline_hit', false)
+                    ->when($tutIds, fn ($q) => $q->whereNotIn('module_id', $tutIds));
 
                 $badge->current_value = match ($badge->metric) {
                     'total_points' => $student ? $student->points : 0,
@@ -403,7 +408,8 @@ class StudentController extends Controller
             $totalPossible = $module->words()->count();
             $wordsSmashed = min($request->words_smashed, $totalPossible);
             $accuracy = $totalPossible > 0 ? (int) round(min(($wordsSmashed / $totalPossible) * 100, 100)) : 0;
-            $session = GameSession::logSession($user->id, $module->id, $type, $wordsSmashed, $accuracy, $request->streak ?? 0, false);
+            // ponytail: tutorial streak never counts toward ON FIRE — see BadgeService::bestSessionMetric
+            $session = GameSession::logSession($user->id, $module->id, $type, $wordsSmashed, $accuracy, 0, false);
             if ($type === 'word') {
                 $this->progressService->updateWordProgress($user->student, $module, 0, $request->words_processed, 0, isTutorial: true);
             } else {
