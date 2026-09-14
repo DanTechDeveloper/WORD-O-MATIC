@@ -54,6 +54,9 @@ class ProgressService
             $accColumn, $levelColumn, $progressColumn, $isTutorial,
         ) {
             StudentProfile::where('id', $student->id)->lockForUpdate()->first();
+            // ponytail: fetch tut ids once per transaction — was 5 SELECTs per finishRound
+            $tutWordIdLocal = WordModule::where('is_tutorial', true)->value('id');
+            $tutParaIdLocal = ParagraphModule::where('is_tutorial', true)->value('id');
 
             $wordsProcessed = max(0, $wordsProcessed);
             $wordsSmashed = max(0, min($wordsSmashed, $wordsProcessed));
@@ -86,9 +89,9 @@ class ProgressService
             // is reflected as the starting level (mirrors CurriculumSeeder's
             // level-0 tutorial module). Non-tutorial behavior is unchanged below.
             if (! $isTutorial && $isNewBest) {
-                $tutorialModule = $moduleClass::where('is_tutorial', true)->first();
+                $tutId = $moduleClass === WordModule::class ? $tutWordIdLocal : $tutParaIdLocal;
                 $avgAccuracy = $progressClass::where('user_id', $student->user_id)
-                    ->when($tutorialModule, fn ($q) => $q->where($moduleKey, '!=', $tutorialModule->id))
+                    ->when($tutId, fn ($q) => $q->where($moduleKey, '!=', $tutId))
                     ->avg('accuracy');
 
                 // A tutorial replay as the very first play leaves no non-tutorial
@@ -110,8 +113,8 @@ class ProgressService
                 // as earned points. Without these exclusions, a post-onboarding
                 // tutorial replay inflates students.points while the dashboard
                 // (which excludes tutorial modules) stays flat — silent drift.
-                $tutWordId = WordModule::where('is_tutorial', true)->value('id');
-                $tutParaId = ParagraphModule::where('is_tutorial', true)->value('id');
+                $tutWordId = $tutWordIdLocal;
+                $tutParaId = $tutParaIdLocal;
 
                 $student->update([
                     $levelColumn => $nextLevel,
