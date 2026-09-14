@@ -2,11 +2,13 @@
 
 import fs from "fs";
 
-const src = fs.readFileSync("resources/js/Components/Teacher/ConfirmDeleteModal.jsx", "utf8");
+const src = fs.readFileSync("resources/js/Components/Teacher/ConfirmModal.jsx", "utf8");
+const wrapper = fs.readFileSync("resources/js/Components/Teacher/ConfirmDeleteModal.jsx", "utf8");
 
 describe("ConfirmDeleteModal", () => {
     test("returns null when not open or student null", () => {
-        expect(src).toContain("if (!isOpen || !student) return null");
+        expect(src).toContain("if (!isOpen || !hasContent) return null");
+        expect(wrapper).toContain("ConfirmModal");
     });
     test("renders dialog with role=dialog and aria-modal", () => {
         expect(src).toContain('role="dialog"');

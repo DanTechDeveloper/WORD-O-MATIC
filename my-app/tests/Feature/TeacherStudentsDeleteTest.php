@@ -29,7 +29,7 @@ class TeacherStudentsDeleteTest extends TestCase
         $target = User::factory()->create(['role' => 'student']);
         StudentProfile::factory()->for($target)->create();
 
-        $this->actingAs($student)->delete(route('teacher.students.destroy', $target))->assertForbidden();
+        $this->actingAs($student)->delete(route('teacher.students.destroy', $target))->assertRedirect(route('student.dashboard'));
         $response = $this->delete(route('teacher.students.destroy', $target));
         $this->assertTrue(in_array($response->status(), [302, 303, 401, 403], true));
     }

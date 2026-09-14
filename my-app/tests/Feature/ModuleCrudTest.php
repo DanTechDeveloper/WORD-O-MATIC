@@ -255,7 +255,7 @@ class ModuleCrudTest extends TestCase
 
         $response = $this->actingAs($student)->get('/teacher/wordModules');
 
-        $response->assertForbidden();
+        $response->assertRedirect(route('student.dashboard'));
     }
 
     public function test_update_word_module_allowed_before_deadline(): void
@@ -526,7 +526,7 @@ class ModuleCrudTest extends TestCase
     public function test_guest_cannot_access_word_modules(): void
     {
         $response = $this->get('/teacher/wordModules');
-        $response->assertRedirect('/');
+        $response->assertRedirect(route('teacher.login'));
     }
 
     public function test_teacher_cannot_update_word_module_after_deadline(): void

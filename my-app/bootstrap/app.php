@@ -26,6 +26,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => EnsureUserRole::class,
         ]);
 
+        $middleware->redirectGuestsTo(function (\Illuminate\Http\Request $request) {
+            return $request->is('teacher/*') ? route('teacher.login') : route('login');
+        });
+
         $middleware->redirectUsersTo(function () {
             $user = auth()->user();
             if ($user?->role === 'teacher') {

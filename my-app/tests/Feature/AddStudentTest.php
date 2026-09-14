@@ -180,7 +180,7 @@ class AddStudentTest extends TestCase
 
         $response = $this->actingAs($student)->post('/teacher/addStudent', $this->validPayload());
 
-        $response->assertForbidden();
+        $response->assertRedirect(route('student.dashboard'));
         $this->assertEquals(0, User::where('role', 'student')->where('id', '!=', $student->id)->count());
     }
 

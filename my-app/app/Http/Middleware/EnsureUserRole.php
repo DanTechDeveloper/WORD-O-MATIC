@@ -10,8 +10,28 @@ class EnsureUserRole
 {
     public function handle(Request $request, Closure $next, string $role): Response
     {
-        if ($request->user()->role !== $role) {
-            abort(403, 'Unauthorized access.');
+        $user = $request->user();
+
+        if (! $user) {
+            if ($request->expectsJson()) {
+                abort(403, 'Unauthorized.');
+            }
+
+            return $request->header('X-Inertia')
+                ? \Inertia\Inertia::location(route($role === 'teacher' ? 'teacher.login' : 'login'))
+                : redirect()->route($role === 'teacher' ? 'teacher.login' : 'login');
+        }
+
+        if ($user->role !== $role) {
+            if ($request->expectsJson()) {
+                abort(403, 'Unauthorized.');
+            }
+
+            $target = $user->role === 'teacher' ? route('teacher.dashboard') : route('student.dashboard');
+
+            return $request->header('X-Inertia')
+                ? \Inertia\Inertia::location($target)
+                : redirect($target);
         }
 
         return $next($request);
