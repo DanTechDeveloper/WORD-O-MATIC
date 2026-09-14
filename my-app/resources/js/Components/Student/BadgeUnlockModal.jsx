@@ -46,11 +46,19 @@ export default function BadgeUnlockModal({
                 .badge-pop { animation: badge-pop 0.6s cubic-bezier(0.22, 1, 0.36, 1) both; }
             `}</style>
 
+            {/* ponytail: arcade wash — lime center + quest corner, capped <0.2 per DESIGN.md §6 */}
             <div
                 className="absolute inset-0 pointer-events-none"
                 style={{
                     background:
-                        "radial-gradient(circle at center, rgba(163,230,53,0.14), transparent 60%)",
+                        "radial-gradient(circle at center, rgba(163,230,53,0.18), transparent 62%)",
+                }}
+            />
+            <div
+                className="absolute inset-0 pointer-events-none opacity-60"
+                style={{
+                    background:
+                        "radial-gradient(circle at 75% 20%, rgba(56,189,248,0.14), transparent 45%)",
                 }}
             />
 

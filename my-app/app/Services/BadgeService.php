@@ -101,44 +101,23 @@ class BadgeService
                 default => 0,
             };
 
-            // ponytail: tier only for streak/accuracy — prevents 10/10 6-badge burst, points/completion award all
-            if (in_array($metric, ['streak', 'accuracy'])) {
-                $winner = $group->filter(fn ($b) => $this->meetsThreshold($currentValue, $b->threshold_score))
-                    ->sortByDesc('threshold_score')
-                    ->first();
-                if (! $winner) {
+            // ponytail: cumulative — award every threshold <= currentValue so 7/5 can't stay locked when 7/7 just earned
+            foreach ($group->sortBy('threshold_score') as $badge) {
+                if (! $this->meetsThreshold($currentValue, $badge->threshold_score)) {
                     continue;
                 }
-                $user->badges()->attach($winner->id, [
+                $user->badges()->attach($badge->id, [
                     'earned_at' => now(),
                     'progress' => $currentValue,
                     'status' => 'earned',
                     'unlocked_session_id' => null,
                 ]);
                 $awarded[] = [
-                    'name' => $winner->name,
-                    'description' => $winner->description,
-                    'slug' => $winner->slug,
-                    'icon' => $winner->icon,
+                    'name' => $badge->name,
+                    'description' => $badge->description,
+                    'slug' => $badge->slug,
+                    'icon' => $badge->icon,
                 ];
-            } else {
-                foreach ($group as $badge) {
-                    if (! $this->meetsThreshold($currentValue, $badge->threshold_score)) {
-                        continue;
-                    }
-                    $user->badges()->attach($badge->id, [
-                        'earned_at' => now(),
-                        'progress' => $currentValue,
-                        'status' => 'earned',
-                        'unlocked_session_id' => null,
-                    ]);
-                    $awarded[] = [
-                        'name' => $badge->name,
-                        'description' => $badge->description,
-                        'slug' => $badge->slug,
-                        'icon' => $badge->icon,
-                    ];
-                }
             }
         }
 
@@ -176,34 +155,18 @@ class BadgeService
                 default => 0,
             };
 
-            if (in_array($metric, ['streak', 'accuracy'])) {
-                // ponytail: tier — only highest per metric per round
-                $winner = $group->filter(fn ($b) => $this->meetsThreshold($currentValue, $b->threshold_score))
-                    ->sortByDesc('threshold_score')
-                    ->first();
-                if (! $winner) {
+            // ponytail: cumulative — same as checkAllEligibleBadges, prevents 7/5 locked sibling
+            foreach ($group->sortBy('threshold_score') as $badge) {
+                if (! $this->meetsThreshold($currentValue, $badge->threshold_score)) {
                     continue;
                 }
-                $user->badges()->attach($winner->id, [
+                $user->badges()->attach($badge->id, [
                     'earned_at' => now(),
                     'progress' => $currentValue,
                     'status' => 'earned',
                     'unlocked_session_id' => $sessionId,
                 ]);
-                $awarded[] = $winner;
-            } else {
-                foreach ($group as $badge) {
-                    if (! $this->meetsThreshold($currentValue, $badge->threshold_score)) {
-                        continue;
-                    }
-                    $user->badges()->attach($badge->id, [
-                        'earned_at' => now(),
-                        'progress' => $currentValue,
-                        'status' => 'earned',
-                        'unlocked_session_id' => $sessionId,
-                    ]);
-                    $awarded[] = $badge;
-                }
+                $awarded[] = $badge;
             }
         }
 

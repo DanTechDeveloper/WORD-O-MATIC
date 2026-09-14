@@ -87,8 +87,12 @@ class UserController extends Controller
         $avatar = $user->student?->avatar;
         $hasAvatar = $avatar && ! in_array($avatar, ['/images/boy.svg', '/images/girl.svg']);
 
-        if ($hasAvatar) {
-            $this->badgeService->checkAllEligibleBadges($user);
+        $awarded = $hasAvatar ? $this->badgeService->checkAllEligibleBadges($user) : [];
+
+        if (! empty($awarded)) {
+            return $hasAvatar
+                ? redirect()->route('student.dashboard')->with('new_badges', $awarded)
+                : redirect()->route('student.splashScreen')->with('new_badges', $awarded);
         }
 
         return $hasAvatar

@@ -44,6 +44,16 @@ export default function AvatarSpeechBubble({
 
     return (
         <div className={`${positionClass} ${className}`}>
+            {/* ponytail: arcade wash behind bubble+avatar — bg + lime radial, same technique as BadgeUnlockModal */}
+            {position !== "center" && (
+                <div
+                    className="pointer-events-none absolute inset-0 -z-10 bg-background"
+                    aria-hidden="true"
+                    style={{
+                        background: "radial-gradient(ellipse at 50% 85%, rgba(163,230,53,0.12), transparent 65%)",
+                    }}
+                />
+            )}
             <button
                 onClick={onClick}
                 className={`bg-surface-container-high rounded-3xl px-6 sm:px-10 py-4 sm:py-6 shadow-[6px_6px_0_0_#7000ff] border-2 ${accent.border} min-w-[280px] sm:min-w-[300px] max-w-[92vw] sm:max-w-[440px] cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-transform duration-150 text-center animate-fade-in motion-reduce:transition-none`}
@@ -65,7 +75,7 @@ export default function AvatarSpeechBubble({
                 <img
                     src={bodyUrl}
                     alt="Your avatar guide"
-                    className={`w-32 xs:w-40 sm:w-48 h-auto md:w-64 lg:w-80 object-contain motion-reduce:animate-none`}
+                    className={`w-32 xs:w-40 sm:w-48 h-auto md:w-64 lg:w-80 object-contain animate-bounce-slow motion-reduce:animate-none`}
                     style={{ filter: "drop-shadow(0 0 20px rgba(112,0,255,0.2))" }}
                 />
             )}

@@ -302,8 +302,7 @@ class BadgeTest extends TestCase
         return [$user, $user->student];
     }
 
-    // ponytail: pins current level-1 first-play burst (see docs/CAVEATS.md H4).
-    // Expect this to turn red when min_level tiering ships.
+    // ponytail: cumulative — 10/10 now awards every tier <= value so 7/5 can't stay locked
     public function test_perfect_first_level_awards_expected_badge_set(): void
     {
         $this->seedBadges();
@@ -330,9 +329,9 @@ class BadgeTest extends TestCase
         $slugs = collect($awarded)->map(fn ($b) => $b->slug)->sort()->values()->all();
 
         $this->assertSame(
-            ['first-steps', 'perfect-round', 'unstoppable'],
+            ['blazing-streak', 'clear-speaker', 'first-steps', 'on-fire', 'perfect-round', 'unstoppable'],
             $this->normalize($slugs),
-            'A perfect 10/10 first level should award the highest tier per metric (ponytail burst fix).'
+            'A perfect 10/10 first level should award every tier <= value (cumulative fix for 7/5 locked).'
         );
     }
 
@@ -359,8 +358,8 @@ class BadgeTest extends TestCase
         $badgeService = new BadgeService;
         $awarded = $badgeService->checkGameplayBadges($user, $session->id, 90.0);
 
-        $this->assertCount(3, $awarded);
-        $this->assertFalse($this->hasBadge($user, 'on-fire'));
+        $this->assertCount(4, $awarded);
+        $this->assertTrue($this->hasBadge($user, 'on-fire'));
         $this->assertTrue($this->hasBadge($user, 'blazing-streak'));
         $this->assertTrue($this->hasBadge($user, 'clear-speaker'));
         $this->assertTrue($this->hasBadge($user, 'first-steps'));
@@ -499,7 +498,7 @@ class BadgeTest extends TestCase
 
         (new BadgeService)->checkAllEligibleBadges($user);
 
-        $this->assertFalse($this->hasBadge($user, 'on-fire'));
+        $this->assertTrue($this->hasBadge($user, 'on-fire'));
         $this->assertTrue($this->hasBadge($user, 'blazing-streak'));
         $this->assertFalse($this->hasBadge($user, 'unstoppable'));
     }
@@ -699,7 +698,7 @@ class BadgeTest extends TestCase
 
         (new BadgeService)->checkGameplayBadges($user, $session->id, 20.0);
 
-        $this->assertFalse($this->hasBadge($user, 'on-fire'));
+        $this->assertTrue($this->hasBadge($user, 'on-fire'));
         $this->assertTrue($this->hasBadge($user, 'blazing-streak'));
         $this->assertFalse($this->hasBadge($user, 'unstoppable'));
     }
