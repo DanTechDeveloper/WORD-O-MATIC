@@ -76,7 +76,11 @@ export default function DashboardLayout({ children }) {
                 setShowNotifs(false);
         };
         document.addEventListener("mousedown", handleClick);
-        return () => document.removeEventListener("mousedown", handleClick);
+        document.addEventListener("touchstart", handleClick, { passive: true });
+        return () => {
+            document.removeEventListener("mousedown", handleClick);
+            document.removeEventListener("touchstart", handleClick);
+        };
     }, []);
 
     return (
@@ -128,47 +132,54 @@ export default function DashboardLayout({ children }) {
                                 )}
                             </button>
                             {showNotifs && (
-                                <div className="fixed sm:absolute top-16 sm:top-full inset-x-4 sm:inset-x-auto sm:left-auto sm:right-0 mt-0 sm:mt-2 w-auto sm:w-80 md:w-96 max-w-none sm:max-w-[90vw] max-h-[60vh] sm:max-h-[65vh] md:max-h-[70vh] overflow-y-auto bg-surface-container-high border-2 border-outline/30 rounded-xl shadow-[4px_4px_0_0_#1e1b4b] z-50">
-                                    <div className="p-3 sm:p-4 border-b-2 border-outline/40">
-                                        <p className="font-black text-sm text-on-surface uppercase tracking-widest">
-                                            Alerts
-                                        </p>
-                                    </div>
-                                    {alerts.length === 0 ? (
-                                        <div className="p-4 sm:p-6 text-center text-on-surface-variant text-sm font-bold">
-                                            All good!
+                                <>
+                                    <div
+                                        className="fixed inset-0 bg-background/60 backdrop-blur-sm z-40 md:hidden"
+                                        onClick={() => setShowNotifs(false)}
+                                        aria-hidden="true"
+                                    />
+                                    <div className="absolute top-full right-2 sm:right-0 mt-2 w-[calc(100vw-16px)] max-w-[360px] sm:w-[380px] max-h-[min(60vh,420px)] sm:max-h-[65vh] overflow-y-auto bg-surface-container-high border-2 border-outline/30 rounded-xl shadow-[4px_4px_0_0_#1e1b4b] z-50">
+                                        <div className="p-3 sm:p-4 border-b-2 border-outline/40">
+                                            <p className="font-black text-sm text-on-surface uppercase tracking-widest">
+                                                Alerts
+                                            </p>
                                         </div>
-                                    ) : (
-                                        <div className="divide-y divide-outline/30">
-                                            {alerts.map((a, i) => (
-                                                <Link
-                                                    key={i}
-                                                    href={a.href}
-                                                     className="flex items-center gap-2 sm:gap-3 p-3 sm:p-4 hover:bg-surface-container-low/60 transition-colors"
-                                                    onClick={() =>
-                                                        setShowNotifs(false)
-                                                    }
-                                                >
-                                                    <span className="material-symbols-outlined text-secondary-container">
-                                                        {a.icon}
-                                                    </span>
-                                                    <p className="text-sm font-bold text-on-surface-variant">
-                                                        {a.msg}
-                                                    </p>
-                                                </Link>
-                                            ))}
+                                        {alerts.length === 0 ? (
+                                            <div className="p-4 sm:p-6 text-center text-on-surface-variant text-sm font-bold">
+                                                All good!
+                                            </div>
+                                        ) : (
+                                            <div className="divide-y divide-outline/30">
+                                                {alerts.map((a, i) => (
+                                                    <Link
+                                                        key={i}
+                                                        href={a.href}
+                                                        className="flex items-center gap-2 sm:gap-3 p-3 sm:p-4 min-h-[48px] hover:bg-surface-container-low/60 transition-colors"
+                                                        onClick={() =>
+                                                            setShowNotifs(false)
+                                                        }
+                                                    >
+                                                        <span className="material-symbols-outlined text-secondary-container text-[20px] sm:text-[24px] shrink-0">
+                                                            {a.icon}
+                                                        </span>
+                                                        <p className="text-[13px] sm:text-sm font-bold text-on-surface-variant whitespace-normal break-words [overflow-wrap:anywhere] leading-tight min-w-0 flex-1">
+                                                            {a.msg}
+                                                        </p>
+                                                    </Link>
+                                                ))}
+                                            </div>
+                                        )}
+                                        <div className="p-3 border-t-2 border-outline/40 text-center">
+                                            <Link
+                                                href="/teacher/reports"
+                                                className="text-xs font-bold text-primary hover:text-primary-fixed uppercase tracking-widest min-h-[40px] flex items-center justify-center"
+                                                onClick={() => setShowNotifs(false)}
+                                            >
+                                                View All
+                                            </Link>
                                         </div>
-                                    )}
-                                    <div className="p-3 border-t-2 border-outline/40 text-center">
-                                        <Link
-                                            href="/teacher/reports"
-                                            className="text-xs font-bold text-primary hover:text-primary-fixed uppercase tracking-widest"
-                                            onClick={() => setShowNotifs(false)}
-                                        >
-                                            View All
-                                        </Link>
                                     </div>
-                                </div>
+                                </>
                             )}
                         </div>
                     </div>
