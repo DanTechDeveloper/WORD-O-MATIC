@@ -486,22 +486,28 @@ class TeacherController extends Controller
 
         $allStudents = StudentProfile::join('users', 'users.id', '=', 'students.user_id')
             ->where('users.role', 'student')
-            ->select('students.user_id','users.name','users.student_id','students.section','students.points','students.wordBlastAcc','students.storyQuestAcc','students.avatar','students.read_level','students.speak_level','students.status')
+            ->select('students.user_id', 'users.name', 'users.student_id', 'students.section', 'students.points', 'students.wordBlastAcc', 'students.storyQuestAcc', 'students.avatar', 'students.read_level', 'students.speak_level', 'students.status')
             ->get()->map(function ($s) {
                 $fa = ($s->wordBlastAcc ?? 0) == 0 || ($s->storyQuestAcc ?? 0) == 0 ? null : (int) round(($s->wordBlastAcc + $s->storyQuestAcc) / 2);
-                return ['id'=>$s->user_id,'name'=>$s->name,'studentID'=>$s->student_id,'section'=>$s->section??'','points'=>$s->points??0,'wordBlastAcc'=>$s->wordBlastAcc??0,'storyQuestAcc'=>$s->storyQuestAcc??0,'finalAverage'=>$fa,'avatar'=>$s->avatar,'readLevel'=>$s->read_level??1,'speakLevel'=>$s->speak_level??1,'status'=>$s->status??'notStarted'];
+
+                return ['id' => $s->user_id, 'name' => $s->name, 'studentID' => $s->student_id, 'section' => $s->section ?? '', 'points' => $s->points ?? 0, 'wordBlastAcc' => $s->wordBlastAcc ?? 0, 'storyQuestAcc' => $s->storyQuestAcc ?? 0, 'finalAverage' => $fa, 'avatar' => $s->avatar, 'readLevel' => $s->read_level ?? 1, 'speakLevel' => $s->speak_level ?? 1, 'status' => $s->status ?? 'notStarted'];
             });
 
         $sections = $allStudents->pluck('section')->unique()->filter()->sort()->values()->toArray();
-        $students = $allStudents; if ($section) $students = $students->where('section',$section); if ($search) $students = $students->filter(fn($s)=>str_contains(strtolower($s['name']),strtolower($search)));
+        $students = $allStudents;
+        if ($section) {
+            $students = $students->where('section', $section);
+        } if ($search) {
+            $students = $students->filter(fn ($s) => str_contains(strtolower($s['name']), strtolower($search)));
+        }
         $isDeadlineClosed = (bool) $this->reportService->deadline()?->isPast();
 
         return Inertia::render('Teacher/Leaderboards', [
-            'leaderboard' => ['points'=>$students->sortByDesc('points')->values()->toArray(),'wordBlast'=>$students->sortByDesc('wordBlastAcc')->values()->toArray(),'storyQuest'=>$students->sortByDesc('storyQuestAcc')->values()->toArray()],
+            'leaderboard' => ['points' => $students->sortByDesc('points')->values()->toArray(), 'wordBlast' => $students->sortByDesc('wordBlastAcc')->values()->toArray(), 'storyQuest' => $students->sortByDesc('storyQuestAcc')->values()->toArray()],
             'totalStudents' => $allStudents->count(),
             'sections' => $sections,
             'isDeadlineClosed' => $isDeadlineClosed,
-            'filters' => ['section'=>$section,'search'=>$search],
+            'filters' => ['section' => $section, 'search' => $search],
         ]);
     }
 
@@ -575,7 +581,7 @@ class TeacherController extends Controller
             'mostEarnedBadge' => $mostEarnedBadge,
             'sections' => $sections,
             'isDeadlineClosed' => $isDeadlineClosed,
-            'filters' => ['section'=>$section,'search'=>$search],
+            'filters' => ['section' => $section, 'search' => $search],
         ]);
     }
 
@@ -636,11 +642,13 @@ class TeacherController extends Controller
         return redirect()->back()->with('success', 'Student deleted successfully.');
     }
 
-    public function settings(){
+    public function settings()
+    {
         return Inertia::render('Teacher/Settings');
     }
 
-    public function updateSender(Request $request){
+    public function updateSender(Request $request)
+    {
         $request->validate([
             'email' => 'required|email|max:255',
             'name' => 'required|string|max:255',
@@ -655,7 +663,8 @@ class TeacherController extends Controller
         return redirect()->back()->with('success', 'Sender identity updated.');
     }
 
-    public function updatePassword(Request $request){
+    public function updatePassword(Request $request)
+    {
         $request->validate([
             'current_password' => 'required|string',
             'password' => 'required|string|min:8|confirmed',

@@ -1,11 +1,14 @@
 {
   "$schema": "https://opencode.ai/config.json",
 
-  "instructions": [],
+  "instructions": [
+    "my-app/.opencode/commands/pm.md",
+    "my-app/.opencode/commands/setup.md"
+  ],
 
   "references": {
     "docs": {
-     "path": "my-app/docs",
+      "path": "my-app/docs",
       "description": "Project documentation: architecture, conventions, database, deployment, gameplay, gamification, modules, reports, rules, caveats, developer guide"
     }
   },

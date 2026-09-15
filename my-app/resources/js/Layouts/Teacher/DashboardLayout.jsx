@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { usePage, Link } from "@inertiajs/react";
+import { usePage, Link, router } from "@inertiajs/react";
 import Sidebar from "../../Components/Teacher/Sidebar";
 import DeadlineBanner from "@/Components/DeadlineBanner";
 import Toast from "@/Components/Shared/Toast";
@@ -9,23 +9,11 @@ export default function DashboardLayout({ children }) {
     const [isSidebarOpen, setSidebarOpen] = useState(false);
     const [showNotifs, setShowNotifs] = useState(false);
     const notifRef = useRef();
-
     const { teacher } = usePage().props;
     const { auth } = usePage().props;
     const deadline = auth?.deadline;
     const isDeadlineClosed = deadline && new Date(deadline) <= new Date();
-
-    const formatDeadline = (dateStr) => {
-        if (!dateStr) return "";
-        return new Date(dateStr).toLocaleDateString("en-US", {
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-        });
-    };
-
+    const { filters, searchResults } = usePage().props.teacher;
     const showDeadlineBanner = isDeadlineClosed;
     const deadlineMessage = `The report deadline has passed. Gameplay is locked and all leaderboards, badges, and reports are now final. Module editing is locked as well.`;
     const alerts = teacher
@@ -82,7 +70,26 @@ export default function DashboardLayout({ children }) {
             document.removeEventListener("touchstart", handleClick);
         };
     }, []);
+    const [searchBar, setSearchBar] = useState(filters?.searchBar || "");
+    const hideModal = searchBar?.trim().length > 0;
+     useEffect(() => {
+         const timeout = setTimeout(() => {
+             router.get(
+                 window.location.pathname,
+                 { searchBar: searchBar },
+                 {
+                     preserveState: true,
+                     replace: true,
+                     preserveUrl: true
+                 },
+             );
+         }, 250);
+         return () => clearTimeout(timeout);
+     }, [searchBar]);
 
+    const handleNavigateStudents = (id) => {
+        router.get(`/teacher/studentDetails/${id}`);
+    };
     return (
         <>
             <Sidebar
@@ -102,11 +109,12 @@ export default function DashboardLayout({ children }) {
                 <div className="flex flex-1 min-w-0 sm:min-w-[180px] md:w-1/3 items-center gap-2 sm:gap-3 lg:gap-4">
                     <button
                         onClick={() => setSidebarOpen(true)}
-                            className="md:hidden p-2 text-on-surface-variant/60 hover:text-primary active:scale-95 transition-colors"
+                        className="md:hidden p-2 text-on-surface-variant/60 hover:text-primary active:scale-95 transition-colors"
                     >
                         <span className="material-symbols-outlined">menu</span>
                     </button>
-                    <div className="relative w-full block">
+
+                    <div className="relative w-full">
                         <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">
                             search
                         </span>
@@ -114,7 +122,34 @@ export default function DashboardLayout({ children }) {
                             className="w-full bg-surface-container-lowest border-2 border-outline/40 rounded-lg py-2 sm:py-2.5 pl-8 sm:pl-10 pr-3 sm:pr-4 focus:ring-2 focus:ring-secondary-container focus:border-secondary-container text-xs sm:text-sm font-body-md text-on-surface transition-all"
                             placeholder="Search students..."
                             type="text"
+                            onChange={(e) => setSearchBar(e.target.value)}
+                            value={searchBar}
                         />
+                        {hideModal && (
+                            <div className="absolute top-full right-2 sm:right-0 mt-2 w-[calc(100vw-16px)] max-w-[360px] sm:w-[380px] max-h-[min(60vh,420px)] sm:max-h-[65vh] overflow-y-auto bg-surface-container-high border-2 border-outline/30 rounded-xl shadow-[4px_4px_0_0_#1e1b4b] z-50">
+                                {searchBar && searchResults?.length > 0 ? (
+                                    <div className="divide-y divide-outline/30">
+                                        {searchResults?.map(
+                                            (a) =>
+                                                a.role !== "teacher" && (
+                                                    <Link
+                                                        href={`/teacher/studentDetails/${a.id}`}
+                                                        key={a.id}
+                                                    >
+                                                        <div className="text-[13px] sm:text-sm font-bold text-on-surface-variant whitespace-normal break-words [overflow-wrap:anywhere] leading-tight min-w-0 flex-1">
+                                                            {`Student-ID: ${a.id} - Student Name: ${a.name}`}
+                                                        </div>
+                                                    </Link>
+                                                )
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="p-4 sm:p-6 text-center text-on-surface-variant text-sm font-bold">
+                                        No Results
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
                 <div className="flex items-center gap-3 md:gap-6">
@@ -173,7 +208,9 @@ export default function DashboardLayout({ children }) {
                                             <Link
                                                 href="/teacher/reports"
                                                 className="text-xs font-bold text-primary hover:text-primary-fixed uppercase tracking-widest min-h-[40px] flex items-center justify-center"
-                                                onClick={() => setShowNotifs(false)}
+                                                onClick={() =>
+                                                    setShowNotifs(false)
+                                                }
                                             >
                                                 View All
                                             </Link>

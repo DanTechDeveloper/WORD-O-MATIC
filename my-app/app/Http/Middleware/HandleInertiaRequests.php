@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Models\ParagraphModule;
 use App\Models\Setting;
+use App\Models\User;
 use App\Models\WordModule;
 use App\Services\ReportService;
 use Illuminate\Http\Request;
@@ -27,30 +28,41 @@ class HandleInertiaRequests extends Middleware
                 'user' => fn () => $request->user() ? $request->user()->load(['student' => function ($query) {
                     $query->select('id', 'user_id', 'points', 'avatar');
                 }]) : null,
-                'deadline' => fn () => \App\Models\Setting::getValue('report_deadline'),
+                'deadline' => fn () => Setting::getValue('report_deadline'),
             ],
 
             'flash' => [
-                    'success' => fn () => $request->session()->get('success'),
-                    'error' => fn () => $request->session()->get('error'),
-                    'new_badge' => fn () => $request->session()->get('new_badge'),
-                    'new_badges' => fn () => $request->session()->get('new_badges'),
-                    'sent' => fn () => $request->session()->get('sent'),
-                    'failed' => fn () => $request->session()->get('failed'),
-                    'reported_at' => fn () => $request->session()->get('reported_at'),
-                    'deadline_set' => fn () => $request->session()->get('deadline_set'),
-                    'deadline_cleared' => fn () => $request->session()->get('deadline_cleared'),
-                ],
+                'success' => fn () => $request->session()->get('success'),
+                'error' => fn () => $request->session()->get('error'),
+                'new_badge' => fn () => $request->session()->get('new_badge'),
+                'new_badges' => fn () => $request->session()->get('new_badges'),
+                'sent' => fn () => $request->session()->get('sent'),
+                'failed' => fn () => $request->session()->get('failed'),
+                'reported_at' => fn () => $request->session()->get('reported_at'),
+                'deadline_set' => fn () => $request->session()->get('deadline_set'),
+                'deadline_cleared' => fn () => $request->session()->get('deadline_cleared'),
+            ],
 
             'teacher' => fn () => $request->user() && $request->user()->isTeacher() ? [
-                    'has_deadline' => ! empty(Setting::getValue('report_deadline')),
-                    'has_word_modules' => WordModule::exists(),
-                    'has_paragraph_modules' => ParagraphModule::exists(),
-                    'attention_threshold' => ReportService::NEEDS_ATTENTION_ATTEMPTS,
-                    'email' => $request->user()->email,
-                    'name' => $request->user()->name,
-                    'has_email' => ! empty($request->user()->email),
-                ] : null,
+                'has_deadline' => ! empty(Setting::getValue('report_deadline')),
+                'has_word_modules' => WordModule::exists(),
+                'has_paragraph_modules' => ParagraphModule::exists(),
+                'attention_threshold' => ReportService::NEEDS_ATTENTION_ATTEMPTS,
+                'email' => $request->user()->email,
+                'name' => $request->user()->name,
+                'has_email' => ! empty($request->user()->email),
+                'filters' => [
+                    'searchBar' => $request->input('searchBar'),
+                ],
+                'searchResults' => fn () => $request->filled('searchBar') ?
+                User::where('name', 'like', "%{$request->searchBar}%")
+                    ->orWhere('student_id', 'like', "%{$request->searchBar}%")
+                    ->limit(10)
+                    ->get(['id', 'student_id', 'name', 'role'])
+                    :
+                    [],
+            ] : null,
+
         ];
     }
 }
