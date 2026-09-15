@@ -537,7 +537,7 @@ export default function Students({ data, sections, filters, existingStudentIds }
             </DashboardLayout>
 
             <AddStudentModal
-                isOpen={isAddModalOpen}
+                isOpen={!!isAddModalOpen}
                 onClose={() => setIsAddModalOpen(false)}
                 existingStudentIds={existingIds}
             />

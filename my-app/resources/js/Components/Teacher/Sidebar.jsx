@@ -3,7 +3,6 @@ import { Link, usePage } from "@inertiajs/react";
 export default function Sidebar({ isOpen, onClose }) {
     const { url, props } = usePage();
     const teacherName = props.auth?.user?.name;
-
     const activeClass =
         "bg-accent text-background border-2 border-background shadow-[6px_6px_0_0_#3f6212] flex items-center gap-3 p-4 rounded-lg font-black font-headline-md text-xs uppercase tracking-wider translate-x-[-2px] translate-y-[-2px]";
     const inactiveClass =
@@ -86,7 +85,7 @@ export default function Sidebar({ isOpen, onClose }) {
                                 {teacherName || "Faculty Member"}
                             </p>
                             <p className="text-[10px] text-outline uppercase font-black">
-                                Academic Session
+                                Admin
                             </p>
                         </div>
                     </div>

@@ -41,7 +41,7 @@ export default function Toast() {
         if (flash?.success) push("success", flash.success);
         if (flash?.error) push("error", flash.error);
         if (flash?.deadline_set) push("success", "Report deadline saved.");
-        if (flash?.deadline_cleared) push("success", "Report deadline cleared — sent list reset. Everyone is selectable again.");
+        if (flash?.deadline_cleared) push("success", "Report deadline cleared sent list reset. Everyone is selectable again.");
     }, [flash?.success, flash?.error, flash?.deadline_set, flash?.deadline_cleared]);
 
     useEffect(() => () => timers.current.forEach(clearTimeout), []);
