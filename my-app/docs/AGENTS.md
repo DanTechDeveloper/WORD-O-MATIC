@@ -24,14 +24,14 @@ Laravel 13 + React 18 + Inertia v2 + Tailwind v3 + MySQL 8.4 **Aiven sfo** (`mys
 
 Vercel Container: `dunglas/frankenphp:1-php8.4` `my-app/Dockerfile.vercel:1` (`install-php-extensions intl zip gd pdo_mysql bcmath`, Node 20 `vite build` `1.68s`, `my-app/Caddyfile:1` `immutable` for `/build/*` + `/Sound Effects/*`, `vercel.json:1` `root:"my-app"`, `trustProxies('*')` `my-app/bootstrap/app.php:18`). Deepgram `au` (`api.au.deepgram.com`, `StudentController::deepgramToken` cached 3500s).
 
-Speech recognition: Deepgram streaming ASR (nova-3) via `useDeepgramRecognition.js`; pure transcript processors (fuzzy match, timeout arming, `graceEnd`) live in `useSpeechRecognition.js` and are driven by Deepgram events (token from `StudentController::deepgramToken`).
+Speech recognition: Deepgram streaming ASR (nova-3) via `useDeepgramRecognition.js`; pure transcript processors (SSOT `isWordMatch`, timeout arming, `graceEnd`) live in `resources/js/lib/speechProcessors.js` (+ `speechUtils.js`) and are driven by Deepgram events (token from `StudentController::deepgramToken`). Word-mode confidence gates: interim accept requires `≥0.7`, authoritative-wrong fires immediately at `≥0.6`; sentence mode ignores confidence.
 
 ## Commands
 
 | Action | Command |
 |---|---|
 | Dev server (4 processes) | `composer run dev` |
-| All tests | `composer run test` = `php artisan test` (333 passed) + `npx vitest run` (100 passed) |
+| All tests | `composer run test` = `php artisan test` + `npx vitest run` |
 | Single test | `php artisan test --filter=TestName` |
 | Migrate | `php artisan migrate` (`06b648f` indexes `students(status,section)`) |
 | Build frontend | `npm run build` (`1.68s`, `1882 modules`) |

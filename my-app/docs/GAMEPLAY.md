@@ -85,7 +85,7 @@ Recognition uses **Deepgram streaming ASR** (`useDeepgramRecognition.js`, model 
 
 ### Timer Synchronization
 
-All speech recognition timeouts are owned by `useSpeechRecognition.js` (processors) and validate the target via `timeoutRefs.target` (stored at arm time; only fires if it still matches the current `targetWord`):
+All speech recognition timeouts are owned by `speechProcessors.js` and validate the target via `timeoutRefs.target` (stored at arm time; only fires if it still matches the current `targetWord`):
  - **`armSentenceTimeout`**: 1s self-rescheduling silence watchdog (fires `onMispronounced` at `>=5s` of continuous silence via `lastSpeechAt`). Re-based at ACTIVE so the countdown pre-warm silence isn't miscounted.
  - **`armWordTimeout` (5000ms)**: per-word no-speech fallback, re-armed on every transcript result and on `targetWord` change.
  - **`wordSettle` (~900ms)**: fires mispronounce once speech settles on a non-matching transcript (independent of `is_final` — Deepgram finals for low-confidence/wrong words often arrive with empty transcripts and were previously dropped, leaving only the 5s fallback).

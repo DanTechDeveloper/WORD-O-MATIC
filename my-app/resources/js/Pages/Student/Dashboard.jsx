@@ -1,5 +1,5 @@
 import { Head, Link, usePage } from "@inertiajs/react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import AvatarSpeechBubble from "@/Components/Student/AvatarSpeechBubble";
 import BadgeUnlockFlow from "@/Components/Student/BadgeUnlockFlow";
 import ProgressBar from "@/Components/Student/ProgressBar";
@@ -56,25 +56,7 @@ export default function Dashboard({
     const avatarUrl = auth?.user?.student?.avatar;
     const bodyUrl = avatarUrl?.replace("/head.png", "/body.png");
     const newBadges = flash?.new_badges ?? [];
-    const [showTutorialCongrats, setShowTutorialCongrats] = useState(false);
     const [badgeFlowDone, setBadgeFlowDone] = useState(false);
-    const hasTutorialBadge = newBadges.some(
-        (b) => b?.slug === "tutorial-complete" || b?.name === "Tutorial Complete"
-    );
-
-    // ponytail: tutorial-complete flash is consumed on GameResults (L0→results), so trigger congrats via persistent tutorialComplete prop
-    // T1: per-user key so PROFILE PIONEER fix doesn't permanently block YOU DID IT after SQ tutorial
-    useEffect(() => {
-        if (tutorialComplete && bodyUrl && !showTutorialCongrats && newBadges.length === 0) {
-            const justCompleted = wordTutorialDone && speakTutorialDone;
-            const key = `tutorialCongratsSeen:${auth.user.id}`;
-            const wasSeen = typeof window !== "undefined" && sessionStorage.getItem(key);
-            if (justCompleted && wasSeen !== "1") {
-                setShowTutorialCongrats(true);
-                sessionStorage.setItem(key, "1");
-            }
-        }
-    }, [tutorialComplete, wordTutorialDone, speakTutorialDone, bodyUrl, showTutorialCongrats, newBadges.length]);
     const showGuide = !tutorialComplete && bodyUrl;
     const showGuideBubble = showGuide && !guideDone;
     const highlightRead = showGuide && !wordTutorialDone;
@@ -132,12 +114,6 @@ export default function Dashboard({
                     markNewBadge={false}
                     onDone={() => {
                         setBadgeFlowDone(true);
-                        const shouldCongrats = hasTutorialBadge || (tutorialComplete && wordTutorialDone && speakTutorialDone);
-                        if (shouldCongrats) {
-                            setShowTutorialCongrats(true);
-                            const key = `tutorialCongratsSeen:${auth.user.id}`;
-                            sessionStorage.setItem(key, "1");
-                        }
                     }}
                 />
             )}
@@ -164,23 +140,6 @@ export default function Dashboard({
                         color={currentStep.color}
                         onClick={advanceGuide}
                         position={highlightRead ? "bottom-right" : "bottom-left"}
-                    />
-                )}
-
-                {showTutorialCongrats && bodyUrl && (
-                    <AvatarSpeechBubble
-                        emoji="celebration"
-                        title="YOU DID IT!"
-                        message="Tutorial complete — you're ready to play!"
-                        bodyUrl={bodyUrl}
-                        color="accent"
-                        onClick={() => {
-                            const key = `tutorialCongratsSeen:${auth.user.id}`;
-                            sessionStorage.setItem(key, "1");
-                            setShowTutorialCongrats(false);
-                        }}
-                        position="bottom-right"
-                        footerText="Tap to continue →"
                     />
                 )}
 
