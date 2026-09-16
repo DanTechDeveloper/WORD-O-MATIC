@@ -8,12 +8,15 @@ import Footer from "@/Components/Shared/Footer";
 export default function DashboardLayout({ children }) {
     const [isSidebarOpen, setSidebarOpen] = useState(false);
     const [showNotifs, setShowNotifs] = useState(false);
-    const notifRef = useRef();
+    const notifRef = useRef(null);
+    const searchRef = useRef(null);
+    const searchInputRef = useRef(null);
+    const debounceRef = useRef(null);
     const { teacher } = usePage().props;
     const { auth } = usePage().props;
     const deadline = auth?.deadline;
     const isDeadlineClosed = deadline && new Date(deadline) <= new Date();
-    const { filters, searchResults } = usePage().props.teacher;
+    const { filters = {}, searchResults = [] } = usePage().props.teacher ?? {};
     const showDeadlineBanner = isDeadlineClosed;
     const deadlineMessage = `The report deadline has passed. Gameplay is locked and all leaderboards, badges, and reports are now final. Module editing is locked as well.`;
     const alerts = teacher
@@ -62,6 +65,8 @@ export default function DashboardLayout({ children }) {
         const handleClick = (e) => {
             if (notifRef.current && !notifRef.current.contains(e.target))
                 setShowNotifs(false);
+            if (searchRef.current && !searchRef.current.contains(e.target))
+                setSearchOpen(false);
         };
         document.addEventListener("mousedown", handleClick);
         document.addEventListener("touchstart", handleClick, { passive: true });
@@ -70,26 +75,89 @@ export default function DashboardLayout({ children }) {
             document.removeEventListener("touchstart", handleClick);
         };
     }, []);
-    const [searchBar, setSearchBar] = useState(filters?.searchBar || "");
-    const hideModal = searchBar?.trim().length > 0;
-     useEffect(() => {
-         const timeout = setTimeout(() => {
-             router.get(
-                 window.location.pathname,
-                 { searchBar: searchBar },
-                 {
-                     preserveState: true,
-                     replace: true,
-                     preserveUrl: true
-                 },
-             );
-         }, 250);
-         return () => clearTimeout(timeout);
-     }, [searchBar]);
+    const [searchBar, setSearchBar] = useState(filters?.searchBar ?? "");
+    const [searchOpen, setSearchOpen] = useState(false);
+    const [activeIndex, setActiveIndex] = useState(-1);
+    const [isSearching, setIsSearching] = useState(false);
+    const query = searchBar.trim();
+    const showDropdown = searchOpen && query.length > 0;
 
-    const handleNavigateStudents = (id) => {
-        router.get(`/teacher/studentDetails/${id}`);
-    };
+    // Keep the input in sync when navigation resets ?searchBar= (e.g. after picking a result).
+    useEffect(() => {
+        const next = filters?.searchBar ?? "";
+        setSearchBar((prev) =>
+            prev.trim() === String(next).trim() ? prev : String(next),
+        );
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [filters?.searchBar]);
+
+    // Debounced global search — same 300ms convention as Students/Leaderboards.
+    // Skips single chars (hint only) and repeats of the shared value.
+    useEffect(() => {
+        const trimmed = searchBar.trim();
+        const shared = String(filters?.searchBar ?? "").trim();
+        if (trimmed === shared) return;
+        if (trimmed.length === 1) return;
+        setIsSearching(true);
+        debounceRef.current = setTimeout(() => {
+            router.get(
+                window.location.pathname,
+                { searchBar: trimmed },
+                {
+                    preserveState: true,
+                    preserveScroll: true,
+                    replace: true,
+                },
+            );
+        }, 300);
+        return () => clearTimeout(debounceRef.current);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [searchBar]);
+
+    useEffect(() => {
+        setIsSearching(false);
+        setActiveIndex(-1);
+    }, [searchResults]);
+
+    const closeSearch = () => setSearchOpen(false);
+
+    function highlightMatch(name = "", q = "") {
+        if (!q) return name;
+        const idx = name.toLowerCase().indexOf(q.toLowerCase());
+        if (idx === -1) return name;
+        return (
+            <>
+                {name.slice(0, idx)}
+                <mark className="bg-accent/60 text-on-surface rounded-sm px-0.5">
+                    {name.slice(idx, idx + q.length)}
+                </mark>
+                {name.slice(idx + q.length)}
+            </>
+        );
+    }
+
+    function handleSearchKeyDown(e) {
+        if (e.key === "Escape") {
+            if (showDropdown) setSearchOpen(false);
+            else if (searchBar) setSearchBar("");
+            return;
+        }
+        if (!showDropdown || searchResults.length === 0) return;
+        if (e.key === "ArrowDown") {
+            e.preventDefault();
+            setActiveIndex((i) => (i + 1) % searchResults.length);
+        } else if (e.key === "ArrowUp") {
+            e.preventDefault();
+            setActiveIndex(
+                (i) => (i - 1 + searchResults.length) % searchResults.length,
+            );
+        } else if (e.key === "Enter" && searchResults[activeIndex]) {
+            e.preventDefault();
+            const picked = searchResults[activeIndex];
+            setSearchOpen(false);
+            router.visit(`/teacher/studentDetails/${picked.id}`);
+        }
+    }
     return (
         <>
             <Sidebar
@@ -114,41 +182,157 @@ export default function DashboardLayout({ children }) {
                         <span className="material-symbols-outlined">menu</span>
                     </button>
 
-                    <div className="relative w-full">
-                        <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">
+                    <div ref={searchRef} className="relative w-full">
+                        <span
+                            aria-hidden="true"
+                            className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline"
+                        >
                             search
                         </span>
+                        {isSearching && (
+                            <span
+                                aria-hidden="true"
+                                className={`material-symbols-outlined absolute top-1/2 -translate-y-1/2 text-on-surface-variant/60 animate-spin text-[18px] ${
+                                    searchBar.length > 0
+                                        ? "right-9"
+                                        : "right-3"
+                                }`}
+                            >
+                                progress_activity
+                            </span>
+                        )}
                         <input
-                            className="w-full bg-surface-container-lowest border-2 border-outline/40 rounded-lg py-2 sm:py-2.5 pl-8 sm:pl-10 pr-3 sm:pr-4 focus:ring-2 focus:ring-secondary-container focus:border-secondary-container text-xs sm:text-sm font-body-md text-on-surface transition-all"
-                            placeholder="Search students..."
+                            ref={searchInputRef}
+                            role="combobox"
+                            aria-expanded={showDropdown}
+                            aria-controls="teacher-search-results"
+                            aria-label="Search students"
+                            aria-autocomplete="list"
+                            className="w-full bg-surface-container-lowest border-2 border-outline/40 rounded-lg py-2 sm:py-2.5 pl-8 sm:pl-10 pr-9 focus:ring-2 focus:ring-secondary-container focus:border-secondary-container text-xs sm:text-sm font-body-md text-on-surface transition-all"
+                            placeholder="Search name or ID…"
                             type="text"
-                            onChange={(e) => setSearchBar(e.target.value)}
+                            autoComplete="off"
+                            spellCheck={false}
+                            onChange={(e) => {
+                                setSearchBar(e.target.value);
+                                setSearchOpen(true);
+                                setActiveIndex(-1);
+                            }}
+                            onFocus={() => setSearchOpen(true)}
+                            onKeyDown={handleSearchKeyDown}
                             value={searchBar}
                         />
-                        {hideModal && (
-                            <div className="absolute top-full right-2 sm:right-0 mt-2 w-[calc(100vw-16px)] max-w-[360px] sm:w-[380px] max-h-[min(60vh,420px)] sm:max-h-[65vh] overflow-y-auto bg-surface-container-high border-2 border-outline/30 rounded-xl shadow-[4px_4px_0_0_#1e1b4b] z-50">
-                                {searchBar && searchResults?.length > 0 ? (
-                                    <div className="divide-y divide-outline/30">
-                                        {searchResults?.map(
-                                            (a) =>
-                                                a.role !== "teacher" && (
-                                                    <Link
-                                                        href={`/teacher/studentDetails/${a.id}`}
-                                                        key={a.id}
-                                                    >
-                                                        <div className="text-[13px] sm:text-sm font-bold text-on-surface-variant whitespace-normal break-words [overflow-wrap:anywhere] leading-tight min-w-0 flex-1">
-                                                            {`Student-ID: ${a.id} - Student Name: ${a.name}`}
-                                                        </div>
-                                                    </Link>
-                                                )
+                        {searchBar.length > 0 && (
+                            <button
+                                type="button"
+                                aria-label="Clear search"
+                                onClick={() => {
+                                    setSearchBar("");
+                                    searchInputRef.current?.focus();
+                                }}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-on-surface-variant/60 hover:text-primary active:scale-95 transition-colors"
+                            >
+                                <span className="material-symbols-outlined text-[18px]">
+                                    close
+                                </span>
+                            </button>
+                        )}
+                        {showDropdown && (
+                            <div
+                                id="teacher-search-results"
+                                role="listbox"
+                                aria-label="Matching students"
+                                className="absolute top-full right-2 sm:right-0 mt-2 w-[calc(100vw-16px)] max-w-[360px] sm:w-[380px] max-h-[min(60vh,420px)] sm:max-h-[65vh] overflow-y-auto bg-surface-container-high border-2 border-outline/30 rounded-xl shadow-[4px_4px_0_0_#1e1b4b] z-50"
+                            >
+                                    <div className="p-3 sm:p-4 border-b-2 border-outline/40 flex items-center justify-between gap-2">
+                                        <p className="font-black text-sm text-on-surface uppercase tracking-widest">
+                                            Students
+                                        </p>
+                                        {searchResults?.length > 0 && (
+                                            <p className="text-[11px] font-bold uppercase tracking-widest text-on-surface-variant">
+                                                {searchResults.length} found
+                                            </p>
                                         )}
                                     </div>
-                                ) : (
-                                    <div className="p-4 sm:p-6 text-center text-on-surface-variant text-sm font-bold">
-                                        No Results
-                                    </div>
-                                )}
-                            </div>
+                                    {query.length === 1 ? (
+                                        <div className="p-4 sm:p-6 text-center text-on-surface-variant text-sm font-bold">
+                                            Keep typing to search…
+                                        </div>
+                                    ) : searchResults?.length > 0 ? (
+                                        <div className="divide-y divide-outline/30">
+                                            {searchResults.map((s, i) => (
+                                                <Link
+                                                    href={`/teacher/studentDetails/${s.id}`}
+                                                    key={s.id}
+                                                    role="option"
+                                                    aria-selected={i === activeIndex}
+                                                    onClick={closeSearch}
+                                                    className={`flex items-center gap-2 sm:gap-3 p-3 sm:p-4 min-h-[48px] transition-colors hover:bg-surface-container-low/60 ${
+                                                        i === activeIndex
+                                                            ? "bg-surface-container-low/60"
+                                                            : ""
+                                                    }`}
+                                                >
+                                                    <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-surface-container-lowest border-2 border-accent">
+                                                        {s.avatar ? (
+                                                            <img
+                                                                src={s.avatar}
+                                                                alt={s.name}
+                                                                className="w-full h-full object-cover"
+                                                            />
+                                                        ) : (
+                                                            <span
+                                                                aria-hidden="true"
+                                                                className="material-symbols-outlined text-on-surface-variant text-[20px]"
+                                                            >
+                                                                person
+                                                            </span>
+                                                        )}
+                                                    </span>
+                                                    <span className="min-w-0 flex-1">
+                                                        <span className="block text-[13px] sm:text-sm font-bold text-on-surface whitespace-normal break-words [overflow-wrap:anywhere] leading-tight">
+                                                            {highlightMatch(
+                                                                s.name,
+                                                                query,
+                                                            )}
+                                                        </span>
+                                                        <span className="block text-[11px] sm:text-xs font-bold uppercase tracking-widest text-on-surface-variant truncate">
+                                                            {s.student_id}
+                                                            {s.section
+                                                                ? ` • ${s.section}`
+                                                                : ""}
+                                                        </span>
+                                                    </span>
+                                                    <span
+                                                        aria-hidden="true"
+                                                        className="material-symbols-outlined text-outline shrink-0"
+                                                    >
+                                                        chevron_right
+                                                    </span>
+                                                </Link>
+                                            ))}
+                                        </div>
+                                    ) : isSearching ? (
+                                        <div className="p-4 sm:p-6 text-center text-on-surface-variant text-sm font-bold">
+                                            Searching…
+                                        </div>
+                                    ) : (
+                                        <div className="p-4 sm:p-6 text-center text-on-surface-variant text-sm font-bold">
+                                            No students for &ldquo;{query}&rdquo;
+                                        </div>
+                                    )}
+                                    {searchResults?.length > 0 && (
+                                        <div className="p-3 border-t-2 border-outline/40 text-center">
+                                            <Link
+                                                href={`/teacher/students?search=${encodeURIComponent(query)}`}
+                                                className="text-xs font-bold text-primary hover:text-primary-fixed uppercase tracking-widest min-h-[40px] flex items-center justify-center"
+                                                onClick={closeSearch}
+                                            >
+                                                View all in Students
+                                            </Link>
+                                        </div>
+                                    )}
+                                </div>
                         )}
                     </div>
                 </div>

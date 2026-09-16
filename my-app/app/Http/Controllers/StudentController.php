@@ -408,7 +408,6 @@ class StudentController extends Controller
             $totalPossible = $module->words()->count();
             $wordsSmashed = min($request->words_smashed, $totalPossible);
             $accuracy = $totalPossible > 0 ? (int) round(min(($wordsSmashed / $totalPossible) * 100, 100)) : 0;
-            // ponytail: tutorial streak never counts toward ON FIRE — see BadgeService::bestSessionMetric
             $session = GameSession::logSession($user->id, $module->id, $type, $wordsSmashed, $accuracy, 0, false);
             if ($type === 'word') {
                 $this->progressService->updateWordProgress($user->student, $module, 0, $request->words_processed, 0, isTutorial: true);
