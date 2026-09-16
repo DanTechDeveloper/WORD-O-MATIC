@@ -16,9 +16,10 @@ class BadgeService
     // round can't inflate badge progress — even if the deadline is later cleared
     // (doc: CAVEATS BF7/BF10). The flag is baked in at log time, so this is sticky.
     // ponytail: tutorial sessions excluded — streak/ON FIRE must not leak from onboarding (BadgesSeeder 19-21)
-    private function bestSessionMetric(User $user, string $column): int
+    // $tutIds is finishRound's per-request preload (['word' => id, 'paragraph' => id]); direct callers omit it.
+    private function bestSessionMetric(User $user, string $column, ?array $tutIds = null): int
     {
-        $tutIds = array_filter([
+        $tutIds = $tutIds ?? array_filter([
             WordModule::where('is_tutorial', true)->value('id'),
             ParagraphModule::where('is_tutorial', true)->value('id'),
         ]);
@@ -131,7 +132,7 @@ class BadgeService
         return $awarded;
     }
 
-    public function checkGameplayBadges(User $user, int $sessionId, float $accuracy): array
+    public function checkGameplayBadges(User $user, int $sessionId, float $accuracy, ?array $tutIds = null): array
     {
         $student = $user->student;
 
@@ -155,7 +156,7 @@ class BadgeService
         foreach ($grouped as $metric => $group) {
             $currentValue = match ($metric) {
                 'total_points' => $student->points,
-                'streak' => $this->bestSessionMetric($user, 'streak'),
+                'streak' => $this->bestSessionMetric($user, 'streak', $tutIds),
                 'accuracy' => $accuracy,
                 'paragraph_completion' => $this->calculateModuleCompletion($user, 'paragraph'),
                 'word_completion' => $this->calculateModuleCompletion($user, 'word'),

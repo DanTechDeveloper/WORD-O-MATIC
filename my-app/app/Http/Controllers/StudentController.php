@@ -396,31 +396,37 @@ class StudentController extends Controller
         ]);
 
         $moduleClass = $type === 'word' ? WordModule::class : ParagraphModule::class;
+        $module = $moduleClass::findOrFail($request->module_id);
 
-        return $this->finishRound(auth()->user(), $moduleClass::findOrFail($request->module_id), $request, $type);
+        // ponytail: fetch-once per round-POST — tutorial ids + word count are
+        // needed by finishRound, ProgressService and BadgeService; one fetch
+        // here saves ~5 duplicate queries (each pays remote RTT in prod).
+        $tutIds = [
+            'word' => WordModule::where('is_tutorial', true)->value('id'),
+            'paragraph' => ParagraphModule::where('is_tutorial', true)->value('id'),
+        ];
+
+        return $this->finishRound(auth()->user(), $module, $request, $type, $tutIds, $module->words()->count());
     }
 
-    private function finishRound(User $user, WordModule|ParagraphModule $module, Request $request, string $type): RedirectResponse
+    private function finishRound(User $user, WordModule|ParagraphModule $module, Request $request, string $type, array $tutIds, int $totalPossible): RedirectResponse
     {
         $isTutorial = $module->is_tutorial && ! $user->student?->tutorial_completed_at;
 
         if ($isTutorial) {
-            $totalPossible = $module->words()->count();
             $wordsSmashed = min($request->words_smashed, $totalPossible);
             $accuracy = $totalPossible > 0 ? (int) round(min(($wordsSmashed / $totalPossible) * 100, 100)) : 0;
             $session = GameSession::logSession($user->id, $module->id, $type, $wordsSmashed, $accuracy, 0, false);
             if ($type === 'word') {
-                $this->progressService->updateWordProgress($user->student, $module, 0, $request->words_processed, 0, isTutorial: true);
+                $this->progressService->updateWordProgress($user->student, $module, 0, $request->words_processed, 0, isTutorial: true, tutIds: $tutIds, totalWords: $totalPossible);
             } else {
-                $this->progressService->updateParagraphProgress($user->student, $module, 0, $request->words_processed, 0, isTutorial: true);
+                $this->progressService->updateParagraphProgress($user->student, $module, 0, $request->words_processed, 0, isTutorial: true, tutIds: $tutIds, totalWords: $totalPossible);
             }
             $redirect = redirect()->route('student.results', ['id' => $session->id]);
             $badgesData = $this->checkTutorialCompletion($user);
 
             return $badgesData ? $redirect->with('new_badges', [$badgesData]) : $redirect;
         }
-
-        $totalPossible = $module->words()->count();
 
         if ($request->words_processed > $totalPossible) {
             throw ValidationException::withMessages([
@@ -443,15 +449,15 @@ class StudentController extends Controller
         }
 
         if ($type === 'word') {
-            $this->progressService->updateWordProgress($user->student, $module, $wordsSmashed, $request->words_processed, $accuracy);
+            $this->progressService->updateWordProgress($user->student, $module, $wordsSmashed, $request->words_processed, $accuracy, tutIds: $tutIds, totalWords: $totalPossible);
         } else {
-            $this->progressService->updateParagraphProgress($user->student, $module, $wordsSmashed, $request->words_processed, $accuracy);
+            $this->progressService->updateParagraphProgress($user->student, $module, $wordsSmashed, $request->words_processed, $accuracy, tutIds: $tutIds, totalWords: $totalPossible);
         }
 
         $redirect = redirect()->route('student.results', ['id' => $session->id]);
 
         $badgesData = [];
-        foreach ($this->badgeService->checkGameplayBadges($user, $session->id, $accuracy) as $badge) {
+        foreach ($this->badgeService->checkGameplayBadges($user, $session->id, $accuracy, $tutIds) as $badge) {
             $badgesData[] = [
                 'name' => $badge->name,
                 'description' => $badge->description,
