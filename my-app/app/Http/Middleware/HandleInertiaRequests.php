@@ -52,15 +52,32 @@ class HandleInertiaRequests extends Middleware
                 'name' => $request->user()->name,
                 'has_email' => ! empty($request->user()->email),
                 'filters' => [
-                    'searchBar' => $request->input('searchBar'),
+                    'searchBar' => trim((string) $request->input('searchBar', '')),
                 ],
-                'searchResults' => fn () => $request->filled('searchBar') ?
-                User::where('name', 'like', "%{$request->searchBar}%")
-                    ->orWhere('student_id', 'like', "%{$request->searchBar}%")
-                    ->limit(10)
-                    ->get(['id', 'student_id', 'name', 'role'])
-                    :
-                    [],
+                'searchResults' => function () use ($request) {
+                    $search = trim((string) $request->input('searchBar', ''));
+                    if ($search === '' || mb_strlen($search) < 2) {
+                        return [];
+                    }
+
+                    return User::with('student:id,user_id,section,avatar')
+                        ->where('role', 'student')
+                        ->where(function ($q) use ($search) {
+                            $q->where('name', 'like', "%{$search}%")
+                                ->orWhere('student_id', 'like', "%{$search}%");
+                        })
+                        ->orderBy('name')
+                        ->limit(10)
+                        ->get(['id', 'student_id', 'name'])
+                        ->map(fn ($u) => [
+                            'id' => $u->id,
+                            'student_id' => $u->student_id,
+                            'name' => $u->name,
+                            'section' => $u->student?->section ?? '',
+                            'avatar' => $u->student?->avatar ?? '',
+                        ])
+                        ->all();
+                },
             ] : null,
 
         ];
