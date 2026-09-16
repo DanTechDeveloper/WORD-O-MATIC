@@ -5,6 +5,7 @@ Runnable app is `my-app/` — `cd my-app` before every command. Repo root holds 
 
 ## Stack
 Laravel 13 (PHP 8.3) + React 18 + Inertia v2 + Vite 8 + Tailwind v3. MySQL local, SQLite `:memory:` for tests (`phpunit.xml`). Session auth via `UserController`, `role:teacher`/`role:student` in `bootstrap/app.php`. Vercel Container `dunglas/frankenphp` + Aiven MySQL, Deepgram `au` nova-3 (`useDeepgramRecognition.js`).
+ASR truth: `hooks/Student/useDeepgramRecognition.js` → `lib/speechProcessors.js` (no `useSpeechRecognition.js` file exists) → SSOT `isWordMatch` (`lib/speechUtils.js`). Word-mode confidence gates: interim accept `≥0.7`, authoritative-wrong `≥0.6`; sentence mode ignores confidence.
 
 ## Commands (run from `my-app/`)
 | Command | What it does |
@@ -14,7 +15,7 @@ Laravel 13 (PHP 8.3) + React 18 + Inertia v2 + Vite 8 + Tailwind v3. MySQL local
 | `composer run test` | `config:clear` then `php artisan test` (PHP only) |
 | `npx vitest run` | JS unit tests (`tests/Unit/*.test.js`) — not in `composer run test` |
 | `php artisan test --filter=TestName` | Single test |
-| `php artisan migrate:fresh --seed` | 1 teacher `admin`/`password` + 100 students (3 sectors) |
+| `php artisan migrate:fresh --seed` | teacher `admin`/`password` + curriculum + badges (`StudentSeeder` commented out — opt-in: `php artisan db:seed --class=StudentSeeder` for 100 students/3 sectors; MySQL-only, not sqlite-safe) |
 | `npm run build` / `npm run dev` | Vite build / dev |
 | `vendor/bin/pint` | PSR-12 fix (not in CI) |
 
@@ -48,4 +49,4 @@ Laravel 13 (PHP 8.3) + React 18 + Inertia v2 + Vite 8 + Tailwind v3. MySQL local
 - 4-space indent (`.editorconfig`), comments explain *why*.
 
 ## Tests
-- `tests/Feature/*` (`RefreshDatabase`), `tests/Unit/*` (PHP), `tests/Unit/*.test.js` + `setup.js` (vitest, 4.1).
+- `tests/Feature/*` (`RefreshDatabase`), `tests/Unit/*` (PHP), `tests/Unit/*.test.js` with setup at `tests/setup.js` (vitest 4); single JS file: `npx vitest run tests/Unit/<name>.test.js`.
