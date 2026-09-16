@@ -12,7 +12,6 @@ use App\Services\BadgeService;
 use App\Services\ProgressService;
 use App\Services\ReportService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
@@ -164,7 +163,12 @@ class TeacherController extends Controller
 
         $avgReadAccuracy = $allStudents->avg('wordBlastAcc') ?? 0;
         $avgSpeakAccuracy = $allStudents->avg('storyQuestAcc') ?? 0;
-        $avgFinalAccuracy = $allStudents->map(fn ($s) => $s->finalAverage)->filter(fn ($v) => $v !== null)->avg() ?? 0;
+        $avgFinalAccuracy = ProgressService::finalAverage(
+            (float) ($avgReadAccuracy ?? 0),
+            (float) ($avgSpeakAccuracy ?? 0),
+            ($avgReadAccuracy ?? 0) != 0,
+            ($avgSpeakAccuracy ?? 0) != 0,
+        );
         $totalClassPoints = $allStudents->sum('points') ?? 0;
 
         $sections = $allStudents->pluck('section')->unique()->filter();
@@ -252,7 +256,7 @@ class TeacherController extends Controller
             'totalStudents' => $totalStudents,
             'avgReadAccuracy' => (int) round($avgReadAccuracy),
             'avgSpeakAccuracy' => (int) round($avgSpeakAccuracy),
-            'avgFinalAccuracy' => (int) round($avgFinalAccuracy),
+            'avgFinalAccuracy' => $avgFinalAccuracy,
             'totalClassPoints' => $totalClassPoints,
             'sectionPerformance' => $sectionPerformance->toArray(),
             'students' => $students,
@@ -260,12 +264,7 @@ class TeacherController extends Controller
             ];
         };
 
-        // ponytail: file cache 60s — sfo 70ms × 5 queries = 350ms saved per hit; array driver would be per-request only. Bypass in testing to avoid stale between RefreshDatabase tests.
-        if (app()->environment('testing')) {
-            return $compute();
-        }
-
-        return Cache::store('file')->remember('dashboardStats', 60, $compute);
+        return $compute();
     }
 
     private function pinIsTaken(string $pin, ?string $name = null, ?int $ignoreId = null): bool
@@ -598,6 +597,8 @@ class TeacherController extends Controller
     public function updateStudent(Request $request, $id)
     {
         $user = User::where('role', 'student')->findOrFail($id);
+
+        $request->merge($this->normalizeStudentRow($request->all()));
 
         $request->validate([
             'fullName' => 'required',

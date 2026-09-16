@@ -1,3 +1,4 @@
+
 # Word-O-Matic — Agent Guide
 
 Runnable app is `my-app/` — `cd my-app` before every command. Repo root holds only `opencode.json`, `.opencode/`, docs. Deeper: `my-app/docs/AGENTS.md`, `CONVENTIONS.md`, `DESIGN.md` + `PRODUCT.md`.

@@ -63,7 +63,7 @@ export default function Dashboard({
         },
         {
             label: "Total Final Average",
-            value: `${avgFinalAccuracy ?? 0}%`,
+            value: avgFinalAccuracy != null ? `${avgFinalAccuracy}%` : 'N/A',
             icon: "star",
             color: "text-tertiary",
         },

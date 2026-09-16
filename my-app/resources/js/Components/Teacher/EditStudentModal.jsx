@@ -146,7 +146,7 @@ export default function EditStudentModal({ isOpen, onClose, student }) {
                         </div>
                         <p className="text-[10px] text-on-surface-variant/60 font-bold uppercase tracking-tight ml-2">
                             Leave blank to keep the current PIN. Enter a new PIN or
-                            tap refresh to auto-generate.
+                            tap refresh to auto-generate. Must be unique for this name (same-name only).
                         </p>
                         {errors.pin && (
                             <p className="text-error text-[10px] font-black mt-1 uppercase ml-2">

@@ -190,7 +190,8 @@ class DashboardTest extends TestCase
     {
         $this->actingAs($this->teacher);
 
-        // Only the first two have both skills started, so avg = (75+85)/2 = 80.
+        // Now derived from class means via ProgressService::finalAverage(avgRead, avgSpeak)
+        // avgRead=(70+80+100+0)/4=62.5 avgSpeak=(80+90+0+0)/4=42.5 final=53
         $this->makeStudent('Done A', ['wordBlastAcc' => 70, 'storyQuestAcc' => 80]);
         $this->makeStudent('Done B', ['wordBlastAcc' => 80, 'storyQuestAcc' => 90]);
         $this->makeStudent('Half', ['wordBlastAcc' => 100, 'storyQuestAcc' => 0]);
@@ -199,7 +200,21 @@ class DashboardTest extends TestCase
         $response = $this->get(route('teacher.dashboard'));
 
         $response->assertInertia(fn ($page) => $page
-            ->where('avgFinalAccuracy', 80)
+            ->where('avgFinalAccuracy', 53)
+        );
+    }
+
+    public function test_dashboard_avg_final_accuracy_is_null_when_no_started_skill(): void
+    {
+        $this->actingAs($this->teacher);
+
+        $this->makeStudent('Half', ['wordBlastAcc' => 100, 'storyQuestAcc' => 0]);
+        $this->makeStudent('None', ['wordBlastAcc' => 0, 'storyQuestAcc' => 0]);
+
+        $response = $this->get(route('teacher.dashboard'));
+
+        $response->assertInertia(fn ($page) => $page
+            ->where('avgFinalAccuracy', null)
         );
     }
 
