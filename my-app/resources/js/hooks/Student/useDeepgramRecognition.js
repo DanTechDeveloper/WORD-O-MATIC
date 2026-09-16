@@ -164,14 +164,7 @@ export function useDeepgramRecognition({
                 propsRef,
             );
         } else {
-            armSentenceTimeout(
-                activeTarget,
-                stateRefs.current.transcript,
-                stateRefs,
-                timerRefs,
-                timeoutRefs,
-                propsRef,
-            );
+            armSentenceTimeout(stateRefs, timerRefs, propsRef);
         }
     };
 
@@ -261,6 +254,7 @@ export function useDeepgramRecognition({
                     return;
                 }
                 permissionDeniedRef.current = false;
+                timeoutRefs.current.restartCount = 0;
                 stateRefs.current.isListening = true;
                 stateRefs.current.lastSpeechAt = Date.now();
                 stateRefs.current.hasMatched = false;
@@ -397,12 +391,14 @@ export function useDeepgramRecognition({
                 }
                 const isFinal = !!data.is_final;
                 const speechFinal = !!data.speech_final;
-                const transcript =
-                    data.channel?.alternatives?.[0]?.transcript ?? "";
+                const alt = data.channel?.alternatives?.[0] ?? {};
+                const transcript = alt.transcript ?? "";
+                const confidence = typeof alt.confidence === "number" ? alt.confidence : 1;
                 if (!transcript && !isFinal && !speechFinal) return;
                 const result = {
                     isFinal,
                     speechFinal,
+                    confidence,
                     0: { transcript },
                 };
                 const target = normalizeText(propsRef.current.targetWord);

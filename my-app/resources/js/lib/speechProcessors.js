@@ -21,14 +21,7 @@ function matchScope(full, target) {
     return words.slice(-TAIL_WINDOW).join(" ");
 }
 
-export function armSentenceTimeout(
-    _target,
-    _full,
-    stateRefs,
-    timerRefs,
-    _timeoutRefs,
-    propsRef,
-) {
+export function armSentenceTimeout(stateRefs, timerRefs, propsRef) {
     clearTimeout(timerRefs.current.sentence);
 
     // ponytail: 1s self-rescheduling watchdog measures CONTINUOUS silence via
@@ -124,14 +117,7 @@ export function processSentenceModeResult(
 
     const full = buildFullSentence(stateRefs.current.transcript, newInterim);
 
-    armSentenceTimeout(
-        target,
-        full,
-        stateRefs,
-        timerRefs,
-        timeoutRefs,
-        propsRef,
-    );
+    armSentenceTimeout(stateRefs, timerRefs, propsRef);
 
     stateRefs.current.stoppedAt = Date.now();
     const scope = matchScope(full, target);
@@ -224,8 +210,13 @@ export function processWordModeResult(
         return;
     }
 
+    const confidence = typeof result.confidence === "number" ? result.confidence : 1;
+    const isAuthoritative = !!result.isFinal || !!result.speechFinal;
+    // ponytail: correct interim must be high-conf (>0.7) to avoid false positives from low-conf hallucination; authoritative always passes
+    const isHighConf = confidence >= 0.7 || isAuthoritative;
     if (
         !stateRefs.current.mispronouncedInWord &&
+        isHighConf &&
         isWordMatch(transcript, target)
     ) {
         stateRefs.current.hasMatched = true;
@@ -234,16 +225,10 @@ export function processWordModeResult(
         return;
     }
 
-    // ponytail: BF29b — Deepgram isFinal/speechFinal on a non-matching transcript
-    // is the authoritative wrong-word verdict. Fire immediately instead of waiting
-    // 1500ms for the interim settle (the user's "the moment DO leaves the mouth"
-    // case). B guard: within 1000ms of a target switch, defer to the settle so a
-    // fast correct ("dog" at 200ms) can cancel the stale wrong settle. 350ms was
-    // too short — kids need ~800ms to read new word, so random noise at 400ms
-    // was hatol kaagad.
-    const isAuthoritative = !!result.isFinal || !!result.speechFinal;
+    // ponytail: BF29b — authoritative wrong with confidence >0.6 fires immediately (was 1500ms); B guard 1000ms defers so fast correct at 200ms wins
     if (
         isAuthoritative &&
+        confidence >= 0.6 &&
         !stateRefs.current.mispronouncedInWord &&
         !isWordMatch(transcript, target) &&
         sinceSwitch >= 1000
@@ -273,6 +258,6 @@ export function processWordModeResult(
                 s.mispronouncedInWord = true;
                 propsRef.current.onMispronounced?.(settleTranscript);
             }
-        }, 1500);
+        }, 700);
     }
 }

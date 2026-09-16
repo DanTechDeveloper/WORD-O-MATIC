@@ -12,6 +12,7 @@ use App\Services\BadgeService;
 use App\Services\ProgressService;
 use App\Services\ReportService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
@@ -155,10 +156,11 @@ class TeacherController extends Controller
 
     private function dashboardStats(): array
     {
-        $allStudents = StudentProfile::join('users', 'users.id', '=', 'students.user_id')
-            ->where('users.role', 'student')
-            ->select(['students.*', 'users.name'])
-            ->get();
+        $compute = function () {
+            $allStudents = StudentProfile::join('users', 'users.id', '=', 'students.user_id')
+                ->where('users.role', 'student')
+                ->select(['students.*', 'users.name'])
+                ->get();
 
         $avgReadAccuracy = $allStudents->avg('wordBlastAcc') ?? 0;
         $avgSpeakAccuracy = $allStudents->avg('storyQuestAcc') ?? 0;
@@ -255,7 +257,15 @@ class TeacherController extends Controller
             'sectionPerformance' => $sectionPerformance->toArray(),
             'students' => $students,
             'chartCounts' => $counts,
-        ];
+            ];
+        };
+
+        // ponytail: file cache 60s — sfo 70ms × 5 queries = 350ms saved per hit; array driver would be per-request only. Bypass in testing to avoid stale between RefreshDatabase tests.
+        if (app()->environment('testing')) {
+            return $compute();
+        }
+
+        return Cache::store('file')->remember('dashboardStats', 60, $compute);
     }
 
     private function pinIsTaken(string $pin, ?string $name = null, ?int $ignoreId = null): bool
