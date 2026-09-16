@@ -196,7 +196,7 @@ export default function AddStudentModal({
                             </button>
                         </div>
                         <p className="text-[10px] text-on-surface-variant/60 font-bold uppercase tracking-tight ml-2">
-                            The student will use this PIN to log in.
+                            The student will use this PIN to log in. Must be unique for this name (same-name only).
                         </p>
                         {shownError("pin") && (
                             <p className="text-error text-[10px] font-black mt-1 uppercase ml-2">

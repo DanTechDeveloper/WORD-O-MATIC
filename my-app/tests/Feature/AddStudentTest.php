@@ -257,6 +257,24 @@ class AddStudentTest extends TestCase
         $response->assertSessionHasErrors('pin');
     }
 
+    public function test_update_rejects_pin_with_trailing_space_same_name(): void
+    {
+        $this->actingAs($this->teacher)->post('/teacher/addStudent', $this->validPayload());
+
+        $target = User::factory()->create(['role' => 'student', 'name' => 'LEO JUPITER']);
+        $target->student()->create(['section' => '6-STEM-B']);
+
+        $response = $this->actingAs($this->teacher)->put("/teacher/students/{$target->id}", [
+            'fullName' => 'LEO JUPITER ',
+            'section' => '6-STEM-B',
+            'pin' => '1234',
+            'gender' => '',
+            'parent_email' => '',
+        ]);
+
+        $response->assertSessionHasErrors('pin');
+    }
+
     public function test_store_allows_same_pin_for_different_names(): void
     {
         $this->actingAs($this->teacher)->post('/teacher/addStudent', $this->validPayload());
