@@ -434,13 +434,13 @@ describe("processWordModeResult (Word Blast — Levenshtein d<=1)", () => {
         expect(propsRef.current.onMispronounced).toHaveBeenCalledTimes(1);
         expect(propsRef.current.onMispronounced).toHaveBeenCalledWith("do");
     });
-    test("BF29b: wrong interim still uses settle — no instant fire, fires after 1500ms", () => {
+    test("BF29b: wrong interim still uses settle — no instant fire, fires after 700ms", () => {
         vi.useFakeTimers();
         const { stateRefs, timeoutRefs, timerRefs, propsRef } = makeRefs();
         const target = "cat";
         processWordModeResult(makeEvent("do", false), target, stateRefs, timerRefs, timeoutRefs, propsRef);
         expect(propsRef.current.onMispronounced).not.toHaveBeenCalled();
-        vi.advanceTimersByTime(1499);
+        vi.advanceTimersByTime(699);
         expect(propsRef.current.onMispronounced).not.toHaveBeenCalled();
         vi.advanceTimersByTime(1);
         expect(propsRef.current.onMispronounced).toHaveBeenCalledTimes(1);
@@ -500,15 +500,15 @@ describe("processWordModeResult (Word Blast — Levenshtein d<=1)", () => {
         expect(propsRef.current.onMispronounced).not.toHaveBeenCalled();
         vi.useRealTimers();
     });
-    test("BF30 B: wrong authoritative within 350ms of switch defers to settle (no instant)", () => {
+    test("BF30 B: wrong authoritative within 1000ms of switch defers to settle (no instant)", () => {
         vi.useFakeTimers();
         const { stateRefs, timeoutRefs, timerRefs, propsRef } = makeRefs();
         timeoutRefs.current.prevTarget = "cat";
         timeoutRefs.current.targetChangedAt = Date.now();
-        // new target dog, wrong word "fish" at 100ms after switch — not matching prev, but within 350ms
+        // new target dog, wrong word "fish" at 100ms after switch — within 1000ms guard
         processWordModeResult(makeEvent("fish", true), "dog", stateRefs, timerRefs, timeoutRefs, propsRef);
         expect(propsRef.current.onMispronounced).not.toHaveBeenCalled();
-        vi.advanceTimersByTime(1499);
+        vi.advanceTimersByTime(699);
         expect(propsRef.current.onMispronounced).not.toHaveBeenCalled();
         vi.advanceTimersByTime(1);
         expect(propsRef.current.onMispronounced).toHaveBeenCalledTimes(1);
@@ -525,7 +525,7 @@ describe("processWordModeResult (Word Blast — Levenshtein d<=1)", () => {
         vi.advanceTimersByTime(200);
         processWordModeResult(makeEvent("dog", false), "dog", stateRefs, timerRefs, timeoutRefs, propsRef);
         expect(propsRef.current.onWordRecognized).toHaveBeenCalledTimes(1);
-        vi.advanceTimersByTime(1500);
+        vi.advanceTimersByTime(700);
         expect(propsRef.current.onMispronounced).not.toHaveBeenCalled();
         vi.useRealTimers();
     });

@@ -4,6 +4,7 @@ import { router } from "@inertiajs/react";
 import { playSuccessSound, playFeedbackSound, playMispronounceFeedback } from "@/utils/sounds";
 import { readResumeSession, clearResumeSession } from "@/utils/resumeStorage";
 import { normalizeText as normalizeWord } from "@/lib/speechUtils";
+import { clearAllTimers } from "@/lib/speechProcessors";
 
 function getStreakFeedbackMessage(streak) {
     if (streak >= 6) return "Excellent!";
@@ -16,12 +17,6 @@ function getStreakShakeIntensity(streak) {
     if (streak >= 8) return "intense";
     if (streak >= 5) return "medium";
     return "subtle";
-}
-
-function clearAllTimers(timers) {
-    Object.values(timers).forEach((timer) => {
-        if (timer) clearTimeout(timer);
-    });
 }
 
 export function useGameplayEngine({
