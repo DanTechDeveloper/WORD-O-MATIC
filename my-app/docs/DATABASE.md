@@ -30,8 +30,8 @@ All migrations in `database/migrations/`. No raw SQL. All foreign keys on `user_
 |---|---|---|
 | `word_modules` | `id, level, title, is_tutorial` | 11 modules (10 real + 1 tutorial), sequential. (`total_points`/`paragraph_modules.total_score` dropped 2026-06-28) |
 | `words` | `id, word_module_id, word, position` | 10 words per module (5 for tutorial). `position` for teacher ordering, gameplay uses `inRandomOrder()`. (`points` dropped 2026-07-09) |
-| `paragraph_modules` | `id, level, title, content, is_tutorial` | 11 modules (10 real + 1 tutorial), sequential. `content` is 2 short sentences ×3-5w (73 total words, was paragraph prose) — split by `sentencesFromContent` `(?<=[.!?])\s+`. |
-| `paragraph_words` | `id, paragraph_module_id, word, position` | Words extracted via `preg_split \s+` (73 total, short seed). `position` 1..n drives `sentence_stats` slice. |
+| `paragraph_modules` | `id, level, title, content, is_tutorial` | 11 modules (10 real + 1 tutorial), sequential. `content` is 2 short sentences ×3-5w (81 total words, was paragraph prose) — split by `sentencesFromContent` `(?<=[.!?])\s+`. |
+| `paragraph_words` | `id, paragraph_module_id, word, position` | Words extracted via `preg_split \s+` (81 total, short seed). `position` 1..n drives `sentence_stats` slice. |
 
 ### Game Sessions (Append-Only)
 

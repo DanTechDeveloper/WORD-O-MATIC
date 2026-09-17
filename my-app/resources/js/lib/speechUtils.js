@@ -1,32 +1,3 @@
-export function standardLevenshtein(a, b) {
-    const m = a.length,
-        n = b.length;
-    if (m === 0) return n;
-    if (n === 0) return m;
-
-    let prevRow = new Int32Array(n + 1);
-    let currRow = new Int32Array(n + 1);
-
-    for (let j = 0; j <= n; j++) prevRow[j] = j;
-
-    for (let i = 1; i <= m; i++) {
-        currRow[0] = i; // Establish bounds
-        for (let j = 1; j <= n; j++) {
-            const cost = a[i - 1] === b[j - 1] ? 0 : 1;
-            const del = prevRow[j] + 1;
-            const ins = currRow[j - 1] + 1;
-            const sub = prevRow[j - 1] + cost;
-
-            currRow[j] =
-                del < ins ? (del < sub ? del : sub) : ins < sub ? ins : sub;
-        }
-        let temp = prevRow;
-        prevRow = currRow;
-        currRow = temp;
-    }
-    return prevRow[n];
-}
-
 export function normalizeText(text) {
     return (text ?? "")
         .toLowerCase()
@@ -35,40 +6,13 @@ export function normalizeText(text) {
 }
 
 /**
- * Universal Word Match Validator
- * Angkop sa KAHIT ANONG SALITA (maikli man o mahaba)
+ * Strict Word Match Validator — exact-only by design.
+ * normalize() muna (case/punct/whitespace), tapos === lang ang hukom:
+ * ang Deepgram transcript ay dapat eksaktong maglaman ng target word.
+ * Walang Levenshtein, walang edit tolerance, walang second chance —
+ * hindi tugma = mali. Kung may salitang pumapalya nang hindi nararapat,
+ * ang SALITA ang pinapalitan (CurriculumSeeder), hindi ang matcher.
  */
-function isValidFuzzyMatch(spokenWord, targetWord) {
-    if (spokenWord === targetWord) return true;
-
-    const targetLen = targetWord.length;
-    const spokenLen = spokenWord.length;
-
-    // SHORT-CIRCUIT: Early exit bago mag-Levenshtein matrix computation.
-    // 1. FIRST-LETTER ANCHOR: Kung mali ang unang tunog/letra, automatic fail (K-5 Decoding constraint).
-    if (spokenWord.charAt(0) !== targetWord.charAt(0)) return false;
-    // 2. LENGTH FILTER: Kung lampas sa 2 letrang haba ang agwat, hindi na matatantya ng fuzzy.
-    if (Math.abs(targetLen - spokenLen) > 2) return false;
-
-    const rawDist = standardLevenshtein(spokenWord, targetWord);
-    // ponytail: any-word catch — 6+ letters allow 2 edits (was 1 for 1-9 via 0.2).
-    // preview 7 → preveiw/perview/prevue dist2 now true, bawas false-negative
-    // sa ASR hallucination kahit tama bata. 1-5 stays 1 to keep short words strict.
-    const maxAllowedError = targetLen >= 6 ? 2 : 1;
-
-    if (rawDist > maxAllowedError) return false;
-
-    // LAST-LETTER PENALTY: Dagdag penalty (+1) kapag mali ang dulong letra.
-    // ponytail: only for same-length substitutions — insertion/deletion at tail
-    // (e.g. previews/preview, tabl/table) already counts in rawDist; double
-    // penalty made valid d=1 into d=2.
-    let adjustedDist = rawDist;
-    if (spokenLen === targetLen && spokenWord.charAt(spokenLen - 1) !== targetWord.charAt(targetLen - 1)) {
-        adjustedDist += 1;
-    }
-    return adjustedDist <= maxAllowedError;
-}
-
 export function isWordMatch(spoken, target) {
     if (!spoken || !target) return false;
 
@@ -81,59 +25,43 @@ export function isWordMatch(spoken, target) {
     const wordsA = a.split(/\s+/);
     const wordsB = b.split(/\s+/);
 
-    // Strategy 1: Single-Word Target processing sa sliding window check
+    // Strategy 1: Single-Word Target — exact token sa sliding window,
+    // o exact pinagdurugtong na magkatabing token ("ca t" -> "cat").
     if (wordsB.length === 1) {
         const singleTarget = wordsB[0];
 
         for (let i = 0; i < wordsA.length; i++) {
-            if (isValidFuzzyMatch(wordsA[i], singleTarget)) return true;
+            if (wordsA[i] === singleTarget) return true;
 
             if (i < wordsA.length - 1) {
-                const combined = wordsA[i] + wordsA[i + 1];
-                if (isValidFuzzyMatch(combined, singleTarget)) return true;
+                if (wordsA[i] + wordsA[i + 1] === singleTarget) return true;
             }
         }
         return false;
     }
 
-    // Strategy 2: Multi-Word Target gamit ang dynamic two-pointer evaluation
-    // Kaya nitong lagpasan ang stutters/fillers at ipunin ang pinaghiwalay na salita.
+    // Strategy 2: Multi-Word Target — exact two-pointer. Hindi ito leniency
+    // kundi turn-taking mechanics: nilalaktawan ang fillers/stutters ("um"),
+    // pero bawat target slot ay eksaktong salita lang ang tatanggapin.
     let j = 0;
     let i = 0;
     while (i < wordsA.length && j < wordsB.length) {
-        const isExact = wordsA[i] === wordsB[j];
-        const isFuzzy = !isExact && isValidFuzzyMatch(wordsA[i], wordsB[j]);
-
-        if (isExact || isFuzzy) {
-            // STUTTER GUARD: Kung fuzzy match ang kasalukuyan pero exact match ang
-            // susunod na salita, lalaktawan ang fuzzy para hindi masayang ang target slot.
-            if (
-                isFuzzy &&
-                i + 1 < wordsA.length &&
-                wordsA[i + 1] === wordsB[j]
-            ) {
-                i++;
-                continue;
-            }
+        if (wordsA[i] === wordsB[j]) {
             j++;
             i++;
             continue;
         }
 
-        // COMPOUND WORD STITCHING: Pinagsasama ang magkasunod na salita (Hal. "ca t" -> "cat")
+        // COMPOUND WORD STITCHING (exact): "ca t" -> "cat".
         if (i + 1 < wordsA.length) {
-            const combined = wordsA[i] + wordsA[i + 1];
-            if (
-                combined === wordsB[j] ||
-                isValidFuzzyMatch(combined, wordsB[j])
-            ) {
+            if (wordsA[i] + wordsA[i + 1] === wordsB[j]) {
                 j++;
                 i += 2;
                 continue;
             }
         }
 
-        // FILLER/HESITATION: Laktawan ang sinabing salita, panatilihin ang target pointer.
+        // FILLER/HESITATION: laktawan ang sinabing salita, panatilihin ang target pointer.
         i++;
     }
 

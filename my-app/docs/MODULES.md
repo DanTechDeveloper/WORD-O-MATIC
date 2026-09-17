@@ -7,9 +7,9 @@
 | Type | Count | Content |
 |---|---|---|
 | Word modules | 11 (10 real + 1 tutorial) | 10 words each (5 for tutorial), progressive difficulty, randomized per gameplay |
-| Paragraph modules | 11 (10 real + 1 tutorial) | 2 short sentences ×3-5w each (73 total words), progressive difficulty, fixed order, split `(?<=[.!?])\s+` → `sentence_stats` |
+| Paragraph modules | 11 (10 real + 1 tutorial) | 2 short sentences ×3-5w each (81 total words), progressive difficulty, fixed order, split `(?<=[.!?])\s+` → `sentence_stats` |
 
-Tutorial modules (`is_tutorial=true`, `level=0`) seeded via `CurriculumSeeder`. Filtered out by `LevelService` (`->where('is_tutorial', false)`) after student completes tutorial.
+Tutorial modules (`is_tutorial=true`, `level=0`) seeded via `CurriculumSeeder`. Filtered out by `LevelService` (`->where('is_tutorial', false)`) after student completes tutorial. Seeder lists are SSOT via static providers (`wordsByModule`, `paragraphsByLevel`, `tutorialWords`, `tutorialContent`) — locked by `CurriculumStrictTest` (PHP content gate) + `curriculumVerdict.test.js` (JS processor gate); a failing word names itself and must be replaced in the seeder, never compensated in the matcher.
 
 ## Teacher
 

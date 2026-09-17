@@ -6,8 +6,7 @@ import {
     clearAllTimers,
     armWordTimeout,
     armSentenceTimeout,
-    processWordModeResult,
-    processSentenceModeResult,
+    routeRecognitionMessage,
 } from "@/lib/speechProcessors";
 
 const MODEL = "nova-3";
@@ -374,9 +373,6 @@ export function useDeepgramRecognition({
             });
 
             conn.on("message", (data) => {
-                if (!data || data.type !== "Results") return;
-                if (!propsRef.current?.isActive) return;
-                if (propsRef.current?.muted) return;
                 if (
                     DEBUG_ASR &&
                     window.__dgOpenAt &&
@@ -389,38 +385,13 @@ export function useDeepgramRecognition({
                         "ms from connection open",
                     );
                 }
-                const isFinal = !!data.is_final;
-                const speechFinal = !!data.speech_final;
-                const alt = data.channel?.alternatives?.[0] ?? {};
-                const transcript = alt.transcript ?? "";
-                const confidence = typeof alt.confidence === "number" ? alt.confidence : 1;
-                if (!transcript && !isFinal && !speechFinal) return;
-                const result = {
-                    isFinal,
-                    speechFinal,
-                    confidence,
-                    0: { transcript },
-                };
-                const target = normalizeText(propsRef.current.targetWord);
-                if (propsRef.current.isWordMode) {
-                    processWordModeResult(
-                        result,
-                        target,
-                        stateRefs,
-                        timerRefs,
-                        timeoutRefs,
-                        propsRef,
-                    );
-                } else {
-                    processSentenceModeResult(
-                        result,
-                        target,
-                        stateRefs,
-                        timeoutRefs,
-                        timerRefs,
-                        propsRef,
-                    );
-                }
+                routeRecognitionMessage(
+                    data,
+                    stateRefs,
+                    timerRefs,
+                    timeoutRefs,
+                    propsRef,
+                );
             });
 
             conn.on("error", (err) => {
