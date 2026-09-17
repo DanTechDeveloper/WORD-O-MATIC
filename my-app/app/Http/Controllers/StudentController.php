@@ -338,10 +338,6 @@ class StudentController extends Controller
         }
 
         if ($request->status === 'training') {
-            // Unsuccessful attempt: wrong transcript OR timeout. Count up, never reset.
-            // Atomic: the WHERE status != 'mastered' is evaluated at write time, so a
-            // row that got mastered by a concurrent request is never bumped (DB-enforced
-            // sticky, no TOCTOU). ponytail: relies on the unique (user_id, id) index.
             $affected = $model::where('user_id', auth()->id())
                 ->where($idColumn, $request->$idColumn)
                 ->where('status', '!=', 'mastered')
