@@ -43,8 +43,11 @@ RUN mkdir -p \
         bootstrap/cache \
     && composer dump-autoload --no-dev --classmap-authoritative \
     && php artisan event:cache || true \
-    && php artisan view:cache || true
-# ponytail: config:cache / optimize intentionally skipped — Vercel injects env at runtime (guide forbids)
+    && php artisan view:cache || true \
+    && php artisan route:cache || true
+# ponytail: config:cache / optimize intentionally skipped — Vercel injects env at runtime (guide forbids).
+# route:cache is safe (Laravel 13 serializes the closure routes, verified) and skips
+# per-request route registration on every cold/warm container request.
 
 FROM base AS runtime
 
