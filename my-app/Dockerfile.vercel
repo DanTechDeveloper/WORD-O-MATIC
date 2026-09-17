@@ -70,4 +70,11 @@ ENV PORT=80 \
 
 USER www-data
 
+# ponytail: warmup/health signal — exercises full Laravel boot via /up on a
+# 30s cadence (keeps the container warm between classroom bursts). php binary
+# is guaranteed present (no curl dependency). start-period covers cold boot;
+# orchestrators that ignore HEALTHCHECK simply skip it (harmless).
+HEALTHCHECK --interval=30s --timeout=5s --start-period=90s --retries=3 \
+    CMD php -r 'exit(@file_get_contents("http://127.0.0.1:".(getenv("PORT") ?: 80)."/up") ? 0 : 1);'
+
 CMD ["frankenphp", "run", "--config", "/etc/frankenphp/Caddyfile"]
