@@ -10,50 +10,90 @@ use Illuminate\Database\Seeder;
 
 class CurriculumSeeder extends Seeder
 {
-    public function run(): void
+    // ponytail: seeder lists are SSOT via these providers — CurriculumStrictTest reads
+    // them directly (no hardcoded copy), and run() below seeds exactly these. The JS
+    // mirrors (curriculumVerdict.test.js) are locked to the same content by the gate.
+    public static function wordsByModule(): array
     {
-        $wordsByModule = [
-            // ponytail: L1 replaced — Levenshtein-safe (d<=1 alone). Old cat/dog/sun/hat/run/big/red/cup/box/pen had 9+ d=1 real neighbors (cat→bat/cot/mat). New 4-letter set has ≤1 neighbor, so Levenshtein alone is not over-permissive. If a word still not pabor, replace again and keep d<=1.
-            1 => ['fish', 'bird', 'book', 'lamp', 'jump', 'farm', 'chip', 'desk', 'moon', 'iron'],
-            2 => ['cake', 'tree', 'kite', 'road', 'cube', 'snow', 'boat', 'seed', 'lime', 'bone'],
-            3 => ['star', 'drum', 'frog', 'milk', 'nest', 'sand', 'belt', 'grip', 'golf', 'palm'],
-            4 => ['grass', 'train', 'plate', 'broom', 'snake', 'grape', 'track', 'flame', 'press', 'brick'],
-            5 => ['rabbit', 'window', 'pencil', 'basket', 'kitten', 'napkin', 'picnic', 'helmet', 'muffin', 'lantern'],
-            6 => ['replay', 'prefix', 'unseen', 'redo', 'undo', 'preview', 'unhappy', 'reload', 'rewrite', 'subway'],
-            7 => ['slowly', 'joyful', 'fearless', 'quickly', 'useful', 'careful', 'loudly', 'kindly', 'sadly', 'painful'],
-            8 => ['rainbow', 'sunset', 'popcorn', 'bedroom', 'toothbrush', 'football', 'pancake', 'firefly', 'starfish', 'cupcake'],
-            9 => ['explore', 'beautiful', 'adventure', 'dinosaur', 'enormous', 'fantastic', 'astronaut', 'discover', 'important', 'vegetable'],
-            10 => ['perseverance', 'accomplishment', 'extraordinary', 'responsibility', 'determination', 'communication', 'collaboration', 'environment', 'celebration', 'imagination'],
+        return [
+            // ponytail: strict-era reseed — isWordMatch is exact-only (normalize + ===), so
+            // every word must survive on transcript fidelity alone. No 3-letter words (isolated
+            // short utterances mistranscribe most), no homophone/confusable picks (audit blocklist
+            // in curriculumVerdict.test.js: sea/see, prints/prince, bacon/beacon, sheet/sheep...).
+            // Chapters use exact base forms only (paints/paint is now WRONG). Gate: curriculumVerdict.
+            // If a word turns bagsak, replace the word — never loosen the matcher.
+            1 => ['frog', 'crab', 'drum', 'swim', 'snack', 'slide', 'stone', 'bloom', 'grape', 'grill'],
+            2 => ['dream', 'cloud', 'snail', 'green', 'shade', 'train', 'queen', 'roast', 'paint', 'cloak'],
+            3 => ['brush', 'clock', 'smile', 'plant', 'crash', 'dress', 'frost', 'twist', 'shark', 'phone'],
+            4 => ['splash', 'street', 'stripe', 'crane', 'flute', 'skate', 'brave', 'brick', 'spark', 'blast'],
+            5 => ['tiger', 'river', 'lemon', 'pocket', 'circus', 'magnet', 'violin', 'planet', 'robot', 'camel'],
+            6 => ['remake', 'unlock', 'rewrite', 'unzip', 'dislike', 'distrust', 'misplace', 'misspell', 'reopen', 'recycle'],
+            7 => ['thankful', 'endless', 'softly', 'muddy', 'wishful', 'harmless', 'neatly', 'sleepy', 'sticky', 'kindly'],
+            8 => ['airplane', 'sailboat', 'mailbox', 'raincoat', 'suitcase', 'bookshelf', 'campground', 'dragonfly', 'wheelchair', 'keyboard'],
+            9 => ['thunder', 'journey', 'whisper', 'meadow', 'clever', 'spirit', 'voyage', 'village', 'comet', 'canyon'],
+            10 => ['architecture', 'temperature', 'electricity', 'expedition', 'horizon', 'fortress', 'galaxy', 'lagoon', 'mosaic', 'pyramid'],
         ];
+    }
 
-        $titles = [
+    public static function titles(): array
+    {
+        return [
             1 => 'Phonics Foundation', 2 => 'Vowel Voyage', 3 => 'Consonant Quest',
             4 => 'Blend Brigade', 5 => 'Syllable Sprint', 6 => 'Prefix Patrol',
             7 => 'Suffix Squad', 8 => 'Compound Crusade', 9 => 'Vocabulary Vortex',
             10 => 'Mastery Marathon',
         ];
+    }
 
-        // ponytail: Chapter 1-10 connected story — Milo + map arc, 2 sentences/level, 20 sentences total
-        // Clean split on (?<=[.!?])\s+ — keep exactly "Sentence. Sentence." no extra punctuation
-        $paragraphsByLevel = [
-            1 => 'Milo finds a map. He feels brave.',
-            2 => 'The map shows a hill. Milo climbs slowly.',
-            3 => 'A frog sits on a rock. It jumps high.',
-            4 => 'Milo sees tall grass. A track leads ahead.',
-            5 => 'A rabbit naps by a window. Milo waves hello.',
-            6 => 'He can replay the path. He will not undo it.',
-            7 => 'He walks slowly and careful. Joy feels useful.',
-            8 => 'A rainbow lights the sky. Milo eats popcorn.',
-            9 => 'They explore a bright adventure. It feels fantastic.',
-            10 => 'With perseverance they find home. Imagination wins today.',
+    public static function paragraphsByLevel(): array
+    {
+        // Milo arc, sentences echo exact level words (1-2 each) — inflected
+        // forms (paints/paint) are WRONG under strict, so chapters use base forms only.
+        // Clean split on (?<=[.!?])\s+ — keep exactly "Sentence. Sentence.", 3-5 words each.
+        return [
+            1 => 'Milo sees a frog. A crab can swim.',
+            2 => 'A green cloud floats. The queen sees a train.',
+            3 => 'The clock ticks. Milo holds a brush.',
+            4 => 'A brave crane lands. Milo finds a brick.',
+            5 => 'A tiger crosses the river. A robot holds a lemon.',
+            6 => 'Milo will recycle paper. He can reopen it.',
+            7 => 'Milo walks softly. He feels thankful.',
+            8 => 'A sailboat crosses the lake. Milo finds a mailbox.',
+            9 => 'They hear low thunder. Milo finds a village.',
+            10 => 'The fortress stands tall. Milo joins the expedition.',
         ];
+    }
 
-        $paraTitles = [
+    public static function paraTitles(): array
+    {
+        return [
             1 => 'Chapter 1: The Map', 2 => 'Chapter 2: The Hill', 3 => 'Chapter 3: The Rock',
             4 => 'Chapter 4: The Grass', 5 => 'Chapter 5: The Rabbit', 6 => 'Chapter 6: The Path',
             7 => 'Chapter 7: The Climb', 8 => 'Chapter 8: The Rainbow', 9 => 'Chapter 9: The Adventure',
             10 => 'Chapter 10: Home Again',
         ];
+    }
+
+    public static function tutorialWords(): array
+    {
+        // Strict-era tutorial — 5-6 letter distinctive words. Short words
+        // mistranscribe most in isolation, and strict has no second chance.
+        return ['apple', 'banana', 'puppy', 'kitten', 'hamster'];
+    }
+
+    public static function tutorialContent(): string
+    {
+        return 'A puppy naps. A hamster runs.';
+    }
+
+    public function run(): void
+    {
+        $wordsByModule = self::wordsByModule();
+        $titles = self::titles();
+        $paragraphsByLevel = self::paragraphsByLevel();
+        $paraTitles = self::paraTitles();
+        $tutorialWords = self::tutorialWords();
+        $tutorialContent = self::tutorialContent();
 
         foreach (range(1, 10) as $level) {
             if ($level > 10) {
@@ -87,7 +127,8 @@ class CurriculumSeeder extends Seeder
                 ]);
             }
 
-            $tutorialWords = ['a', 'I', 'see', 'my', 'the'];
+            // Tutorial rows seed once (firstOrCreate + wasRecentlyCreated) — a wording
+            // change only applies on migrate:fresh --seed.
             $tutorialWordModule = WordModule::firstOrCreate(
                 ['level' => 0],
                 ['title' => 'Tutorial', 'is_tutorial' => true],
@@ -102,7 +143,6 @@ class CurriculumSeeder extends Seeder
                 }
             }
 
-            $tutorialContent = 'I see a cat.';
             $tutorialParaModule = ParagraphModule::firstOrCreate(
                 ['level' => 0],
                 ['title' => 'Tutorial', 'content' => $tutorialContent, 'is_tutorial' => true],

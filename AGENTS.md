@@ -5,7 +5,7 @@ Runnable app is `my-app/` — `cd my-app` before every command. Repo root holds 
 
 ## Stack
 Laravel 13 (PHP 8.3) + React 18 + Inertia v2 + Vite 8 + Tailwind v3. MySQL local, SQLite `:memory:` for tests (`phpunit.xml`). Session auth via `UserController`, `role:teacher`/`role:student` in `bootstrap/app.php`. Vercel Container `dunglas/frankenphp` + Aiven MySQL, Deepgram `au` nova-3 (`useDeepgramRecognition.js`).
-ASR truth: `hooks/Student/useDeepgramRecognition.js` → `lib/speechProcessors.js` (no `useSpeechRecognition.js` file exists) → SSOT `isWordMatch` (`lib/speechUtils.js`). Word-mode confidence gates: interim accept `≥0.7`, authoritative-wrong `≥0.6`; sentence mode ignores confidence.
+ASR truth: `hooks/Student/useDeepgramRecognition.js` → `lib/speechProcessors.js` (no `useSpeechRecognition.js` file exists) → SSOT `isWordMatch` (`lib/speechUtils.js`, strict exact-only after normalize — no Levenshtein, non-exact is Wrong). Word-mode confidence gates: interim accept `≥0.7`, authoritative-wrong `≥0.6`; sentence mode ignores confidence.
 
 ## Commands (run from `my-app/`)
 | Command | What it does |

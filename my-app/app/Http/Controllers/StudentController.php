@@ -18,11 +18,12 @@ use App\Services\BadgeService;
 use App\Services\LevelService;
 use App\Services\ProgressService;
 use App\Services\ReportService;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
 class StudentController extends Controller
@@ -245,7 +246,6 @@ class StudentController extends Controller
             'wordTutorialDone' => $this->tutorialState($user)['wordTutorialDone'],
         ];
 
-
         return Inertia::render($page, $data);
     }
 
@@ -413,7 +413,20 @@ class StudentController extends Controller
             $redirect = redirect()->route('student.results', ['id' => $session->id]);
             $badgesData = $this->checkTutorialCompletion($user);
 
-            return $badgesData ? $redirect->with('new_badges', [$badgesData]) : $redirect;
+            if ($badgesData) {
+                return $redirect->with('new_badges', [$badgesData]);
+            }
+
+            // ponytail: GameResults renders once per onboarding — on the completing
+            // finish (tutorial_completed_at just set; entry guaranteed it null, so a
+            // set value means this round completed onboarding even when the badge row
+            // is missing and no flash exists). Any earlier tutorial finish lands on
+            // the mid-onboarding dashboard instead of a second results screen.
+            if (! $user->student->refresh()->tutorial_completed_at) {
+                return redirect()->route('student.dashboard');
+            }
+
+            return $redirect;
         }
 
         $totalPossible = $module->words()->count();
@@ -470,6 +483,16 @@ class StudentController extends Controller
         if ($session->user_id !== auth()->id()) {
             return redirect()->route('student.dashboard')
                 ->with('error', 'Access denied.');
+        }
+
+        // ponytail: a non-completing tutorial finish has no results screen — bounce
+        // direct visits back to the mid-onboarding dashboard. The completing finish
+        // (tutorial_completed_at set) and post-onboarding replays still render.
+        $bounceModule = $session->module_type === 'word'
+            ? WordModule::find($session->module_id)
+            : ParagraphModule::find($session->module_id);
+        if ($bounceModule?->is_tutorial && ! auth()->user()?->student?->tutorial_completed_at) {
+            return redirect()->route('student.dashboard');
         }
 
         $latestId = GameSession::where('user_id', auth()->id())->max('id');
@@ -564,7 +587,7 @@ class StudentController extends Controller
     public function deepgramToken(Request $request)
     {
         $key = config('services.deepgram.key');
-        if (!$key) {
+        if (! $key) {
             abort(500, 'Deepgram not configured');
         }
 
@@ -585,24 +608,26 @@ class StudentController extends Controller
 
         try {
             $resp = Http::withHeaders([
-                'Authorization' => 'Token ' . $key,
+                'Authorization' => 'Token '.$key,
                 'Accept' => 'application/json',
             ])->post("https://{$host}/v1/auth/grant", [
                 'ttl_seconds' => 3600,
             ]);
-        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+        } catch (ConnectionException $e) {
             \Log::error('Deepgram grant connection failed', ['error' => $e->getMessage()]);
+
             return response()->json([
                 'error' => 'deepgram_grant_connection_failed',
                 'detail' => $e->getMessage(),
             ], 502);
         }
 
-        if (!$resp->successful()) {
+        if (! $resp->successful()) {
             \Log::error('Deepgram grant failed', [
                 'status' => $resp->status(),
                 'body' => $resp->body(),
             ]);
+
             return response()->json([
                 'error' => 'deepgram_grant_failed',
                 'status' => $resp->status(),

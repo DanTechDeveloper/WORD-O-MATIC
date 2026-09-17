@@ -66,8 +66,8 @@ splashScreen → avatarSelection → dashboard
 ```
 
 Tutorial uses dedicated modules (`is_tutorial=true`, `level=0`):
-- Word Blast: 5 practice words (a, I, see, my, the)
-- Story Quest: "I see a cat." paragraph
+- Word Blast: 5 practice words (apple, banana, puppy, kitten, hamster)
+- Story Quest: "A puppy naps. A hamster runs." paragraph
 Tutorial plays skip GameSession, mastery, points, leaderboard, and gameplay badges.
 Tutorial Complete badge awarded when both modes are done via `BadgeService::awardOnboardingBadge('tutorial-complete')`;
 dismissing it shows a congrats `AvatarSpeechBubble` on the Dashboard (gated by the `tutorial-complete` flash badge).
@@ -141,7 +141,7 @@ Rules:
 then required (`required|string`) — empty or whitespace-only content is rejected,
 so a zero-word paragraph module can never be created (a zero-word module would
 strand students: `ProgressService` refuses to complete a module with 0 words —
-`$totalWords > 0` guard, see CAVEATS.md BF13). Content is 2 short sentences ×3-5w (73 total words, was paragraph prose) — split `(?<=[.!?])\s+` → `sentence_stats` (sentence `mastered` iff every word `mastered`, `failed_attempts=sum(word)`). Words are split on whitespace and
+`$totalWords > 0` guard, see CAVEATS.md BF13). Content is 2 short sentences ×3-5w (81 total words, was paragraph prose) — split `(?<=[.!?])\s+` → `sentence_stats` (sentence `mastered` iff every word `mastered`, `failed_attempts=sum(word)`). Words are split on whitespace and
 stored case-as-entered via `ParagraphModule::saveWithContent` (deletes +
 recreates the module's words each save). `level` is likewise validated
 `min:1` for the same reason as word modules (`saveWithContent` upserts by

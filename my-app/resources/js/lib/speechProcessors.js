@@ -1,5 +1,47 @@
 import { isWordMatch, normalizeText } from "@/lib/speechUtils";
 
+// ponytail: Deepgram message router extracted from useDeepgramRecognition's
+// conn.on("message") — pure event -> processor dispatch, unit-testable without
+// mounting the hook (node env, no mic/WebSocket). The hook passes its refs
+// straight through; behavior is identical to the inline version.
+export function routeRecognitionMessage(data, stateRefs, timerRefs, timeoutRefs, propsRef) {
+    if (!data || data.type !== "Results") return;
+    if (!propsRef.current?.isActive) return;
+    if (propsRef.current?.muted) return;
+    const isFinal = !!data.is_final;
+    const speechFinal = !!data.speechFinal;
+    const alt = data.channel?.alternatives?.[0] ?? {};
+    const transcript = alt.transcript ?? "";
+    const confidence = typeof alt.confidence === "number" ? alt.confidence : 1;
+    if (!transcript && !isFinal && !speechFinal) return;
+    const result = {
+        isFinal,
+        speechFinal,
+        confidence,
+        0: { transcript },
+    };
+    const target = normalizeText(propsRef.current.targetWord);
+    if (propsRef.current.isWordMode) {
+        processWordModeResult(
+            result,
+            target,
+            stateRefs,
+            timerRefs,
+            timeoutRefs,
+            propsRef,
+        );
+    } else {
+        processSentenceModeResult(
+            result,
+            target,
+            stateRefs,
+            timeoutRefs,
+            timerRefs,
+            propsRef,
+        );
+    }
+}
+
 export function clearAllTimers(timers) {
     Object.keys(timers).forEach((key) => {
         if (timers[key]) {

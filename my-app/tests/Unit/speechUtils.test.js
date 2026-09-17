@@ -1,12 +1,12 @@
-import { isWordMatch, standardLevenshtein } from "@/lib/speechUtils.js";
+import { isWordMatch } from "@/lib/speechUtils.js";
 import { processSentenceModeResult, processWordModeResult } from "@/lib/speechProcessors.js";
 
 // ponytail: SSOT — isWordMatch is the single matcher for Word Blast and Story Quest.
-// Strict per-word Levenshtein <= 1; sentence-aware (handles multi-word targets via
-// ordered two-pointer + ASR split fallback). Replaces the old isFuzzyMatch /
-// withinRatio / boundaryLeak stack.
+// STRICT exact-only: normalize() then ===. Any non-exact transcript is Wrong —
+// no Levenshtein, no edit tolerance, no second chance. Structural mechanics stay
+// (sliding window, exact pair-stitch, ordered two-pointer, filler skip).
 
-describe("isWordMatch — SSOT (Word Blast + Story Quest, Levenshtein <= 1 per word)", () => {
+describe("isWordMatch — SSOT strict exact-only (Word Blast + Story Quest)", () => {
     describe("exact match", () => {
         test("returns true for identical words", () => {
             expect(isWordMatch("cat", "cat")).toBe(true);
@@ -21,52 +21,33 @@ describe("isWordMatch — SSOT (Word Blast + Story Quest, Levenshtein <= 1 per w
         });
     });
 
-    describe("single-word target, d=1 (Levenshtein alone)", () => {
-        test("returns true for hat and hot (1 substitution)", () => {
-            expect(isWordMatch("hat", "hot")).toBe(true);
-            expect(isWordMatch("hot", "hat")).toBe(true);
+    describe("single-word target — anything but exact is wrong", () => {
+        test("returns false for 1-substitution pairs (hat/hot, cot/cat, kat/cat)", () => {
+            expect(isWordMatch("hat", "hot")).toBe(false);
+            expect(isWordMatch("hot", "hat")).toBe(false);
+            expect(isWordMatch("cot", "cat")).toBe(false);
+            expect(isWordMatch("kat", "cat")).toBe(false);
         });
-        test("returns true for cot/kat vs cat (1 substitution)", () => {
-            expect(isWordMatch("cot", "cat")).toBe(true);
-            expect(isWordMatch("kat", "cat")).toBe(false); // first-letter anchor: k != c
+        test("returns false for 1-deletion pairs (read/red, tabl/table)", () => {
+            expect(isWordMatch("read", "red")).toBe(false);
+            expect(isWordMatch("tabl", "table")).toBe(false);
         });
-        test("returns true for read and red (1 deletion)", () => {
-            expect(isWordMatch("read", "red")).toBe(true);
+        test("returns false for near-miss pairs (hello/helo, beautiful/beutiful, carful/careful)", () => {
+            expect(isWordMatch("hello", "helo")).toBe(false);
+            expect(isWordMatch("beautiful", "beutiful")).toBe(false);
+            expect(isWordMatch("carful", "careful")).toBe(false);
         });
-        test("returns true for tabl and table (1 deletion)", () => {
-            expect(isWordMatch("tabl", "table")).toBe(true);
-        });
-    });
-
-    describe("single-word target, d>1 (strict rejection)", () => {
-        // ponytail: SSOT is strict — 2+ edits surface as Wrong so ASR errors
-        // are not masked as "close enough". Old isFuzzyMatch/withinRatio let
-        // these pass; the SSOT rejects them. d=1 cases (cot/kat/cat, tabl/table,
-        // cat/bat) still pass — that's the whole point of the L1 threshold.
-        test("returns false for hello and helo (2 edits on a 5-char word)", () => {
-            expect(isWordMatch("hello", "helo")).toBe(true); // d=1 true with current first-letter/length
-        });
-        test("returns false for beautiful and beutiful (2 edits)", () => {
-            expect(isWordMatch("beautiful", "beutiful")).toBe(true);
-        });
-        test("returns false for careful and carful (medial schwa drop)", () => {
-            expect(isWordMatch("carful", "careful")).toBe(true);
-        });
-        test("returns false for tabl and tablo (medial vowel swap)", () => {
+        test("returns false for tablo/table, ct/cat, category/cat, member/remember, elephant/legphant", () => {
             expect(isWordMatch("tablo", "table")).toBe(false);
-        });
-        test("returns false for ct and cat (medial drop)", () => {
-            expect(isWordMatch("ct", "cat")).toBe(true);
-        });
-        test("returns false for category and cat", () => {
+            expect(isWordMatch("ct", "cat")).toBe(false);
             expect(isWordMatch("category", "cat")).toBe(false);
+            expect(isWordMatch("member", "remember")).toBe(false);
+            expect(isWordMatch("elephant", "legphant")).toBe(false);
+        });
     });
 
-
-    describe("first-letter anchoring for short words (1-2 chars)", () => {
-        // ponytail: isValidFuzzyMatch now applies the first-letter anchor to ALL word lengths,
-        // not just 3+ char words. This prevents "b" matching "a" or "my" matching "by".
-        test("returns false for single-char first-letter mismatch (b vs a)", () => {
+    describe("short words — exact only", () => {
+        test("returns false for single-char mismatch (b/c vs a)", () => {
             expect(isWordMatch("b", "a")).toBe(false);
             expect(isWordMatch("c", "a")).toBe(false);
         });
@@ -74,25 +55,15 @@ describe("isWordMatch — SSOT (Word Blast + Story Quest, Levenshtein <= 1 per w
             expect(isWordMatch("a", "a")).toBe(true);
             expect(isWordMatch("I", "i")).toBe(true);
         });
-        test("returns false for 2-char first-letter mismatch (my vs by, in vs on)", () => {
+        test("returns false for 2-char mismatch (my vs by, in vs on, mi vs my)", () => {
             expect(isWordMatch("my", "by")).toBe(false);
             expect(isWordMatch("in", "on")).toBe(false);
+            expect(isWordMatch("mi", "my")).toBe(false);
         });
-        test("returns true for 2-char first-letter match with d≤1", () => {
+        test("returns true for 2-char exact match", () => {
             expect(isWordMatch("it", "it")).toBe(true);
             expect(isWordMatch("he", "he")).toBe(true);
             expect(isWordMatch("by", "by")).toBe(true);
-        });
-        test("returns false for 2-char last-letter mismatch with adjusted distance overflow", () => {
-            // "mi" vs "my": d=1, first letter matches, but last-letter penalty pushes adjusted dist to 2 > maxAllowed
-            expect(isWordMatch("mi", "my")).toBe(false);
-        });
-    });
-        test("returns false for member and remember (leading syllable drop)", () => {
-            expect(isWordMatch("member", "remember")).toBe(false);
-        });
-        test("returns false for elephant and legphant (leading drop)", () => {
-            expect(isWordMatch("elephant", "legphant")).toBe(false);
         });
     });
 
@@ -116,7 +87,7 @@ describe("isWordMatch — SSOT (Word Blast + Story Quest, Levenshtein <= 1 per w
             expect(isWordMatch("um ca t dog", "cat dog")).toBe(true);
         });
         test("returns false when compound join doesn't match (ca x vs cat)", () => {
-            expect(isWordMatch("ca x dog", "cat dog")).toBe(true); // ca + t? actually "ca x" vs "cat" with current split
+            expect(isWordMatch("ca x dog", "cat dog")).toBe(false);
         });
     });
 
@@ -183,20 +154,20 @@ describe("isWordMatch — SSOT (Word Blast + Story Quest, Levenshtein <= 1 per w
     });
 });
 
-// ponytail: WORD BLAST curriculum guard — Levenshtein-safe L1 (fish/bird...),
-// d<=1 alone. Same guard; isWordMatch signature unchanged.
-describe("WORD BLAST curriculum (seeded words) — regression guard (Levenshtein d<=1, L1 safe)", () => {
+// ponytail: WORD BLAST curriculum guard — verdict-gated reseed (fox/quiz...),
+// same guard shape; isWordMatch signature unchanged.
+describe("WORD BLAST curriculum (seeded words) — regression guard (verdict-gated)", () => {
     const wordsByModule = [
-        ["fish", "bird", "book", "lamp", "jump", "farm", "chip", "desk", "moon", "iron"],
-        ["cake", "tree", "kite", "road", "cube", "snow", "boat", "seed", "lime", "bone"],
-        ["star", "drum", "frog", "milk", "nest", "sand", "belt", "grip", "golf", "palm"],
-        ["grass", "train", "plate", "broom", "snake", "grape", "track", "flame", "press", "brick"],
-        ["rabbit", "window", "pencil", "basket", "kitten", "napkin", "picnic", "helmet", "muffin", "lantern"],
-        ["replay", "prefix", "unseen", "redo", "undo", "preview", "unhappy", "reload", "rewrite", "subway"],
-        ["slowly", "joyful", "fearless", "quickly", "useful", "careful", "loudly", "kindly", "sadly", "painful"],
-        ["rainbow", "sunset", "popcorn", "bedroom", "toothbrush", "football", "pancake", "firefly", "starfish", "cupcake"],
-        ["explore", "beautiful", "adventure", "dinosaur", "enormous", "fantastic", "astronaut", "discover", "important", "vegetable"],
-        ["perseverance", "accomplishment", "extraordinary", "responsibility", "determination", "communication", "collaboration", "environment", "celebration", "imagination"],
+        ["fox", "gum", "wag", "zip", "van", "yak", "jam", "kit", "log", "quiz"],
+        ["peach", "cloud", "snail", "green", "light", "sheep", "queen", "toast", "paint", "globe"],
+        ["brush", "clock", "smile", "plant", "crash", "dress", "frost", "twist", "thumb", "prince"],
+        ["splash", "street", "stripe", "crane", "flute", "skate", "brave", "crown", "purse", "drift"],
+        ["tiger", "river", "lemon", "pocket", "circus", "magnet", "violin", "tulip", "robot", "camel"],
+        ["remake", "unlock", "repay", "unzip", "dislike", "distrust", "misplace", "misspell", "retell", "recycle"],
+        ["thankful", "endless", "softly", "muddy", "wishful", "harmless", "neatly", "rusty", "sticky", "weekly"],
+        ["airplane", "sailboat", "mailbox", "raincoat", "snowman", "bookshelf", "campground", "dragonfly", "wheelchair", "keyboard"],
+        ["thunder", "journey", "whisper", "meadow", "clever", "beacon", "voyage", "harbor", "blanket", "canyon"],
+        ["architecture", "temperature", "electricity", "expedition", "horizon", "fortress", "galaxy", "lagoon", "mosaic", "oasis"],
     ];
     test("every WORD BLAST word matches itself (d=0)", () => {
         for (const level of wordsByModule) for (const w of level) expect(isWordMatch(w, w)).toBe(true);
@@ -204,15 +175,16 @@ describe("WORD BLAST curriculum (seeded words) — regression guard (Levenshtein
     test("every WORD BLAST word matches its uppercased form", () => {
         for (const level of wordsByModule) for (const w of level) expect(isWordMatch(w.toUpperCase(), w)).toBe(true);
     });
-    test("d=1 variants true (Levenshtein alone) — medial/leading both true", () => {
-        expect(isWordMatch("fist", "fish")).toBe(false); // last-letter penalty
-        expect(isWordMatch("bard", "bird")).toBe(true);
-        expect(isWordMatch("cot", "cat")).toBe(true);
-        expect(isWordMatch("kat", "cat")).toBe(false); // first-letter
+    test("any non-exact variant is wrong (strict — no medial/last-letter mercy)", () => {
+        expect(isWordMatch("quit", "quiz")).toBe(false);
+        expect(isWordMatch("sheet", "sheep")).toBe(false);
+        expect(isWordMatch("clack", "clock")).toBe(false);
+        expect(isWordMatch("cot", "cat")).toBe(false);
+        expect(isWordMatch("kat", "cat")).toBe(false);
     });
     test("d>1 false", () => {
         expect(isWordMatch("category", "cat")).toBe(false);
-        expect(isWordMatch("unhappy", "happy")).toBe(false);
+        expect(isWordMatch("misplace", "place")).toBe(false);
     });
 });
 
@@ -349,7 +321,7 @@ describe("processSentenceModeResult (Story Quest — SSOT isWordMatch)", () => {
     });
 });
 
-describe("processWordModeResult (Word Blast — Levenshtein d<=1)", () => {
+describe("processWordModeResult (Word Blast — strict exact-only)", () => {
     const makeRefs = () => {
         const stateRefs = {
             current: {
@@ -386,21 +358,17 @@ describe("processWordModeResult (Word Blast — Levenshtein d<=1)", () => {
         processWordModeResult(makeEvent("fish"), "fish", stateRefs, timerRefs, timeoutRefs, propsRef);
         expect(propsRef.current.onWordRecognized).toHaveBeenCalledTimes(1);
     });
-    test("recognizes d=1 variant (Levenshtein alone)", () => {
+    test("near-miss variant is not recognized (strict: fist/fish is wrong)", () => {
         const { stateRefs, timeoutRefs, timerRefs, propsRef } = makeRefs();
         processWordModeResult(makeEvent("fist"), "fish", stateRefs, timerRefs, timeoutRefs, propsRef);
-        expect(propsRef.current.onWordRecognized).not.toHaveBeenCalled(); // last-letter penalty
-        expect(standardLevenshtein("fist", "fish")).toBe(1);
+        expect(propsRef.current.onWordRecognized).not.toHaveBeenCalled();
     });
-    test("recognizes cot/kat vs cat via d<=1", () => {
-        for (const spoken of ["cot"]) {
+    test("near-miss cot/kat vs cat are wrong (strict)", () => {
+        for (const spoken of ["cot", "kat"]) {
             const { stateRefs, timeoutRefs, timerRefs, propsRef } = makeRefs();
             processWordModeResult(makeEvent(spoken), "cat", stateRefs, timerRefs, timeoutRefs, propsRef);
-            expect(propsRef.current.onWordRecognized).toHaveBeenCalledTimes(1);
+            expect(propsRef.current.onWordRecognized).not.toHaveBeenCalled();
         }
-        const { stateRefs: sr2, timeoutRefs: tr2, timerRefs: tmr2, propsRef: pr2 } = makeRefs();
-        processWordModeResult(makeEvent("kat"), "cat", sr2, tmr2, tr2, pr2);
-        expect(pr2.current.onWordRecognized).not.toHaveBeenCalled(); // first-letter
     });
     test("rejects d>1", () => {
         const cases = [
@@ -466,18 +434,18 @@ describe("processWordModeResult (Word Blast — Levenshtein d<=1)", () => {
         expect(propsRef.current.onMispronounced).not.toHaveBeenCalled();
         vi.useRealTimers();
     });
-    test("d<=1 near-match still Recognized even on isFinal (cot/cat, kat/cat)", () => {
+    test("near-miss on isFinal mispronounces immediately (strict: no second chance)", () => {
         const { stateRefs: sr1, timeoutRefs: tr1, timerRefs: tm1, propsRef: pr1 } = makeRefs();
         processWordModeResult(makeEvent("cot", true), "cat", sr1, tm1, tr1, pr1);
-        expect(pr1.current.onMispronounced).not.toHaveBeenCalled();
-        expect(pr1.current.onWordRecognized).toHaveBeenCalledTimes(1);
+        expect(pr1.current.onMispronounced).toHaveBeenCalledTimes(1);
+        expect(pr1.current.onWordRecognized).not.toHaveBeenCalled();
         const { stateRefs: sr2, timeoutRefs: tr2, timerRefs: tm2, propsRef: pr2 } = makeRefs();
         processWordModeResult(makeEvent("kat", true), "cat", sr2, tm2, tr2, pr2);
-        expect(pr2.current.onMispronounced).toHaveBeenCalledTimes(1); // first-letter
+        expect(pr2.current.onMispronounced).toHaveBeenCalledTimes(1);
         expect(pr2.current.onWordRecognized).not.toHaveBeenCalled();
         const { stateRefs, timeoutRefs, timerRefs, propsRef } = makeRefs();
         processWordModeResult(makeEvent("fist", true), "fish", stateRefs, timerRefs, timeoutRefs, propsRef);
-        expect(propsRef.current.onMispronounced).toHaveBeenCalledTimes(1); // last-letter penalty
+        expect(propsRef.current.onMispronounced).toHaveBeenCalledTimes(1);
         expect(propsRef.current.onWordRecognized).not.toHaveBeenCalled();
     });
     test("BF29b: correct word on isFinal still wins (no mispronounce)", () => {

@@ -9,7 +9,7 @@
 | Type | Reading with speech recognition |
 | Timer | 60 seconds per session |
 | Presentation | Words randomized per session (`inRandomOrder()`) |
-| Scoring | Levenshtein alone (`speechUtils.js` `isWordMatch` → `standardLevenshtein ≤1`; `cot`=`cat`, `kat`=`cat`, `tabl`=`table` all Correct; words curated to be Levenshtein-safe) |
+| Scoring | Strict exact-only (`speechUtils.js` `isWordMatch` → normalize + `===`; any non-exact transcript is Wrong; words curated for transcript fidelity) |
 | Accuracy | `words_smashed / total_words * 100` |
 | Update rule | Only on new best score (retries don't lower existing score) |
 | Mastery | Per-word: `mastered` or `training`, stored in `student_word_mastery` |
@@ -19,10 +19,10 @@
 
 | Property | Value |
 |---|---|
-| Type | Speaking with short sentences (2 per level, 3-5 words each, 73 total words) |
+| Type | Speaking with short sentences (2 per level, 3-5 words each, 81 total words) |
 | Timer | 60 seconds per session |
 | Presentation | Sentence-based, fixed word order |
-| Scoring | SSOT `isWordMatch` (`speechUtils.js`): per-word Levenshtein ≤ 1, sentence-aware (ordered two-pointer + ASR split fallback). Both Word Blast and Story Quest use the same function. Strict L1 per word means ASR mishears of 2+ edits surface as Wrong — scoring is objective, not hidden as "close enough". Replaces the old `isFuzzyMatch`/`withinRatio`/`boundaryLeak` stack. |
+| Scoring | SSOT `isWordMatch` (`speechUtils.js`): strict exact-only after normalize, sentence-aware (ordered two-pointer + exact split-stitch + filler skip). Both Word Blast and Story Quest use the same function. Any non-exact transcript surfaces as Wrong — scoring is objective, no close-enough. |
 | Update rule | Only on new best score |
 | Mastery | Sentence-based reporting — per-word storage `student_paragraph_mastery` but `ParagraphModule::buildLevels` derives `sentence_stats{ sentence, mastery=sum(all words mastered?mastered:training), failed_attempts=sum(word)}` via `sentencesFromContent` `(?<=[.!?])\s+`; teacher `StudentDetails` shows `SentenceChip` (Mastery/Training zones, `attemptsShown` `mastered ? failed+1 : failed` so `0` failures shows `1st attempt` when encountered) , sentence progress `mastered_sentences/total_sentences` (`ReportService::sentenceCurriculumPercent`). Gameplay still word-step `SpeakModeMainContent` word highlight but with buffered batch consume when whole sentence is spoken at once (90ms stagger + unified 600ms `PRONOUNCED`/`MISPRONOUNCED`+streak). |
 | Routes | `/student/gameplaySpeakMode/{level}`, `/student/speakModeLevels` |
@@ -40,12 +40,14 @@
 ## Tutorial
 
 Dedicated tutorial modules (`is_tutorial=true`, `level=0`) seeded in `CurriculumSeeder`:
-- **Word Blast tutorial**: 5 words (a, I, see, my, the) — no timer
-- **Story Quest tutorial**: "I see a cat." — no timer
+- **Word Blast tutorial**: 5 words (apple, banana, puppy, kitten, hamster) — no timer
 
+- **Story Quest tutorial**: "A puppy naps. A hamster runs." — no timer
 Tutorial plays bypass GameSession, mastery, points, leaderboard, and gameplay badge tracking.
 Progress is saved but does not affect accuracy/status calculations on `students` table.
-Tutorial Complete badge flashes on Dashboard when both modes finished.
+Onboarding shows GameResults once, on the completing tutorial finish (Word Blast finish
+lands on the dashboard's next-tutorial card instead). Tutorial Complete badge flashes
+on Dashboard when both modes finished.
 
 ### Guide gating (TAP TO CONTINUE before play)
 The avatar guide board (`AvatarSpeechBubble`) must be completed — the student taps TAP TO
@@ -74,14 +76,14 @@ being in `flash.new_badges`, so it fires only at completion, not on later visits
 
 ## Speech Recognition (Deepgram)
 
-Recognition uses **Deepgram streaming ASR** (`useDeepgramRecognition.js`, model `nova-3`); the pure transcript-processing logic (SSOT `isWordMatch` — per-word Levenshtein `≤1`, sentence-aware via ordered two-pointer + ASR split fallback; timeout arming, `graceEnd`) lives in `speechProcessors.js` and is driven by Deepgram events. A browser token is fetched from `StudentController::deepgramToken()`.
+Recognition uses **Deepgram streaming ASR** (`useDeepgramRecognition.js`, model `nova-3`); the pure transcript-processing logic (SSOT `isWordMatch` — strict exact-only after normalize, sentence-aware via ordered two-pointer + exact split-stitch + filler skip; timeout arming, `graceEnd`) lives in `speechProcessors.js` and is driven by Deepgram events. A browser token is fetched from `StudentController::deepgramToken()`.
 
 ### Timeout Rules
 
 | Mode | Timeout Behavior |
 |---|---|
-| **Word Mode** | After speech settles on a transcript where `standardLevenshtein ≤1` is false (no new result for ~900ms), the word is marked mispronounced immediately — no fixed wait. `is_final` is also a fast-path. A 5s `armWordTimeout` remains as the no-speech fallback (catches a silent student). A 500ms `graceEnd` guard after a word switch suppresses stray finals. |
-| **Sentence Mode** | If no speech is detected for 5 **continuous** seconds (silence watchdog), the sentence is marked as mispronounced. The watchdog tracks `lastSpeechAt`, which is re-based to ACTIVE at game start so countdown silence isn't counted. A full-length transcript where the SSOT `isWordMatch` (per-word Levenshtein `≤1`, sentence-aware) fails also mispronounces, after a 500ms `graceEnd` guard. The match transcript (`full`) is taken from the latest cumulative interim when present, else the accumulated finals — Deepgram partials are cumulative, so stacking them double-counts words (BF28). |
+| **Word Mode** | After speech settles on a non-exact transcript (no new result for ~900ms), the word is marked mispronounced immediately — no fixed wait. `is_final` is also a fast-path. A 5s `armWordTimeout` remains as the no-speech fallback (catches a silent student). A 500ms `graceEnd` guard after a word switch suppresses stray finals. |
+| **Sentence Mode** | If no speech is detected for 5 **continuous** seconds (silence watchdog), the sentence is marked as mispronounced. The watchdog tracks `lastSpeechAt`, which is re-based to ACTIVE at game start so countdown silence isn't counted. A full-length transcript where the SSOT `isWordMatch` (strict exact-only, sentence-aware) fails also mispronounces, after a 500ms `graceEnd` guard. The match transcript (`full`) is taken from the latest cumulative interim when present, else the accumulated finals — Deepgram partials are cumulative, so stacking them double-counts words (BF28). |
 
 ### Timer Synchronization
 
@@ -103,12 +105,12 @@ Mode-aware `isActive` gate in the two gameplay pages:
 
 | Mode | isActive | Why |
 |---|---|---|
-| Word Blast (read) | `gameState === "ACTIVE" && !isExploding` | Mic is muted via the Deepgram `muted` prop during the 500ms blast window after a correct match (set before `playSuccessSound`, so echo feedback can't Levenshtein-match the short target word). The word changes instantly; a ~900ms utterance-settle timer + 5s `armWordTimeout` fallback in the hook (re-armed on every recognized transcript) catch wrong/silent speech. |
+| Word Blast (read) | `gameState === "ACTIVE" && !isExploding` | Mic is muted via the Deepgram `muted` prop during the 500ms blast window after a correct match (set before `playSuccessSound`, so echo feedback can't exactly match the short target word). The word changes instantly; a ~900ms utterance-settle timer + 5s `armWordTimeout` fallback in the hook (re-armed on every recognized transcript) catch wrong/silent speech. |
 | Story Quest (speak) | `gameState === "ACTIVE"` only | Mic stays live continuously — students read sentences back-to-back; stopping would clip the head of the next utterance. Full-sentence matching (full transcript, word count equality) makes feedback-echo mis-recapture negligible. |
 
 ## Results
 
-Route: `/student/results/{id}`. Shows a scorecard, headline, call-to-action row, and badges. The id is not addressable history — a stale id (anything but the student's newest session) redirects to the newest round's results; foreign sessions redirect to the dashboard ("Access denied").
+Route: `/student/results/{id}`. Shows a scorecard, headline, call-to-action row, and badges. The id is not addressable history — a stale id (anything but the student's newest session) redirects to the newest round's results; foreign sessions redirect to the dashboard ("Access denied"). Tutorial results render once per onboarding, on the completing finish — any earlier tutorial finish redirects to the dashboard instead, and direct visits to a non-completing tutorial session bounce to the dashboard while onboarding is incomplete (post-onboarding replays still render).
 
 **Scorecard** — two tiles: Score ("Score" label, or **"You played"** when the round was deadline-hit) and Words (item count). On a deadline-hit round a "Points not counted — deadline passed" note and an amber DeadlineBanner are shown; NextBadge is hidden.
 

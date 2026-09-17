@@ -359,9 +359,10 @@ class GameplayTest extends TestCase
                 'words_smashed' => 1,
                 'words_processed' => 1,
             ]);
-        // ponytail: tutorial now reuses GameResults (WB 1/10 → results → dashboard flow) — session is logged even when deadline passed
-        $response->assertRedirect();
-        $this->assertStringContainsString('/student/results/', $response->headers->get('Location'));
+        // ponytail: GameResults renders once per onboarding — a Word Blast tutorial
+        // finish lands on the dashboard (Story Quest card), not results. Session is
+        // still logged even when deadline passed.
+        $response->assertRedirect(route('student.dashboard'));
 
         $this->assertDatabaseHas('student_word_progress', [
             'user_id' => $this->student->id,
@@ -373,6 +374,138 @@ class GameplayTest extends TestCase
             'module_id' => $tutorialModule->id,
             'is_deadline_hit' => false,
         ]);
+    }
+
+    public function test_word_tutorial_finish_redirects_to_dashboard_mid_onboarding(): void
+    {
+        $tutorialModule = WordModule::create([
+            'level' => 0,
+            'title' => 'Tutorial',
+            'is_tutorial' => true,
+        ]);
+        Word::create([
+            'word_module_id' => $tutorialModule->id,
+            'word' => 'cat',
+            'position' => 1,
+        ]);
+
+        $this->actingAs($this->student)
+            ->post(route('student.saveWordProgress'), [
+                'module_id' => $tutorialModule->id,
+                'words_smashed' => 1,
+                'words_processed' => 1,
+            ])
+            ->assertRedirect(route('student.dashboard'));
+
+        $this->assertNull($this->student->student->refresh()->tutorial_completed_at);
+    }
+
+    private function finishTutorialWord(): WordModule
+    {
+        $tutorialModule = WordModule::create([
+            'level' => 0,
+            'title' => 'Tutorial',
+            'is_tutorial' => true,
+        ]);
+        Word::create([
+            'word_module_id' => $tutorialModule->id,
+            'word' => 'cat',
+            'position' => 1,
+        ]);
+
+        $this->actingAs($this->student)
+            ->post(route('student.saveWordProgress'), [
+                'module_id' => $tutorialModule->id,
+                'words_smashed' => 1,
+                'words_processed' => 1,
+            ]);
+
+        return $tutorialModule;
+    }
+
+    private function finishTutorialSpeak(): ParagraphModule
+    {
+        $tutorialPara = ParagraphModule::create([
+            'level' => 0,
+            'title' => 'Tutorial',
+            'content' => 'I see a cat.',
+            'is_tutorial' => true,
+        ]);
+        foreach (['I', 'see', 'a', 'cat.'] as $pos => $w) {
+            ParagraphWord::create([
+                'paragraph_module_id' => $tutorialPara->id,
+                'word' => $w,
+                'position' => $pos + 1,
+            ]);
+        }
+
+        $this->actingAs($this->student)
+            ->post(route('student.saveParagraphProgress'), [
+                'module_id' => $tutorialPara->id,
+                'words_smashed' => 4,
+                'words_processed' => 4,
+            ]);
+
+        return $tutorialPara;
+    }
+
+    public function test_completing_tutorial_finish_redirects_to_results(): void
+    {
+        $this->finishTutorialWord();
+        $this->finishTutorialSpeak();
+
+        $this->assertNotNull($this->student->student->refresh()->tutorial_completed_at);
+
+        $session = GameSession::where('user_id', $this->student->id)
+            ->orderByDesc('id')->first();
+
+        // Completing finish (Story Quest tutorial here) renders GameResults once.
+        $this->actingAs($this->student)
+            ->get(route('student.results', $session->id))
+            ->assertSuccessful()
+            ->assertInertia(fn ($page) => $page
+                ->component('Student/GameResults')
+                ->where('isTutorial', true));
+    }
+
+    public function test_word_tutorial_results_bounces_to_dashboard_mid_onboarding(): void
+    {
+        $this->finishTutorialWord();
+
+        $session = GameSession::where('user_id', $this->student->id)
+            ->orderByDesc('id')->first();
+
+        // Direct visit to the skipped screen bounces while onboarding is incomplete.
+        $this->actingAs($this->student)
+            ->get(route('student.results', $session->id))
+            ->assertRedirect(route('student.dashboard'));
+    }
+
+    public function test_tutorial_replay_results_still_renders_after_onboarding(): void
+    {
+        $tutorialModule = $this->finishTutorialWord();
+        $this->finishTutorialSpeak();
+
+        // Post-onboarding replay runs the normal path and keeps today's behavior:
+        // results renders (the bounce is mid-onboarding only).
+        $response = $this->actingAs($this->student)
+            ->post(route('student.saveWordProgress'), [
+                'module_id' => $tutorialModule->id,
+                'words_smashed' => 1,
+                'words_processed' => 1,
+            ]);
+        $response->assertRedirect();
+        $this->assertStringContainsString('/student/results/', $response->headers->get('Location'));
+
+        $session = GameSession::where('user_id', $this->student->id)
+            ->orderByDesc('id')->first();
+
+        $this->actingAs($this->student)
+            ->get(route('student.results', $session->id))
+            ->assertSuccessful()
+            ->assertInertia(fn ($page) => $page
+                ->component('Student/GameResults')
+                ->where('isTutorial', true));
     }
 
     // Post-onboarding tutorial replay: with tutorial_completed_at set,
