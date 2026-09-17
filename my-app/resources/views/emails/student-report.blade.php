@@ -54,6 +54,16 @@
                 </tr>
 
 
+                <!-- INTRO DESCRIPTION -->
+                <tr>
+                    <td style="padding:24px 32px 0">
+                        <p style="color:#cbd5e1;font-size:14px;line-height:1.6;margin:0">
+                            Here is {{ $data['name'] }}'s Word-O-Matic progress report as of {{ $data['reported_at'] }}. Below is a summary of accuracy, curriculum progress, and areas for practice.
+                        </p>
+                    </td>
+                </tr>
+
+
                 <!-- PERFORMANCE OVERVIEW -->
                 <tr>
                     <td style="padding:30px 32px 0">
