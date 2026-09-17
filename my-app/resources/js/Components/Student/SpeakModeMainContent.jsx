@@ -75,7 +75,7 @@ const SpeakModeMainContent = memo(function SpeakModeMainContent({
                 <div className="flex-1 flex" />
             ) : gameState === "COUNTDOWN" ? (
                 <div className="absolute inset-0 flex items-center justify-center px-4">
-                    <span className="text-5xl xs:text-6xl sm:text-8xl md:text-[10rem] lg:text-[12rem] font-black text-quest italic animate-bounce drop-shadow-[0_0_50px_rgba(56,189,248,0.8)] text-center">
+                    <span className="text-5xl xs:text-6xl sm:text-8xl md:text-[10rem] lg:text-[12rem] font-extrabold text-quest italic animate-bounce drop-shadow-[0_0_24px_rgba(56,189,248,0.5)] text-center">
                         {countdownValue}
                     </span>
                 </div>
@@ -86,7 +86,7 @@ const SpeakModeMainContent = memo(function SpeakModeMainContent({
                             <div className="sticky top-2 z-30 flex items-center justify-center gap-2 sm:gap-4 mb-2 sm:mb-3 min-h-8 sm:min-h-10" />
 
                             <div
-                                    className={`font-headline-xl text-left leading-relaxed tracking-tight select-none text-3xl xs:text-4xl sm:text-5xl md:text-6xl lg:text-7xl flex flex-wrap gap-x-2 xs:gap-x-3 sm:gap-x-4 gap-y-4 sm:gap-y-6 md:gap-y-8`}
+                                    className={`font-headline-xl text-left leading-relaxed tracking-normal sm:tracking-tight select-none font-medium sm:font-semibold lg:font-bold text-3xl xs:text-4xl sm:text-5xl md:text-6xl lg:text-7xl flex flex-wrap gap-x-2 xs:gap-x-3 sm:gap-x-4 gap-y-4 sm:gap-y-6 md:gap-y-8`}
                             >
                                 {words.map((word, index) => (
                                     <span
@@ -101,15 +101,15 @@ const SpeakModeMainContent = memo(function SpeakModeMainContent({
                                                 ? "opacity-20 text-on-background"
                                                 : index === currentIndex
                                                   ? isMispronounced
-                                                      ? "text-rose-400 opacity-100 relative z-10 border-2 border-rose-500 rounded-xl px-3 py-2 bg-slate-900/80 drop-shadow-[0_0_12px_rgba(244,63,94,0.6)] animate-shake"
-                                                      : "text-quest opacity-100 relative z-10 border-2 border-quest/80 rounded-xl px-3 py-2 bg-slate-900/80 drop-shadow-[0_0_10px_rgba(56,189,248,0.5)]"
+                                                      ? "font-bold sm:font-extrabold text-rose-400 opacity-100 relative z-10 border-2 border-rose-500 rounded-xl px-3 py-2 bg-slate-900/80 drop-shadow-[0_0_12px_rgba(244,63,94,0.6)] animate-shake"
+                                                      : "font-bold sm:font-extrabold text-quest opacity-100 relative z-10 border-2 border-quest/80 rounded-xl px-3 py-2 bg-slate-900/80 drop-shadow-[0_0_10px_rgba(56,189,248,0.5)]"
                                                   : "opacity-60 text-on-background/50"
                                         }`}
                                     >
                                         {index === currentIndex &&
                                             feedbackType && (
                                                 <span
-                                                    className={`absolute left-1/2 -translate-x-1/2 -top-5 xs:-top-6 sm:-top-7 md:-top-9 z-30 flex items-center gap-1 sm:gap-1.5 font-black italic whitespace-normal text-center leading-tight text-sm xs:text-sm sm:text-base md:text-lg lg:text-xl rounded-full px-3 sm:px-3.5 py-1 sm:py-1.5 border bg-slate-900/85 animate-feedback-pop w-max max-w-[88vw] sm:max-w-[380px] md:max-w-[420px] justify-center ${
+                                                    className={`absolute left-1/2 -translate-x-1/2 -top-5 xs:-top-6 sm:-top-7 md:-top-9 z-30 flex items-center gap-1 sm:gap-1.5 font-bold italic whitespace-normal text-center leading-tight text-sm xs:text-sm sm:text-base md:text-lg lg:text-xl rounded-full px-3 sm:px-3.5 py-1 sm:py-1.5 border bg-slate-900/85 animate-feedback-pop w-max max-w-[88vw] sm:max-w-[380px] md:max-w-[420px] justify-center ${
                                                         feedbackType ===
                                                         "correct"
                                                             ? "text-yellow-300 border-amber-400/60"
@@ -119,8 +119,8 @@ const SpeakModeMainContent = memo(function SpeakModeMainContent({
                                                         filter:
                                                             feedbackType ===
                                                             "correct"
-                                                                ? "drop-shadow(0 0 14px rgba(255,200,0,0.7))"
-                                                                : "drop-shadow(0 0 12px rgba(244,63,94,0.6))",
+                                                                ? "drop-shadow(0 0 8px rgba(255,200,0,0.45))"
+                                                                : "drop-shadow(0 0 8px rgba(244,63,94,0.45))",
                                                     }}
                                                 >
                                                     {feedbackMessage}
@@ -143,10 +143,10 @@ const SpeakModeMainContent = memo(function SpeakModeMainContent({
                                                             >
                                                                 local_fire_department
                                                             </span>
-                                                            <span className="text-[10px] xs:text-xs sm:text-xs md:text-sm font-black uppercase tracking-widest text-amber-200/90">
+                                                            <span className="text-[10px] xs:text-xs sm:text-xs md:text-sm font-bold uppercase tracking-widest text-amber-200/90">
                                                                 STREAK!
                                                             </span>
-                                                            <span className="text-xl xs:text-xl sm:text-2xl md:text-3xl font-black text-white">
+                                                            <span className="text-xl xs:text-xl sm:text-2xl md:text-3xl font-extrabold text-white">
                                                                 {streak}
                                                             </span>
                                                         </span>
@@ -161,11 +161,10 @@ const SpeakModeMainContent = memo(function SpeakModeMainContent({
 
                         {showPointsFeedback && (
                             <div
-                                className="absolute -top-10 left-1/2 -translate-x-1/2 animate-float-score text-3xl sm:text-4xl font-black italic z-10 whitespace-nowrap"
+                                className="absolute -top-10 left-1/2 -translate-x-1/2 animate-float-score text-2xl sm:text-3xl font-extrabold italic z-10 whitespace-nowrap"
                                 style={{
                                     color: "#FFCC00",
-                                    textShadow: "4px 4px 0px rgba(0,0,0,0.5)",
-                                    WebkitTextStroke: "2px #827717",
+                                    textShadow: "0 0 12px rgba(0,0,0,0.45)",
                                 }}
                             >
                                 +{pointsFeedbackValue}
