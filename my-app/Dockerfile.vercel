@@ -20,19 +20,19 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 COPY composer.json composer.lock ./
 
 # Install PHP deps first (layer cache) — skip scripts until app copied
+# (no --optimize-autoloader here: the classmap-authoritative dump below covers it)
 RUN composer install \
     --no-dev \
     --no-interaction \
     --no-progress \
     --no-scripts \
-    --optimize-autoloader \
     --prefer-dist
 
 # Copy rest of app
 COPY . .
 
 # Build frontend — laravel-vite-plugin reads vite.config.js:7
-RUN npm install --ignore-scripts \
+RUN npm ci --ignore-scripts \
     && npm run build
 
 # Writable dirs + Laravel caches that don't depend on runtime env

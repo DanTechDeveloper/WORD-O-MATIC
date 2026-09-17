@@ -10,16 +10,31 @@ class Setting extends Model
 
     public static function getValue($key, $default = null)
     {
-        $setting = static::where('key', $key)->first();
+        // ponytail: request-scoped memo (request attributes, NOT a static prop —
+        // statics survive across requests in FrankenPHP workers and would go stale).
+        // Kills the duplicate Setting query on teacher Inertia responses
+        // (auth.deadline + teacher.has_deadline read the same key).
+        $memoKey = "setting.{$key}";
+        $request = request();
+        if ($request->attributes->has($memoKey)) {
+            return $request->attributes->get($memoKey);
+        }
 
-        return $setting ? $setting->value : $default;
+        $setting = static::where('key', $key)->first();
+        $value = $setting ? $setting->value : $default;
+        $request->attributes->set($memoKey, $value);
+
+        return $value;
     }
 
     public static function setValue($key, $value)
     {
-        return static::updateOrCreate(
+        $result = static::updateOrCreate(
             ['key' => $key],
             ['value' => $value]
         );
+        request()->attributes->set("setting.{$key}", $value);
+
+        return $result;
     }
 }

@@ -48,4 +48,13 @@ Vercel Container production workflow (was Railway).
 
 Live prod DB is **Aiven MySQL 8.4 `sfo` (San Francisco)** — `1 CPU / 1GB RAM / 1GB storage` free tier, `CA` `ca.pem` committed, `sfo` → `iad1` `70ms` per query. Push/PR runs end after `php artisan test` + `npx vitest run` + `Caddy` smoke + `MySQL` index tests (Branch C). Manual prod migration still via `workflow_dispatch` in `.github/workflows/ci.yml` but now for `Aiven` (was Railway `RAILWAY_DB_*`); set `DB_HOST` etc. to Aiven `Service URI` before dispatch. Indexes `students(status,section)` added `06b648f` (`43ms local, 1s sfo`) + `max_execution_time=60` in `Dockerfile.vercel:4` for `Report export` batched `f62b557` (`200→2 queries`).
 
+## Connection budget (multi-region traffic, sfo DB)
+
+Traffic is multi-region (`sin1` ~57% + `sfo1` ~39%), so the region is deliberately NOT pinned — pinning to `sfo1` would punish the Singapore majority. Defense is DB frugality instead:
+
+- `Caddyfile` caps `num_threads 8` per container: concurrent PHP threads × instances must fit Aiven `max_connections` (check `SHOW VARIABLES LIKE 'max_connections'` before raising; queuing degrades as latency, exhaustion as 500s).
+- NO `PDO::ATTR_PERSISTENT`: FrankenPHP workers already reuse connections; persistent flags only add stale-connection risk on scale-out.
+- NO `route:cache`: `routes/web.php` uses closures (fails the cache build). `config:cache` stays skipped (runtime env).
+- `Setting::getValue` is request-memoized (request attributes, never static — statics go stale in FrankenPHP workers); session/cache stay 0-query (`cookie`/`array`).
+
 > Version 1.3
