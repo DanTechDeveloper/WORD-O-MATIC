@@ -219,7 +219,7 @@ export default function GameplayReadMode({ module, tutorialComplete = true }) {
                     bodyUrl={bodyUrl}
                     color="accent"
                     position="bottom-right"
-                    variant={isTutorial ? "full" : "mini"}
+                    variant="mini"
                     footerText={null}
                     className={coachLeaving ? "opacity-0 transition-opacity duration-300" : ""}
                 />
