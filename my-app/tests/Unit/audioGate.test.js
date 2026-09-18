@@ -38,11 +38,13 @@ describe("applyNoiseGate — peek-level + hysteresis", () => {
         expect(Array.from(out)).toEqual(Array.from(at(between)));
     });
 
-    test("closes only when level falls to or below close threshold", () => {
+    test("closes only after sustained quiet (hangover), not a single dip", () => {
         const state = { isOpen: false };
         applyNoiseGate(at(0.3), state); // open
-        applyNoiseGate(at(0.002), state); // below close
-        expect(state.isOpen).toBe(false);
+        applyNoiseGate(at(0.002), state); // one below-close frame
+        expect(state.isOpen).toBe(true); // hangover holds it open
+        for (let i = 0; i < 11; i++) applyNoiseGate(at(0.002), state);
+        expect(state.isOpen).toBe(false); // 12 quiet frames -> closed
         const out = applyNoiseGate(silent(), state);
         expect(Array.from(out)).toEqual(Array.from(silent()));
     });

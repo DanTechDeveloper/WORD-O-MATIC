@@ -139,8 +139,9 @@ export function useGameplayEngine({
         }
     }, [gameState, clearResume]);
 
-    const moveToNextWord = useCallback(() => {
-        setCurrentWordIndex((prev) => Math.min(prev + 1, totalWords));
+    const moveToNextWord = useCallback((step = 1) => {
+        const n = Math.max(1, step | 0 || 1);
+        setCurrentWordIndex((prev) => Math.min(prev + n, totalWords));
     }, [totalWords]);
 
     const targetWord = useMemo(() => {
@@ -173,7 +174,7 @@ export function useGameplayEngine({
         }
     }, [currentWordIndex, totalWords, gameState]);
 
-    const handleWordRecognized = useCallback(() => {
+    const handleWordRecognized = useCallback((count = 1) => {
         if (gameStateRef.current !== "ACTIVE") return;
         if (wordRecognizedGuardRef.current) return;
         wordRecognizedGuardRef.current = true;
@@ -199,12 +200,17 @@ export function useGameplayEngine({
             wordRecognizedGuardRef.current = false;
             return;
         }
+        const remaining = totalWords - currentWordIndexRef.current;
+        const advance = Math.max(1, Math.min(count | 0 || 1, Math.max(remaining, 1)));
 
         setIsExploding(true);
         playSuccessSound();
-        onWordRecognizedRef.current?.(wordObj);
+        for (let k = 0; k < advance; k++) {
+            const w = wordsRef.current[currentWordIndexRef.current + k];
+            if (w) onWordRecognizedRef.current?.(w);
+        }
 
-        const points = 1;
+        const points = advance;
         setWordsSmashed((prev) => prev + points);
         currentStreakRef.current += 1;
         setCurrentStreak(currentStreakRef.current);
@@ -235,7 +241,7 @@ export function useGameplayEngine({
         setIsMispronounced(false);
         wordRecognizedTimerRef.current = setTimeout(() => {
             setIsExploding(false);
-            moveToNextWord();
+            moveToNextWord(advance);
             wordRecognizedGuardRef.current = false;
         }, 500);
     }, [moveToNextWord]);

@@ -319,6 +319,26 @@ describe("processSentenceModeResult (Story Quest — SSOT isWordMatch)", () => {
         processSentenceModeResult(makeEvent([{ isFinal: false, 0: { transcript: "is" } }]), "cat", stateRefs, timeoutRefs, timerRefs, propsRef);
         expect(propsRef.current.onWordRecognized).toHaveBeenCalledTimes(2);
     });
+    test("partial authoritative final defers to watchdog instead of instant-failing", () => {
+        vi.useFakeTimers();
+        const { stateRefs, timeoutRefs, timerRefs, propsRef } = makeRefs();
+        const target = "the cat sat";
+        processSentenceModeResult({ isFinal: true, 0: { transcript: "the cat" } }, target, stateRefs, timeoutRefs, timerRefs, propsRef);
+        expect(propsRef.current.onWordRecognized).not.toHaveBeenCalled();
+        expect(propsRef.current.onMispronounced).not.toHaveBeenCalled();
+        // no further speech: the 5s silence watchdog owns the verdict
+        vi.advanceTimersByTime(6000);
+        expect(propsRef.current.onMispronounced).toHaveBeenCalledTimes(1);
+        vi.clearAllTimers();
+        vi.useRealTimers();
+    });
+    test("endpointed empty final with lookahead defers (pause, not wrong)", () => {
+        const { stateRefs, timeoutRefs, timerRefs, propsRef } = makeRefs();
+        propsRef.current.lookahead = "the cat sat";
+        processSentenceModeResult({ isFinal: true, 0: { transcript: "" } }, "the", stateRefs, timeoutRefs, timerRefs, propsRef);
+        expect(propsRef.current.onWordRecognized).not.toHaveBeenCalled();
+        expect(propsRef.current.onMispronounced).not.toHaveBeenCalled();
+    });
 });
 
 describe("processWordModeResult (Word Blast — strict exact-only)", () => {
@@ -402,13 +422,13 @@ describe("processWordModeResult (Word Blast — strict exact-only)", () => {
         expect(propsRef.current.onMispronounced).toHaveBeenCalledTimes(1);
         expect(propsRef.current.onMispronounced).toHaveBeenCalledWith("do");
     });
-    test("BF29b: wrong interim still uses settle — no instant fire, fires after 700ms", () => {
+    test("BF29b: wrong interim still uses settle — no instant fire, fires after 1200ms", () => {
         vi.useFakeTimers();
         const { stateRefs, timeoutRefs, timerRefs, propsRef } = makeRefs();
         const target = "cat";
         processWordModeResult(makeEvent("do", false), target, stateRefs, timerRefs, timeoutRefs, propsRef);
         expect(propsRef.current.onMispronounced).not.toHaveBeenCalled();
-        vi.advanceTimersByTime(699);
+        vi.advanceTimersByTime(1199);
         expect(propsRef.current.onMispronounced).not.toHaveBeenCalled();
         vi.advanceTimersByTime(1);
         expect(propsRef.current.onMispronounced).toHaveBeenCalledTimes(1);
@@ -476,7 +496,7 @@ describe("processWordModeResult (Word Blast — strict exact-only)", () => {
         // new target dog, wrong word "fish" at 100ms after switch — within 1000ms guard
         processWordModeResult(makeEvent("fish", true), "dog", stateRefs, timerRefs, timeoutRefs, propsRef);
         expect(propsRef.current.onMispronounced).not.toHaveBeenCalled();
-        vi.advanceTimersByTime(699);
+        vi.advanceTimersByTime(1199);
         expect(propsRef.current.onMispronounced).not.toHaveBeenCalled();
         vi.advanceTimersByTime(1);
         expect(propsRef.current.onMispronounced).toHaveBeenCalledTimes(1);
@@ -495,6 +515,27 @@ describe("processWordModeResult (Word Blast — strict exact-only)", () => {
         expect(propsRef.current.onWordRecognized).toHaveBeenCalledTimes(1);
         vi.advanceTimersByTime(700);
         expect(propsRef.current.onMispronounced).not.toHaveBeenCalled();
+        vi.useRealTimers();
+    });
+    test("low-confidence correct interim still accepts (no confidence gate on accepts)", () => {
+        const { stateRefs, timeoutRefs, timerRefs, propsRef } = makeRefs();
+        processWordModeResult({ isFinal: false, confidence: 0.4, 0: { transcript: "cat" } }, "cat", stateRefs, timerRefs, timeoutRefs, propsRef);
+        expect(propsRef.current.onWordRecognized).toHaveBeenCalledTimes(1);
+        expect(propsRef.current.onMispronounced).not.toHaveBeenCalled();
+    });
+    test("grace drops Wrong verdicts but a fast correct still wins", () => {
+        vi.useFakeTimers();
+        const g1 = makeRefs();
+        g1.timeoutRefs.current.graceEnd = Date.now() + 10000;
+        processWordModeResult(makeEvent("dog", false), "dog", g1.stateRefs, g1.timerRefs, g1.timeoutRefs, g1.propsRef);
+        expect(g1.propsRef.current.onWordRecognized).toHaveBeenCalledTimes(1);
+        const g2 = makeRefs();
+        g2.timeoutRefs.current.graceEnd = Date.now() + 10000;
+        processWordModeResult(makeEvent("fish", true), "dog", g2.stateRefs, g2.timerRefs, g2.timeoutRefs, g2.propsRef);
+        expect(g2.propsRef.current.onMispronounced).not.toHaveBeenCalled();
+        expect(g2.propsRef.current.onWordRecognized).not.toHaveBeenCalled();
+        vi.advanceTimersByTime(2000);
+        expect(g2.propsRef.current.onMispronounced).not.toHaveBeenCalled();
         vi.useRealTimers();
     });
 });

@@ -52,6 +52,8 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true, wor
         savedSentencesRef.current.clear();
     }, [module?.id]);
 
+    const [progressCount, setProgressCount] = useState(0);
+
     const {
         totalWords,
         gameState,
@@ -104,6 +106,7 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true, wor
             });
         },
         onMispronounce: (wordObj) => {
+            setProgressCount(0);
             if (wordObj && !isTutorialModule) {
                 axios.post("/student/updateParagraphMastery", {
                     paragraph_word_id: wordObj.id,
@@ -156,11 +159,30 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true, wor
         [module?.words],
     );
 
+    const speakLookahead = useMemo(() => {
+        const words = module?.words ?? [];
+        return words
+            .slice(currentWordIndex, currentWordIndex + 6)
+            .map((w) => normalizeText(w.word))
+            .filter(Boolean)
+            .join(" ");
+    }, [module?.words, currentWordIndex]);
+
+    useEffect(() => {
+        setProgressCount(0);
+    }, [currentWordIndex, module?.id]);
+
+    const handleSpeakProgress = useCallback((n) => {
+        setProgressCount(n);
+    }, []);
+
     useDeepgramRecognition({
         isActive: gameState === "ACTIVE",
         preload: gameState === "COUNTDOWN" || gameState === "ACTIVE",
         targetWord: targetWord,
         keyterms: speakKeyterms,
+        lookahead: speakLookahead,
+        onProgress: handleSpeakProgress,
         onWordRecognized: handleWordRecognized,
         onPermissionDenied: handlePermissionDenied,
         onMispronounced: handleMispronounce,
@@ -251,7 +273,7 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true, wor
                     bodyUrl={bodyUrl}
                     color="quest"
                     position="bottom-right"
-                    variant={isTutorial ? "full" : "mini"}
+                    variant="mini"
                     footerText={null}
                     className={coachLeaving ? "opacity-0 transition-opacity duration-300" : ""}
                 />
@@ -259,6 +281,7 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true, wor
             <SpeakModeMainContent
                 words={speechRecognitionWords}
                 currentIndex={Math.max(0, Math.min(currentWordIndex, totalWords - 1))}
+                highlightCount={progressCount}
                 gameState={gameState}
                 countdownValue={countdownValue}
                 isExploding={isExploding}

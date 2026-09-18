@@ -3,6 +3,7 @@ import { memo, useRef, useEffect } from "react";
 const SpeakModeMainContent = memo(function SpeakModeMainContent({
     words,
     currentIndex,
+    highlightCount = 1,
     gameState,
     countdownValue,
     isMispronounced,
@@ -14,6 +15,7 @@ const SpeakModeMainContent = memo(function SpeakModeMainContent({
     streakShake,
 }) {
     const activeWordRef = useRef(null);
+    const activeCount = Math.max(1, highlightCount | 0 || 1);
 
     useEffect(() => {
         activeWordRef.current?.scrollIntoView({
@@ -99,8 +101,8 @@ const SpeakModeMainContent = memo(function SpeakModeMainContent({
                                         className={`transition-all duration-300 whitespace-nowrap relative ${index === currentIndex && streakShake ? `animate-streak-shake-${streakShake} ` : ""}${
                                             index < currentIndex
                                                 ? "opacity-20 text-on-background"
-                                                : index === currentIndex
-                                                  ? isMispronounced
+                                                : index >= currentIndex && index < currentIndex + activeCount
+                                                  ? isMispronounced && index === currentIndex
                                                       ? "font-bold sm:font-extrabold text-rose-400 opacity-100 relative z-10 border-2 border-rose-500 rounded-xl px-3 py-2 bg-slate-900/80 drop-shadow-[0_0_12px_rgba(244,63,94,0.6)] animate-shake"
                                                       : "font-bold sm:font-extrabold text-quest opacity-100 relative z-10 border-2 border-quest/80 rounded-xl px-3 py-2 bg-slate-900/80 drop-shadow-[0_0_10px_rgba(56,189,248,0.5)]"
                                                   : "opacity-60 text-on-background/50"

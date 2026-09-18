@@ -28,6 +28,8 @@ export function useDeepgramRecognition({
     onMispronounced,
     onRecognitionError,
     onRestartFailed,
+    onProgress,
+    lookahead = "",
     matchMode = "word",
     muted = false,
     keyterms = [],
@@ -45,6 +47,8 @@ export function useDeepgramRecognition({
         onMispronounced,
         onRecognitionError,
         onRestartFailed,
+        onProgress,
+        lookahead,
     });
 
     useEffect(() => {
@@ -60,6 +64,8 @@ export function useDeepgramRecognition({
             onMispronounced,
             onRecognitionError,
             onRestartFailed,
+            onProgress,
+            lookahead,
         };
     }, [
         isActive,
@@ -73,6 +79,8 @@ export function useDeepgramRecognition({
         onMispronounced,
         onRecognitionError,
         onRestartFailed,
+        onProgress,
+        lookahead,
     ]);
 
     const stateRefs = useRef({
