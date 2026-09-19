@@ -1,52 +1,83 @@
-
 # Word-O-Matic — Agent Guide
 
-Runnable app is `my-app/` — `cd my-app` before every command. Repo root holds only `opencode.json`, `.opencode/`, docs. Deeper: `my-app/docs/AGENTS.md`, `CONVENTIONS.md`, `DESIGN.md` + `PRODUCT.md`.
+All source code lives under `my-app/`. Set that as working directory before running any command.
+
+## RULES
+1. Ask, don't assume. If something is unclear, ask before writing a single line. Never make silent assumptions about intent, architecture, or requirements.
+2. Simplest solution first. Always implement the simplest thing that could work. Do not add abstractions or flexibility that weren't explicitly requested.
+3. Don't touch unrelated code. If a file or function is not directly part of the current task, do not modify it, even if you think it could be improved.
+4. Flag uncertainty explicitly. If you are not confident about an approach or technical detail, say so before proceeding. Confidence without certainty causes more damage than admitting a gap.
+5.Never open responses with filler phrases like "Great question!", "Of course!", "Certainly!", or similar warmups. Start every response with the actual answer. No preamble, no acknowledgment of the question.
+6. Match response length to task complexity. Simple questions get direct, short answers. Complex tasks get full, detailed responses. Never pad responses with restatements of the question or closing sentences that repeat what you just said.
+7. Before any significant task, show me 2-3 ways you could approach this work. Wait for me to choose before proceeding.
+8. If you are uncertain about any fact, statistic, date, or piece of technical information: say so explicitly before including it. Never fill gaps in your knowledge with plausible-sounding information. When in doubt, say so. Only modify files, functions, and lines of code directly related to the current task. Do not refactor, rename, reorganize, reformat, or "improve" anything I did not explicitly ask you to change. If you notice something worth fixing elsewhere, mention it in a note at the end. Do not touch it. Ever.
+9. Before making any change that significantly alters content I've already created (rewriting sections, removing paragraphs, restructuring flow, changing tone): stop. Describe exactly what you're about to change and why. Wait for my confirmation before proceeding.
+10. Before deleting any file, overwriting existing code, dropping database records, or removing dependencies: stop. List exactly what will be affected. Ask for explicit confirmation. Only proceed after I say yes in the current message. "You mentioned this earlier" is not confirmation.
+11. The following require explicit in-session confirmation, no exceptions: deploying or pushing to any environment, running migrations or schema changes, sending any external API call, executing any command with irreversible side effects. I must say yes in the current message.
+12. After any coding task, end with: Files changed (list every file touched) / What was modified (one line per file) / Files intentionally not touched / Follow-up needed.
+13. Never send, post, publish, share, or schedule anything on my behalf without my explicit confirmation in the current message. This includes emails, calendar invites, document shares, or any action outside this conversation. I must say yes in the current message.
+14. For any task involving architecture decisions, debugging complex issues, or non-trivial features: work through the problem step by step before writing any code. Show your reasoning. Identify where you're uncertain. Then implement.
 
 ## Stack
-Laravel 13 (PHP 8.3) + React 18 + Inertia v2 + Vite 8 + Tailwind v3. MySQL local, SQLite `:memory:` for tests (`phpunit.xml`). Session auth via `UserController`, `role:teacher`/`role:student` in `bootstrap/app.php`. Vercel Container `dunglas/frankenphp` + Aiven MySQL, Deepgram `au` nova-3 (`useDeepgramRecognition.js`).
-ASR truth: `hooks/Student/useDeepgramRecognition.js` → `lib/speechProcessors.js` (no `useSpeechRecognition.js` file exists) → SSOT `isWordMatch` (`lib/speechUtils.js`, strict exact-only after normalize — no Levenshtein, non-exact is Wrong). Word-mode confidence gates: interim accept `≥0.7`, authoritative-wrong `≥0.6`; sentence mode ignores confidence.
+- **Backend:** PHP 8.3, Laravel 13 (Breeze scaffold), Sanctum auth
+- **Frontend:** React 18 + Inertia.js v2, Tailwind CSS v3 (custom dark theme), Vite 8
+- **Database:** MySQL (local), SQLite `:memory:` (tests)
+- **Session/Cache/Queue:** all use `database` driver
+- **Charts:** recharts (PieChart, BarChart)
+- **Icons:** Material Symbols (`material-symbols-outlined`)
 
-## Commands (run from `my-app/`)
+## Key Commands
+
+Run from `my-app/`:
+
 | Command | What it does |
 |---|---|
-| `composer run setup` | install → `.env` → key → migrate → `npm install` → `npm run build` |
-| `composer run dev` | 4 procs: `serve`, `queue:listen --tries=1 --timeout=0`, `pail`, `npm run dev` |
-| `composer run test` | `config:clear` then `php artisan test` (PHP only) |
-| `npx vitest run` | JS unit tests (`tests/Unit/*.test.js`) — not in `composer run test` |
-| `php artisan test --filter=TestName` | Single test |
-| `php artisan migrate:fresh --seed` | teacher `admin`/`password` + curriculum + badges (`StudentSeeder` commented out — opt-in: `php artisan db:seed --class=StudentSeeder` for 100 students/3 sectors; MySQL-only, not sqlite-safe) |
-| `npm run build` / `npm run dev` | Vite build / dev |
-| `vendor/bin/pint` | PSR-12 fix (not in CI) |
+| `composer run setup` | Full project setup (composer install, .env, key gen, migrate, npm install, npm build) |
+| `composer run dev` | Starts all dev servers: artisan serve, queue:listen, pail logs, Vite dev |
+| `composer run test` | `config:clear` then `php artisan test` |
+| `php artisan test` | PHPUnit (Unit + Feature) with SQLite `:memory:` |
+| `php artisan migrate:fresh --seed` | Reset DB with all seeders (24 students + badges) |
+| `npm run build` | Vite production build |
+| `npm run dev` | Vite dev server only |
 
-## What not to assume
-- **Tests never touch MySQL.** `phpunit.xml` forces `sqlite` `:memory:`, `array` mail/queue/cache/session.
-- **CI runs PHP + JS + Caddy + MySQL.** `.github/workflows/ci.yml` from `my-app/`: `php artisan test`, `npx vitest run`, `grep immutable Caddyfile`, `IndexesExistTest` on MySQL 8.4. Live Aiven migration is `workflow_dispatch` manual only.
-- **No lint/typecheck script.** `composer.json` has only setup/dev/test.
-- **`edit` is `ask`.** `opencode.json` sets `edit: ask`, `bash: *:ask`. Allow-list: `composer *`, `npm *`, `bun *`, `php artisan test|route:list`, `git status|diff|log`. `migrate*` + `db:*` + `git commit|push` are `ask`.
+CI: `migrate --force` → `npm install && npm run build` → `php artisan test` → `migrate --force` against Railway MySQL production.
 
-## Auth & onboarding
-- Teacher `GET/POST /teacher/login` → `UserController@teacherLoginPost` `username`+`password`, `throttle:5,1`.
-- Student `GET /` → `name` + 4-digit PIN `throttle:30,1`, bcrypt-only `pin` (`$hidden`) reset-only; `EditStudentModal` blank = keep, `TeacherController::pinIsTaken()` checks same-name only.
-- `EnsureUserRole` alias `role`, `CheckStudentOnboarding` gates `/student/*` on non-default avatar (`/images/boy.svg`/`girl.svg` → `student.splashScreen`, no re-entry); tutorial flow unguarded.
+Seeder creates: 1 teacher (`admin`/`password`), 24 students with `wordBlastAcc`/`storyQuestAcc`/`status`/`section` across 3 sectors.
 
-## Gotchas — would miss without help
-- **Mass-assignment drops silently.** New column: migration → `$fillable` → controller response array (`report_sent_at` bug).
-- **Denormalized `students` table** (`points`, `wordBlastAcc`, `storyQuestAcc`, `status`, `read_level`, `speak_level`) is the read source for `TeacherController::dashboard()`; not progress tables.
-- **Best-score-only.** `ProgressService` never overwrites with worse play; `classify(wordBlastAcc, storyQuestAcc, wordStarted, storyStarted)` + `finalAverage` are the single SOT (BF26 `started = accuracy>0 OR progress row`), vocab is DB `support`.
-- **Tutorial never scores.** `is_tutorial` plays early-return, `finishRound` drops flag after `tutorial_completed_at`, recompute sums exclude tutorial rows (BF24); module `level` `min:1` (0 is tutorial, BF23).
-- **`useForm.post(url, options)` sends form's own `setData` state** — options are callbacks, not payload (bulk-add bug sent `{}`).
-- **Tokens only.** `tailwind.config.js` Tactile Arcade (`action #a3e635`, `indigo-void #0c0c1f`, hard offset shadows). No `zinc-*`/`slate-*`/`purple-*`.
-- **Word edits:** 10 slots all required `max:20` uppercase, no intra-dup, no cross-level reuse incl. tutorial, `has_progress` → `confirm()` (`docs/MODULES.md`).
-- **Paragraph edits:** trimmed `required`, zero-word never completes (`$totalWords>0`), case-as-entered, `level min:1`.
-- **Progress clamping:** `words_processed > total` rejected in `finishRound`; `ProgressService` clamps `processed≥0`, `smashed≤processed`, `accuracy 0-100` (CAVEATS H2 remains).
-- **Audio:** `resources/js/utils/sounds.js` via `app.jsx` once; BGM on first `/student` click, `sessionStorage.wordomaticBgm`, pauses on `ACTIVE` mic. `data-sfx="major"` = loud+duck, else soft blip (200ms debounce). Never `new Audio()` inline; never shadow `duck` helper (`duck: shouldDuck`, BF19).
-- **Frontend:** Pages `./Pages/{name}.jsx`, `@` = `resources/js`. Inline `$request->validate()`, no Form Requests/Policies.
+## Architecture
 
-## Workflow
-- Services in `app/Services/` (`ProgressService`, `BadgeService`, `LevelService`); `GameSession::logSession()` is model static.
-- 3-step close: files changed / what changed / untouched / follow-up. Don't touch unrelated code.
-- 4-space indent (`.editorconfig`), comments explain *why*.
+### Routes (`routes/web.php`)
+- **Guest:** `GET /` (student login), `GET /teacher/login` (teacher login)
+- **Teacher** (`/teacher/*`, middleware `role:teacher`): dashboard, students, word/paragraph modules, reports, leaderboards, assignments, badges
+- **Student** (`/student/*`, middleware `role:student` + `CheckStudentOnboarding`): onboarding (splash → avatar → greetings), gameplay (read/speak modes), leaderboards, badges, results
+- Auth: session-based via `UserController`
 
-## Tests
-- `tests/Feature/*` (`RefreshDatabase`), `tests/Unit/*` (PHP), `tests/Unit/*.test.js` with setup at `tests/setup.js` (vitest 4); single JS file: `npx vitest run tests/Unit/<name>.test.js`.
+### Controllers
+- `TeacherController` — dashboard, student listing, module CRUD, reports
+- `StudentController` — onboarding, gameplay, progress saving, leaderboards, badges
+- `UserController` — login/logout
+
+### Data Flow
+- `TeacherController@students()` returns data for `Students.jsx`: reads `user.name`, `user.student_id`, and `student.*` (avatar, section, status, wordBlastAcc, storyQuestAcc) — all denormalized on the `students` table
+- `TeacherController@dashboard()` reads directly from `students` table (not progress tables) for consistency
+- Chart counts classification: both accuracy `null`/`0` → `notStarted`; avg < 60 → `atRisk`; 60-80 → `needsSupport`; ≥ 80 → `onTrack`
+- Student `status` ENUM: `atRisk`, `support`, `onTrack`, `notStarted` (defined in migration)
+
+### Key Models
+- `StudentProfile` (table: `students`) — denormalized snapshot: `points`, `wordBlastAcc`, `storyQuestAcc`, `status`, `section`, `read_level`, `speak_level`, `avatar`
+- `GameSession` — logs every play (`logSession()` static method, polymorphic to `WordModule`/`ParagraphModule`)
+- `StudentWordProgress` / `StudentParagraphProgress` — per-module progress (separate from denormalized accuracy on `students`)
+
+### Student Onboarding
+Enforced by `CheckStudentOnboarding` middleware: `avatar` column on `students` must be non-empty. Flow: splashScreen → avatarSelection (POST `/avatar`) → greetings → dashboard.
+
+## Conventions
+
+- PHP: Laravel Pint (PSR-12)
+- No TypeScript, plain JSX with `jsconfig.json`
+- Spaces, 4-space indent (`.editorconfig`)
+- No code comments unless the original code already has them
+- Inertia pages resolve as `./Pages/{name}.jsx` under `resources/js/`
+- Blade: only `resources/views/app.blade.php` (Inertia root)
+- `DashboardLayout` in `resources/js/Layouts/Teacher/` wraps all teacher pages
+- Teacher sidebar: `resources/js/Components/Teacher/Sidebar.jsx`
