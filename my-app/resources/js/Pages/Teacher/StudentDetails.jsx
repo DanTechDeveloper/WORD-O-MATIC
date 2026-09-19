@@ -4,7 +4,7 @@ import { Link, usePage } from "@inertiajs/react";
 import { attentionMeta, attemptsShown } from "@/utils/masteryLabels.js";
 
 // ponytail: Word Blast dedup removed — 10 unique words/level, no merge needed.
-// Story Quest uses SentenceChip directly from sentence_stats.
+// Story Quest renders Reading Performance from sentence_stats.words (no zones).
 function aggregateZoneRows(wordStats) {
     const rows = [...(wordStats || [])].map((s) => ({
         word: s.word,
@@ -42,26 +42,64 @@ function WordChip({ word, stat, threshold, className }) {
     );
 }
 
-function SentenceChip({ sentence, stat, threshold, className }) {
-    // ponytail: nasagupa na → 1st attempt default (mastered 0 failures = 1 shown), training stays raw
-    const raw = Number(stat?.failed_attempts ?? 0);
-    const attempts = stat ? attemptsShown({ mastery: stat.mastery, failed_attempts: raw }) : raw;
-    const attention = stat ? attentionMeta({ mastery: stat.mastery, failed_attempts: raw }, threshold) : null;
-
+// Story Quest Reading Performance: sentence reads as one clean line
+// (highlight only), problem-word details listed beneath it — two visual
+// layers so reading the sentence and parsing attempts never compete.
+// Raw failed count (not attemptsShown's +1): here the number is evidence
+// of difficulty. Pure render over sentence_stats.words — no backend change.
+function SentencePerformanceBlock({ stat, threshold }) {
+    const words = stat.words || [];
+    const problems = words.filter((w) => Number(w.failed_attempts || 0) > 0);
     return (
-        <span
-            className={`px-3 py-2 sm:px-4 sm:py-3 bg-surface-container border-2 border-outline/20 font-black rounded-xl text-xs sm:text-sm leading-relaxed transition-colors cursor-default block ${className}`}
-        >
-            <span className="block">{sentence}</span>
-            <span className="block mt-1 text-[10px] sm:text-xs uppercase tracking-widest text-on-surface-variant">
-                Attempts: {attempts}
-                {attention ? (
-                    <>
-                        , <span className={attention.cls}>{attention.label}</span>
-                    </>
-                ) : null}
-            </span>
-        </span>
+        <div className="px-3 py-2 sm:px-4 sm:py-3 bg-surface-container border-2 border-outline/20 rounded-xl text-xs sm:text-sm leading-relaxed block">
+            <p className="font-black text-white text-sm sm:text-base leading-loose">
+                {words.map((w, i) => {
+                    const failed = Number(w.failed_attempts || 0);
+                    if (failed === 0) {
+                        return (
+                            <span key={i}>
+                                {w.word}
+                                {" "}
+                            </span>
+                        );
+                    }
+                    const recovered = w.mastery === "mastered";
+                    return (
+                        <span key={i}>
+                            <span
+                                className={`px-1.5 py-0.5 rounded-md border-2 ${recovered ? "border-emerald-400/70 text-emerald-300 bg-emerald-400/10" : "border-red-500/70 text-red-300 bg-red-500/10"}`}
+                            >
+                                {w.word}
+                            </span>
+                            {" "}
+                        </span>
+                    );
+                })}
+            </p>
+            {problems.length > 0 && (
+                <ul className="mt-2 space-y-1 text-[10px] sm:text-xs uppercase tracking-widest">
+                    {problems.map((w, i) => {
+                        const failed = Number(w.failed_attempts || 0);
+                        const recovered = w.mastery === "mastered";
+                        const attention = recovered
+                            ? null
+                            : attentionMeta({ mastery: w.mastery, failed_attempts: failed }, threshold);
+                        return (
+                            <li key={`${i}-${w.word}`} className="flex items-center gap-1.5">
+                                <span className={`w-2 h-2 rounded-full shrink-0 ${recovered ? "bg-emerald-400 shadow-[0_0_6px_#34d399]" : "bg-red-500 shadow-[0_0_6px_#ef4444]"}`} />
+                                <span className="font-black text-white">{w.word}</span>
+                                <span className="text-on-surface-variant">— {failed} Attempts</span>
+                                {recovered ? (
+                                    <span className="text-emerald-400">· Recovered</span>
+                                ) : attention ? (
+                                    <span className={attention.cls}>· {attention.label}</span>
+                                ) : null}
+                            </li>
+                        );
+                    })}
+                </ul>
+            )}
+        </div>
     );
 }
 
@@ -73,8 +111,8 @@ export default function StudentDetail({ data }) {
     const _speakCurriculum = data.speakCurriculum || [];
     const wbMasteredAll = _readCurriculum.flatMap((l) => aggregateZoneRows(l.word_stats).mastered);
     const wbTrainingAll = _readCurriculum.flatMap((l) => aggregateZoneRows(l.word_stats).training);
-    const sqMasteredAll = _speakCurriculum.flatMap((l) => (l.sentence_stats || []).filter((s) => s.mastery === 'mastered'));
-    const sqTrainingAll = _speakCurriculum.flatMap((l) => (l.sentence_stats || []).filter((s) => s.mastery === 'training' && Number(s.failed_attempts || 0) > 0));
+    const sqSentencesAll = _speakCurriculum.flatMap((l) => l.sentence_stats || []);
+    const sqDifficultyAll = sqSentencesAll.filter((s) => (s.words || []).some((w) => Number(w.failed_attempts || 0) > 0));
     const hasWbModules = _readCurriculum.length > 0;
     const hasSqModules = _speakCurriculum.length > 0;
 
@@ -572,86 +610,51 @@ export default function StudentDetail({ data }) {
 
             </div>
 
-            {/* Story Quest: Mastery & Training Zones */}
+            {/* Story Quest: Reading Performance */}
             <div className="mb-12">
                 <h2 className="text-base sm:text-lg md:text-xl font-black text-white uppercase italic tracking-tighter mb-6 flex items-center gap-2">
                     <span className="w-8 h-1 bg-cyan-400"></span> Story Quest
                 </h2>
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 sm:gap-10">
-                    <div className="space-y-4 sm:space-y-6">
-                        <div className="flex items-center gap-3 sm:gap-4">
-                            <span className="material-symbols-outlined text-cyan-400 p-2 sm:p-3 bg-cyan-400/10 rounded-2xl border-2 border-cyan-400/20 text-xl sm:text-2xl">
-                                verified
-                            </span>
-                            <h3 className="text-lg sm:text-xl md:text-2xl font-black text-white uppercase italic tracking-tighter">
-                                Mastery Zone
-                            </h3>
-                        </div>
-                        <div className="bg-surface-container-lowest rounded-xl border-4 border-outline/20 p-4 sm:p-6 md:p-8 min-h-[400px] max-h-[600px] overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-surface-container-high [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-cyan-400">
-                            {sqMasteredAll.length === 0 ? (
-                                <div className="flex flex-col items-center justify-center py-16 text-center">
-                                    <span className="material-symbols-outlined text-4xl text-on-surface-variant/40 mb-3" aria-hidden="true">verified</span>
-                                    <p className="text-on-surface-variant font-black uppercase text-xs tracking-widest">{!hasSqModules ? "No Story Quest modules yet" : "No sentences mastered yet"}</p>
-                                    <p className="text-on-surface-variant/60 text-xs font-semibold mt-1">{!hasSqModules ? "Create Level 1 in Story Quest to get started." : "Mastered sentences will appear here."}</p>
-                                </div>
-                            ) : (
-                                student.speakCurriculum.map((level, i) => {
-                                    const mastered = (level.sentence_stats || []).filter((s) => s.mastery === 'mastered');
-                                    if (mastered.length === 0) return <div key={i} className="mb-8 last:mb-0" />;
-                                    return (
-                                        <div key={i} className="mb-8 last:mb-0">
-                                            <div className="text-cyan-400 font-black uppercase text-xs tracking-widest mb-4 flex items-center gap-2">
-                                                <div className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_#22d3ee]"></div>
-                                                {level.level}
-                                            </div>
-                                            <div className="flex flex-col gap-3">
-                                                {mastered.map((row) => (
-                                                    <SentenceChip key={row.sentence} sentence={row.sentence} stat={row} threshold={attentionThreshold} className="text-white hover:border-cyan-400" />
-                                                ))}
-                                            </div>
-                                        </div>
-                                    );
-                                })
-                            )}
-                        </div>
+                <div className="space-y-4 sm:space-y-6">
+                    <div className="flex items-center gap-3 sm:gap-4">
+                        <span className="material-symbols-outlined text-cyan-400 p-2 sm:p-3 bg-cyan-400/10 rounded-2xl border-2 border-cyan-400/20 text-xl sm:text-2xl">
+                            menu_book
+                        </span>
+                        <h3 className="text-lg sm:text-xl md:text-2xl font-black text-white uppercase italic tracking-tighter">
+                            Reading Performance
+                        </h3>
                     </div>
-
-                    <div className="space-y-4 sm:space-y-6">
-                        <div className="flex items-center gap-3 sm:gap-4">
-                            <span className="material-symbols-outlined text-orange-400 p-2 sm:p-3 bg-orange-400/10 rounded-2xl border-2 border-orange-400/20 text-xl sm:text-2xl">
-                                exercise
-                            </span>
-                            <h3 className="text-lg sm:text-xl md:text-2xl font-black text-white uppercase italic tracking-tighter">
-                                Training Zone
-                            </h3>
-                        </div>
-                        <div className="bg-surface-container-lowest rounded-xl border-4 border-outline/20 p-4 sm:p-6 md:p-8 min-h-[400px] max-h-[600px] overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-surface-container-high [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-orange-400">
-                            {sqTrainingAll.length === 0 ? (
-                                <div className="flex flex-col items-center justify-center py-16 text-center">
-                                    <span className="material-symbols-outlined text-4xl text-on-surface-variant/40 mb-3" aria-hidden="true">exercise</span>
-                                    <p className="text-on-surface-variant font-black uppercase text-xs tracking-widest">{!hasSqModules ? "No Story Quest modules yet" : "No sentences in training"}</p>
-                                    <p className="text-on-surface-variant/60 text-xs font-semibold mt-1">{!hasSqModules ? "Create Level 1 in Story Quest to get started." : "Training sentences will appear here when practice starts."}</p>
-                                </div>
-                            ) : (
-                                student.speakCurriculum.map((level, i) => {
-                                    const training = (level.sentence_stats || []).filter((s) => s.mastery === 'training' && Number(s.failed_attempts || 0) > 0);
-                                    if (training.length === 0) return <div key={i} className="mb-8 last:mb-0" />;
-                                    return (
-                                        <div key={i} className="mb-8 last:mb-0">
-                                            <div className="text-orange-400 font-black uppercase text-xs tracking-widest mb-4 flex items-center gap-2">
-                                                <div className="w-2 h-2 rounded-full bg-orange-400 shadow-[0_0_8px_#fb923c]"></div>
-                                                {level.level}
-                                            </div>
-                                            <div className="flex flex-col gap-3">
-                                                {training.map((row) => (
-                                                    <SentenceChip key={row.sentence} sentence={row.sentence} stat={row} threshold={attentionThreshold} className="text-on-surface-variant hover:border-orange-400" />
-                                                ))}
-                                            </div>
+                    {sqSentencesAll.length > 0 && (
+                        <p className="text-on-surface-variant font-black uppercase text-[10px] sm:text-xs tracking-widest">
+                            {sqDifficultyAll.length} of {sqSentencesAll.length} sentences need attention
+                        </p>
+                    )}
+                    <div className="bg-surface-container-lowest rounded-xl border-4 border-outline/20 p-4 sm:p-6 md:p-8 min-h-[400px] max-h-[600px] overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-surface-container-high [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-cyan-400">
+                        {sqDifficultyAll.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center py-16 text-center">
+                                <span className="material-symbols-outlined text-4xl text-on-surface-variant/40 mb-3" aria-hidden="true">menu_book</span>
+                                <p className="text-on-surface-variant font-black uppercase text-xs tracking-widest">{!hasSqModules ? "No Story Quest modules yet" : "No struggling words — sentences read cleanly"}</p>
+                                <p className="text-on-surface-variant/60 text-xs font-semibold mt-1">{!hasSqModules ? "Create Level 1 in Story Quest to get started." : "Sentences with failed attempts will appear here."}</p>
+                            </div>
+                        ) : (
+                            student.speakCurriculum.map((level, i) => {
+                                const rows = (level.sentence_stats || []).filter((s) => (s.words || []).some((w) => Number(w.failed_attempts || 0) > 0));
+                                if (rows.length === 0) return null;
+                                return (
+                                    <div key={i} className="mb-8 last:mb-0">
+                                        <div className="text-cyan-400 font-black uppercase text-xs tracking-widest mb-4 flex items-center gap-2">
+                                            <div className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_#22d3ee]"></div>
+                                            {level.level}
+                                        </div>
+                                        <div className="flex flex-col gap-3">
+                                            {rows.map((row) => (
+                                                <SentencePerformanceBlock key={`${i}-${row.sentence_index ?? row.sentence}`} stat={row} threshold={attentionThreshold} />
+                                            ))}
+                                        </div>
                                     </div>
                                 );
                             })
-                            )}
-                        </div>
+                        )}
                     </div>
                 </div>
 

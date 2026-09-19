@@ -9,6 +9,8 @@ timer — no "Tap to Start" overlay, no 3-2-1 countdown on resume.
 - Key: `wordomaticResume:${moduleId}` in `sessionStorage`
   (read/write/clear via `resources/js/utils/resumeStorage.js`)
 - Value: `{ moduleId, currentWordIndex, wordsSmashed, currentStreak, maxStreak, timeLeft }`
+  plus Story Quest only: `verdicts` (per-word correct/wrong map) + `sentenceScores`
+  (completed-sentence scores) — written by `useStoryQuestEngine` over the same key.
 - Tab close → clears automatically (sessionStorage).
 - Cleared on: round complete (`COMPLETED`), time-up/timeout (`GAMEOVER`), or
   explicit restart.
@@ -22,11 +24,15 @@ timer — no "Tap to Start" overlay, no 3-2-1 countdown on resume.
    - If session + `?resume=true` → returns `{ session, isResume: true }`
    - Else → `{ session: null, isResume: false }`
 4. `useWordBlastEngine` / `useStoryQuestEngine` (shared core `useGameplayCore`):
-   - `useResumeSession` is consumed by both pages.
-   - When `isResume === true` AND a session exists → engine initialises
-     `gameState` to `"ACTIVE"` (not `"IDLE"`/`"COUNTDOWN"`), skipping the
-     3-2-1 gate and the TapToStart overlay.
-   - When no resume → normal `"IDLE"` → `startGame()` → `"COUNTDOWN"` → timer.
+    - `useResumeSession` is consumed by both pages.
+    - When `isResume === true` AND a session exists → engine initialises
+      `gameState` to `"ACTIVE"` (not `"IDLE"`/`"COUNTDOWN"`), skipping the
+      3-2-1 gate and the TapToStart overlay.
+    - When no resume → normal `"IDLE"` → `startGame()` → `"COUNTDOWN"` → timer.
+    - Story Quest render rule (locked): fresh mount starts neutral with a
+      start-here pulse (no static highlight until speech begins, karaoke
+      sweep follows interim); resume mount shows restored verdicts plus a
+      you-are-here marker at the resumed index (it is mid-round).
 
 ## Timer ownership
 - The engine owns the 60s tick (`timeLeft` in `useState`, persisted every turn).

@@ -27,6 +27,7 @@ export function useGameplayCore({
     onWordRecognized,
     onMispronounce,
     resumeData,
+    persistExtra,
 }) {
     const resume = useMemo(() => {
         if (typeof window === "undefined") return null;
@@ -144,6 +145,14 @@ export function useGameplayCore({
         setCurrentWordIndex((prev) => Math.min(prev + n, totalWords));
     }, [totalWords]);
 
+    // ponytail: additive SQ escape hatch — lets the Story Quest wrapper add
+    // points without touching the per-word feedback machine. Word Blast
+    // never calls this; default behavior unchanged.
+    const addScore = useCallback((n) => {
+        const pts = Math.max(0, n | 0 || 0);
+        if (pts > 0) setWordsSmashed((prev) => prev + pts);
+    }, []);
+
     const targetWord = useMemo(() => {
         return normalizeWord(words[currentWordIndex]?.word);
     }, [currentWordIndex, words]);
@@ -151,6 +160,12 @@ export function useGameplayCore({
     const persistProgress = useCallback(() => {
         if (!hasSaved.current) {    
             hasSaved.current = true;
+            // ponytail: persistExtra rides along for mode-specific detail
+            // (SQ sentence_scores); read via ref so inline arrows never churn
+            // persistProgress identity (would reset the 60s timer effect).
+            const extra = typeof persistExtraRef.current === "function"
+                ? persistExtraRef.current()
+                : (persistExtraRef.current || {});
             router.post(
                 saveEndpoint,
                 {
@@ -158,6 +173,7 @@ export function useGameplayCore({
                     words_smashed: wordsSmashedRef.current,
                     words_processed: currentWordIndexRef.current,
                     streak: maxStreakRef.current,
+                    ...extra,
                 },
                 { preserveState: true }
             );
@@ -166,6 +182,9 @@ export function useGameplayCore({
 
     const persistProgressRef = useRef(persistProgress);
     persistProgressRef.current = persistProgress;
+
+    const persistExtraRef = useRef(persistExtra);
+    persistExtraRef.current = persistExtra;
 
     useEffect(() => {
         if (gameState === "ACTIVE" && currentWordIndex >= totalWords && totalWords > 0) {
@@ -360,5 +379,7 @@ export function useGameplayCore({
         handleWordRecognized,
         handleMispronounce,
         handleFatalError,
+        moveToNextWord,
+        addScore,
     };
 }

@@ -7,6 +7,7 @@ use App\Models\GameSession;
 use App\Models\ParagraphModule;
 use App\Models\ParagraphWord;
 use App\Models\StudentBadges;
+use App\Models\StudentParagraphMastery;
 use App\Models\StudentParagraphProgress;
 use App\Models\StudentProfile;
 use App\Models\StudentWordProgress;
@@ -901,5 +902,137 @@ class BadgeTest extends TestCase
         foreach ($rows as $row) {
             $this->assertSame('earned', $row->status);
         }
+    }
+
+    public function test_paragraph_sessions_never_feed_streak_badges(): void
+    {
+        // Story Quest has no streak mechanic — even a historical paragraph
+        // session carrying a streak must not award streak badges.
+        $this->seedBadges();
+        $this->seedGameplayBadges();
+        $wordModule = $this->makeWordModule(1, 10);
+        $paraModule = ParagraphModule::create([
+            'level' => 1, 'title' => 'Para', 'content' => 'The cat naps.', 'is_tutorial' => false,
+        ]);
+        [$user] = $this->makeStudent('SQ Streak');
+
+        $paraSession = GameSession::create([
+            'user_id' => $user->id, 'module_id' => $paraModule->id, 'module_type' => 'paragraph',
+            'score' => 10, 'accuracy' => 100, 'streak' => 10, 'is_deadline_hit' => false,
+        ]);
+
+        (new BadgeService)->checkGameplayBadges($user, $paraSession->id, 100.0);
+
+        $this->assertFalse($this->hasBadge($user, 'on-fire'));
+        $this->assertFalse($this->hasBadge($user, 'blazing-streak'));
+        $this->assertFalse($this->hasBadge($user, 'unstoppable'));
+
+        // Word Blast streaks still award — the metric is word-scoped, not dead.
+        $wordSession = GameSession::create([
+            'user_id' => $user->id, 'module_id' => $wordModule->id, 'module_type' => 'word',
+            'score' => 3, 'accuracy' => 30, 'streak' => 3, 'is_deadline_hit' => false,
+        ]);
+
+        (new BadgeService)->checkGameplayBadges($user, $wordSession->id, 30.0);
+
+        $this->assertTrue($this->hasBadge($user, 'on-fire'));
+    }
+
+    public function test_seeder_assigns_mode_per_badge(): void
+    {
+        $this->seed(\Database\Seeders\BadgesSeeder::class);
+
+        $modes = Badges::pluck('mode', 'slug')->all();
+        $this->assertSame('word', $modes['halfway-hero']);
+        $this->assertSame('word', $modes['on-fire']);
+        $this->assertSame('paragraph', $modes['story-explorer']);
+        $this->assertSame('paragraph', $modes['story-master']);
+        $this->assertSame('paragraph', $modes['sentence-star']);
+        $this->assertSame('shared', $modes['first-steps']);
+        $this->assertSame('shared', $modes['clear-speaker']);
+        $this->assertSame('shared', $modes['tutorial-complete']);
+    }
+
+    private function makeParagraphModuleWithWords(int $level, array $words, bool $tutorial = false): ParagraphModule
+    {
+        $module = ParagraphModule::create([
+            'level' => $level, 'title' => "P{$level}",
+            'content' => implode(' ', $words), 'is_tutorial' => $tutorial,
+        ]);
+        foreach ($words as $i => $w) {
+            ParagraphWord::create(['paragraph_module_id' => $module->id, 'word' => $w, 'position' => $i + 1]);
+        }
+
+        return $module;
+    }
+
+    public function test_sentence_star_awards_on_best_sentence(): void
+    {
+        Badges::create(['name' => 'Sentence Star', 'slug' => 'sentence-star', 'description' => 'd', 'metric' => 'best_sentence', 'threshold_score' => 5, 'icon' => 'x']);
+        $module = $this->makeParagraphModuleWithWords(1, ['The', 'cat', 'naps', 'here', 'today']);
+        [$user] = $this->makeStudent('Sentence Star');
+
+        $session = GameSession::create([
+            'user_id' => $user->id, 'module_id' => $module->id, 'module_type' => 'paragraph',
+            'score' => 7, 'accuracy' => 80, 'streak' => 0, 'is_deadline_hit' => false,
+            'sentence_scores' => [5, 2],
+        ]);
+
+        (new BadgeService)->checkGameplayBadges($user, $session->id, 80.0);
+
+        $this->assertTrue($this->hasBadge($user, 'sentence-star'));
+    }
+
+    public function test_sentence_star_ignores_tutorial_deadline_and_null_scores(): void
+    {
+        Badges::create(['name' => 'Sentence Star', 'slug' => 'sentence-star', 'description' => 'd', 'metric' => 'best_sentence', 'threshold_score' => 5, 'icon' => 'x']);
+        $tutPara = $this->makeParagraphModuleWithWords(0, ['A', 'puppy', 'naps', 'here', 'now'], true);
+        $realPara = $this->makeParagraphModuleWithWords(1, ['The', 'cat', 'naps', 'here', 'today']);
+        [$user] = $this->makeStudent('Sentence Excl');
+
+        GameSession::create([
+            'user_id' => $user->id, 'module_id' => $tutPara->id, 'module_type' => 'paragraph',
+            'score' => 5, 'accuracy' => 100, 'streak' => 0, 'is_deadline_hit' => false,
+            'sentence_scores' => [5],
+        ]);
+        GameSession::create([
+            'user_id' => $user->id, 'module_id' => $realPara->id, 'module_type' => 'paragraph',
+            'score' => 5, 'accuracy' => 100, 'streak' => 0, 'is_deadline_hit' => true,
+            'sentence_scores' => [5],
+        ]);
+        $nullSession = GameSession::create([
+            'user_id' => $user->id, 'module_id' => $realPara->id, 'module_type' => 'paragraph',
+            'score' => 3, 'accuracy' => 60, 'streak' => 0, 'is_deadline_hit' => false,
+            'sentence_scores' => null,
+        ]);
+
+        (new BadgeService)->checkGameplayBadges($user, $nullSession->id, 60.0);
+
+        $this->assertFalse($this->hasBadge($user, 'sentence-star'));
+        $this->assertSame(0, (new BadgeService)->calculateBestSentence($user));
+    }
+
+    public function test_story_master_awards_at_full_paragraph_completion(): void
+    {
+        Badges::create(['name' => 'Story Master', 'slug' => 'story-master', 'description' => 'd', 'metric' => 'paragraph_completion', 'threshold_score' => 100, 'icon' => 'x']);
+        $module = $this->makeParagraphModuleWithWords(1, ['The', 'cat']);
+        [$user] = $this->makeStudent('Story Master');
+
+        $words = ParagraphWord::where('paragraph_module_id', $module->id)->get();
+        foreach ($words as $w) {
+            StudentParagraphMastery::create([
+                'user_id' => $user->id, 'paragraph_word_id' => $w->id,
+                'status' => 'mastered', 'failed_attempts' => 0,
+            ]);
+        }
+
+        $session = GameSession::create([
+            'user_id' => $user->id, 'module_id' => $module->id, 'module_type' => 'paragraph',
+            'score' => 2, 'accuracy' => 100, 'streak' => 0, 'is_deadline_hit' => false,
+        ]);
+
+        (new BadgeService)->checkGameplayBadges($user, $session->id, 100.0);
+
+        $this->assertTrue($this->hasBadge($user, 'story-master'));
     }
 }

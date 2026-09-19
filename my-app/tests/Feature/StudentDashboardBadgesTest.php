@@ -117,7 +117,7 @@ class StudentDashboardBadgesTest extends TestCase
     public function test_badges_page_current_values_match_award_sources(): void
     {
         $student = $this->makeStudent('Deadline Excl');
-        $student->student->update(['points' => 10, 'wordBlastAcc' => 85, 'storyQuestAcc' => 0]);
+        $student->student->update(['points' => 10, 'wordBlastAcc' => 85, 'storyQuestAcc' => 0, 'tutorial_completed_at' => now()]);
 
         Badges::create(['name' => 'On Fire', 'slug' => 'on-fire', 'description' => 'd', 'requirement' => 'r', 'metric' => 'streak', 'operator' => '>=', 'threshold_score' => 3, 'icon' => 'x']);
         Badges::create(['name' => 'Clear Speaker', 'slug' => 'clear-speaker', 'description' => 'd', 'requirement' => 'r', 'metric' => 'accuracy', 'operator' => '>=', 'threshold_score' => 80, 'icon' => 'x']);
@@ -143,6 +143,7 @@ class StudentDashboardBadgesTest extends TestCase
     public function test_badges_page_is_earned_reflects_pivot(): void
     {
         $student = $this->makeStudent('Earned Check');
+        $student->student->update(['tutorial_completed_at' => now()]);
 
         $firstSteps = Badges::create(['name' => 'First Steps', 'slug' => 'first-steps', 'description' => 'd', 'requirement' => 'r', 'metric' => 'total_points', 'operator' => '>=', 'threshold_score' => 5, 'icon' => 'x']);
         $wordMaster = Badges::create(['name' => 'Word Master', 'slug' => 'word-master', 'description' => 'd', 'requirement' => 'r', 'metric' => 'total_points', 'operator' => '>=', 'threshold_score' => 30, 'icon' => 'x']);
@@ -157,6 +158,31 @@ class StudentDashboardBadgesTest extends TestCase
                 ->where('badges', fn ($badges) => collect($badges)
                     ->firstWhere('slug', 'first-steps')['is_earned'] === true
                     && collect($badges)->firstWhere('slug', 'word-master')['is_earned'] === false));
+    }
+
+    public function test_badges_page_shows_only_onboarding_badges_during_tutorial(): void
+    {
+        $student = $this->makeStudent('Tutorial Badges');
+
+        Badges::create(['name' => 'First Steps', 'slug' => 'first-steps', 'description' => 'd', 'metric' => 'total_points', 'threshold_score' => 5, 'icon' => 'x']);
+        Badges::create(['name' => 'Word Master', 'slug' => 'word-master', 'description' => 'd', 'metric' => 'total_points', 'threshold_score' => 50, 'icon' => 'x']);
+        Badges::create(['name' => 'Tutorial Complete', 'slug' => 'tutorial-complete', 'description' => 'd', 'metric' => 'action', 'threshold_score' => null, 'icon' => 'x']);
+        Badges::create(['name' => 'Profile Pioneer', 'slug' => 'profile-pioneer', 'description' => 'd', 'metric' => 'action', 'threshold_score' => null, 'icon' => 'x']);
+
+        // tutorial_completed_at is null (mid-onboarding, avatar set so middleware passes).
+        $this->actingAs($student)
+            ->get(route('student.badges'))
+            ->assertSuccessful()
+            ->assertInertia(fn ($page) => $page
+                ->where('badges', fn ($badges) => collect($badges)->map(fn ($b) => $b['slug'])->sort()->values()->all() === ['profile-pioneer', 'tutorial-complete']));
+
+        $student->student->update(['tutorial_completed_at' => now()]);
+
+        $this->actingAs($student)
+            ->get(route('student.badges'))
+            ->assertSuccessful()
+            ->assertInertia(fn ($page) => $page
+                ->where('badges', fn ($badges) => collect($badges)->count() === 4));
     }
 
     public function test_student_leaderboards_ordered_by_points_desc_with_total(): void

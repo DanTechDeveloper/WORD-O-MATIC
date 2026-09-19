@@ -142,7 +142,7 @@ class StudentController extends Controller
 
                 $badge->current_value = match ($badge->metric) {
                     'total_points' => $student ? $student->points : 0,
-                    'streak' => $sessionQuery->max('streak') ?? 0,
+                    'streak' => (clone $sessionQuery)->where('module_type', 'word')->max('streak') ?? 0,
                     'accuracy' => $student ? max((float) $student->wordBlastAcc, (float) $student->storyQuestAcc) : 0,
                     'paragraph_completion' => $this->badgeService->calculateModuleCompletion($user, 'paragraph'),
                     'word_completion' => $this->badgeService->calculateModuleCompletion($user, 'word'),
@@ -154,6 +154,14 @@ class StudentController extends Controller
 
             return $badge;
         });
+
+        // ponytail: tutorial isolation is display-side too — mid-onboarding
+        // students see only the two onboarding badges (award-side is already
+        // isolated: tutorial rounds never call checkGameplayBadges and every
+        // metric excludes tutorial rows/sessions).
+        if (! $student?->tutorial_completed_at) {
+            $badges = $badges->whereIn('slug', ['tutorial-complete', 'profile-pioneer'])->values();
+        }
 
         return Inertia::render('Student/Badges', [
             'badges' => $badges,
@@ -264,56 +272,6 @@ class StudentController extends Controller
         return $this->updateMastery($request, 'paragraph');
     }
 
-    public function updateParagraphMasteryBatch(Request $request)
-    {
-        $request->validate([
-            'paragraph_word_ids' => ['required', 'array', 'min:1'],
-            'paragraph_word_ids.*' => ['required', 'exists:paragraph_words,id'],
-            'status' => 'required|in:mastered,training',
-        ]);
-
-        if ($this->reportService->cutoff()) {
-            return response()->noContent();
-        }
-
-        // Sticky: once mastered, skip. Otherwise apply the same per-word logic.
-        foreach ($request->paragraph_word_ids as $paragraphWordId) {
-            $existing = StudentParagraphMastery::where('user_id', auth()->id())
-                ->where('paragraph_word_id', $paragraphWordId)
-                ->first();
-            if ($existing && $existing->status === 'mastered') {
-                continue;
-            }
-
-            if ($request->status === 'training') {
-                $affected = StudentParagraphMastery::where('user_id', auth()->id())
-                    ->where('paragraph_word_id', $paragraphWordId)
-                    ->where('status', '!=', 'mastered')
-                    ->increment('failed_attempts');
-
-                if ($affected === 0) {
-                    if (! StudentParagraphMastery::where('user_id', auth()->id())
-                        ->where('paragraph_word_id', $paragraphWordId)
-                        ->exists()) {
-                        StudentParagraphMastery::create([
-                            'user_id' => auth()->id(),
-                            'paragraph_word_id' => $paragraphWordId,
-                            'status' => 'training',
-                            'failed_attempts' => 1,
-                        ]);
-                    }
-                }
-            } else {
-                StudentParagraphMastery::updateOrCreate(
-                    ['user_id' => auth()->id(), 'paragraph_word_id' => $paragraphWordId],
-                    ['status' => 'mastered']
-                );
-            }
-        }
-
-        return response()->noContent();
-    }
-
     private function updateMastery(Request $request, string $type)
     {
         $idColumn = $type === 'word' ? 'word_id' : 'paragraph_word_id';
@@ -389,6 +347,25 @@ class StudentController extends Controller
             'words_smashed' => 'required|integer|min:0',
             'words_processed' => 'required|integer|min:0',
             'streak' => 'nullable|integer|min:0',
+            // ponytail: sentence_scores is presentation detail (SQ only) —
+            // score stays the authoritative aggregate. Sum must match smashed.
+            'sentence_scores' => $type === 'paragraph'
+                ? ['nullable', 'array', function ($attribute, $value, $fail) use ($request) {
+                    if (! is_array($value)) {
+                        return;
+                    }
+                    foreach ($value as $v) {
+                        if (! is_numeric($v) || (int) $v < 0 || (float) $v != (int) $v) {
+                            $fail('Each sentence score must be a non-negative integer.');
+                            return;
+                        }
+                    }
+                    if (array_sum(array_map('intval', $value)) !== (int) $request->words_smashed) {
+                        $fail('Sentence scores must add up to words smashed.');
+                    }
+                }]
+                : ['prohibited'],
+            'sentence_scores.*' => $type === 'paragraph' ? ['integer', 'min:0'] : [],
         ]);
 
         $moduleClass = $type === 'word' ? WordModule::class : ParagraphModule::class;
@@ -438,14 +415,18 @@ class StudentController extends Controller
         }
 
         $wordsSmashed = min($request->words_smashed, $totalPossible);
-        $streak = min($request->streak ?? 0, $wordsSmashed + 1);
+        // ponytail: Story Quest has no streak mechanic — server forces 0
+        // (never trust the client), so SQ sessions can't feed streak badges.
+        $streak = $type === 'paragraph' ? 0 : min($request->streak ?? 0, $wordsSmashed + 1);
         $accuracy = $totalPossible > 0
             ? (int) round(min(($wordsSmashed / $totalPossible) * 100, 100))
             : 0;
 
         $isDeadlineHit = (bool) $this->reportService->cutoff();
 
-        $session = GameSession::logSession($user->id, $module->id, $type, $wordsSmashed, $accuracy, $streak, $isDeadlineHit);
+        $rawScores = $type === 'paragraph' ? $request->sentence_scores : null;
+        $sentenceScores = $rawScores ? array_map('intval', (array) $rawScores) : null;
+        $session = GameSession::logSession($user->id, $module->id, $type, $wordsSmashed, $accuracy, $streak, $isDeadlineHit, $sentenceScores);
 
         if ($isDeadlineHit) {
             return redirect()->route('student.results', ['id' => $session->id]);
@@ -548,6 +529,8 @@ class StudentController extends Controller
             'deadlineHit' => (bool) $session->is_deadline_hit,
             'bestScore' => (int) $bestScore,
             'isTutorial' => (bool) $module->is_tutorial,
+            // ponytail: SQ-only presentation detail (rendered, never recalculated).
+            'sentenceScores' => $session->sentence_scores ?? null,
         ]);
     }
 
