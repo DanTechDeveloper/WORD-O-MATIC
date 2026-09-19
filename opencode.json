@@ -1,6 +1,50 @@
 {
-    "$schema": "https://opencode.ai/config.json",
-    "instructions": [
-        "AGENTS.md"
-    ]
+  "$schema": "https://opencode.ai/config.json",
+
+  "instructions": [
+    "my-app/.opencode/commands/pm.md",
+    "my-app/.opencode/commands/setup.md"
+  ],
+
+  "references": {
+    "docs": {
+      "path": "my-app/docs",
+      "description": "Project documentation: architecture, conventions, database, deployment, gameplay, gamification, modules, reports, rules, caveats, developer guide"
+    }
+  },
+  "plugin": [
+    "opencode-history-search",
+    "opencode-web-fetch",
+    "opencode-notifier",
+    "opencode-wakatime",
+    "@dietrichgebert/ponytail"
+  ],
+
+
+  "permission": {
+    "edit": "ask",
+
+    "webfetch": "allow",
+
+    "bash": {
+      "*": "ask",
+
+      "git status": "allow",
+      "git diff": "allow",
+      "git log": "allow",
+
+      "composer *": "allow",
+      "npm *": "allow",
+      "bun *": "allow",
+
+      "php artisan route:list": "allow",
+      "php artisan test": "allow",
+
+      "php artisan migrate*": "ask",
+      "php artisan db:*": "ask",
+
+      "git commit *": "ask",
+      "git push *": "ask"
+    }
+  }
 }
