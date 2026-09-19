@@ -203,6 +203,12 @@ export function processSentenceModeResult(
     }
     stateRefs.current.interim = newInterim;
 
+    // ponytail: verdict confidence — mirrors the word-mode 0.6 Wrong gate.
+    // Missing confidence defaults to 1 (Deepgram always sends it; keeps
+    // existing callers/tests on the authoritative path).
+    const confidence =
+        typeof result.confidence === "number" ? result.confidence : 1;
+
     // ponytail: wordless finals (" " from an empty transcript) are pause
     // artifacts, not speech — they must not re-base the 5s silence watchdog.
     if (normalizeText(newFinals) || normalizeText(newInterim)) {
@@ -228,12 +234,12 @@ export function processSentenceModeResult(
         const fullMatch = advanceCount >= refWordCount;
         if (
             !stateRefs.current.hasMatched &&
-            !stateRefs.current.mispronouncedSentence &&
             advanceCount > 0 &&
             (hasAuthoritative || fullMatch)
         ) {
             bump("sentence.advance");
             stateRefs.current.hasMatched = true;
+            stateRefs.current.mispronouncedSentence = false;
             propsRef.current.onWordRecognized?.(advanceCount);
             clearAllTimers(timerRefs.current);
             return;
@@ -252,10 +258,12 @@ export function processSentenceModeResult(
         }
 
         if (hasAuthoritative) {
-            if (advanceCount === 0) {
+            if (advanceCount === 0 && confidence >= 0.6) {
                 // Pause artifact (endpointed empty final mid-sentence): let
                 // the 5s watchdog own the silence instead of failing the
                 // reader. Non-empty mismatch is a real wrong word → fail fast.
+                // FIX: low-confidence zero-match finals (noise hallucinated as
+                // a word) also defer to the watchdog instead of instant-fail.
                 if (!full) {
                     bump("sentence.emptyDeferred");
                     return;
@@ -264,6 +272,8 @@ export function processSentenceModeResult(
                 stateRefs.current.mispronouncedSentence = true;
                 propsRef.current.onMispronounced?.(full);
                 clearAllTimers(timerRefs.current);
+            } else if (advanceCount === 0) {
+                bump("sentence.lowConfDeferred");
             }
             return;
         }
@@ -272,11 +282,11 @@ export function processSentenceModeResult(
     const scope = matchScope(full, target);
     if (
         !stateRefs.current.hasMatched &&
-        !stateRefs.current.mispronouncedSentence &&
         isWordMatch(scope, target)
     ) {
         bump("sentence.advance");
         stateRefs.current.hasMatched = true;
+        stateRefs.current.mispronouncedSentence = false;
         propsRef.current.onWordRecognized?.();
         clearAllTimers(timerRefs.current);
         return;
@@ -314,8 +324,13 @@ export function processSentenceModeResult(
     }
 
     // Authoritative mismatch → immediate verdict (Deepgram empty/low-conf or speechFinal)
+    // FIX: low-confidence mismatch defers to the 5s watchdog (noise, not wrong).
     if (hasAuthoritative) {
         if (!isWordMatch(scope, target)) {
+            if (confidence < 0.6) {
+                bump("sentence.lowConfDeferred");
+                return;
+            }
             // Same pause tolerance as the lookahead path: an exact head of a
             // multi-word target is incomplete speech, not a wrong word.
             if (isStrictPrefix(full, target)) {
@@ -386,9 +401,13 @@ export function processWordModeResult(
     const isAuthoritative = !!result.isFinal || !!result.speechFinal;
     // ponytail: exact-match is already strict — confidence gates only the Wrong
     // path, never the accept. Soft-but-correct kids no longer false-negative.
-    if (!stateRefs.current.mispronouncedInWord && matchedTarget) {
+    // FIX: a Correct arriving after a premature Wrong still wins — the early
+    // endpointed fragment (stutter "ca" for "cat") must not lock out the true
+    // word. The engine cancels the pending mispronounce advance on recognize.
+    if (matchedTarget) {
         bump("word.accept", confidence);
         stateRefs.current.hasMatched = true;
+        stateRefs.current.mispronouncedInWord = false;
         propsRef.current.onWordRecognized?.();
         clearAllTimers(timerRefs.current);
         return;
@@ -412,7 +431,10 @@ export function processWordModeResult(
     // ponytail: settle tolerates stutter/pauses (1200ms for K-5 slow readers —
     // was 700ms); every new interim re-arms it, so it only fires after real
     // settling. 5s armWordTimeout stays the no-speech fallback.
-    if (!stateRefs.current.mispronouncedInWord) {
+    // FIX silence-safe: low-confidence noise (background hum, mic transient
+    // hallucinated as a word) must not arm the settle at all — without speech
+    // evidence the verdict belongs to the 5s no-speech fallback, not to Wrong.
+    if (!stateRefs.current.mispronouncedInWord && confidence >= 0.6) {
         const settleTarget = target;
         const settleTranscript = transcript;
         const settleConf = confidence;

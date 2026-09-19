@@ -468,10 +468,12 @@ export function useDeepgramRecognition({
         timeoutRefs.current.prevTarget = timeoutRefs.current.target;
         timeoutRefs.current.targetChangedAt = Date.now();
         timeoutRefs.current.target = null;
-        // ponytail: 50ms grace absorbs targetWord re-render tick only — NOT kid
-        // read time (that's sinceSwitch 1000). Keep 50 so fast correct at 200ms
-        // still wins; 500 would drop it and cause 5s timeout false mispronounce.
-        timeoutRefs.current.graceEnd = Date.now() + 50;
+        // ponytail: 800ms listen-before-verdict per word — absorbs the mic
+        // resume transient + first noise interims after each word switch, so a
+        // silent kid is never instant-failed. Drops Wrong verdicts only; a fast
+        // correct still wins inside the window, and the 5s no-speech fallback
+        // still owns genuine silence.
+        timeoutRefs.current.graceEnd = Date.now() + 800;
         timeoutRefs.current.restartCount = 0;
         gateStateRef.current.isOpen = false;
         clearAllTimers(timerRefs.current);

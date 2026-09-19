@@ -339,6 +339,19 @@ describe("processSentenceModeResult (Story Quest — SSOT isWordMatch)", () => {
         expect(propsRef.current.onWordRecognized).not.toHaveBeenCalled();
         expect(propsRef.current.onMispronounced).not.toHaveBeenCalled();
     });
+    test("FIX low-confidence zero-match final defers with lookahead (noise, not wrong)", () => {
+        const { stateRefs, timeoutRefs, timerRefs, propsRef } = makeRefs();
+        propsRef.current.lookahead = "the cat sat";
+        processSentenceModeResult({ isFinal: true, confidence: 0.25, 0: { transcript: "zebra" } }, "the", stateRefs, timeoutRefs, timerRefs, propsRef);
+        expect(propsRef.current.onWordRecognized).not.toHaveBeenCalled();
+        expect(propsRef.current.onMispronounced).not.toHaveBeenCalled();
+    });
+    test("FIX low-confidence zero-match final defers without lookahead", () => {
+        const { stateRefs, timeoutRefs, timerRefs, propsRef } = makeRefs();
+        processSentenceModeResult({ isFinal: true, confidence: 0.25, 0: { transcript: "zebra" } }, "the cat sat", stateRefs, timeoutRefs, timerRefs, propsRef);
+        expect(propsRef.current.onWordRecognized).not.toHaveBeenCalled();
+        expect(propsRef.current.onMispronounced).not.toHaveBeenCalled();
+    });
 });
 
 describe("processWordModeResult (Word Blast — strict exact-only)", () => {
@@ -493,13 +506,30 @@ describe("processWordModeResult (Word Blast — strict exact-only)", () => {
         const { stateRefs, timeoutRefs, timerRefs, propsRef } = makeRefs();
         timeoutRefs.current.prevTarget = "cat";
         timeoutRefs.current.targetChangedAt = Date.now();
-        // new target dog, wrong word "fish" at 100ms after switch — within 1000ms guard
+        // 800ms per-word grace fully ignores verdicts; arrive at +900ms —
+        // past grace but inside the 1000ms B guard, so no instant, settle arms.
+        vi.advanceTimersByTime(900);
+        // new target dog, wrong word "fish" at 900ms after switch
         processWordModeResult(makeEvent("fish", true), "dog", stateRefs, timerRefs, timeoutRefs, propsRef);
         expect(propsRef.current.onMispronounced).not.toHaveBeenCalled();
         vi.advanceTimersByTime(1199);
         expect(propsRef.current.onMispronounced).not.toHaveBeenCalled();
         vi.advanceTimersByTime(1);
         expect(propsRef.current.onMispronounced).toHaveBeenCalledTimes(1);
+        vi.useRealTimers();
+    });
+    test("BF30 B2: wrong speech inside the 800ms grace is ignored entirely (no settle)", () => {
+        vi.useFakeTimers();
+        const { stateRefs, timeoutRefs, timerRefs, propsRef } = makeRefs();
+        timeoutRefs.current.prevTarget = "cat";
+        timeoutRefs.current.targetChangedAt = Date.now();
+        timeoutRefs.current.graceEnd = Date.now() + 800;
+        // mic transient / noise interim at +100ms after switch — dropped, and
+        // no settle is armed, so nothing fires even after the settle window.
+        processWordModeResult(makeEvent("fish", true), "dog", stateRefs, timerRefs, timeoutRefs, propsRef);
+        expect(propsRef.current.onMispronounced).not.toHaveBeenCalled();
+        vi.advanceTimersByTime(2000);
+        expect(propsRef.current.onMispronounced).not.toHaveBeenCalled();
         vi.useRealTimers();
     });
     test("BF30 B: fast correct within 350ms still wins and cancels stale settle", () => {
@@ -537,5 +567,27 @@ describe("processWordModeResult (Word Blast — strict exact-only)", () => {
         vi.advanceTimersByTime(2000);
         expect(g2.propsRef.current.onMispronounced).not.toHaveBeenCalled();
         vi.useRealTimers();
+    });
+    test("FIX silence-safe: low-confidence noise interim never settles to Wrong", () => {
+        vi.useFakeTimers();
+        const { stateRefs, timeoutRefs, timerRefs, propsRef } = makeRefs();
+        // background noise / mic transient hallucinated as "the" at low conf —
+        // the student said nothing, so no Wrong may fire, not even after settle.
+        processWordModeResult({ isFinal: false, confidence: 0.25, 0: { transcript: "the" } }, "cat", stateRefs, timerRefs, timeoutRefs, propsRef);
+        expect(propsRef.current.onMispronounced).not.toHaveBeenCalled();
+        vi.advanceTimersByTime(2000);
+        expect(propsRef.current.onMispronounced).not.toHaveBeenCalled();
+        expect(propsRef.current.onWordRecognized).not.toHaveBeenCalled();
+        vi.useRealTimers();
+    });
+    test("FIX late Correct overrides an early authoritative Wrong", () => {
+        const { stateRefs, timeoutRefs, timerRefs, propsRef } = makeRefs();
+        // endpointed stutter fragment fires Wrong first (current instant path)…
+        processWordModeResult({ isFinal: true, confidence: 0.9, 0: { transcript: "do" } }, "cat", stateRefs, timerRefs, timeoutRefs, propsRef);
+        expect(propsRef.current.onMispronounced).toHaveBeenCalledTimes(1);
+        // …then the true word lands and must still win (engine cancels the
+        // pending mispronounce advance via its stale-settle rescue).
+        processWordModeResult({ isFinal: true, confidence: 0.95, 0: { transcript: "cat" } }, "cat", stateRefs, timerRefs, timeoutRefs, propsRef);
+        expect(propsRef.current.onWordRecognized).toHaveBeenCalledTimes(1);
     });
 });
