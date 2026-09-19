@@ -7,7 +7,7 @@ import TapToStartOverlay from "@/Components/Student/TapToStartOverlay";
 import { useEffect, useCallback, useState, useMemo } from "react";
 import { usePage } from "@inertiajs/react";
 import axios from "axios";
-import { useGameplayEngine } from "@/hooks/Student/useGameplayEngine";
+import { useWordBlastEngine } from "@/hooks/Student/useWordBlastEngine";
 import { useDeepgramRecognition } from "@/hooks/Student/useDeepgramRecognition";
 import { useMicrophonePermission } from "@/hooks/Student/useMicrophonePermission";
 import { pauseBackgroundMusic, setMicLive } from "@/utils/sounds";
@@ -48,11 +48,10 @@ export default function GameplayReadMode({ module, tutorialComplete = true }) {
         handleWordRecognized,
         handleMispronounce,
         handleFatalError,
-    } = useGameplayEngine({
+    } = useWordBlastEngine({
         words: module?.words,
         totalWords: module?.words?.length ?? 0,
         moduleId: module?.id,
-        saveEndpoint: "/student/saveWordProgress",
         onWordRecognized: (wordObj) => {
             if (wordObj && !isTutorialModule) {
                 axios.post("/student/updateWordMastery", {

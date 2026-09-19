@@ -206,7 +206,7 @@ HandleInertiaRequests::share() ← session flash + auth
 Global data shared via `HandleInertiaRequests`: `auth.user`, `flash` (success, error, new_badges, sent, failed, reported_at), `teacher` flags (incl. `attention_threshold` = `ReportService::NEEDS_ATTENTION_ATTEMPTS`).
 
 ## Gameplay Resume (client-side) — See `docs/resume-and-timer.md`
-- Do not re-add a private timer to `GameplayHeader`; use the `timeLeft` prop from `useGameplayEngine`.
+- Do not re-add a private timer to `GameplayHeader`; use the `timeLeft` prop from `useWordBlastEngine` / `useStoryQuestEngine` (shared core `useGameplayCore`).
 - Do not render `TapToStartOverlay` when `isResume` is true (already gated by `gameState === "IDLE"`).
 - Persist/resume is tab-only (`sessionStorage`, key `wordomaticResume:<moduleId>`). Do not escalate to cross-run persistence without a TTL + server check.
 - To force-reset an in-progress round, clear `sessionStorage["wordomaticResume:<moduleId>"]` (or use `clearResumeSession`).

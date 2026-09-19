@@ -8,7 +8,7 @@ import DeniedModal from "@/Components/Student/DeniedModal";
 import TapToStartOverlay from "@/Components/Student/TapToStartOverlay";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { useGameplayEngine } from "@/hooks/Student/useGameplayEngine";
+import { useStoryQuestEngine } from "@/hooks/Student/useStoryQuestEngine";
 import { useDeepgramRecognition } from "@/hooks/Student/useDeepgramRecognition";
 import { useMicrophonePermission } from "@/hooks/Student/useMicrophonePermission";
 import { pauseBackgroundMusic, setMicLive } from "@/utils/sounds";
@@ -78,11 +78,10 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true, wor
         handleWordRecognized,
         handleMispronounce,
         handleFatalError,
-    } = useGameplayEngine({
+    } = useStoryQuestEngine({
         words: module?.words,
         totalWords: module?.words?.length ?? 0,
         moduleId: module?.id,
-        saveEndpoint: "/student/saveParagraphProgress",
         onWordRecognized: (wordObj) => {
             if (!wordObj || isTutorialModule) return;
             const wordIndex = module?.words?.findIndex((w) => w.id === wordObj.id);
