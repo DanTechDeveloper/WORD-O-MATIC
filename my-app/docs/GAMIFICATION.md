@@ -55,19 +55,23 @@ badges earned while a student was logged out still count. Props passed from `Tea
 
 ### Full Badge Catalog
 
-| Badge | Slug | Category | Metric | Threshold | Requirement |
-|---|---|---|---|---|---|
-| First Steps | `first-steps` | Points | `total_points` | 5 | Reach 5 accumulated player points |
-| Word Master | `word-master` | Points | `total_points` | 50 | Reach 50 accumulated player points |
-| Story Quest Finisher | `story-finisher` | Completion | `paragraph_completion` | 100 (%) | Complete 100% of paragraph module words |
-| Word Blast Finisher | `word-blast-finisher` | Completion | `word_completion` | 100 (%) | Complete 100% of word module words |
-| On Fire | `on-fire` | Streak | `streak` | 3 | Get 3 correct in a row |
-| Blazing Streak | `blazing-streak` | Streak | `streak` | 5 | Get 5 correct in a row |
-| Unstoppable | `unstoppable` | Streak | `streak` | 7 | Get 7 correct in a row |
-| Clear Speaker | `clear-speaker` | Accuracy | `accuracy` | 80 | Get 80% accuracy in a single game |
-| Perfect Round | `perfect-round` | Accuracy | `accuracy` | 100 | Get 100% accuracy in a single game |
-| Tutorial Complete | `tutorial-complete` | Onboarding | `action` | — | Finish both tutorial modes |
-| Profile Pioneer | `profile-pioneer` | Onboarding | `action` | — | Set your profile avatar |
+| Badge | Slug | Mode | Category | Metric | Threshold | Requirement |
+|---|---|---|---|---|---|---|
+| First Steps | `first-steps` | shared | Points | `total_points` | 5 | Reach 5 accumulated player points |
+| Word Master | `word-master` | shared | Points | `total_points` | 50 | Reach 50 accumulated player points |
+| Halfway Hero | `halfway-hero` | word | Completion | `word_completion` | 50 | Complete 50% of Word Blast |
+| Story Explorer | `story-explorer` | paragraph | Completion | `paragraph_completion` | 50 | Complete 50% of Story Quest |
+| Story Master | `story-master` | paragraph | Completion | `paragraph_completion` | 100 | Complete 100% of Story Quest |
+| Sentence Star | `sentence-star` | paragraph | Sentence | `best_sentence` | 5 | Get 5 correct in a single sentence |
+| On Fire | `on-fire` | word | Streak | `streak` | 3 | Get 3 correct in a row (Word Blast sessions only) |
+| Blazing Streak | `blazing-streak` | word | Streak | `streak` | 5 | Get 5 correct in a row (Word Blast sessions only) |
+| Unstoppable | `unstoppable` | word | Streak | `streak` | 7 | Get 7 correct in a row (Word Blast sessions only) |
+| Clear Speaker | `clear-speaker` | shared | Accuracy | `accuracy` | 80 | Get 80% accuracy in a single game (either mode) |
+| Perfect Round | `perfect-round` | shared | Accuracy | `accuracy` | 100 | Get 100% accuracy in a single game (either mode) |
+| Tutorial Complete | `tutorial-complete` | shared | Onboarding | `action` | — | Finish both tutorial modes |
+| Profile Pioneer | `profile-pioneer` | shared | Onboarding | `action` | — | Set your profile avatar |
+
+Mode lives in the `badges.mode` column (seed truth; `Badges.jsx` sections group by it). Streak badges read Word Blast sessions only (Story Quest logs `streak=0`). During tutorial the Badges page shows only the two onboarding badges (server-side filter; award-side was already isolated).
 
 ### Module Completion Metrics
 

@@ -33,6 +33,7 @@ export function useDeepgramRecognition({
     matchMode = "word",
     muted = false,
     keyterms = [],
+    resetKey,
 }) {
     const isWordMode = matchMode === "word";
     const propsRef = useRef({
@@ -482,6 +483,34 @@ export function useDeepgramRecognition({
             armForCurrentTarget();
         }
     }, [targetWord]);
+
+    // ponytail: sentence-transition hard reset (Story Quest) — same block as
+    // the targetWord re-arm above, plus a transcript wipe. Forces a clean
+    // slate even when the new target normalizes equal to the old one (effect
+    // above would skip), stale transcript poisons anchoring, or a tail flag
+    // survives the break. No-op when resetKey is undefined (Word Blast never
+    // passes it); word-mode transcript is preserved like above.
+    useEffect(() => {
+        if (resetKey === undefined) return;
+        stateRefs.current.hasMatched = false;
+        stateRefs.current.mispronouncedInWord = false;
+        stateRefs.current.mispronouncedSentence = false;
+        if (!propsRef.current.isWordMode) {
+            stateRefs.current.transcript = "";
+            stateRefs.current.interim = "";
+        }
+        stateRefs.current.stoppedAt = 0;
+        stateRefs.current.lastSpeechAt = Date.now();
+        timeoutRefs.current.target = null;
+        timeoutRefs.current.graceEnd = Date.now() + 800;
+        timeoutRefs.current.restartCount = 0;
+        gateStateRef.current.isOpen = false;
+        clearAllTimers(timerRefs.current);
+
+        if (propsRef.current?.isActive && connRef.current) {
+            armForCurrentTarget();
+        }
+    }, [resetKey]);
 
     useEffect(() => {
         // ponytail: 500ms grace on session transitions (IDLE→ACTIVE flip) absorbs

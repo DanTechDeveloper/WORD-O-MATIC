@@ -1,18 +1,34 @@
 import { memo, useRef, useEffect } from "react";
 
+// Story Quest sentence view: karaoke-style live highlight (BLUE current +
+// quest glow following interim speech) with GREEN/RED verdicts locking on
+// authoritative results. Fresh mount starts neutral with a start-here pulse
+// (no static border until speech begins); resume mounts show restored
+// verdicts + a you-are-here marker. Sentence-final punctuation renders dim
+// outside the chip (display-only; matching is normalized). Sentence level =
+// ONE feedback overlay per completed sentence. No streak, no per-word popups.
+function renderWordText(word) {
+    const m = String(word ?? "").match(/^(.*?)([.!?]+)$/);
+    if (!m) return word;
+    return (
+        <>
+            <span>{m[1]}</span>
+            <span className="opacity-50">{m[2]}</span>
+        </>
+    );
+}
 const SpeakModeMainContent = memo(function SpeakModeMainContent({
     words,
     currentIndex,
+    verdicts = {},
+    sentenceFeedback = null,
+    sentenceBreak = false,
     highlightCount = 1,
     gameState,
     countdownValue,
-    isMispronounced,
-    showPointsFeedback,
-    pointsFeedbackValue,
-    streak,
-    feedbackType,
-    feedbackMessage,
-    streakShake,
+    isResume = false,
+    hasSpoken = false,
+    breakJustEnded = false,
 }) {
     const activeWordRef = useRef(null);
     const activeCount = Math.max(1, highlightCount | 0 || 1);
@@ -26,53 +42,6 @@ const SpeakModeMainContent = memo(function SpeakModeMainContent({
 
     return (
         <main className="flex-1 flex relative overflow-hidden">
-            <style>
-                {`
-                    @keyframes float-score {
-                        0% { transform: translateY(0); opacity: 1; }
-                        100% { transform: translateY(-80px); opacity: 0; }
-                    }
-                    .animate-float-score {
-                        animation: float-score 0.5s ease-out forwards;
-                    }
-
-                    @keyframes shake {
-                        0%, 100% { transform: translateX(0); }
-                        25% { transform: translateX(-15px); }
-                        75% { transform: translateX(15px); }
-                    }
-                    .animate-shake {
-                        animation: shake 0.3s ease-in-out;
-                    }
-
-                    @keyframes streak-glow {
-                        0%, 100% { box-shadow: 0 0 10px rgba(255, 200, 0, 0.3); }
-                        50% { box-shadow: 0 0 25px rgba(255, 200, 0, 0.6); }
-                    }
-                    .animate-streak-glow {
-                        animation: streak-glow 1s ease-in-out infinite;
-                    }
-
-                    @keyframes streak-bounce-in {
-                        0% { transform: translateX(-50%) scale(0); opacity: 0; }
-                        60% { transform: translateX(-50%) scale(1.15); opacity: 1; }
-                        100% { transform: translateX(-50%) scale(1); opacity: 1; }
-                    }
-                    .animate-streak-bounce-in {
-                        animation: streak-bounce-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-                    }
-
-                    @keyframes feedback-pop {
-                        0% { transform: translateY(8px) scale(0.8); opacity: 0; }
-                        30% { transform: translateY(0) scale(1); opacity: 1; }
-                        100% { transform: translateY(0) scale(1); opacity: 1; }
-                    }
-                    .animate-feedback-pop {
-                        animation: feedback-pop 0.35s ease-out forwards;
-                    }
-                `}
-            </style>
-
             {gameState === "IDLE" ? (
                 <div className="flex-1 flex" />
             ) : gameState === "COUNTDOWN" ? (
@@ -88,88 +57,60 @@ const SpeakModeMainContent = memo(function SpeakModeMainContent({
                             <div className="sticky top-2 z-30 flex items-center justify-center gap-2 sm:gap-4 mb-2 sm:mb-3 min-h-8 sm:min-h-10" />
 
                             <div
-                                    className={`font-headline-xl text-left leading-relaxed tracking-normal sm:tracking-tight select-none font-medium sm:font-semibold lg:font-bold text-3xl xs:text-4xl sm:text-5xl md:text-6xl lg:text-7xl flex flex-wrap gap-x-2 xs:gap-x-3 sm:gap-x-4 gap-y-4 sm:gap-y-6 md:gap-y-8`}
+                                className={`font-headline-xl text-left leading-relaxed tracking-normal sm:tracking-tight select-none font-medium sm:font-semibold lg:font-bold text-3xl xs:text-4xl sm:text-5xl md:text-6xl lg:text-7xl flex flex-wrap gap-x-2 xs:gap-x-3 sm:gap-x-4 gap-y-4 sm:gap-y-6 md:gap-y-8`}
                             >
-                                {words.map((word, index) => (
-                                    <span
-                                        key={index}
-                                        ref={
-                                            index === currentIndex
-                                                ? activeWordRef
-                                                : undefined
-                                        }
-                                        className={`transition-all duration-300 whitespace-nowrap relative ${index === currentIndex && streakShake ? `animate-streak-shake-${streakShake} ` : ""}${
-                                            index < currentIndex
-                                                ? "opacity-20 text-on-background"
-                                                : index >= currentIndex && index < currentIndex + activeCount
-                                                  ? isMispronounced && index === currentIndex
-                                                      ? "font-bold sm:font-extrabold text-rose-400 opacity-100 relative z-10 border-2 border-rose-500 rounded-xl px-3 py-2 bg-slate-900/80 drop-shadow-[0_0_12px_rgba(244,63,94,0.6)] animate-shake"
-                                                      : "font-bold sm:font-extrabold text-quest opacity-100 relative z-10 border-2 border-quest/80 rounded-xl px-3 py-2 bg-slate-900/80 drop-shadow-[0_0_10px_rgba(56,189,248,0.5)]"
-                                                  : "opacity-60 text-on-background/50"
-                                        }`}
-                                    >
-                                        {index === currentIndex &&
-                                            feedbackType && (
-                                                <span
-                                                    className={`absolute left-1/2 -translate-x-1/2 -top-5 xs:-top-6 sm:-top-7 md:-top-9 z-30 flex items-center gap-1 sm:gap-1.5 font-bold italic whitespace-normal text-center leading-tight text-sm xs:text-sm sm:text-base md:text-lg lg:text-xl rounded-full px-3 sm:px-3.5 py-1 sm:py-1.5 border bg-slate-900/85 animate-feedback-pop w-max max-w-[88vw] sm:max-w-[380px] md:max-w-[420px] justify-center ${
-                                                        feedbackType ===
-                                                        "correct"
-                                                            ? "text-yellow-300 border-amber-400/60"
-                                                            : "text-rose-400 border-rose-500/60"
-                                                    }`}
-                                                    style={{
-                                                        filter:
-                                                            feedbackType ===
-                                                            "correct"
-                                                                ? "drop-shadow(0 0 8px rgba(255,200,0,0.45))"
-                                                                : "drop-shadow(0 0 8px rgba(244,63,94,0.45))",
-                                                    }}
-                                                >
-                                                    {feedbackMessage}
-                                                    {feedbackType ===
-                                                        "correct" && (
-                                                        <span className="flex flex-wrap items-center justify-center gap-1 sm:gap-1.5">
-                                                            <span
-                                                                className="material-symbols-outlined text-lg xs:text-xl sm:text-2xl md:text-2xl"
-                                                                style={{
-                                                                    color:
-                                                                        streak >=
-                                                                        5
-                                                                            ? "#ff4444"
-                                                                            : streak >=
-                                                                                 3
-                                                                              ? "#ff8800"
-                                                                              : "#ffcc00",
-                                                                    filter: `drop-shadow(0 0 6px ${streak >= 5 ? "#ff444488" : streak >= 3 ? "#ff880088" : "#ffcc0088"})`,
-                                                                }}
-                                                            >
-                                                                local_fire_department
-                                                            </span>
-                                                            <span className="text-[10px] xs:text-xs sm:text-xs md:text-sm font-bold uppercase tracking-widest text-amber-200/90">
-                                                                STREAK!
-                                                            </span>
-                                                            <span className="text-xl xs:text-xl sm:text-2xl md:text-3xl font-extrabold text-white">
-                                                                {streak}
-                                                            </span>
-                                                        </span>
-                                                    )}
-                                                </span>
-                                            )}
-                                        {word}
-                                    </span>
-                                ))}
+                                {words.map((word, index) => {
+                                    const verdict = verdicts[index];
+                                    // ponytail: branch order is the contract — verdicts always
+                                    // win; fresh mount stays neutral until speech (resume
+                                    // keeps its you-are-here marker, it is mid-round).
+                                    const showFrontier = hasSpoken || isResume;
+                                    return (
+                                        <span
+                                            key={index}
+                                            ref={
+                                                index === currentIndex
+                                                    ? activeWordRef
+                                                    : undefined
+                                            }
+                                            className={`transition-all duration-300 whitespace-nowrap relative ${
+                                                verdict === "correct"
+                                                    ? "font-bold sm:font-extrabold text-accent opacity-100 relative z-10 border-2 border-accent/80 rounded-xl px-3 py-2 bg-slate-900/80 drop-shadow-[0_0_10px_rgba(163,230,53,0.5)]"
+                                                    : verdict === "wrong"
+                                                      ? "font-bold sm:font-extrabold text-rose-400 opacity-100 relative z-10 border-2 border-rose-500 rounded-xl px-3 py-2 bg-slate-900/80 drop-shadow-[0_0_12px_rgba(244,63,94,0.6)]"
+                                                      : index === currentIndex && breakJustEnded
+                                                        ? "font-bold text-quest animate-pulse opacity-80"
+                                                        : index === currentIndex && showFrontier
+                                                        ? "font-bold sm:font-extrabold text-quest opacity-100 relative z-10 border-2 border-quest/80 rounded-xl px-3 py-2 bg-slate-900/80 drop-shadow-[0_0_10px_rgba(56,189,248,0.5)]"
+                                                        : index > currentIndex && index < currentIndex + activeCount && showFrontier
+                                                          ? "font-bold text-quest opacity-100 border-2 border-quest/40 rounded-xl px-2 py-1 bg-slate-900/60"
+                                                          : index === currentIndex && !isResume
+                                                            ? "font-bold text-quest animate-pulse opacity-80"
+                                                            : index < currentIndex
+                                                              ? "opacity-20 text-on-background"
+                                                              : "opacity-60 text-on-background/50"
+                                            }`}
+                                        >
+                                            {renderWordText(word)}
+                                        </span>
+                                    );
+                                })}
                             </div>
                         </div>
 
-                        {showPointsFeedback && (
-                            <div
-                                className="absolute -top-10 left-1/2 -translate-x-1/2 animate-float-score text-2xl sm:text-3xl font-extrabold italic z-10 whitespace-nowrap"
-                                style={{
-                                    color: "#FFCC00",
-                                    textShadow: "0 0 12px rgba(0,0,0,0.45)",
-                                }}
-                            >
-                                +{pointsFeedbackValue}
+                        {sentenceBreak && sentenceFeedback && (
+                            <div className="absolute inset-0 z-40 flex items-center justify-center px-4 pointer-events-none">
+                                {/* ponytail: light blur only (sm = 4px, same as header chips) —
+                                    2s celebration bursts on one layer; bubble (z-50) stays crisp above. */}
+                                <div className="absolute inset-0 bg-background/60 backdrop-blur-sm" aria-hidden="true" />
+                                <div className="relative text-center bg-slate-900/90 border-2 border-quest/60 rounded-3xl px-6 sm:px-10 py-6 sm:py-8 shadow-[0_0_30px_rgba(56,189,248,0.4)]">
+                                    <div className="font-black uppercase italic tracking-tighter text-white text-2xl sm:text-4xl">
+                                        {sentenceFeedback.message}
+                                    </div>
+                                    <div className="mt-2 font-bold text-quest text-lg sm:text-2xl">
+                                        Sentence Score: {sentenceFeedback.score} / {sentenceFeedback.total}
+                                    </div>
+                                </div>
                             </div>
                         )}
                     </div>

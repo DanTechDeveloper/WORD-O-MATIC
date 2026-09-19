@@ -89,7 +89,8 @@ class StudentSeeder extends Seeder
                 'user_id' => $user->id, 'module_id' => $moduleId, 'module_type' => $type,
                 'score' => $smashedWords,
                 'accuracy' => $totalPossible > 0 ? (int) round(($smashedWords / $totalPossible) * 100) : 0,
-                'streak' => $smashedWords,
+                // ponytail: mirrors finishRound — Story Quest has no streak.
+                'streak' => $type === 'paragraph' ? 0 : $smashedWords,
                 'is_deadline_hit' => rand(0, 9) === 0,
             ]);
         };

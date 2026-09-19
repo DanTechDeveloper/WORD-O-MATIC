@@ -918,4 +918,108 @@ class GameplayTest extends TestCase
         // deduping rows was never the goal, protecting points/stats was.
         $this->assertEquals(2, GameSession::where('user_id', $this->student->id)->count());
     }
+
+    // ─── STORY QUEST: NO STREAK + SENTENCE SCORES ─────────────────────
+
+    private function makeParagraphModule(int $wordCount = 5): ParagraphModule
+    {
+        $module = ParagraphModule::create([
+            'level' => 1,
+            'title' => 'Test Paragraph',
+            'content' => 'The cat is big and fat.',
+            'is_tutorial' => false,
+        ]);
+        foreach (range(1, $wordCount) as $pos) {
+            ParagraphWord::create([
+                'paragraph_module_id' => $module->id,
+                'word' => "w{$pos}",
+                'position' => $pos,
+            ]);
+        }
+
+        return $module;
+    }
+
+    public function test_paragraph_round_forces_streak_to_zero(): void
+    {
+        Setting::where('key', 'report_deadline')->delete();
+        $para = $this->makeParagraphModule();
+
+        $this->actingAs($this->student)
+            ->post(route('student.saveParagraphProgress'), [
+                'module_id' => $para->id,
+                'words_smashed' => 4,
+                'words_processed' => 5,
+                'streak' => 999,
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('game_sessions', [
+            'user_id' => $this->student->id,
+            'module_id' => $para->id,
+            'module_type' => 'paragraph',
+            'score' => 4,
+            'streak' => 0,
+        ]);
+    }
+
+    public function test_paragraph_round_saves_sentence_scores(): void
+    {
+        Setting::where('key', 'report_deadline')->delete();
+        $para = $this->makeParagraphModule();
+
+        $this->actingAs($this->student)
+            ->post(route('student.saveParagraphProgress'), [
+                'module_id' => $para->id,
+                'words_smashed' => 5,
+                'words_processed' => 5,
+                'sentence_scores' => [3, 2],
+            ])
+            ->assertRedirect();
+
+        $session = GameSession::where('user_id', $this->student->id)
+            ->where('module_id', $para->id)
+            ->firstOrFail();
+        $this->assertSame(5, $session->score);
+        $this->assertSame([3, 2], $session->sentence_scores);
+    }
+
+    public function test_paragraph_sentence_scores_sum_mismatch_rejected(): void
+    {
+        Setting::where('key', 'report_deadline')->delete();
+        $para = $this->makeParagraphModule();
+
+        $this->actingAs($this->student)
+            ->post(route('student.saveParagraphProgress'), [
+                'module_id' => $para->id,
+                'words_smashed' => 5,
+                'words_processed' => 5,
+                'sentence_scores' => [3, 3],
+            ])
+            ->assertSessionHasErrors('sentence_scores');
+
+        $this->assertDatabaseMissing('game_sessions', [
+            'user_id' => $this->student->id,
+            'module_id' => $para->id,
+        ]);
+    }
+
+    public function test_word_round_rejects_sentence_scores(): void
+    {
+        Setting::where('key', 'report_deadline')->delete();
+
+        $this->actingAs($this->student)
+            ->post(route('student.saveWordProgress'), [
+                'module_id' => $this->module->id,
+                'words_smashed' => 5,
+                'words_processed' => 10,
+                'sentence_scores' => [5],
+            ])
+            ->assertSessionHasErrors('sentence_scores');
+
+        $this->assertDatabaseMissing('game_sessions', [
+            'user_id' => $this->student->id,
+            'module_id' => $this->module->id,
+        ]);
+    }
 }

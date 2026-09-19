@@ -26,7 +26,29 @@ class BadgeService
         return (int) GameSession::where('user_id', $user->id)
             ->where('is_deadline_hit', false)
             ->when($tutIds, fn ($q) => $q->whereNotIn('module_id', $tutIds))
+            // ponytail: Story Quest has no streak — streak badges read
+            // Word Blast sessions only (also fixes historical SQ sessions).
+            ->when($column === 'streak', fn ($q) => $q->where('module_type', 'word'))
             ->max($column) ?? 0;
+    }
+
+    // ponytail: Sentence Star metric — best single-sentence score across real
+    // paragraph rounds. Null/empty arrays contribute nothing; tutorial and
+    // deadline-hit sessions excluded like every other session metric.
+    public function calculateBestSentence(User $user): int
+    {
+        $tutParaId = ParagraphModule::where('is_tutorial', true)->value('id');
+
+        $best = GameSession::where('user_id', $user->id)
+            ->where('module_type', 'paragraph')
+            ->where('is_deadline_hit', false)
+            ->when($tutParaId, fn ($q) => $q->where('module_id', '!=', $tutParaId))
+            ->get(['sentence_scores'])
+            ->flatMap(fn ($s) => (array) ($s->sentence_scores ?? []))
+            ->map(fn ($v) => (int) $v)
+            ->max();
+
+        return (int) ($best ?? 0);
     }
     public function awardOnboardingBadge(User $user, string $slug): ?array
     {
@@ -94,7 +116,7 @@ class BadgeService
         $earnedBadgeIds = $user->badges()->pluck('badges.id')->toArray();
 
         $badgesToCheck = Badges::whereNotIn('id', $earnedBadgeIds)
-            ->whereIn('metric', ['total_points', 'streak', 'accuracy', 'paragraph_completion', 'word_completion'])
+            ->whereIn('metric', ['total_points', 'streak', 'accuracy', 'paragraph_completion', 'word_completion', 'best_sentence'])
             ->get()
             ->groupBy('metric');
 
@@ -105,6 +127,7 @@ class BadgeService
                 'accuracy' => max((float) $student->wordBlastAcc, (float) $student->storyQuestAcc),
                 'paragraph_completion' => $this->calculateModuleCompletion($user, 'paragraph'),
                 'word_completion' => $this->calculateModuleCompletion($user, 'word'),
+                'best_sentence' => $this->calculateBestSentence($user),
                 default => 0,
             };
 
@@ -142,7 +165,7 @@ class BadgeService
         $earnedBadgeIds = $user->badges()->pluck('badges.id')->toArray();
 
         $badgesToCheck = Badges::whereNotIn('id', $earnedBadgeIds)
-            ->whereIn('metric', ['total_points', 'streak', 'accuracy', 'paragraph_completion', 'word_completion'])
+            ->whereIn('metric', ['total_points', 'streak', 'accuracy', 'paragraph_completion', 'word_completion', 'best_sentence'])
             ->get();
 
         if ($badgesToCheck->isEmpty()) {
@@ -159,6 +182,7 @@ class BadgeService
                 'accuracy' => $accuracy,
                 'paragraph_completion' => $this->calculateModuleCompletion($user, 'paragraph'),
                 'word_completion' => $this->calculateModuleCompletion($user, 'word'),
+                'best_sentence' => $this->calculateBestSentence($user),
                 default => 0,
             };
 
@@ -185,7 +209,7 @@ class BadgeService
         $student = $user->student;
         $earnedBadgeIds = $user->badges()->pluck('badges.id')->toArray();
 
-        $badges = Badges::whereIn('metric', ['total_points', 'streak', 'accuracy', 'paragraph_completion', 'word_completion', 'action'])->get();
+        $badges = Badges::whereIn('metric', ['total_points', 'streak', 'accuracy', 'paragraph_completion', 'word_completion', 'best_sentence', 'action'])->get();
 
         $progress = [];
 
@@ -196,6 +220,7 @@ class BadgeService
                 'accuracy' => (int) round((float) $session->accuracy),
                 'paragraph_completion' => $this->calculateModuleCompletion($user, 'paragraph'),
                 'word_completion' => $this->calculateModuleCompletion($user, 'word'),
+                'best_sentence' => $this->calculateBestSentence($user),
                 'action' => null,
                 default => 0,
             };

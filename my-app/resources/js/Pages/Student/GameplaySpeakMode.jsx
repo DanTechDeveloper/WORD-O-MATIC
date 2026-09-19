@@ -6,7 +6,7 @@ import Microphone from "@/Components/Student/Microphone";
 import AvatarSpeechBubble from "@/Components/Student/AvatarSpeechBubble";
 import DeniedModal from "@/Components/Student/DeniedModal";
 import TapToStartOverlay from "@/Components/Student/TapToStartOverlay";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { useStoryQuestEngine } from "@/hooks/Student/useStoryQuestEngine";
 import { useDeepgramRecognition } from "@/hooks/Student/useDeepgramRecognition";
@@ -26,32 +26,6 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true, wor
     const isTutorialModule = !!module?.is_tutorial;
     const speechRecognitionWords = useMemo(() => module?.words?.map((w) => w.word) ?? [], [module?.words]);
 
-    // Sentence ranges derived from module content — drives batch (not per-word) saving.
-    const sentenceWordRanges = useMemo(() => {
-        const words = module?.words ?? [];
-        const content = module?.content;
-        if (!content || words.length === 0) {
-            return [{ start: 0, end: words.length }];
-        }
-        const sentences = content.split(/(?<=[.!?])\s+/).filter((s) => s.trim() !== "");
-        const ranges = [];
-        let pos = 0;
-        for (const sentence of sentences) {
-            const wordCount = sentence.trim().split(/\s+/).filter(Boolean).length;
-            ranges.push({ start: pos, end: pos + wordCount });
-            pos += wordCount;
-        }
-        if (pos !== words.length) {
-            return [{ start: 0, end: words.length }];
-        }
-        return ranges;
-    }, [module?.content, module?.words]);
-
-    const savedSentencesRef = useRef(new Set());
-    useEffect(() => {
-        savedSentencesRef.current.clear();
-    }, [module?.id]);
-
     const [progressCount, setProgressCount] = useState(0);
 
     const {
@@ -60,15 +34,9 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true, wor
         setGameState,
         currentWordIndex,
         wordsSmashed,
-        currentStreak,
         isMispronounced,
-        isExploding,
-        showPointsFeedback,
-        pointsFeedbackValue,
         scoreEmphasize,
         feedbackType,
-        feedbackMessage,
-        streakShake,
         countdownValue,
         targetWord,
         timeLeft,
@@ -78,31 +46,22 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true, wor
         handleWordRecognized,
         handleMispronounce,
         handleFatalError,
+        verdicts,
+        sentenceFeedback,
+        sentenceBreak,
+        sentenceEpoch,
+        breakJustEnded,
     } = useStoryQuestEngine({
         words: module?.words,
         totalWords: module?.words?.length ?? 0,
         moduleId: module?.id,
         onWordRecognized: (wordObj) => {
-            if (!wordObj || isTutorialModule) return;
-            const wordIndex = module?.words?.findIndex((w) => w.id === wordObj.id);
-            if (wordIndex === -1) return;
-            const sentenceIdx = sentenceWordRanges.findIndex(
-                (r) => wordIndex >= r.start && wordIndex < r.end,
-            );
-            if (sentenceIdx === -1) return;
-            if (savedSentencesRef.current.has(sentenceIdx)) return;
-            const range = sentenceWordRanges[sentenceIdx];
-            const sentenceWordIds = module.words.slice(range.start, range.end).map((w) => w.id);
-            savedSentencesRef.current.add(sentenceIdx);
-            axios.post("/student/updateParagraphMasteryBatch", {
-                paragraph_word_ids: sentenceWordIds,
-                status: "mastered",
-            }).then(() => {
-                // success — sentence stays marked as saved
-            }).catch((err) => {
-                savedSentencesRef.current.delete(sentenceIdx);
-                console.warn(err);
-            });
+            if (wordObj && !isTutorialModule) {
+                axios.post("/student/updateParagraphMastery", {
+                    paragraph_word_id: wordObj.id,
+                    status: "mastered",
+                }).catch(console.warn);
+            }
         },
         onMispronounce: (wordObj) => {
             setProgressCount(0);
@@ -175,9 +134,14 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true, wor
         setProgressCount(n);
     }, []);
 
+    // ponytail: derived, not stored — speech has started if interim matched
+    // anything or any verdict locked. Drives the karaoke mount states.
+    const hasSpoken = progressCount > 0 || Object.keys(verdicts).length > 0;
+
     useDeepgramRecognition({
         isActive: gameState === "ACTIVE",
         preload: gameState === "COUNTDOWN" || gameState === "ACTIVE",
+        muted: sentenceBreak,
         targetWord: targetWord,
         keyterms: speakKeyterms,
         lookahead: speakLookahead,
@@ -188,6 +152,7 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true, wor
         onRecognitionError: undefined,
         onRestartFailed: handleFatalError,
         matchMode: "sentence",
+        resetKey: sentenceEpoch,
     });
     const avatarUrl = auth?.user?.student?.avatar;
     const bodyUrl = avatarUrl?.replace("/head.png", "/body.png");
@@ -195,8 +160,12 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true, wor
     const [coachActive, setCoachActive] = useState(false);
     const [coachLeaving, setCoachLeaving] = useState(false);
 
+    // ponytail: per-word cheer is tutorial-only — in real rounds RED advances
+    // immediately, so a bubble per mispronounce would spam mid-sentence and
+    // violate no-per-word-feedback. Real-round encouragement lives in the
+    // sentence-completion bubble below.
     useEffect(() => {
-        if (isMispronounced) {
+        if (isTutorial && isMispronounced) {
             setCoachLeaving(false);
             setCoachActive(true);
             const t = setTimeout(() => setCoachActive(false), isTutorial ? 1500 : 1200);
@@ -231,9 +200,9 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true, wor
         totalWords: totalWords,
         onTimeUp: handleTimeUp,
         scoreEmphasize,
-        showPointsFeedback,
-        pointsFeedbackValue,
-        streakShake,
+        showPointsFeedback: false,
+        pointsFeedbackValue: 0,
+        streakShake: null,
         timeLeft,
         mode: "speak",
     };
@@ -277,20 +246,30 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true, wor
                     className={coachLeaving ? "opacity-0 transition-opacity duration-300" : ""}
                 />
             )}
+            {sentenceBreak && sentenceFeedback && bodyUrl && (
+                <AvatarSpeechBubble
+                    emoji={sentenceFeedback.score >= sentenceFeedback.total ? "celebration" : "sentiment_very_satisfied"}
+                    title={sentenceFeedback.message}
+                    message={`Sentence Score: ${sentenceFeedback.score} / ${sentenceFeedback.total} — ${sentenceFeedback.note ?? "Nice try!"}`}
+                    bodyUrl={bodyUrl}
+                    color="quest"
+                    position="bottom-right"
+                    variant="mini"
+                    footerText={null}
+                />
+            )}
             <SpeakModeMainContent
                 words={speechRecognitionWords}
                 currentIndex={Math.max(0, Math.min(currentWordIndex, totalWords - 1))}
+                verdicts={verdicts}
+                sentenceFeedback={sentenceFeedback}
+                sentenceBreak={sentenceBreak}
                 highlightCount={progressCount}
                 gameState={gameState}
                 countdownValue={countdownValue}
-                isExploding={isExploding}
-                isMispronounced={isMispronounced}
-                showPointsFeedback={showPointsFeedback}
-                pointsFeedbackValue={pointsFeedbackValue}
-                streak={currentStreak}
-                feedbackType={feedbackType}
-                feedbackMessage={feedbackMessage}
-                streakShake={streakShake}
+                isResume={isResume}
+                hasSpoken={hasSpoken}
+                breakJustEnded={breakJustEnded}
             />
             <div className="flex-shrink-0 relative z-50">
                 <Microphone

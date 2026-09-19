@@ -20,6 +20,8 @@ const BADGE_UI_CONFIG = {
     "word-master": { statusLabel: "MASTERED", colors: PALETTE.tertiary },
     "halfway-hero": { statusLabel: "HALFWAY", colors: PALETTE.quest },
     "story-explorer": { statusLabel: "EXPLORER", colors: PALETTE.accent },
+    "story-master": { statusLabel: "MASTER", colors: PALETTE.quest },
+    "sentence-star": { statusLabel: "STAR", colors: PALETTE.quest },
     "on-fire": { statusLabel: "STREAK", colors: PALETTE.error },
     "blazing-streak": { statusLabel: "STREAK", colors: PALETTE.tertiary },
     "unstoppable": { statusLabel: "STREAK", colors: PALETTE.primary },
@@ -29,6 +31,75 @@ const BADGE_UI_CONFIG = {
     "profile-pioneer": { statusLabel: "UNLOCKED", colors: PALETTE.quest },
     default: { statusLabel: "UNLOCKED", colors: PALETTE.primary },
 };
+
+// ponytail: mode comes from the badges.mode column (server truth), never a
+// slug map here — new badges land in a section automatically. Unknown modes
+// collapse to shared so a missing value renders instead of vanishing.
+const MODE_SECTIONS = [
+    { mode: "word", title: "Word Blast", icon: "menu_book", iconClass: "text-accent" },
+    { mode: "paragraph", title: "Story Quest", icon: "mic", iconClass: "text-quest" },
+    { mode: "shared", title: "Shared Milestones", icon: "emoji_events", iconClass: "text-primary" },
+];
+
+function EarnedBadgeCard({ badge }) {
+    return (
+        <div
+            className="relative bg-surface-container rounded-xl border border-outline/20 p-6 text-center hover:-translate-y-1 transition-transform duration-150 motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+        >
+            <div className={`absolute -top-3 right-2 text-sm font-black px-3 py-1 rounded-md ${badge.colors.bg} ${badge.colors.text} border ${badge.colors.border}`}>
+                {badge.statusLabel}
+            </div>
+            <div className="w-24 h-24 mx-auto mb-3 flex items-center justify-center">
+                <span className={`material-symbols-outlined text-7xl ${badge.colors.title}`}>{badge.icon}</span>
+            </div>
+            <h4 className={`text-lg font-black uppercase tracking-tight ${badge.colors.title}`}>
+                {badge.title}
+            </h4>
+            <p className="text-sm text-on-surface-variant/70 mt-1 leading-tight">
+                {badge.description}
+            </p>
+            <div className="mt-3">
+                <ProgressBar
+                    value={badge.progress}
+                    barClassName={badge.colors.bg}
+                    trackClassName="bg-background"
+                    heightClassName="h-2.5"
+                />
+            </div>
+        </div>
+    );
+}
+
+function LockedBadgeCard({ badge }) {
+    return (
+        <div
+            className="relative bg-surface-container-low rounded-xl border border-dashed border-outline/20 p-6 text-center opacity-70"
+        >
+            <div className="w-24 h-24 mx-auto mb-3 flex items-center justify-center grayscale opacity-60">
+                <span className="material-symbols-outlined text-7xl text-on-surface-variant">{badge.icon}</span>
+            </div>
+            <h4 className="text-lg font-black uppercase tracking-tight text-on-surface-variant/60">
+                {badge.title}
+            </h4>
+            <p className="text-sm text-on-surface-variant/40 mt-1 leading-tight">
+                {badge.description}
+            </p>
+            {badge.hasThreshold && (
+                <div className="mt-3">
+                        <div className="flex justify-between text-sm font-bold text-on-surface-variant/50 mb-1">
+                            <span>{Math.round(badge.currentValue)}/{Math.round(badge.threshold)}</span>
+                        </div>
+                        <ProgressBar
+                            value={badge.progress}
+                            barClassName="bg-surface-variant"
+                            trackClassName="bg-background"
+                            heightClassName="h-2.5"
+                        />
+                    </div>
+            )}
+        </div>
+    );
+}
 
 export default function Badges({ badges }) {
     const isDeadlineClosed = useDeadlineStatus();
@@ -44,6 +115,7 @@ export default function Badges({ badges }) {
         return {
             id: badge.id,
             slug: badge.slug,
+            mode: badge.mode ?? "shared",
             title: badge.name,
             description: badge.description,
             icon: badge.icon,
@@ -57,8 +129,7 @@ export default function Badges({ badges }) {
         };
     });
 
-    const earnedAchievements = dynamicAchievements.filter((b) => !b.isLocked);
-    const lockedAchievements = dynamicAchievements.filter((b) => b.isLocked);
+    const byMode = (mode) => dynamicAchievements.filter((b) => b.mode === mode);
 
     return (
         <DashboardLayout>
@@ -77,85 +148,37 @@ export default function Badges({ badges }) {
                 subtitle="Collect them all by completing challenges"
             />
 
-            {/* Unlocked */}
-            {earnedAchievements.length > 0 && (
-                <div className="mb-10">
-                    <h3 className="text-xl font-black text-on-surface uppercase tracking-wider mb-4 flex items-center gap-2">
-                        <span className="material-symbols-outlined text-accent text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>auto_awesome</span>
-                        Unlocked
-                    </h3>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                        {earnedAchievements.map((badge) => (
-                            <div
-                                key={badge.id}
-                                className="relative bg-surface-container rounded-xl border border-outline/20 p-6 text-center hover:-translate-y-1 transition-transform duration-150 motion-reduce:transition-none motion-reduce:hover:translate-y-0"
-                            >
-                                <div className={`absolute -top-3 right-2 text-sm font-black px-3 py-1 rounded-md ${badge.colors.bg} ${badge.colors.text} border ${badge.colors.border}`}>
-                                    {badge.statusLabel}
-                                </div>
-                                <div className="w-24 h-24 mx-auto mb-3 flex items-center justify-center">
-                                    <span className={`material-symbols-outlined text-7xl ${badge.colors.title}`}>{badge.icon}</span>
-                                </div>
-                                <h4 className={`text-lg font-black uppercase tracking-tight ${badge.colors.title}`}>
-                                    {badge.title}
-                                </h4>
-                                <p className="text-sm text-on-surface-variant/70 mt-1 leading-tight">
-                                    {badge.description}
-                                </p>
-                                <div className="mt-3">
-                                    <ProgressBar
-                                        value={badge.progress}
-                                        barClassName={badge.colors.bg}
-                                        trackClassName="bg-background"
-                                        heightClassName="h-2.5"
-                                    />
+            {/* Mode sections: Word Blast / Story Quest / Shared */}
+            {MODE_SECTIONS.map((section) => {
+                const items = byMode(section.mode);
+                if (items.length === 0) return null;
+                const earned = items.filter((b) => !b.isLocked);
+                const locked = items.filter((b) => b.isLocked);
+                return (
+                    <div key={section.mode} className="mb-10">
+                        <h3 className="text-xl font-black text-on-surface uppercase tracking-wider mb-4 flex items-center gap-2">
+                            <span className={`material-symbols-outlined text-2xl ${section.iconClass}`} style={{ fontVariationSettings: "'FILL' 1" }}>{section.icon}</span>
+                            {section.title}
+                        </h3>
+                        {earned.length > 0 && (
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                {earned.map((badge) => (
+                                    <EarnedBadgeCard key={badge.id} badge={badge} />
+                                ))}
+                            </div>
+                        )}
+                        {locked.length > 0 && (
+                            <div className={earned.length > 0 ? "mt-4" : ""}>
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                    {locked.map((badge) => (
+                                        <LockedBadgeCard key={badge.id} badge={badge} />
+                                    ))}
                                 </div>
                             </div>
-                        ))}
+                        )}
                     </div>
-                </div>
-            )}
-
-            {/* Locked */}
-            {lockedAchievements.length > 0 && (
-                <div>
-                    <h3 className="text-xl font-black text-on-surface uppercase tracking-wider mb-4 flex items-center gap-2">
-                        <span className="material-symbols-outlined text-on-surface-variant/50 text-2xl">lock</span>
-                        To Unlock
-                    </h3>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                        {lockedAchievements.map((badge) => (
-                            <div
-                                key={badge.id}
-                                className="relative bg-surface-container-low rounded-xl border border-dashed border-outline/20 p-6 text-center opacity-70"
-                            >
-                                <div className="w-24 h-24 mx-auto mb-3 flex items-center justify-center grayscale opacity-60">
-                                    <span className="material-symbols-outlined text-7xl text-on-surface-variant">{badge.icon}</span>
-                                </div>
-                                <h4 className="text-lg font-black uppercase tracking-tight text-on-surface-variant/60">
-                                    {badge.title}
-                                </h4>
-                                <p className="text-sm text-on-surface-variant/40 mt-1 leading-tight">
-                                    {badge.description}
-                                </p>
-                                {badge.hasThreshold && (
-                                    <div className="mt-3">
-                                            <div className="flex justify-between text-sm font-bold text-on-surface-variant/50 mb-1">
-                                                <span>{Math.round(badge.currentValue)}/{Math.round(badge.threshold)}</span>
-                                            </div>
-                                            <ProgressBar
-                                                value={badge.progress}
-                                                barClassName="bg-surface-variant"
-                                                trackClassName="bg-background"
-                                                heightClassName="h-2.5"
-                                            />
-                                        </div>
-                                )}
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
+                );
+            })}
         </DashboardLayout>
     );
 }

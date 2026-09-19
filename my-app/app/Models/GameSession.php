@@ -16,10 +16,15 @@ class GameSession extends Model
         'score',
         'accuracy',
         'streak',
+        'sentence_scores',
         'is_deadline_hit',
     ];
 
-    public static function logSession($userId, $moduleId, $moduleType, $score, $accuracy, $streak, $isDeadlineHit = false)
+    protected $casts = [
+        'sentence_scores' => 'array',
+    ];
+
+    public static function logSession($userId, $moduleId, $moduleType, $score, $accuracy, $streak, $isDeadlineHit = false, ?array $sentenceScores = null)
     {
         return self::create([
             'user_id' => $userId,
@@ -28,6 +33,7 @@ class GameSession extends Model
             'score' => $score,
             'accuracy' => $accuracy,
             'streak' => $streak ?? 0,
+            'sentence_scores' => $sentenceScores,
             'is_deadline_hit' => $isDeadlineHit,
         ]);
     }

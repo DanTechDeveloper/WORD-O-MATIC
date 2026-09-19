@@ -15,6 +15,7 @@ class Badges extends Model
         'icon',
         'slug',
         'metric',
+        'mode',
         'threshold_score',
     ];
 
