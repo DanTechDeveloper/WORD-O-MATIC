@@ -21,7 +21,7 @@ timer — no "Tap to Start" overlay, no 3-2-1 countdown on resume.
 3. `useResumeSession(moduleId, { signal: "true" })`:
    - If session + `?resume=true` → returns `{ session, isResume: true }`
    - Else → `{ session: null, isResume: false }`
-4. `useGameplayEngine`:
+4. `useWordBlastEngine` / `useStoryQuestEngine` (shared core `useGameplayCore`):
    - `useResumeSession` is consumed by both pages.
    - When `isResume === true` AND a session exists → engine initialises
      `gameState` to `"ACTIVE"` (not `"IDLE"`/`"COUNTDOWN"`), skipping the
