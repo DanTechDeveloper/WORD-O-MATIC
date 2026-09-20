@@ -2,6 +2,7 @@ import ReadModeMainContent from "@/Components/Student/ReadModeMainContent";
 import GameplayHeader from "@/Components/Student/GameplayHeader";
 import Microphone from "@/Components/Student/Microphone";
 import AvatarSpeechBubble from "@/Components/Student/AvatarSpeechBubble";
+import TutorialGuide, { nextStepIndex } from "@/Components/Student/TutorialGuide";
 import DeniedModal from "@/Components/Student/DeniedModal";
 import TapToStartOverlay from "@/Components/Student/TapToStartOverlay";
 import { useEffect, useCallback, useState, useMemo } from "react";
@@ -14,9 +15,11 @@ import { pauseBackgroundMusic, setMicLive } from "@/utils/sounds";
 import { normalizeText } from "@/lib/speechUtils";
 
 const GUIDE_STEPS = [
-    { title: "READ THE WORD", message: "Say each word aloud into the mic. Read it right to BLAST it!", emoji: "campaign", color: "accent" },
-    { title: "BLAST & SCORE", message: "Blast words fast! Watch your score grow and your streak build!", emoji: "bolt", color: "accent" },
-    { title: "TAP TO PLAY!", message: "Tap the mic below when you're ready. 3-2-1 countdown, then go!", emoji: "mic", color: "accent" },
+    { id: "read-word", title: "READ THE WORD", message: "Say each word aloud into the mic. Read it right to BLAST it!", emoji: "campaign", color: "accent", action: "tap-continue", spotlight: "word" },
+    { id: "score", title: "BLAST & SCORE", message: "Each blast grows your score up top. Blast fast, score big!", emoji: "bolt", color: "accent", action: "tap-continue", spotlight: "score" },
+    { id: "streak-timer", title: "STREAK + TIMER", message: "Chain hits to build your streak beat the 60-second clock!", emoji: "timer", color: "accent", action: "tap-continue", spotlight: "timer" },
+    { id: "tap-mic", title: "TAP TO PLAY!", message: "Tap the mic below when you're ready. 3-2-1 countdown, then go!", emoji: "mic", color: "accent", action: "tap-mic", spotlight: "mic" },
+    { id: "say-it", title: "SAY IT!", message: "Read the word out loud now.", emoji: "campaign", color: "accent", action: "say-word", spotlight: "word" },
 ];
 
 export default function GameplayReadMode({ module, tutorialComplete = true }) {
@@ -48,10 +51,13 @@ export default function GameplayReadMode({ module, tutorialComplete = true }) {
         handleWordRecognized,
         handleMispronounce,
         handleFatalError,
+        persistProgress,
+        targetWordFalsy,
     } = useWordBlastEngine({
         words: module?.words,
         totalWords: module?.words?.length ?? 0,
         moduleId: module?.id,
+        deferPersist: isTutorial,
         onWordRecognized: (wordObj) => {
             if (wordObj && !isTutorialModule) {
                 axios.post("/student/updateWordMastery", {
@@ -74,6 +80,20 @@ export default function GameplayReadMode({ module, tutorialComplete = true }) {
 
     const [guideStep, setGuideStep] = useState(0);
     const [guideDone, setGuideDone] = useState(() => !isTutorial || isResume);
+    const guideStepObj = GUIDE_STEPS[guideStep];
+    const guideArmed = isTutorial && !guideDone;
+
+    // ponytail: Bubble → Action → Bubble — tap only advances tour steps; the
+    // mic tap and the correct read advance their own steps (no blind increment).
+    const completeGuideEvent = useCallback((event) => {
+        if (!isTutorial || guideDone) return;
+        const next = nextStepIndex(GUIDE_STEPS, guideStep, event);
+        if (next >= GUIDE_STEPS.length) {
+            setGuideDone(true);
+        } else if (next !== guideStep) {
+            setGuideStep(next);
+        }
+    }, [isTutorial, guideDone, guideStep]);
 
     useEffect(() => {
         if (permissionState === "denied") {
@@ -82,7 +102,18 @@ export default function GameplayReadMode({ module, tutorialComplete = true }) {
     }, [permissionState, setGameState]);
 
     const handleMicrophoneClick = useCallback(async () => {
-        if (isTutorial && !guideDone) return;
+        if (guideArmed) {
+            // ponytail: the tour's mic step is the ONLY tour moment the mic is
+            // live — the tap itself is the required action (tap-mic advances).
+            if (guideStepObj?.action !== "tap-mic" || gameState !== "IDLE") return;
+            if (permissionState === "prompt") {
+                const granted = await requestPermission();
+                if (!granted) return;
+            }
+            completeGuideEvent("tap-mic");
+            startGame();
+            return;
+        }
         if (gameState === "IDLE") {
             if (permissionState === "prompt") {
                 const granted = await requestPermission();
@@ -90,7 +121,7 @@ export default function GameplayReadMode({ module, tutorialComplete = true }) {
             }
             startGame();
         }
-    }, [isTutorial, guideDone, gameState, permissionState, requestPermission, startGame]);
+    }, [guideArmed, guideStepObj, gameState, permissionState, requestPermission, completeGuideEvent, startGame]);
 
     useEffect(() => {
         if (gameState === "ACTIVE") {
@@ -109,13 +140,29 @@ export default function GameplayReadMode({ module, tutorialComplete = true }) {
         [module?.words],
     );
 
+    const cheerTimerRef = useMemo(() => ({ current: null }), []);
+
     useDeepgramRecognition({
         isActive: gameState === "ACTIVE",
         preload: gameState === "COUNTDOWN" || gameState === "ACTIVE",
         muted: isExploding,
         targetWord: targetWord,
         keyterms: readKeyterms,
-        onWordRecognized: handleWordRecognized,
+        onWordRecognized: (count) => {
+            // ponytail: capture before we flip guideDone — feedbackType arrives
+            // one render later, by which guideArmed is already false.
+            const shouldCheer = guideArmed && guideStepObj?.action === "say-word";
+            handleWordRecognized(count);
+            if (shouldCheer) {
+                setCheerActive(true);
+                clearTimeout(cheerTimerRef.current);
+                cheerTimerRef.current = setTimeout(() => setCheerActive(false), 1500);
+            }
+            // ponytail: SAY IT step completes on the real BLAST — mispronounces
+            // only raise the coach (no advance), so the kid reads it right once.
+            // No-op in main entry (guideDone already true).
+            completeGuideEvent("say-word");
+        },
         onPermissionDenied: () => setGameState("DENIED"),
         onMispronounced: handleMispronounce,
         onRecognitionError: (err) => console.error("Recognition error:", err),
@@ -126,6 +173,7 @@ export default function GameplayReadMode({ module, tutorialComplete = true }) {
 
     const [coachActive, setCoachActive] = useState(false);
     const [coachLeaving, setCoachLeaving] = useState(false);
+    const [cheerActive, setCheerActive] = useState(false);
 
     useEffect(() => {
         if (isMispronounced) {
@@ -147,13 +195,19 @@ export default function GameplayReadMode({ module, tutorialComplete = true }) {
         }
     }, [feedbackType, coachActive]);
 
-    const advanceGuide = () => {
-        if (guideStep < GUIDE_STEPS.length - 1) {
-            setGuideStep(guideStep + 1);
-        } else {
-            setGuideDone(true);
-        }
-    };
+    useEffect(() => () => clearTimeout(cheerTimerRef.current), []);
+
+    // ponytail: final tutorial presentation — when the TargetWord array is
+    // falsy (all words done: currentWordIndex >= totalWords → targetWord ""),
+    // don't jump straight to Dashboard. Hold COMPLETED/GAMEOVER, show a full
+    // celebration bubble, then persist on tap.
+    const isTutorialCompletePending = isTutorial && (gameState === "COMPLETED" || gameState === "GAMEOVER");
+
+    const handleFinalTutorialContinue = useCallback(() => {
+        persistProgress();
+    }, [persistProgress]);
+
+    const tapGuide = () => completeGuideEvent("tap");
 
     const headerProps = {
         level: module ? `${module.level} - ${module.title}` : "",
@@ -168,18 +222,12 @@ export default function GameplayReadMode({ module, tutorialComplete = true }) {
         streakShake,
         timeLeft,
         mode: "read",
+        spotlight: guideArmed ? (guideStepObj?.spotlight ?? null) : null,
     };
 
     return (
         <div className="bg-background text-on-background font-body-md h-screen flex flex-col overflow-x-hidden">
             <DeniedModal gameState={gameState} />
-            {isTutorial && !guideDone && bodyUrl && (
-                <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[60] flex gap-3">
-                    {GUIDE_STEPS.map((_, i) => (
-                        <div key={i} className={`w-3 h-3 rounded-full transition-all duration-500 ${i === guideStep ? "bg-accent scale-125" : i < guideStep ? "bg-accent/50" : "bg-on-surface/20"}`} />
-                    ))}
-                </div>
-            )}
             <GameplayHeader {...headerProps} />
             <ReadModeMainContent
                 words={module?.words}
@@ -198,17 +246,45 @@ export default function GameplayReadMode({ module, tutorialComplete = true }) {
                 feedbackMessage={feedbackMessage}
                 streakShake={streakShake}
             />
-            {isTutorial && !guideDone && bodyUrl && (
+            {/* ponytail: final presentation blocks the guide */}
+            {isTutorialCompletePending && bodyUrl ? (
                 <AvatarSpeechBubble
-                    emoji={GUIDE_STEPS[guideStep].emoji}
-                    title={GUIDE_STEPS[guideStep].title}
-                    message={GUIDE_STEPS[guideStep].message}
+                    emoji="celebration"
+                    title="DONE!"
+                    message="Next: Story Quest"
                     bodyUrl={bodyUrl}
                     color="accent"
-                    onClick={advanceGuide}
-                    position="bottom-right"
-                    footerText={coachActive ? null : (guideStep < GUIDE_STEPS.length - 1 ? "Tap here to continue →" : "Tap to finish!")}
+                    position="center"
+                    onClick={handleFinalTutorialContinue}
+                    footerText="Tap to continue →"
+                    variant="mini"
                 />
+            ) : (
+                <>
+                    {/* ponytail: no-clash — guide yields to coach/cheer so exactly one
+                        bubble shows; the step index is preserved while they are up. */}
+                    <TutorialGuide
+                        steps={GUIDE_STEPS}
+                        stepIndex={guideStep}
+                        color="accent"
+                        bodyUrl={bodyUrl}
+                        hidden={!guideArmed}
+                        hideBubble={coachActive || cheerActive}
+                        onTap={tapGuide}
+                    />
+                    {cheerActive && !coachActive && bodyUrl && (
+                        <AvatarSpeechBubble
+                            emoji="celebration"
+                            title="AWESOME!"
+                            message="You read it right — BLASTED!"
+                            bodyUrl={bodyUrl}
+                            color="accent"
+                            position="bottom-right"
+                            variant="mini"
+                            footerText={null}
+                        />
+                    )}
+                </>
             )}
             {coachActive && bodyUrl && (
                 <AvatarSpeechBubble
@@ -223,10 +299,11 @@ export default function GameplayReadMode({ module, tutorialComplete = true }) {
                     className={coachLeaving ? "opacity-0 transition-opacity duration-300" : ""}
                 />
             )}
-            {gameState === "IDLE" && guideDone && !isResume && (
+            {gameState === "IDLE" && !isResume && !isTutorialCompletePending && (!guideArmed || guideStepObj?.action === "tap-mic") && (
                 <TapToStartOverlay
                     color="accent"
                     permissionState={permissionState}
+                    spotlight={guideArmed}
                 />
             )}
             <div className="flex-shrink-0 relative z-50">
@@ -235,6 +312,7 @@ export default function GameplayReadMode({ module, tutorialComplete = true }) {
                     disabled={gameState === "COUNTDOWN"}
                     onClick={handleMicrophoneClick}
                     color="accent"
+                    spotlight={guideArmed && guideStepObj?.spotlight === "mic"}
                 />
             </div>
         </div>

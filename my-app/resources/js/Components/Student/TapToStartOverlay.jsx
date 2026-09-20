@@ -9,7 +9,7 @@ const COLOR_MAP = {
     },
 };
 
-export default function TapToStartOverlay({ color = "accent", permissionState }) {
+export default function TapToStartOverlay({ color = "accent", permissionState, spotlight = false }) {
     const colors = COLOR_MAP[color] || COLOR_MAP.accent;
 
     const subtitle =
@@ -23,10 +23,11 @@ export default function TapToStartOverlay({ color = "accent", permissionState })
 
     return (
         <div className="fixed inset-0 bg-background/60 z-40 pointer-events-none flex flex-col items-center justify-end pb-[110px] sm:pb-[140px] md:pb-[160px]">
-            <div className="flex flex-col items-center justify-center animate-bounce scale-90 sm:scale-100">
+            {/* ponytail: spotlight only during the tutorial mic step — stays a dumb mic prompt everywhere else. */}
+            <div className={`flex flex-col items-center justify-center animate-bounce ${spotlight ? "scale-110 sm:scale-125" : "scale-90 sm:scale-100"}`}>
                 <div
                     className={`${colors.bg} text-slate-950 font-black px-6 sm:px-8 py-3 sm:py-4 rounded-3xl sm:rounded-[2rem] border-4 border-white flex flex-col items-center gap-1 text-center italic uppercase tracking-tighter`}
-                    style={{ boxShadow: `0 0 40px ${colors.shadow}` }}
+                    style={{ boxShadow: spotlight ? `0 0 70px ${colors.shadow}, 0 0 30px #ffffff` : `0 0 40px ${colors.shadow}` }}
                 >
                     <span className="material-symbols-outlined text-3xl sm:text-4xl mb-0 sm:mb-1">touch_app</span>
                     <span className="text-lg sm:text-xl leading-none">Tap Microphone</span>

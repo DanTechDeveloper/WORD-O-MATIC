@@ -29,6 +29,7 @@ const SpeakModeMainContent = memo(function SpeakModeMainContent({
     isResume = false,
     hasSpoken = false,
     breakJustEnded = false,
+    previewWords = null,
 }) {
     const activeWordRef = useRef(null);
     const activeCount = Math.max(1, highlightCount | 0 || 1);
@@ -43,7 +44,24 @@ const SpeakModeMainContent = memo(function SpeakModeMainContent({
     return (
         <main className="flex-1 flex relative overflow-hidden">
             {gameState === "IDLE" ? (
-                <div className="flex-1 flex" />
+                previewWords?.length ? (
+                    // ponytail: tutorial tour shows the sentence statically — the
+                    // IDLE stage is otherwise empty, so READ THE SENTENCE would
+                    // point at nothing. Neutral styling; karaoke takes over live.
+                    <div className="flex-1 flex items-start justify-center overflow-y-auto px-3 xs:px-4 sm:px-6 md:px-8 pt-12 sm:pt-15 pb-12 sm:pb-16">
+                        <div className="relative w-full max-w-7xl my-auto">
+                            <div className="font-headline-xl text-left leading-relaxed tracking-normal sm:tracking-tight select-none font-medium sm:font-semibold lg:font-bold text-3xl xs:text-4xl sm:text-5xl md:text-6xl lg:text-7xl flex flex-wrap gap-x-2 xs:gap-x-3 sm:gap-x-4 gap-y-4 sm:gap-y-6 md:gap-y-8">
+                                {previewWords.map((word, index) => (
+                                    <span key={index} className="whitespace-nowrap opacity-60 text-on-background/50">
+                                        {renderWordText(word)}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="flex-1 flex" />
+                )
             ) : gameState === "COUNTDOWN" ? (
                 <div className="absolute inset-0 flex items-center justify-center px-4">
                     <span className="text-5xl xs:text-6xl sm:text-8xl md:text-[10rem] lg:text-[12rem] font-extrabold text-quest italic animate-bounce drop-shadow-[0_0_24px_rgba(56,189,248,0.5)] text-center">

@@ -252,6 +252,9 @@ class StudentController extends Controller
             'module' => $module,
             'tutorialComplete' => (bool) $user->student?->tutorial_completed_at,
             'wordTutorialDone' => $this->tutorialState($user)['wordTutorialDone'],
+            // ponytail: Story Quest gates its own mechanics tour on this — Word
+            // Blast completion must NOT skip it (different mechanics).
+            'speakTutorialDone' => $this->tutorialState($user)['speakTutorialDone'],
         ];
 
         return Inertia::render($page, $data);

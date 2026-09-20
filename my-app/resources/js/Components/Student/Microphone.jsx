@@ -23,8 +23,10 @@ const COLOR_MAP = {
     },
 };
 
-const Microphone = memo(function Microphone({ isListening, disabled, onClick, color = "accent" }) {
+const Microphone = memo(function Microphone({ isListening, disabled, onClick, color = "accent", spotlight = false }) {
     const c = COLOR_MAP[color] || COLOR_MAP.accent;
+    // ponytail: tutorial tour glow on the mic step only — null/false everywhere else.
+    const spotRing = spotlight ? (color === "quest" ? " ring-4 ring-quest animate-pulse" : " ring-4 ring-accent animate-pulse") : "";
     return (
         <>
             {/* <!-- CENTER BOTTOM: Sonic Microphone UI --> */}
@@ -41,7 +43,7 @@ const Microphone = memo(function Microphone({ isListening, disabled, onClick, co
                     ></div>
 
                     {/* <!-- Main Mic Housing --> */}
-                    <div className="relative flex items-center justify-center w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-full bg-on-background/10 border-2 sm:border-3 md:border-4 border-on-background/10 shadow-2xl backdrop-blur-xl">
+                    <div className={`relative flex items-center justify-center w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-full bg-on-background/10 border-2 sm:border-3 md:border-4 border-on-background/10 shadow-2xl backdrop-blur-xl${spotRing}`}>
                         {/* <!-- Tech Inner Ring --> */}
                         <div
                             className={`absolute w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-full border border-dashed ${c.ringIdle} ${isListening ? `animate-[spin_3s_linear_infinite] ${c.ringActive}` : "animate-[spin_10s_linear_infinite]"}`}

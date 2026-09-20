@@ -13,6 +13,7 @@ const GameplayHeader = memo(function GameplayHeader({
     streakShake,
     timeLeft = 60,
     mode = "read",
+    spotlight = null,
 }) {
     const onTimeUpRef = useRef(onTimeUp);
     onTimeUpRef.current = onTimeUp;
@@ -21,6 +22,10 @@ const GameplayHeader = memo(function GameplayHeader({
     const isLowTime = timeLeft <= 10;
     const progressText = totalWords ? `${Math.min(currentIndex + 1, totalWords)}/${totalWords}` : "0/0";
     const progressPct = totalWords ? (Math.min(currentIndex + 1, totalWords) / totalWords) * 100 : 0;
+    // ponytail: tutorial tour glow — the guide bubble spotlights one HUD chip
+    // at a time (score / timer); null in main entry so zero visual change.
+    const ring = mode === "read" ? "ring-accent" : "ring-quest";
+    const spot = (name) => (spotlight === name ? ` ring-4 ${ring} animate-pulse` : "");
 
     return (
         <>
@@ -41,7 +46,7 @@ const GameplayHeader = memo(function GameplayHeader({
                 </div>
 
                 {/* Live Timer */}
-                <div className="flex items-center gap-1.5 bg-on-background/5 backdrop-blur-md px-3 py-1.5 rounded-xl border-2 border-on-background/10 shadow-xl">
+                <div className={`flex items-center gap-1.5 bg-on-background/5 backdrop-blur-md px-3 py-1.5 rounded-xl border-2 border-on-background/10 shadow-xl${spot("timer")}`}>
                     <span className="material-symbols-outlined text-on-background/60 text-base">
                         timer
                     </span>
@@ -59,7 +64,7 @@ const GameplayHeader = memo(function GameplayHeader({
             {/* ───── Desktop layout ───── */}
             <div className="hidden md:flex mt-3 sm:mt-4 md:mt-6 w-full max-w-7xl mx-auto flex-wrap items-center justify-between gap-3 sm:gap-4 md:gap-6 mb-6 sm:mb-8 md:mb-12 px-2 sm:px-0">
                 <div className="flex items-center gap-3 sm:gap-4 md:gap-6">
-                    <div className="flex items-center gap-2 sm:gap-3 md:gap-4 bg-on-background/5 backdrop-blur-md p-2 sm:p-3 md:p-4 rounded-2xl border-2 border-on-background/10 shadow-2xl">
+                    <div className={`flex items-center gap-2 sm:gap-3 md:gap-4 bg-on-background/5 backdrop-blur-md p-2 sm:p-3 md:p-4 rounded-2xl border-2 border-on-background/10 shadow-2xl${spot("score")}`}>
                         <div className="bg-primary p-1 sm:p-2 rounded-xl flex items-center justify-center shadow-[0_0_15px_rgba(var(--primary-rgb),0.5)]">
                             <span className="material-symbols-outlined text-on-primary text-2xl sm:text-3xl">
                                 sword_rose
@@ -111,7 +116,7 @@ const GameplayHeader = memo(function GameplayHeader({
                 </div>
 
                 {/* Energy / Timer Bar */}
-                <div className="w-full md:w-72 lg:w-80 flex flex-col gap-2 bg-on-background/5 backdrop-blur-md p-2 sm:p-3 md:p-4 rounded-2xl border-2 border-on-background/10 shadow-2xl">
+                <div className={`w-full md:w-72 lg:w-80 flex flex-col gap-2 bg-on-background/5 backdrop-blur-md p-2 sm:p-3 md:p-4 rounded-2xl border-2 border-on-background/10 shadow-2xl${spot("timer")}`}>
                     <div className="flex justify-between items-end">
                         <p className="text-on-background/60 text-[10px] sm:text-xs font-black uppercase tracking-widest leading-none">
                             Energy / Timer

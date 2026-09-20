@@ -28,6 +28,7 @@ export function useGameplayCore({
     onMispronounce,
     resumeData,
     persistExtra,
+    deferPersist = false,
 }) {
     const resume = useMemo(() => {
         if (typeof window === "undefined") return null;
@@ -188,10 +189,10 @@ export function useGameplayCore({
 
     useEffect(() => {
         if (gameState === "ACTIVE" && currentWordIndex >= totalWords && totalWords > 0) {
-            persistProgressRef.current();
+            if (!deferPersist) persistProgressRef.current();
             setGameState("COMPLETED");
         }
-    }, [currentWordIndex, totalWords, gameState]);
+    }, [currentWordIndex, totalWords, gameState, deferPersist]);
 
     const handleWordRecognized = useCallback((count = 1) => {
         if (gameStateRef.current !== "ACTIVE") return;
@@ -304,7 +305,7 @@ export function useGameplayCore({
             streakShakeTimer: streakShakeTimerRef.current,
         });
         setIsExploding(false);
-        persistProgress();
+        if (!deferPersist) persistProgress();
         clearResume();
         
         if (currentWordIndexRef.current >= totalWords) {
@@ -312,7 +313,7 @@ export function useGameplayCore({
         } else {
             setGameState("GAMEOVER");
         }
-    }, [persistProgress, totalWords, clearResume]);
+    }, [persistProgress, totalWords, clearResume, deferPersist]);
 
     const handleFatalError = useCallback(() => {
         clearAllTimers({
@@ -323,10 +324,10 @@ export function useGameplayCore({
             scoreEmphasizeTimer: scoreEmphasizeTimerRef.current,
             streakShakeTimer: streakShakeTimerRef.current,
         });
-        persistProgress();
+        if (!deferPersist) persistProgress();
         clearResume();
         setGameState("GAMEOVER");
-    }, [persistProgress, clearResume]);
+    }, [persistProgress, clearResume, deferPersist]);
 
     useEffect(() => {
         if (gameState !== "ACTIVE") return;
@@ -381,5 +382,7 @@ export function useGameplayCore({
         handleFatalError,
         moveToNextWord,
         addScore,
+        persistProgress,
+        targetWordFalsy: !targetWord,
     };
 }
