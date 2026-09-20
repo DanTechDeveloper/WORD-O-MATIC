@@ -1,10 +1,8 @@
 import { Head } from "@inertiajs/react";
 import DashboardLayout from "@/Layouts/Teacher/DashboardLayout";
 import { Link, usePage } from "@inertiajs/react";
-import { attentionMeta, attemptsShown } from "@/utils/masteryLabels.js";
+	import { attentionMeta, attemptsShown } from "@/utils/masteryLabels.js";
 
-// ponytail: Word Blast dedup removed — 10 unique words/level, no merge needed.
-// Story Quest renders Reading Performance from sentence_stats.words (no zones).
 function aggregateZoneRows(wordStats) {
     const rows = [...(wordStats || [])].map((s) => ({
         word: s.word,
@@ -18,8 +16,6 @@ function aggregateZoneRows(wordStats) {
     };
 }
 
-// Inline Attempts/Attention meta under each word inside the Mastery/Training
-// zones; bare chip fallback when word_stats are unavailable.
 function WordChip({ word, stat, threshold, className }) {
     const attention = stat ? attentionMeta(stat, threshold) : null;
 
@@ -42,17 +38,22 @@ function WordChip({ word, stat, threshold, className }) {
     );
 }
 
-// Story Quest Reading Performance: sentence reads as one clean line
-// (highlight only), problem-word details listed beneath it — two visual
-// layers so reading the sentence and parsing attempts never compete.
-// Raw failed count (not attemptsShown's +1): here the number is evidence
-// of difficulty. Pure render over sentence_stats.words — no backend change.
 function SentencePerformanceBlock({ stat, threshold }) {
     const words = stat.words || [];
     const problems = words.filter((w) => Number(w.failed_attempts || 0) > 0);
+    const failedCount = Number(stat.failed_attempts || 0);
+    const isMastered = stat.mastery === "mastered";
+    const isTraining = stat.mastery === "training";
+    const attempts = isMastered ? failedCount + 1 : failedCount;
+    const sentenceCompleted = isMastered && failedCount > 0;
+    const sentenceNeedsAttention = isTraining && failedCount >= threshold;
+    const attemptLabel
+        = !isMastered && failedCount === 0
+            ? "Not attempted yet"
+            : `Attempts: ${attempts}`;
     return (
         <div className="px-3 py-2 sm:px-4 sm:py-3 bg-surface-container border-2 border-outline/20 rounded-xl text-xs sm:text-sm leading-relaxed block">
-            <p className="font-black text-white text-sm sm:text-base leading-loose">
+            <p className="font-black text-white text-sm sm:text:base leading-loose">
                 {words.map((w, i) => {
                     const failed = Number(w.failed_attempts || 0);
                     if (failed === 0) {
@@ -76,6 +77,18 @@ function SentencePerformanceBlock({ stat, threshold }) {
                     );
                 })}
             </p>
+            <div className="mt-2 text-[10px] sm:text-xs uppercase tracking-widest text-on-surface-variant">
+                {attemptLabel}
+                {sentenceCompleted && (
+                    <span className="text-emerald-400 ml-1">· Recovered</span>
+                )}
+                {sentenceNeedsAttention && (
+                    <span className="text-red-500 ml-1">· Needs Attention</span>
+                )}
+                {isMastered && !sentenceCompleted && (
+                    <span className="text-emerald-400 ml-1">· Mastered</span>
+                )}
+            </div>
             {problems.length > 0 && (
                 <ul className="mt-2 space-y-1 text-[10px] sm:text-xs uppercase tracking-widest">
                     {problems.map((w, i) => {
@@ -112,7 +125,7 @@ export default function StudentDetail({ data }) {
     const wbMasteredAll = _readCurriculum.flatMap((l) => aggregateZoneRows(l.word_stats).mastered);
     const wbTrainingAll = _readCurriculum.flatMap((l) => aggregateZoneRows(l.word_stats).training);
     const sqSentencesAll = _speakCurriculum.flatMap((l) => l.sentence_stats || []);
-    const sqDifficultyAll = sqSentencesAll.filter((s) => (s.words || []).some((w) => Number(w.failed_attempts || 0) > 0));
+    const sqStruggling = sqSentencesAll.filter((s) => (s.words || []).some((w) => Number(w.failed_attempts || 0) > 0));
     const hasWbModules = _readCurriculum.length > 0;
     const hasSqModules = _speakCurriculum.length > 0;
 
@@ -170,7 +183,6 @@ export default function StudentDetail({ data }) {
         return Math.round((mastered / total) * 100);
     };
 
-    // Sentence % for Story Quest — mastered_sentences / total_sentences.
     const calcSentenceProgress = (curriculum) => {
         let mastered = 0;
         let total = 0;
@@ -294,11 +306,11 @@ export default function StudentDetail({ data }) {
                   color: "text-amber-300",
               }
             : {
-                label: "Latest Badge",
-                value: "None",
-                icon: "emoji_events",
-                color: "text-on-surface-variant/50",
-            };
+                  label: "Latest Badge",
+                  value: "None",
+                  icon: "emoji_events",
+                  color: "text-on-surface-variant/50",
+              };
     const stats = [...student.stats, badgeCard];
 
     return (
@@ -388,7 +400,6 @@ export default function StudentDetail({ data }) {
                 </div>
             </div>
 
-            {/* Overall Status */}
             <div className="mb-12">
                 <h2 className="text-base sm:text-lg md:text-xl font-black text-on-surface-variant uppercase italic tracking-tighter mb-6 flex items-center gap-2">
                     <span className="w-8 h-1 bg-surface-container-high"></span> Overall
@@ -449,7 +460,7 @@ export default function StudentDetail({ data }) {
                             </div>
                         </div>
                         <div className="bg-surface-container-lowest rounded-3xl border-4 border-outline/20 p-4 sm:p-6">
-                            <div className="text-on-surface-variant font-black uppercase text-sm sm:text-base tracking-widest mb-4 flex items-center gap-2">
+                            <div className="text-on-surface-variant font-black uppercase text-sm sm:text:base tracking-widest mb-4 flex items-center gap-2">
                                 <span className="material-symbols-outlined text-lg sm:text-xl">
                                     flag
                                 </span>
@@ -457,7 +468,7 @@ export default function StudentDetail({ data }) {
                             </div>
                             <div className="space-y-3">
                                 <div className="flex justify-between items-center gap-2">
-                                    <span className="text-on-surface-variant font-bold text-sm sm:text-base md:text-lg">
+                                    <span className="text-on-surface-variant font-bold text-sm sm:text:base md:text-lg">
                                         Word Blast
                                     </span>
                                     <span className="text-accent font-black uppercase italic tracking-tighter text-xl sm:text-2xl">
@@ -465,7 +476,7 @@ export default function StudentDetail({ data }) {
                                     </span>
                                 </div>
                                 <div className="flex justify-between items-center gap-2">
-                                    <span className="text-on-surface-variant font-bold text-sm sm:text-base md:text-lg">
+                                    <span className="text-on-surface-variant font-bold text-sm sm:text:base md:text-lg">
                                         Story Quest
                                     </span>
                                     <span className="text-cyan-400 font-black uppercase italic tracking-tighter text-xl sm:text-2xl">
@@ -501,7 +512,6 @@ export default function StudentDetail({ data }) {
                                         </div>
                                     </div>
                                 </div>
-                                {/* Progress Bar */}
                                 <div className="h-4 bg-surface-container-lowest rounded-full border-2 border-outline/20 p-0.5">
                                     <div
                                         className={`h-full ${mode.color} rounded-full shadow-[0_0_10px_rgba(163,230,53,0.3)] transition-all duration-1000`}
@@ -515,9 +525,9 @@ export default function StudentDetail({ data }) {
                         </div>
                     ))}
                 </div>
+
             </div>
 
-            {/* Word Blast: Mastery & Training Zones */}
             <div className="mb-12">
                 <h2 className="text-base sm:text-lg md:text-xl font-black text-white uppercase italic tracking-tighter mb-6 flex items-center gap-2">
                     <span className="w-8 h-1 bg-accent"></span> Word Blast
@@ -610,7 +620,6 @@ export default function StudentDetail({ data }) {
 
             </div>
 
-            {/* Story Quest: Reading Performance */}
             <div className="mb-12">
                 <h2 className="text-base sm:text-lg md:text-xl font-black text-white uppercase italic tracking-tighter mb-6 flex items-center gap-2">
                     <span className="w-8 h-1 bg-cyan-400"></span> Story Quest
@@ -626,19 +635,19 @@ export default function StudentDetail({ data }) {
                     </div>
                     {sqSentencesAll.length > 0 && (
                         <p className="text-on-surface-variant font-black uppercase text-[10px] sm:text-xs tracking-widest">
-                            {sqDifficultyAll.length} of {sqSentencesAll.length} sentences need attention
+                            {sqSentencesAll.length} sentences total, {sqStruggling.length} need attention
                         </p>
                     )}
                     <div className="bg-surface-container-lowest rounded-xl border-4 border-outline/20 p-4 sm:p-6 md:p-8 min-h-[400px] max-h-[600px] overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-surface-container-high [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-cyan-400">
-                        {sqDifficultyAll.length === 0 ? (
+                        {sqSentencesAll.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-16 text-center">
                                 <span className="material-symbols-outlined text-4xl text-on-surface-variant/40 mb-3" aria-hidden="true">menu_book</span>
-                                <p className="text-on-surface-variant font-black uppercase text-xs tracking-widest">{!hasSqModules ? "No Story Quest modules yet" : "No struggling words — sentences read cleanly"}</p>
-                                <p className="text-on-surface-variant/60 text-xs font-semibold mt-1">{!hasSqModules ? "Create Level 1 in Story Quest to get started." : "Sentences with failed attempts will appear here."}</p>
+                                <p className="text-on-surface-variant font-black uppercase text-xs tracking-widest">{!hasSqModules ? "No Story Quest modules yet" : "All sentences mastered!"}</p>
+                                <p className="text-on-surface-variant/60 text-xs font-semibold mt-1">{!hasSqModules ? "Create Level 1 in Story Quest to get started." : "Practice completed sentences to build mastery."}</p>
                             </div>
                         ) : (
                             student.speakCurriculum.map((level, i) => {
-                                const rows = (level.sentence_stats || []).filter((s) => (s.words || []).some((w) => Number(w.failed_attempts || 0) > 0));
+                                const rows = level.sentence_stats || [];
                                 if (rows.length === 0) return null;
                                 return (
                                     <div key={i} className="mb-8 last:mb-0">

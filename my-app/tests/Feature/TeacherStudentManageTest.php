@@ -172,4 +172,28 @@ class TeacherStudentManageTest extends TestCase
             ->get("/teacher/studentDetails/{$otherTeacher->id}")
             ->assertNotFound();
     }
+
+    public function test_student_details_shows_all_sentences_including_perfect_ones(): void
+    {
+        $student = $this->makeStudent('Sentencer', '1111');
+
+        $paraModule = ParagraphModule::create(['level' => 1, 'title' => 'P1', 'content' => 'The cat. The dog.', 'is_tutorial' => false]);
+        $paraWord1 = ParagraphWord::create(['paragraph_module_id' => $paraModule->id, 'word' => 'cat', 'position' => 0]);
+        $paraWord2 = ParagraphWord::create(['paragraph_module_id' => $paraModule->id, 'word' => 'The', 'position' => 1]);
+        $paraWord3 = ParagraphWord::create(['paragraph_module_id' => $paraModule->id, 'word' => 'dog', 'position' => 2]);
+        $paraWord4 = ParagraphWord::create(['paragraph_module_id' => $paraModule->id, 'word' => 'The', 'position' => 3]);
+
+        StudentParagraphMastery::create(['user_id' => $student->id, 'paragraph_word_id' => $paraWord1->id, 'status' => 'mastered', 'failed_attempts' => 0]);
+        StudentParagraphMastery::create(['user_id' => $student->id, 'paragraph_word_id' => $paraWord2->id, 'status' => 'mastered', 'failed_attempts' => 0]);
+        StudentParagraphMastery::create(['user_id' => $student->id, 'paragraph_word_id' => $paraWord3->id, 'status' => 'mastered', 'failed_attempts' => 0]);
+        StudentParagraphMastery::create(['user_id' => $student->id, 'paragraph_word_id' => $paraWord4->id, 'status' => 'mastered', 'failed_attempts' => 0]);
+
+        $this->actingAs($this->teacher)
+            ->get("/teacher/studentDetails/{$student->id}")
+            ->assertSuccessful()
+            ->assertInertia(fn ($page) => $page
+                ->component('Teacher/StudentDetails')
+                ->has('data.speakCurriculum', 1)
+                ->has('data.speakCurriculum.0.sentence_stats', 2));
+    }
 }
