@@ -133,8 +133,8 @@ class StudentController extends Controller
 
             if ($badge->threshold_score !== null) {
                 $tutIds = array_filter([
-                    WordModule::where('is_tutorial', true)->value('id'),
-                    ParagraphModule::where('is_tutorial', true)->value('id'),
+                    WordModule::tutorialId(),
+                    ParagraphModule::tutorialId(),
                 ]);
                 $sessionQuery = GameSession::where('user_id', $user->id)
                     ->where('is_deadline_hit', false)
@@ -350,6 +350,7 @@ class StudentController extends Controller
             'words_smashed' => 'required|integer|min:0',
             'words_processed' => 'required|integer|min:0',
             'streak' => 'nullable|integer|min:0',
+            'client_token' => ['nullable','string','max:64'],
             // ponytail: sentence_scores is presentation detail (SQ only) —
             // score stays the authoritative aggregate. Sum must match smashed.
             'sentence_scores' => $type === 'paragraph'
@@ -380,15 +381,28 @@ class StudentController extends Controller
     {
         $isTutorial = $module->is_tutorial && ! $user->student?->tutorial_completed_at;
 
+        // ponytail: idempotency for F5 replay — same client_token within 60s reuses session, no duplicate row
+        if ($request->filled('client_token')) {
+            $cacheKey = "pending_token:{$user->id}:{$request->input('client_token')}";
+            if ($cachedId = Cache::get($cacheKey)) {
+                if ($existing = GameSession::find($cachedId)) {
+                    return redirect()->route('student.results', ['id' => $existing->id]);
+                }
+            }
+        }
+
         if ($isTutorial) {
             $totalPossible = $module->words()->count();
             $wordsSmashed = min($request->words_smashed, $totalPossible);
             $accuracy = $totalPossible > 0 ? (int) round(min(($wordsSmashed / $totalPossible) * 100, 100)) : 0;
             $session = GameSession::logSession($user->id, $module->id, $type, $wordsSmashed, $accuracy, 0, false);
+            if ($request->filled('client_token')) {
+                Cache::put("pending_token:{$user->id}:{$request->input('client_token')}", $session->id, 120);
+            }
             if ($type === 'word') {
-                $this->progressService->updateWordProgress($user->student, $module, 0, $request->words_processed, 0, isTutorial: true);
+                $this->progressService->updateWordProgress($user->student, $module, 0, $request->words_processed, 0, isTutorial: true, totalWords: $totalPossible);
             } else {
-                $this->progressService->updateParagraphProgress($user->student, $module, 0, $request->words_processed, 0, isTutorial: true);
+                $this->progressService->updateParagraphProgress($user->student, $module, 0, $request->words_processed, 0, isTutorial: true, totalWords: $totalPossible);
             }
             $redirect = redirect()->route('student.results', ['id' => $session->id]);
             $badgesData = $this->checkTutorialCompletion($user);
@@ -430,15 +444,18 @@ class StudentController extends Controller
         $rawScores = $type === 'paragraph' ? $request->sentence_scores : null;
         $sentenceScores = $rawScores ? array_map('intval', (array) $rawScores) : null;
         $session = GameSession::logSession($user->id, $module->id, $type, $wordsSmashed, $accuracy, $streak, $isDeadlineHit, $sentenceScores);
+        if ($request->filled('client_token')) {
+            Cache::put("pending_token:{$user->id}:{$request->input('client_token')}", $session->id, 120);
+        }
 
         if ($isDeadlineHit) {
             return redirect()->route('student.results', ['id' => $session->id]);
         }
 
         if ($type === 'word') {
-            $this->progressService->updateWordProgress($user->student, $module, $wordsSmashed, $request->words_processed, $accuracy);
+            $this->progressService->updateWordProgress($user->student, $module, $wordsSmashed, $request->words_processed, $accuracy, totalWords: $totalPossible);
         } else {
-            $this->progressService->updateParagraphProgress($user->student, $module, $wordsSmashed, $request->words_processed, $accuracy);
+            $this->progressService->updateParagraphProgress($user->student, $module, $wordsSmashed, $request->words_processed, $accuracy, totalWords: $totalPossible);
         }
 
         $redirect = redirect()->route('student.results', ['id' => $session->id]);
@@ -557,8 +574,8 @@ class StudentController extends Controller
 
     private function tutorialState(User $user): array
     {
-        $tutWord = WordModule::where('is_tutorial', true)->first();
-        $tutPara = ParagraphModule::where('is_tutorial', true)->first();
+        $tutWord = WordModule::tutorial();
+        $tutPara = ParagraphModule::tutorial();
 
         return [
             'tutWord' => $tutWord,

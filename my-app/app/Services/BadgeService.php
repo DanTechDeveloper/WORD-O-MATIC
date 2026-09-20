@@ -9,9 +9,24 @@ use App\Models\StudentParagraphProgress;
 use App\Models\StudentWordProgress;
 use App\Models\User;
 use App\Models\WordModule;
+use Illuminate\Support\Facades\DB;
 
 class BadgeService
 {
+    // ponytail: finishRound-only — badges are 11 static rows, cache per request (was 2 queries per round)
+    private static ?\Illuminate\Support\Collection $allBadgesCache = null;
+
+    private function allBadges(): \Illuminate\Support\Collection
+    {
+        // ponytail: RefreshDatabase truncates/re-seeds between tests — bypass cache there
+        if (app()->runningUnitTests()) {
+            return \App\Models\Badges::all();
+        }
+        if (self::$allBadgesCache !== null) {
+            return self::$allBadgesCache;
+        }
+        return self::$allBadgesCache = \App\Models\Badges::all();
+    }
     // Best streak/accuracy counts only non-deadline-hit sessions, so a post-deadline
     // round can't inflate badge progress — even if the deadline is later cleared
     // (doc: CAVEATS BF7/BF10). The flag is baked in at log time, so this is sticky.
@@ -19,8 +34,8 @@ class BadgeService
     private function bestSessionMetric(User $user, string $column): int
     {
         $tutIds = array_filter([
-            WordModule::where('is_tutorial', true)->value('id'),
-            ParagraphModule::where('is_tutorial', true)->value('id'),
+            WordModule::tutorialId(),
+            ParagraphModule::tutorialId(),
         ]);
 
         return (int) GameSession::where('user_id', $user->id)
@@ -37,7 +52,7 @@ class BadgeService
     // deadline-hit sessions excluded like every other session metric.
     public function calculateBestSentence(User $user): int
     {
-        $tutParaId = ParagraphModule::where('is_tutorial', true)->value('id');
+        $tutParaId = ParagraphModule::tutorialId();
 
         $best = GameSession::where('user_id', $user->id)
             ->where('module_type', 'paragraph')
@@ -115,9 +130,9 @@ class BadgeService
 
         $earnedBadgeIds = $user->badges()->pluck('badges.id')->toArray();
 
-        $badgesToCheck = Badges::whereNotIn('id', $earnedBadgeIds)
+        $badgesToCheck = $this->allBadges()
+            ->whereNotIn('id', $earnedBadgeIds)
             ->whereIn('metric', ['total_points', 'streak', 'accuracy', 'paragraph_completion', 'word_completion', 'best_sentence'])
-            ->get()
             ->groupBy('metric');
 
         foreach ($badgesToCheck as $metric => $group) {
@@ -164,9 +179,9 @@ class BadgeService
 
         $earnedBadgeIds = $user->badges()->pluck('badges.id')->toArray();
 
-        $badgesToCheck = Badges::whereNotIn('id', $earnedBadgeIds)
-            ->whereIn('metric', ['total_points', 'streak', 'accuracy', 'paragraph_completion', 'word_completion', 'best_sentence'])
-            ->get();
+        $badgesToCheck = $this->allBadges()
+            ->whereNotIn('id', $earnedBadgeIds)
+            ->whereIn('metric', ['total_points', 'streak', 'accuracy', 'paragraph_completion', 'word_completion', 'best_sentence']);
 
         if ($badgesToCheck->isEmpty()) {
             return [];
@@ -257,11 +272,15 @@ class BadgeService
             return (int) round(min(100, ($mastered / $total) * 100));
         }
 
-        $tutorialModule = WordModule::where('is_tutorial', true)->first();
-        $total = WordModule::where('is_tutorial', false)->withCount('words')->get()->sum('words_count');
+        $tutWordId = WordModule::tutorialId();
+        // ponytail: finishRound lean — single COUNT(*) vs withCount get()->sum (was loading 10 modules)
+        $total = (int) DB::table('words')
+            ->join('word_modules', 'words.word_module_id', '=', 'word_modules.id')
+            ->where('word_modules.is_tutorial', false)
+            ->count();
         if ($total === 0) return 0;
         $earned = StudentWordProgress::where('user_id', $user->id)
-            ->when($tutorialModule, fn ($q) => $q->where('word_module_id', '!=', $tutorialModule->id))
+            ->when($tutWordId, fn ($q) => $q->where('word_module_id', '!=', $tutWordId))
             ->sum('words_smashed');
         return (int) round(min(100, ($earned / $total) * 100));
     }

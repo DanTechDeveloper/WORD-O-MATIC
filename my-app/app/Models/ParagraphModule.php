@@ -21,6 +21,42 @@ class ParagraphModule extends Model
 
     protected $table = 'paragraph_modules';
 
+    // ponytail: request-scoped cache — mirrors WordModule::tutorialId()
+    private static ?int $tutorialIdCache = null;
+
+    public static function tutorialId(): ?int
+    {
+        if (app()->runningUnitTests()) {
+            return self::where('is_tutorial', true)->value('id');
+        }
+        if (self::$tutorialIdCache !== null) {
+            return self::$tutorialIdCache;
+        }
+
+        return self::$tutorialIdCache = self::where('is_tutorial', true)->value('id');
+    }
+
+    public static function clearTutorialIdCache(): void
+    {
+        self::$tutorialIdCache = null;
+        self::$tutorialCache = null;
+    }
+
+    private static ?self $tutorialCache = null;
+
+    public static function tutorial(): ?self
+    {
+        if (app()->runningUnitTests()) {
+            $id = self::where('is_tutorial', true)->value('id');
+            return $id ? self::find($id) : null;
+        }
+        if (self::$tutorialCache !== null) {
+            return self::$tutorialCache;
+        }
+        $id = self::tutorialId();
+        return self::$tutorialCache = $id ? self::find($id) : null;
+    }
+
     public function studentProgress(): HasMany
     {
         return $this->hasMany(StudentParagraphProgress::class, 'paragraph_module_id');

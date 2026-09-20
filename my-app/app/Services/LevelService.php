@@ -28,7 +28,9 @@ class LevelService
             ->orderBy('level', 'asc')
             ->get();
 
+        // ponytail: filter columns — was SELECT * per finishRound-adjacent levels page
         $progressRecords = $progressClass::where('user_id', $userId)
+            ->select([$fk, 'status', 'words_smashed'])
             ->get()
             ->keyBy($fk);
 
@@ -77,9 +79,9 @@ class LevelService
         // Tutorial modules are outside the level chain (absent from $statuses), so
         // they arrive as null and must stay playable during onboarding.
         if ($status === null) {
-            $moduleClass = $type === 'word' ? WordModule::class : ParagraphModule::class;
+            $tutId = $type === 'word' ? WordModule::tutorialId() : ParagraphModule::tutorialId();
 
-            return $moduleClass::where('is_tutorial', true)->whereKey($moduleId)->exists();
+            return $tutId !== null && (int) $moduleId === (int) $tutId;
         }
 
         // Deny by default: unknown ids (nonexistent, wrong type) must not slip

@@ -134,13 +134,15 @@ export function useStoryQuestEngine({ saveEndpoint = "/student/saveParagraphProg
         if (typeof window === "undefined" || !rest.moduleId || core.gameState !== "ACTIVE") {
             return;
         }
+        // ponytail: include savedAt so readResumeSession can correct drift; clamp timeLeft 0-60
         writeResumeSession(rest.moduleId, {
             moduleId: rest.moduleId,
             currentWordIndex: core.currentWordIndex,
             wordsSmashed: core.wordsSmashed,
             currentStreak: 0,
             maxStreak: core.maxStreak,
-            timeLeft: core.timeLeft,
+            timeLeft: Math.max(0, Math.min(60, Math.floor(core.timeLeft))),
+            savedAt: Date.now(),
             verdicts,
             sentenceScores,
         });

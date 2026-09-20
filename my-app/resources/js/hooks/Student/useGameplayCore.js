@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useCountdown } from "./useCountdown";
 import { router } from "@inertiajs/react";
 import { playSuccessSound, playFeedbackSound, playMispronounceFeedback } from "@/utils/sounds";
-import { readResumeSession, clearResumeSession } from "@/utils/resumeStorage";
+import { readResumeSession, clearResumeSession, readPendingSession, writePendingSession, clearPendingSession } from "@/utils/resumeStorage";
 import { normalizeText as normalizeWord } from "@/lib/speechUtils";
 import { clearAllTimers } from "@/lib/speechProcessors";
 
@@ -48,7 +48,11 @@ export function useGameplayCore({
     const [feedbackMessage, setFeedbackMessage] = useState("");
     const [streakShake, setStreakShake] = useState(null);
     const [maxStreak, setMaxStreak] = useState(() => resume?.maxStreak ?? 0);
-    const [timeLeft, setTimeLeft] = useState(() => resume?.timeLeft ?? 60);
+    const [timeLeft, setTimeLeft] = useState(() => {
+        const raw = resume?.timeLeft ?? 60;
+        return Math.max(0, Math.min(60, Math.floor(raw)));
+    });
+    const [isSaving, setIsSaving] = useState(false);
 
     const currentStreakRef = useRef(currentStreak);
     const hasSaved = useRef(false);
@@ -92,10 +96,48 @@ export function useGameplayCore({
         hasSaved.current = false;
     }, [moduleId]);
 
+    // ponytail: replay pending commit after an F5 while finishRound was in flight.
+    // Sync-checked on mount — if the POST was aborted by a refresh, the payload
+    // is still in sessionStorage and we re-POST it now. Tab-close clears it.
+    // Tutorial (deferPersist) never writes pending, so this is no-op there.
+    useEffect(() => {
+        if (typeof window === "undefined" || !moduleId) return;
+        if (deferPersist) {
+            // ponytail: if an old pending somehow exists for a tutorial module,
+            // clear it — tutorial is read-only, no replay.
+            clearPendingSession(moduleId);
+            return;
+        }
+        const pending = readPendingSession(moduleId);
+        if (!pending) return;
+        if (hasSaved.current) return;
+        hasSaved.current = true;
+        setIsSaving(true);
+        const { saveEndpoint: pendingEndpoint, createdAt: _ca, moduleId: _mid, ...pendingPayload } = pending;
+        // ponytail: saveEndpoint is client-controlled — whitelist to prevent tampered replay to arbitrary URL
+        const ALLOWED = ["/student/saveWordProgress", "/student/saveParagraphProgress"];
+        const endpoint = pendingEndpoint && ALLOWED.includes(pendingEndpoint) ? pendingEndpoint : saveEndpoint;
+        router.post(endpoint, pendingPayload, {
+            preserveState: true,
+            onSuccess: () => {
+                clearPendingSession(moduleId);
+                clearResumeSession(moduleId);
+            },
+            onError: (errors) => {
+                const hasValidationErrors = errors && Object.keys(errors).length > 0;
+                if (hasValidationErrors) clearPendingSession(moduleId);
+                hasSaved.current = false;
+            },
+            onFinish: () => setIsSaving(false),
+        });
+    }, [moduleId, saveEndpoint, deferPersist]);
+
     useEffect(() => {
         if (typeof window === "undefined" || !moduleId || gameState !== "ACTIVE") {
             return;
         }
+        // ponytail: clamp timeLeft 0-60 and stamp savedAt for wall-clock correction on resume (prevents 60s reset exploit)
+        const tl = Math.max(0, Math.min(60, Math.floor(timeLeft)));
         sessionStorage.setItem(
             `wordomaticResume:${moduleId}`,
             JSON.stringify({
@@ -104,7 +146,8 @@ export function useGameplayCore({
                 wordsSmashed,
                 currentStreak,
                 maxStreak,
-                timeLeft,
+                timeLeft: tl,
+                savedAt: Date.now(),
             })
         );
     }, [
@@ -159,7 +202,7 @@ export function useGameplayCore({
     }, [currentWordIndex, words]);
 
     const persistProgress = useCallback(() => {
-        if (!hasSaved.current) {    
+        if (!hasSaved.current) {
             hasSaved.current = true;
             // ponytail: persistExtra rides along for mode-specific detail
             // (SQ sentence_scores); read via ref so inline arrows never churn
@@ -167,19 +210,53 @@ export function useGameplayCore({
             const extra = typeof persistExtraRef.current === "function"
                 ? persistExtraRef.current()
                 : (persistExtraRef.current || {});
-            router.post(
+            const clientToken = `${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
+            const payload = {
+                module_id: moduleId,
+                words_smashed: wordsSmashedRef.current,
+                words_processed: currentWordIndexRef.current,
+                streak: maxStreakRef.current,
+                ...extra,
+                client_token: clientToken,
+            };
+            // ponytail: tutorial is read-only (deferPersist=true) — no durable
+            // pending, no replay. Keeps level 0 onboarding isolated even if
+            // finishRound is slow; post-onboarding level 0 replay goes durable
+            // but server still gates it via !module.is_tutorial (BF24).
+            if (deferPersist) {
+                // strip idempotency token for tutorial (read-only, no dedup needed)
+                const { client_token: _ct, ...payloadNoToken } = payload;
+                router.post(saveEndpoint, payloadNoToken, { preserveState: true });
+                return;
+            }
+            // ponytail: durable commit — sync write before POST so an F5
+            // while finishRound is slow still has the payload to replay.
+            // client_token makes the replay idempotent server-side (no duplicate row).
+            writePendingSession(moduleId, {
                 saveEndpoint,
-                {
-                    module_id: moduleId,
-                    words_smashed: wordsSmashedRef.current,
-                    words_processed: currentWordIndexRef.current,
-                    streak: maxStreakRef.current,
-                    ...extra,
+                ...payload,
+                createdAt: Date.now(),
+            });
+            setIsSaving(true);
+            router.post(saveEndpoint, payload, {
+                preserveState: true,
+                onSuccess: () => {
+                    clearPendingSession(moduleId);
+                    clearResumeSession(moduleId);
                 },
-                { preserveState: true }
-            );
+                onError: (errors) => {
+                    // ponytail: validation errors (e.g. words_processed > total)
+                    // are not retryable — drop the pending so we don't loop.
+                    const hasValidationErrors = errors && Object.keys(errors).length > 0;
+                    if (hasValidationErrors) {
+                        clearPendingSession(moduleId);
+                    }
+                    hasSaved.current = false;
+                },
+                onFinish: () => setIsSaving(false),
+            });
         }
-    }, [moduleId, saveEndpoint]);
+    }, [moduleId, saveEndpoint, deferPersist]);
 
     const persistProgressRef = useRef(persistProgress);
     persistProgressRef.current = persistProgress;
@@ -350,6 +427,7 @@ export function useGameplayCore({
         // Fresh round: re-arm the one-shot save guard (fresh mounts start false;
         // this covers any reuse of the hook without a remount).
         hasSaved.current = false;
+        setIsSaving(false);
         wordRecognizedGuardRef.current = false;
         mispronounceGuardRef.current = false;
         setGameState((prev) => (prev === "IDLE" ? "COUNTDOWN" : prev));
@@ -375,6 +453,7 @@ export function useGameplayCore({
         targetWord,
         timeLeft,
         isResume: !!resume,
+        isSaving,
         handleTimeUp,
         startGame,
         handleWordRecognized,

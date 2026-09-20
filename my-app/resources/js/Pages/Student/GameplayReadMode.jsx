@@ -1,6 +1,6 @@
 import ReadModeMainContent from "@/Components/Student/ReadModeMainContent";
 import GameplayHeader from "@/Components/Student/GameplayHeader";
-import Microphone from "@/Components/Student/Microphone";
+import Microphone from "@/Components/Student/Microphone";   
 import AvatarSpeechBubble from "@/Components/Student/AvatarSpeechBubble";
 import TutorialGuide, { nextStepIndex } from "@/Components/Student/TutorialGuide";
 import DeniedModal from "@/Components/Student/DeniedModal";
@@ -46,6 +46,7 @@ export default function GameplayReadMode({ module, tutorialComplete = true }) {
         targetWord,
         timeLeft,
         isResume,
+        isSaving,
         handleTimeUp,
         startGame,
         handleWordRecognized,
@@ -309,12 +310,20 @@ export default function GameplayReadMode({ module, tutorialComplete = true }) {
             <div className="flex-shrink-0 relative z-50">
                 <Microphone
                     isListening={gameState === "ACTIVE"}
-                    disabled={gameState === "COUNTDOWN"}
+                    disabled={gameState === "COUNTDOWN" || isSaving}
                     onClick={handleMicrophoneClick}
                     color="accent"
                     spotlight={guideArmed && guideStepObj?.spotlight === "mic"}
                 />
             </div>
+            {isSaving && (
+                <div className="fixed inset-0 z-[60] bg-indicator/20 backdrop-blur-sm flex items-center justify-center">
+                    <div className="bg-surface-container border-4 border-outline/20 rounded-2xl px-6 py-4 flex items-center gap-3 shadow-[4px_4px_0_0_#0c0c1f]">
+                        <span className="w-5 h-5 border-2 border-accent border-t-transparent rounded-full animate-spin" aria-hidden="true" />
+                        <span className="font-black uppercase tracking-widest text-sm text-white">Saving...</span>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

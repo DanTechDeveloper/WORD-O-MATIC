@@ -11,23 +11,25 @@ use Illuminate\Support\Facades\DB;
 
 class ProgressService
 {
-    public function updateWordProgress(?StudentProfile $student, WordModule $module, int $wordsSmashed, int $wordsProcessed, float $accuracy, bool $isTutorial = false): void
+    public function updateWordProgress(?StudentProfile $student, WordModule $module, int $wordsSmashed, int $wordsProcessed, float $accuracy, bool $isTutorial = false, ?int $totalWords = null): void
     {
         $this->updateModuleProgress($student, $module, $wordsSmashed, $wordsProcessed, $accuracy,
             StudentWordProgress::class, 'word_module_id',
             WordModule::class,
             'wordBlastAcc', 'read_level', 'read_progress',
             isTutorial: $isTutorial,
+            totalWords: $totalWords,
         );
     }
 
-    public function updateParagraphProgress(?StudentProfile $student, ParagraphModule $module, int $wordsSmashed, int $wordsProcessed, float $accuracy, bool $isTutorial = false): void
+    public function updateParagraphProgress(?StudentProfile $student, ParagraphModule $module, int $wordsSmashed, int $wordsProcessed, float $accuracy, bool $isTutorial = false, ?int $totalWords = null): void
     {
         $this->updateModuleProgress($student, $module, $wordsSmashed, $wordsProcessed, $accuracy,
             StudentParagraphProgress::class, 'paragraph_module_id',
             ParagraphModule::class,
             'storyQuestAcc', 'speak_level', 'speak_progress',
             isTutorial: $isTutorial,
+            totalWords: $totalWords,
         );
     }
 
@@ -44,6 +46,7 @@ class ProgressService
         string $levelColumn,
         string $progressColumn,
         bool $isTutorial = false,
+        ?int $totalWords = null,
     ): void {
         if (! $student) {
             return;
@@ -54,9 +57,9 @@ class ProgressService
             $accColumn, $levelColumn, $progressColumn, $isTutorial,
         ) {
             StudentProfile::where('id', $student->id)->lockForUpdate()->first();
-            // ponytail: fetch tut ids once per transaction — was 5 SELECTs per finishRound
-            $tutWordIdLocal = WordModule::where('is_tutorial', true)->value('id');
-            $tutParaIdLocal = ParagraphModule::where('is_tutorial', true)->value('id');
+            // ponytail: cached tut ids — was 5 SELECTs per finishRound, now 1 per request
+            $tutWordIdLocal = WordModule::tutorialId();
+            $tutParaIdLocal = ParagraphModule::tutorialId();
 
             $wordsProcessed = max(0, $wordsProcessed);
             $wordsSmashed = max(0, min($wordsSmashed, $wordsProcessed));
@@ -76,7 +79,7 @@ class ProgressService
                 $progress->accuracy = $accuracy;
             }
 
-            $totalWords = $module->words()->count();
+            $totalWords ??= $module->words()->count();
             // Status is sticky: a worse replay must not regress a completed module,
             // since LevelsPage now allows replaying completed levels (regression guard).
             $progress->status = ($progress->status === 'completed' || ($totalWords > 0 && $wordsProcessed >= $totalWords))
@@ -191,8 +194,8 @@ class ProgressService
         // counts (progress row with words_processed > 0); an empty-module play does
         // not. Accuracy > 0 alone also counts, covering direct column sets. This is
         // what fixes the both-zero collision without regressing empty-module plays.
-        $tutWordId = WordModule::where('is_tutorial', true)->value('id');
-        $tutParaId = ParagraphModule::where('is_tutorial', true)->value('id');
+        $tutWordId = WordModule::tutorialId();
+        $tutParaId = ParagraphModule::tutorialId();
 
         $hasWordProgress = (float) $fresh->wordBlastAcc > 0
             || StudentWordProgress::where('user_id', $fresh->user_id)
