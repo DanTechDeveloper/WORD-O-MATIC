@@ -12,24 +12,32 @@ use App\Models\WordModule;
 
 class BadgeService
 {
+    // ponytail: per-request memo — finishRound called getBadgeProgress + checkGameplayBadges
+    // back-to-back, each re-ran curriculum/bestSentence/max. Static cache cuts 6-8 queries to 2.
+    private static array $memo = [];
+
+    private function memo(string $key, callable $fn) {
+        if (app()->environment('testing')) return $fn();
+        return static::$memo[$key] ??= $fn();
+    }
+
     // Best streak/accuracy counts only non-deadline-hit sessions, so a post-deadline
     // round can't inflate badge progress — even if the deadline is later cleared
     // (doc: CAVEATS BF7/BF10). The flag is baked in at log time, so this is sticky.
     // ponytail: tutorial sessions excluded — streak/ON FIRE must not leak from onboarding (BadgesSeeder 19-21)
     private function bestSessionMetric(User $user, string $column): int
     {
-        $tutIds = array_filter([
-            WordModule::where('is_tutorial', true)->value('id'),
-            ParagraphModule::where('is_tutorial', true)->value('id'),
-        ]);
-
-        return (int) GameSession::where('user_id', $user->id)
-            ->where('is_deadline_hit', false)
-            ->when($tutIds, fn ($q) => $q->whereNotIn('module_id', $tutIds))
-            // ponytail: Story Quest has no streak — streak badges read
-            // Word Blast sessions only (also fixes historical SQ sessions).
-            ->when($column === 'streak', fn ($q) => $q->where('module_type', 'word'))
-            ->max($column) ?? 0;
+        return $this->memo("best:{$user->id}:$column", function () use ($user, $column) {
+            $tutIds = array_filter([
+                WordModule::where('is_tutorial', true)->value('id'),
+                ParagraphModule::where('is_tutorial', true)->value('id'),
+            ]);
+            return (int) GameSession::where('user_id', $user->id)
+                ->where('is_deadline_hit', false)
+                ->when($tutIds, fn ($q) => $q->whereNotIn('module_id', $tutIds))
+                ->when($column === 'streak', fn ($q) => $q->where('module_type', 'word'))
+                ->max($column) ?? 0;
+        });
     }
 
     // ponytail: Sentence Star metric — best single-sentence score across real
@@ -37,18 +45,18 @@ class BadgeService
     // deadline-hit sessions excluded like every other session metric.
     public function calculateBestSentence(User $user): int
     {
-        $tutParaId = ParagraphModule::where('is_tutorial', true)->value('id');
-
-        $best = GameSession::where('user_id', $user->id)
-            ->where('module_type', 'paragraph')
-            ->where('is_deadline_hit', false)
-            ->when($tutParaId, fn ($q) => $q->where('module_id', '!=', $tutParaId))
-            ->get(['sentence_scores'])
-            ->flatMap(fn ($s) => (array) ($s->sentence_scores ?? []))
-            ->map(fn ($v) => (int) $v)
-            ->max();
-
-        return (int) ($best ?? 0);
+        return $this->memo("bestSentence:{$user->id}", function () use ($user) {
+            $tutParaId = ParagraphModule::where('is_tutorial', true)->value('id');
+            $best = GameSession::where('user_id', $user->id)
+                ->where('module_type', 'paragraph')
+                ->where('is_deadline_hit', false)
+                ->when($tutParaId, fn ($q) => $q->where('module_id', '!=', $tutParaId))
+                ->get(['sentence_scores'])
+                ->flatMap(fn ($s) => (array) ($s->sentence_scores ?? []))
+                ->map(fn ($v) => (int) $v)
+                ->max();
+            return (int) ($best ?? 0);
+        });
     }
     public function awardOnboardingBadge(User $user, string $slug): ?array
     {
@@ -76,6 +84,7 @@ class BadgeService
 
     public function checkAllEligibleBadges(User $user): array
     {
+        if (! app()->environment('testing')) static::$memo = [];
         $student = $user->student;
 
         if (! $student) {
@@ -156,6 +165,7 @@ class BadgeService
 
     public function checkGameplayBadges(User $user, int $sessionId, float $accuracy): array
     {
+        if (! app()->environment('testing')) static::$memo = [];
         $student = $user->student;
 
         if (! $student) {
@@ -206,6 +216,7 @@ class BadgeService
 
     public function getBadgeProgress(User $user, GameSession $session): array
     {
+        if (! app()->environment('testing')) static::$memo = [];
         $student = $user->student;
         $earnedBadgeIds = $user->badges()->pluck('badges.id')->toArray();
 
@@ -243,27 +254,27 @@ class BadgeService
     public function calculateModuleCompletion(User $user, string $type): float
     {
         if ($type === 'paragraph') {
-            // Sentence-based for Story Quest — aligns badge `story-finisher` with teacher
-            // reporting `sentenceCurriculumPercent` (20 sents, 2/level uniform). Word Blast stays word-based.
-            $curriculum = ParagraphModule::curriculumForUser($user->id);
-            $mastered = 0;
-            $total = 0;
-            foreach ($curriculum as $level) {
-                $mastered += $level['mastered_sentences'] ?? collect($level['sentence_stats'] ?? [])->where('mastery', 'mastered')->count();
-                $total += $level['total_sentences'] ?? count($level['sentence_stats'] ?? []);
-            }
-            if ($total === 0) return 0;
-            // ponytail: whole number per DepEd — same rule as accuracies
-            return (int) round(min(100, ($mastered / $total) * 100));
+            return $this->memo("completion:{$user->id}:paragraph", function () use ($user) {
+                $curriculum = ParagraphModule::curriculumForUser($user->id);
+                $mastered = 0;
+                $total = 0;
+                foreach ($curriculum as $level) {
+                    $mastered += $level['mastered_sentences'] ?? collect($level['sentence_stats'] ?? [])->where('mastery', 'mastered')->count();
+                    $total += $level['total_sentences'] ?? count($level['sentence_stats'] ?? []);
+                }
+                if ($total === 0) return 0;
+                return (int) round(min(100, ($mastered / $total) * 100));
+            });
         }
-
-        $tutorialModule = WordModule::where('is_tutorial', true)->first();
-        $total = WordModule::where('is_tutorial', false)->withCount('words')->get()->sum('words_count');
-        if ($total === 0) return 0;
-        $earned = StudentWordProgress::where('user_id', $user->id)
-            ->when($tutorialModule, fn ($q) => $q->where('word_module_id', '!=', $tutorialModule->id))
-            ->sum('words_smashed');
-        return (int) round(min(100, ($earned / $total) * 100));
+        return $this->memo("completion:{$user->id}:word", function () use ($user) {
+            $tutorialModule = WordModule::where('is_tutorial', true)->first();
+            $total = WordModule::where('is_tutorial', false)->withCount('words')->get()->sum('words_count');
+            if ($total === 0) return 0;
+            $earned = StudentWordProgress::where('user_id', $user->id)
+                ->when($tutorialModule, fn ($q) => $q->where('word_module_id', '!=', $tutorialModule->id))
+                ->sum('words_smashed');
+            return (int) round(min(100, ($earned / $total) * 100));
+        });
     }
 
     private function meetsThreshold($value, $threshold): bool

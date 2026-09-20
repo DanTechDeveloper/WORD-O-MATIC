@@ -29,9 +29,11 @@ function rangesFromWords(words) {
     return ranges.length > 0 ? ranges : [{ start: 0, end: (words || []).length }];
 }
 
-// ponytail: single celebration duration — avatar bubble + center modal +
-// feedback sound together, then next sentence (or results after the last).
-const BREAK_MS = 2000;
+// ponytail: review window — verdicts (GREEN/RED) show 1000ms before the
+// modal+blur covers, then 2500ms celebration. Feedback audio also late
+// (with modal, not verdict) so preview stays silent for review.
+const VERDICT_PREVIEW_MS = 1000;
+const BREAK_MS = 2500;
 
 // ponytail: top tiers stay fixed (earned praise is consistent); the bottom
 // band rotates through the existing mispronounce voice lines so low scores
@@ -98,6 +100,7 @@ export function useStoryQuestEngine({ saveEndpoint = "/student/saveParagraphProg
     const wrongTimerRef = useRef(null);
     const scoredTimerRef = useRef(null);
     const completionGuardRef = useRef(false);
+    const previewTimerRef = useRef(null);
     const onWordRecognizedRef = useRef(rest.onWordRecognized);
     const onMispronounceRef = useRef(rest.onMispronounce);
     sentenceScoresRef.current = sentenceScores;
@@ -107,12 +110,14 @@ export function useStoryQuestEngine({ saveEndpoint = "/student/saveParagraphProg
     onMispronounceRef.current = rest.onMispronounce;
 
     const clearBreak = useCallback(() => {
+        clearTimeout(previewTimerRef.current);
         clearTimeout(breakTimerRef.current);
         clearTimeout(justEndedTimerRef.current);
         clearTimeout(finalTimerRef.current);
         finalTimerRef.current = null;
         finalizingRef.current = false;
         breakTimerRef.current = null;
+        previewTimerRef.current = null;
         completionGuardRef.current = false;
         setSentenceBreak(false);
         setBreakJustEnded(false);
@@ -120,6 +125,7 @@ export function useStoryQuestEngine({ saveEndpoint = "/student/saveParagraphProg
 
     useEffect(() => {
         return () => {
+            clearTimeout(previewTimerRef.current);
             clearTimeout(breakTimerRef.current);
             clearTimeout(finalTimerRef.current);
             clearTimeout(justEndedTimerRef.current);
@@ -191,57 +197,64 @@ export function useStoryQuestEngine({ saveEndpoint = "/student/saveParagraphProg
             ? "Flawless reading!"
             : CONSOLATION_POOL[Math.floor(Math.random() * CONSOLATION_POOL.length)](missed);
         setSentenceFeedback({ message, score: correct, total, note });
-        playFeedbackSound(message);
-        pulseScored();
 
         if (rangeIdx + 1 >= sentenceRanges.length) {
-            // Last sentence: hold the celebration (bubble + modal + sound),
-            // then push the index to totalWords so core's completion effect
-            // fires persist + COMPLETED → redirect to GameResults. The move
-            // is deferred — NOT immediate — so the 2s moment actually shows.
-            setSentenceBreak(true);
-            finalizingRef.current = true;
-            clearTimeout(finalTimerRef.current);
-            finalTimerRef.current = setTimeout(() => {
-                finalTimerRef.current = null;
-                finalizingRef.current = false;
-                core.moveToNextWord(Math.max(1, core.totalWords - core.currentWordIndex));
-            }, BREAK_MS);
+            // Last sentence: verdicts visible 1000ms silent preview before
+            // modal, then hold the celebration (bubble + modal + sound late
+            // with modal). The move is deferred so the review moment shows.
+            clearTimeout(previewTimerRef.current);
+            previewTimerRef.current = setTimeout(() => {
+                previewTimerRef.current = null;
+                playFeedbackSound(message);
+                pulseScored();
+                setSentenceBreak(true);
+                finalizingRef.current = true;
+                clearTimeout(finalTimerRef.current);
+                finalTimerRef.current = setTimeout(() => {
+                    finalTimerRef.current = null;
+                    finalizingRef.current = false;
+                    core.moveToNextWord(Math.max(1, core.totalWords - core.currentWordIndex));
+                }, BREAK_MS);
+            }, VERDICT_PREVIEW_MS);
         } else {
-            // ponytail: jump the index to the range end NOW, not +1 at break
-            // end — a fluent multi-word advance leaves the core index behind
-            // the verdict frontier, and a deferred +1 would land inside the
-            // completed sentence (whose verdicts then block every handler
-            // forever). Invariant restored: index == first index w/o verdict.
-            core.moveToNextWord(Math.max(1, range.end - core.currentWordIndex));
-            setSentenceBreak(true);
-            clearTimeout(breakTimerRef.current);
-            breakTimerRef.current = setTimeout(() => {
-                breakTimerRef.current = null;
-                completionGuardRef.current = false;
-                setSentenceBreak(false);
-                setSentenceFeedback(null);
-                // ponytail: pulse the next sentence's first word for ~1s as a
-                // "continue here" cue, then fall back to the static BLUE
-                // frontier. Same visual language as the fresh-mount start cue.
-                setBreakJustEnded(true);
-                clearTimeout(justEndedTimerRef.current);
-                justEndedTimerRef.current = setTimeout(() => setBreakJustEnded(false), 1000);
-                // ponytail: bump the epoch (Deepgram reset runs even when the
-                // next target normalizes equal) — the targetWord re-arm from
-                // the completion jump above follows as second guarantee. No
-                // index move here: already at the next sentence start. Debug
-                // line stays so manual repro confirms in DevTools.
-                setSentenceEpoch((e) => e + 1);
-                if (typeof window !== "undefined") {
-                    console.debug("[SQ] sentence transition", {
-                        fromRange: rangeIdx,
-                        toIndex: range.end,
-                        prevTarget: rest.words?.[range.end - 1]?.word,
-                        nextTarget: rest.words?.[range.end]?.word,
-                    });
-                }
-            }, BREAK_MS);
+            clearTimeout(previewTimerRef.current);
+            previewTimerRef.current = setTimeout(() => {
+                previewTimerRef.current = null;
+                playFeedbackSound(message);
+                pulseScored();
+                // ponytail: move index only after VERDICT_PREVIEW_MS so the
+                // next sentence's BLUE highlight stays hidden during review
+                // (requirement: walang BLUE muna habang preview).
+                core.moveToNextWord(Math.max(1, range.end - core.currentWordIndex));
+                setSentenceBreak(true);
+                clearTimeout(breakTimerRef.current);
+                breakTimerRef.current = setTimeout(() => {
+                    breakTimerRef.current = null;
+                    completionGuardRef.current = false;
+                    setSentenceBreak(false);
+                    setSentenceFeedback(null);
+                    // ponytail: pulse the next sentence's first word for ~1s as a
+                    // "continue here" cue, then fall back to the static BLUE
+                    // frontier. Same visual language as the fresh-mount start cue.
+                    setBreakJustEnded(true);
+                    clearTimeout(justEndedTimerRef.current);
+                    justEndedTimerRef.current = setTimeout(() => setBreakJustEnded(false), 1000);
+                    // ponytail: bump the epoch (Deepgram reset runs even when the
+                    // next target normalizes equal) — the targetWord re-arm from
+                    // the completion jump above follows as second guarantee. No
+                    // index move here: already at the next sentence start. Debug
+                    // line stays so manual repro confirms in DevTools.
+                    setSentenceEpoch((e) => e + 1);
+                    if (typeof window !== "undefined") {
+                        console.debug("[SQ] sentence transition", {
+                            fromRange: rangeIdx,
+                            toIndex: range.end,
+                            prevTarget: rest.words?.[range.end - 1]?.word,
+                            nextTarget: rest.words?.[range.end]?.word,
+                        });
+                    }
+                }, BREAK_MS);
+            }, VERDICT_PREVIEW_MS);
         }
     }, [
         sentenceRanges,

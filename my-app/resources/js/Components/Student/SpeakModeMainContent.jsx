@@ -82,7 +82,8 @@ const SpeakModeMainContent = memo(function SpeakModeMainContent({
                                     // ponytail: branch order is the contract — verdicts always
                                     // win; fresh mount stays neutral until speech (resume
                                     // keeps its you-are-here marker, it is mid-round).
-                                    const showFrontier = hasSpoken || isResume;
+                                    // ponytail: no BLUE during modal — next sentence's 1st word highlights only after modal off (breakJustEnded handles it).
+                                    const showFrontier = !sentenceBreak && (hasSpoken || isResume);
                                     return (
                                         <span
                                             key={index}
@@ -102,7 +103,7 @@ const SpeakModeMainContent = memo(function SpeakModeMainContent({
                                                         ? "font-bold sm:font-extrabold text-quest opacity-100 relative z-10 border-2 border-quest/80 rounded-xl px-3 py-2 bg-slate-900/80 drop-shadow-[0_0_10px_rgba(56,189,248,0.5)]"
                                                         : index > currentIndex && index < currentIndex + activeCount && showFrontier
                                                           ? "font-bold text-quest opacity-100 border-2 border-quest/40 rounded-xl px-2 py-1 bg-slate-900/60"
-                                                          : index === currentIndex && !isResume
+                                                          : index === currentIndex && !isResume && !sentenceBreak
                                                             ? "font-bold text-quest animate-pulse opacity-80"
                                                             : index < currentIndex
                                                               ? "opacity-20 text-on-background"
@@ -116,21 +117,48 @@ const SpeakModeMainContent = memo(function SpeakModeMainContent({
                             </div>
                         </div>
 
-                        {sentenceBreak && sentenceFeedback && (
+                        {sentenceBreak && sentenceFeedback && (() => {
+                            const pct = sentenceFeedback.total ? (sentenceFeedback.score / sentenceFeedback.total) * 100 : 0;
+                            const filled = Math.round((pct / 100) * 5);
+                            const missed = Math.max(0, sentenceFeedback.total - sentenceFeedback.score);
+                            return (
                             <div className="absolute inset-0 z-40 flex items-center justify-center px-4 pointer-events-none">
-                                {/* ponytail: light blur only (sm = 4px, same as header chips) —
-                                    2s celebration bursts on one layer; bubble (z-50) stays crisp above. */}
                                 <div className="absolute inset-0 bg-background/60 backdrop-blur-sm" aria-hidden="true" />
-                                <div className="relative text-center bg-slate-900/90 border-2 border-quest/60 rounded-3xl px-6 sm:px-10 py-6 sm:py-8 shadow-[0_0_30px_rgba(56,189,248,0.4)]">
+                                <div className="relative text-center bg-slate-900/90 border-2 border-quest/60 rounded-3xl px-6 sm:px-10 py-6 sm:py-8 shadow-[0_0_30px_rgba(56,189,248,0.4)] min-w-[280px] sm:min-w-[360px]">
                                     <div className="font-black uppercase italic tracking-tighter text-white text-2xl sm:text-4xl">
                                         {sentenceFeedback.message}
                                     </div>
-                                    <div className="mt-2 font-bold text-quest text-lg sm:text-2xl">
-                                        Sentence Score: {sentenceFeedback.score} / {sentenceFeedback.total}
+                                    <div className="mt-3 flex items-center justify-center gap-1">
+                                        {[...Array(5)].map((_, i) => (
+                                            <span key={i} className={`material-symbols-outlined text-xl sm:text-2xl ${i < filled ? "text-amber-400" : "text-white/20"}`} style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
+                                        ))}
                                     </div>
+                                    <div className="mt-3 font-black tracking-tighter text-white text-4xl sm:text-5xl">
+                                        <span className="text-quest">{sentenceFeedback.score}</span><span className="text-white/30 mx-2">/</span><span>{sentenceFeedback.total}</span>
+                                    </div>
+                                    <div className="mt-4 h-2 bg-white/10 rounded-full overflow-hidden">
+                                        <div className="h-full bg-quest transition-all duration-700" style={{ width: `${pct}%` }} />
+                                    </div>
+                                    {missed > 0 ? (
+                                        <div className="mt-3 inline-flex items-center gap-2 bg-rose-500/15 border border-rose-500/30 rounded-full px-3 py-1 text-rose-300 text-xs sm:text-sm font-bold">
+                                            <span className="material-symbols-outlined text-sm">error</span>
+                                            {missed} tricky word{missed === 1 ? "" : "s"}
+                                        </div>
+                                    ) : (
+                                        <div className="mt-3 inline-flex items-center gap-1.5 bg-accent/15 border border-accent/30 rounded-full px-3 py-1 text-accent text-xs sm:text-sm font-bold">
+                                            <span className="material-symbols-outlined text-sm">verified</span>
+                                            Perfect!
+                                        </div>
+                                    )}
+                                    {sentenceFeedback.note && (
+                                        <div className="mt-2 text-white/60 text-[11px] sm:text-xs font-bold leading-snug max-w-[32ch] mx-auto">
+                                            {sentenceFeedback.note}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
-                        )}
+                            );
+                        })()}
                     </div>
                 </div>
             )}

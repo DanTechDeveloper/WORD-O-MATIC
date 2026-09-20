@@ -23,8 +23,10 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
+use App\Jobs\FinalizeGameSession;
 
 class StudentController extends Controller
 {
@@ -378,6 +380,7 @@ class StudentController extends Controller
 
     private function finishRound(User $user, WordModule|ParagraphModule $module, Request $request, string $type): RedirectResponse
     {
+        $t0 = microtime(true);
         $isTutorial = $module->is_tutorial && ! $user->student?->tutorial_completed_at;
 
         if ($isTutorial) {
@@ -441,8 +444,12 @@ class StudentController extends Controller
             $this->progressService->updateParagraphProgress($user->student, $module, $wordsSmashed, $request->words_processed, $accuracy);
         }
 
+        // ponytail: heavy badge fan-out deferred — 302 returns now, job reconciles afterResponse
+        FinalizeGameSession::dispatchAfterResponse($user->id, $session->id, $type, (float) $accuracy);
+
         $redirect = redirect()->route('student.results', ['id' => $session->id]);
 
+        $tBadge = microtime(true);
         $badgesData = [];
         foreach ($this->badgeService->checkGameplayBadges($user, $session->id, $accuracy) as $badge) {
             $badgesData[] = [
@@ -455,6 +462,10 @@ class StudentController extends Controller
 
         if ($tutorialBadge = $this->checkTutorialCompletion($user)) {
             $badgesData[] = $tutorialBadge;
+        }
+
+        if (app()->hasDebugModeEnabled()) {
+            Log::info('finishRound', ['type' => $type, 'module' => $module->id, 'ms' => (int) ((microtime(true) - $t0) * 1000), 'badges_ms' => (int) ((microtime(true) - $tBadge) * 1000)]);
         }
 
         return ! empty($badgesData) ? $redirect->with('new_badges', $badgesData) : $redirect;
@@ -510,27 +521,36 @@ class StudentController extends Controller
         $totalItems = $module->words_count;
 
         $user = auth()->user();
-        $badgeProgress = $user ? $this->badgeService->getBadgeProgress($user, $session) : [];
-
         $isMaxLevel = $maxLevel !== null && $module->level >= $maxLevel;
 
-        // ponytail: best score is MAX(score) for this module/user, deadline-hit excluded — no new table, indexed query
-        $bestScore = GameSession::where('user_id', auth()->id())
+        // ponytail: defer heavy props — TTFB for GameResults was blocked on
+        // curriculum + bestSentence scans. Inertia v2 defer lets the popup render
+        // with session/title immediately, badgeProgress/bestScore stream in.
+        $bestScoreFn = fn () => (int) (GameSession::where('user_id', auth()->id())
             ->where('module_id', $module->id)
             ->where('module_type', $session->module_type)
             ->where('is_deadline_hit', false)
-            ->max('score') ?? 0;
+            ->max('score') ?? 0);
+        $badgeProgressFn = fn () => $user ? $this->badgeService->getBadgeProgress($user, $session) : [];
+
+        $deferAvailable = method_exists(Inertia::class, 'defer');
+        $bestScoreProp = $deferAvailable && ! app()->environment('testing')
+            ? Inertia::defer($bestScoreFn, 'gameResults')
+            : $bestScoreFn();
+        $badgeProgressProp = $deferAvailable && ! app()->environment('testing')
+            ? Inertia::defer($badgeProgressFn, 'gameResults')
+            : $badgeProgressFn();
 
         return Inertia::render('Student/GameResults', [
             'session' => $session,
             'moduleTitle' => $module->title,
             'totalItems' => $totalItems,
-            'badgeProgress' => $badgeProgress,
+            'badgeProgress' => $badgeProgressProp,
             'moduleLevel' => $module->level,
             'nextModuleLevel' => $nextModule?->level,
             'isMaxLevel' => $isMaxLevel,
             'deadlineHit' => (bool) $session->is_deadline_hit,
-            'bestScore' => (int) $bestScore,
+            'bestScore' => $bestScoreProp,
             'isTutorial' => (bool) $module->is_tutorial,
             // ponytail: SQ-only presentation detail (rendered, never recalculated).
             'sentenceScores' => $session->sentence_scores ?? null,
