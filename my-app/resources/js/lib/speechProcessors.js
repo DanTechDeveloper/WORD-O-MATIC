@@ -122,8 +122,8 @@ export function countConsecutiveMatches(full, lookahead) {
 export function armSentenceTimeout(stateRefs, timerRefs, propsRef) {
     clearTimeout(timerRefs.current.sentence);
 
-    // ponytail: 1s tick — tuloy-tuloy basa, mid-sentence pause 3s lang RED
-    // (dati 5s, matagal ma-stuck). First/second tuldok same.
+    // ponytail: 1s self-rescheduling watchdog measures CONTINUOUS silence via
+    // lastSpeechAt (survives engine restarts); fires onMispronounced at >=5s.
     const tick = () => {
         const s = stateRefs.current;
         if (
@@ -135,7 +135,7 @@ export function armSentenceTimeout(stateRefs, timerRefs, propsRef) {
             timerRefs.current.sentence = null;
             return;
         }
-        if (Date.now() - s.lastSpeechAt >= 3000) {
+        if (Date.now() - s.lastSpeechAt >= 5000) {
             s.mispronouncedSentence = true;
             propsRef.current.onMispronounced?.(s.transcript);
             timerRefs.current.sentence = null;

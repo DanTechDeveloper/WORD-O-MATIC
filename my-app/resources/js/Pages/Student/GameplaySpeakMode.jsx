@@ -19,10 +19,10 @@ import { normalizeText } from "@/lib/speechUtils";
 // mispronounced were already taught in Word Blast and are NOT re-introduced.
 const GUIDE_STEPS = [
     { id: "read-sentence", title: "READ THE SENTENCE", message: "Say the whole sentence clearly, not just one word!", emoji: "menu_book", color: "quest", action: "tap-continue", spotlight: "sentence" },
-    { id: "light-up", title: "WATCH IT LIGHT UP", message: "Words glow BLUE as you say them. GREEN locks in. RED moves on, so keep reading!", emoji: "auto_awesome", color: "quest", action: "tap-continue", spotlight: "sentence" },
-    { id: "sentence-score", title: "SENTENCE SCORE", message: "After each sentence you get a score card. then jump to the glowing next line!", emoji: "celebration", color: "quest", action: "tap-continue", spotlight: "sentence" },
+    { id: "light-up", title: "WATCH IT LIGHT UP", message: "Words glow BLUE as you say them. GREEN locks in — RED moves on, so keep reading!", emoji: "auto_awesome", color: "quest", action: "tap-continue", spotlight: "sentence" },
+    { id: "sentence-score", title: "SENTENCE SCORE", message: "After each sentence you get a score card — then jump to the glowing next line!", emoji: "celebration", color: "quest", action: "tap-continue", spotlight: "sentence" },
     { id: "tap-mic", title: "TAP TO PLAY!", message: "Tap the mic below when you're ready. 3-2-1 countdown, then go!", emoji: "mic", color: "quest", action: "tap-mic", spotlight: "mic" },
-    { id: "keep-reading", title: "KEEP READING!", message: "Nice. it's hearing you! Finish the sentence!", emoji: "graphic_eq", color: "quest", action: "say-sentence-start", spotlight: "sentence" },
+    { id: "keep-reading", title: "KEEP READING!", message: "Nice — it's hearing you! Finish the sentence!", emoji: "graphic_eq", color: "quest", action: "say-sentence-start", spotlight: "sentence" },
 ];
 
 export default function GameplaySpeakMode({ module, tutorialComplete = true, wordTutorialDone = false, speakTutorialDone = false }) {

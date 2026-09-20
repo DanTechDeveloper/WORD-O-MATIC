@@ -93,6 +93,10 @@ class ProgressService
                 $avgAccuracy = $progressClass::where('user_id', $student->user_id)
                     ->when($tutId, fn ($q) => $q->where($moduleKey, '!=', $tutId))
                     ->avg('accuracy');
+
+                // A tutorial replay as the very first play leaves no non-tutorial
+                // rows to average — keep the stored accuracy instead of crashing
+                // on round(null).
                 if ($avgAccuracy !== null) {
                     $student->update([$accColumn => (int) round($avgAccuracy)]);
                 }
@@ -178,32 +182,6 @@ class ProgressService
     }
 
 
-
-    // ponytail: exposed for afterResponse job — was private inside the locked TX
-    public function recalculateDerived(StudentProfile $student): void
-    {
-        $fresh = $student->fresh();
-        if (! $fresh) return;
-
-        // ponytail: recompute avg accuracies that were skipped in fastTx
-        $tutWordId = WordModule::where('is_tutorial', true)->value('id');
-        $tutParaId = ParagraphModule::where('is_tutorial', true)->value('id');
-
-        foreach ([
-            ['class' => StudentWordProgress::class, 'key' => 'word_module_id', 'col' => 'wordBlastAcc', 'tut' => $tutWordId],
-            ['class' => StudentParagraphProgress::class, 'key' => 'paragraph_module_id', 'col' => 'storyQuestAcc', 'tut' => $tutParaId],
-        ] as $cfg) {
-            $avg = $cfg['class']::where('user_id', $fresh->user_id)
-                ->when($cfg['tut'], fn ($q) => $q->where($cfg['key'], '!=', $cfg['tut']))
-                ->avg('accuracy');
-            if ($avg !== null) {
-                $fresh->update([$cfg['col'] => (int) round($avg)]);
-                $fresh = $fresh->fresh();
-            }
-        }
-
-        $this->recalculateStatus($fresh);
-    }
 
     private function recalculateStatus(StudentProfile $student): void
     {
