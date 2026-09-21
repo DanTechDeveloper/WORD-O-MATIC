@@ -1,4 +1,4 @@
-import { Head, Link, usePage } from "@inertiajs/react";
+import { Head, Link, usePage, router } from "@inertiajs/react";
 import { useState } from "react";
 import AvatarSpeechBubble from "@/Components/Student/AvatarSpeechBubble";
 import BadgeUnlockFlow from "@/Components/Student/BadgeUnlockFlow";
@@ -49,15 +49,18 @@ export default function Dashboard({
     wordTutorialDone = false,
     speakTutorialDone = false,
     tutorialComplete = false,
+    tutorialSkipped = false,
 }) {
     const { auth, flash } = usePage().props;
     const [guideStep, setGuideStep] = useState(wordTutorialDone ? 1 : 0);
-    const [guideDone, setGuideDone] = useState(tutorialComplete);
+    const [guideDone, setGuideDone] = useState(tutorialComplete || tutorialSkipped);
     const avatarUrl = auth?.user?.student?.avatar;
     const bodyUrl = avatarUrl?.replace("/head.png", "/body.png");
     const newBadges = flash?.new_badges ?? [];
     const [badgeFlowDone, setBadgeFlowDone] = useState(false);
-    const showGuide = !tutorialComplete && bodyUrl;
+    const [showSkipConfirm, setShowSkipConfirm] = useState(false);
+    const isOnboarding = !tutorialComplete && !tutorialSkipped;
+    const showGuide = isOnboarding && bodyUrl;
     const showGuideBubble = showGuide && !guideDone;
     const highlightRead = showGuide && !wordTutorialDone;
     const highlightSpeak = showGuide && wordTutorialDone && !speakTutorialDone;
@@ -118,17 +121,44 @@ export default function Dashboard({
                 />
             )}
             <DashboardLayout disableNav={showGuide}>
-                <div className="flex flex-col justify-center py-6 sm:py-8 lg:py-14 space-y-6 sm:space-y-8">
-                <header className="text-center lg:text-left">
+                <div className="flex flex-col py-6 sm:py-8 space-y-6 sm:space-y-8">
+                <header className="relative z-10 text-center lg:text-left">
                     <h1 className="text-2xl xs:text-3xl sm:text-4xl lg:text-5xl font-black uppercase italic tracking-[-0.04em] text-on-surface">
                         Pick Your Game
                     </h1>
                     <p className="mt-2 text-on-surface-variant text-base lg:text-lg">
                         {tutorialComplete
                             ? "Two ways to play. Choose the adventure that fits your mood."
-                            : "Complete the tutorial to unlock the full game!"}
+                            : tutorialSkipped
+                              ? "Tutorial skipped — both games unlocked. Replay the tutorial to earn the badge!"
+                              : "Complete the tutorial to unlock the full game!"}
                     </p>
                 </header>
+
+                {isOnboarding && (
+                    <div className="relative z-10 flex flex-wrap items-center gap-3">
+                        <button
+                            type="button"
+                            onClick={() => setShowSkipConfirm(true)}
+                            className="inline-flex items-center gap-2 rounded-xl px-5 py-3 font-bold text-sm uppercase tracking-wider bg-surface-container-high text-on-surface border-2 border-outline/20 hover:bg-surface-container-highest transition-colors"
+                        >
+                            <span className="material-symbols-outlined text-lg">skip_next</span>
+                            Skip Tutorial
+                        </button>
+                    </div>
+                )}
+                {tutorialSkipped && !tutorialComplete && (
+                    <div className="relative z-10 flex flex-wrap items-center gap-3">
+                        <Link
+                            href="/student/tutorial"
+                            data-sfx="major"
+                            className="inline-flex items-center gap-2 rounded-xl px-5 py-3 font-black text-sm uppercase tracking-wider bg-amber-400 text-background border-2 border-amber-600/30 hover:brightness-110 transition-all"
+                        >
+                            <span className="material-symbols-outlined text-lg">school</span>
+                            Replay Tutorial to earn badge
+                        </Link>
+                    </div>
+                )}
 
                 {showGuide && <div className="fixed inset-0 z-[5] bg-background/80" />}
                 {showGuideBubble && (
@@ -141,6 +171,41 @@ export default function Dashboard({
                         onClick={advanceGuide}
                         position={highlightRead ? "bottom-right" : "bottom-left"}
                     />
+                )}
+
+                {showSkipConfirm && (
+                    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+                        <div className="absolute inset-0 bg-background/80" onClick={() => setShowSkipConfirm(false)} />
+                        <div className="relative bg-surface border-2 border-outline/20 rounded-2xl p-6 sm:p-8 max-w-md w-full shadow-[8px_8px_0_0_#4c1d95]">
+                            <div className="flex items-center gap-3 mb-4">
+                                <span className="material-symbols-outlined text-3xl text-amber-400" style={{ fontVariationSettings: "'FILL' 1" }}>warning</span>
+                                <h3 className="text-on-surface font-black uppercase text-lg">Skip Tutorial?</h3>
+                            </div>
+                            <p className="text-on-surface-variant text-sm leading-relaxed">
+                                If you skip, you can play <span className="font-bold text-on-surface">Word Blast</span> and <span className="font-bold text-on-surface">Story Quest</span> right away, but the <span className="font-bold text-amber-300">Tutorial Complete</span> badge will not be claimable. You can still earn it later by completing both tutorials via the <span className="font-bold">Tutorial</span> button.
+                            </p>
+                            <div className="mt-6 flex flex-col sm:flex-row gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowSkipConfirm(false)}
+                                    className="flex-1 rounded-xl px-5 py-3 font-bold text-sm uppercase tracking-wider bg-surface-container-high text-on-surface border-2 border-outline/20 hover:bg-surface-container-highest transition-colors"
+                                >
+                                    Keep Tutorial
+                                </button>
+                                <button
+                                    type="button"
+                                    data-sfx="major"
+                                    onClick={() => {
+                                        setShowSkipConfirm(false);
+                                        router.post(route("student.tutorial.skip"));
+                                    }}
+                                    className="flex-1 rounded-xl px-5 py-3 font-black text-sm uppercase tracking-wider bg-amber-400 text-background hover:brightness-110 transition-all"
+                                >
+                                    Skip — I understand
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 )}
 
                 <section className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">

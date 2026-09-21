@@ -22,7 +22,7 @@ const GUIDE_STEPS = [
     { id: "say-it", title: "SAY IT!", message: "Read the word out loud now.", emoji: "campaign", color: "accent", action: "say-word", spotlight: "word" },
 ];
 
-export default function GameplayReadMode({ module, tutorialComplete = true }) {
+export default function GameplayReadMode({ module, tutorialComplete = true, tutorialSkipped = false }) {
     const { auth } = usePage().props;
     const isTutorial = !!module?.is_tutorial && !tutorialComplete;
     const isTutorialModule = !!module?.is_tutorial;

@@ -359,10 +359,8 @@ class GameplayTest extends TestCase
                 'words_smashed' => 1,
                 'words_processed' => 1,
             ]);
-        // ponytail: GameResults renders once per onboarding — a Word Blast tutorial
-        // finish lands on the dashboard (Story Quest card), not results. Session is
-        // still logged even when deadline passed.
-        $response->assertRedirect(route('student.dashboard'));
+        // ponytail: sequential tutorial — Word Blast finish lands on TutorialPage (SQ unlock), not dashboard/results.
+        $response->assertRedirect(route('student.tutorial'));
 
         $this->assertDatabaseHas('student_word_progress', [
             'user_id' => $this->student->id,
@@ -395,7 +393,7 @@ class GameplayTest extends TestCase
                 'words_smashed' => 1,
                 'words_processed' => 1,
             ])
-            ->assertRedirect(route('student.dashboard'));
+            ->assertRedirect(route('student.tutorial'));
 
         $this->assertNull($this->student->student->refresh()->tutorial_completed_at);
     }
@@ -475,10 +473,10 @@ class GameplayTest extends TestCase
         $session = GameSession::where('user_id', $this->student->id)
             ->orderByDesc('id')->first();
 
-        // Direct visit to the skipped screen bounces while onboarding is incomplete.
+        // Word tutorial mid-sequence has no results screen — bounces to TutorialPage so SQ unlocks.
         $this->actingAs($this->student)
             ->get(route('student.results', $session->id))
-            ->assertRedirect(route('student.dashboard'));
+            ->assertRedirect(route('student.tutorial'));
     }
 
     public function test_tutorial_replay_results_still_renders_after_onboarding(): void

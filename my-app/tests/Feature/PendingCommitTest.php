@@ -109,7 +109,7 @@ class PendingCommitTest extends TestCase
 
         $this->actingAs($freshStudent)->post(route('student.saveWordProgress'), [
             'module_id'=>$tut->id,'words_smashed'=>1,'words_processed'=>1,
-        ])->assertRedirect(route('student.dashboard'));
+        ])->assertRedirect(route('student.tutorial'));
 
         $freshStudent->refresh();
         $this->assertEquals(0, $freshStudent->student->points);

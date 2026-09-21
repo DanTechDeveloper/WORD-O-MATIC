@@ -25,7 +25,7 @@ const GUIDE_STEPS = [
     { id: "keep-reading", title: "KEEP READING!", message: "Nice — it's hearing you! Finish the sentence!", emoji: "graphic_eq", color: "quest", action: "say-sentence-start", spotlight: "sentence" },
 ];
 
-export default function GameplaySpeakMode({ module, tutorialComplete = true, wordTutorialDone = false, speakTutorialDone = false }) {
+export default function GameplaySpeakMode({ module, tutorialComplete = true, tutorialSkipped = false, wordTutorialDone = false, speakTutorialDone = false }) {
     const { auth } = usePage().props;
     const isTutorial = !!module?.is_tutorial && !tutorialComplete;
     const isTutorialModule = !!module?.is_tutorial;

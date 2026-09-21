@@ -27,6 +27,7 @@ class StudentProfile extends Model
         'speak_level',
         'section',
         'tutorial_completed_at',
+        'tutorial_skipped_at',
         'gender',
         'parent_email',
         'report_sent_at',
@@ -34,6 +35,7 @@ class StudentProfile extends Model
 
     protected $casts = [
         'tutorial_completed_at' => 'datetime',
+        'tutorial_skipped_at' => 'datetime',
         'wordBlastAcc' => 'float',
         'storyQuestAcc' => 'float',
     ];

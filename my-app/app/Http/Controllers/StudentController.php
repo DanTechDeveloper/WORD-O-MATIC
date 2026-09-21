@@ -77,6 +77,38 @@ class StudentController extends Controller
             'wordTutorialDone' => $wordTutorialDone,
             'speakTutorialDone' => $speakTutorialDone,
             'tutorialComplete' => (bool) ($user->student?->tutorial_completed_at),
+            'tutorialSkipped' => (bool) ($user->student?->tutorial_skipped_at),
+        ]);
+    }
+
+    public function skipTutorial()
+    {
+        $user = auth()->user();
+        $student = $user->student;
+        if (! $student) {
+            return redirect()->route('student.dashboard');
+        }
+        if ($student->tutorial_completed_at || $student->tutorial_skipped_at) {
+            return redirect()->route('student.dashboard');
+        }
+        $student->update(['tutorial_skipped_at' => now()]);
+
+        return redirect()->route('student.dashboard')->with('success', 'Tutorial skipped. Play anytime — replay both tutorials via Tutorial to earn the badge.');
+    }
+
+    public function tutorialPage()
+    {
+        $user = auth()->user();
+        [
+            'wordTutorialDone' => $wordTutorialDone,
+            'speakTutorialDone' => $speakTutorialDone,
+        ] = $this->tutorialState($user);
+
+        return Inertia::render('Student/TutorialPage', [
+            'wordTutorialDone' => $wordTutorialDone,
+            'speakTutorialDone' => $speakTutorialDone,
+            'tutorialComplete' => (bool) ($user->student?->tutorial_completed_at),
+            'tutorialSkipped' => (bool) ($user->student?->tutorial_skipped_at),
         ]);
     }
 
@@ -155,16 +187,18 @@ class StudentController extends Controller
             return $badge;
         });
 
-        // ponytail: tutorial isolation is display-side too — mid-onboarding
-        // students see only the two onboarding badges (award-side is already
-        // isolated: tutorial rounds never call checkGameplayBadges and every
-        // metric excludes tutorial rows/sessions).
-        if (! $student?->tutorial_completed_at) {
+        // ponytail: skip unlocks full gameplay — show all badges while
+        // skipped (only tutorial-complete stays locked until replay). True
+        // onboarding (no skip) still shows onboarding-only.
+        if (! $student?->tutorial_completed_at && ! $student?->tutorial_skipped_at) {
             $badges = $badges->whereIn('slug', ['tutorial-complete', 'profile-pioneer'])->values();
         }
 
         return Inertia::render('Student/Badges', [
             'badges' => $badges,
+            'tutorialSkipped' => (bool) ($student?->tutorial_skipped_at),
+            'wordTutorialDone' => $this->tutorialState($user)['wordTutorialDone'],
+            'speakTutorialDone' => $this->tutorialState($user)['speakTutorialDone'],
         ]);
     }
 
@@ -186,7 +220,9 @@ class StudentController extends Controller
         $progressModel = $mode === 'word' ? StudentWordProgress::class : StudentParagraphProgress::class;
         $progressColumn = $mode === 'word' ? 'word_module_id' : 'paragraph_module_id';
 
-        if (! $user->student?->tutorial_completed_at) {
+        // Skipped users bypass onboarding lock — both modes show real levels
+        $isOnboarding = ! $user->student?->tutorial_completed_at && ! $user->student?->tutorial_skipped_at;
+        if ($isOnboarding) {
             $progress = $progressModel::where('user_id', $user->id)
                 ->where($progressColumn, $tutModule->id)->first();
             $modules = collect([[
@@ -208,6 +244,7 @@ class StudentController extends Controller
             'modules' => $modules,
             'mode' => $mode === 'word' ? 'read' : 'speak',
             'tutorialComplete' => (bool) $user->student?->tutorial_completed_at,
+            'tutorialSkipped' => (bool) $user->student?->tutorial_skipped_at,
             'wordTutorialDone' => $wordTutorialDone,
             'speakTutorialDone' => $speakTutorialDone,
         ]);
@@ -240,7 +277,8 @@ class StudentController extends Controller
             return redirect()->route($levelsRoute);
         }
 
-        if (! $user->student?->tutorial_completed_at && ! $module->is_tutorial) {
+        $isOnboarding = ! $user->student?->tutorial_completed_at && ! $user->student?->tutorial_skipped_at;
+        if ($isOnboarding && ! $module->is_tutorial) {
             return redirect()->route($levelsRoute);
         }
 
@@ -251,6 +289,7 @@ class StudentController extends Controller
         $data = [
             'module' => $module,
             'tutorialComplete' => (bool) $user->student?->tutorial_completed_at,
+            'tutorialSkipped' => (bool) $user->student?->tutorial_skipped_at,
             'wordTutorialDone' => $this->tutorialState($user)['wordTutorialDone'],
             // ponytail: Story Quest gates its own mechanics tour on this — Word
             // Blast completion must NOT skip it (different mechanics).
@@ -350,7 +389,7 @@ class StudentController extends Controller
             'words_smashed' => 'required|integer|min:0',
             'words_processed' => 'required|integer|min:0',
             'streak' => 'nullable|integer|min:0',
-            'client_token' => ['nullable','string','max:64'],
+            'client_token' => ['nullable', 'string', 'max:64'],
             // ponytail: sentence_scores is presentation detail (SQ only) —
             // score stays the authoritative aggregate. Sum must match smashed.
             'sentence_scores' => $type === 'paragraph'
@@ -361,6 +400,7 @@ class StudentController extends Controller
                     foreach ($value as $v) {
                         if (! is_numeric($v) || (int) $v < 0 || (float) $v != (int) $v) {
                             $fail('Each sentence score must be a non-negative integer.');
+
                             return;
                         }
                     }
@@ -379,6 +419,8 @@ class StudentController extends Controller
 
     private function finishRound(User $user, WordModule|ParagraphModule $module, Request $request, string $type): RedirectResponse
     {
+        // Tutorial execution is `!completed` only — skipped users replaying via
+        // TutorialPage still run the guided tutorial (sequential), not scored play.
         $isTutorial = $module->is_tutorial && ! $user->student?->tutorial_completed_at;
 
         // ponytail: idempotency for F5 replay — same client_token within 60s reuses session, no duplicate row
@@ -408,15 +450,21 @@ class StudentController extends Controller
             $badgesData = $this->checkTutorialCompletion($user);
 
             if ($badgesData) {
+                // Full sequential completion — clear skipped flag and show results + badge
+                if ($user->student->tutorial_skipped_at) {
+                    $user->student->update(['tutorial_skipped_at' => null]);
+                }
                 return $redirect->with('new_badges', [$badgesData]);
             }
 
-            // ponytail: GameResults renders once per onboarding — on the completing
-            // finish (tutorial_completed_at just set; entry guaranteed it null, so a
-            // set value means this round completed onboarding even when the badge row
-            // is missing and no flash exists). Any earlier tutorial finish lands on
-            // the mid-onboarding dashboard instead of a second results screen.
+            // ponytail: Word Blast mid-sequence finish goes to TutorialPage
+            // (not dashboard/results) so SQ unlocks visibly. Only the completing
+            // finish (both done, tutorial_completed_at set) shows GameResults.
             if (! $user->student->refresh()->tutorial_completed_at) {
+                $state = $this->tutorialState($user->fresh());
+                if ($state['wordTutorialDone'] && ! $state['speakTutorialDone']) {
+                    return redirect()->route('student.tutorial');
+                }
                 return redirect()->route('student.dashboard');
             }
 
@@ -486,13 +534,20 @@ class StudentController extends Controller
                 ->with('error', 'Access denied.');
         }
 
-        // ponytail: a non-completing tutorial finish has no results screen — bounce
-        // direct visits back to the mid-onboarding dashboard. The completing finish
-        // (tutorial_completed_at set) and post-onboarding replays still render.
+        // ponytail: mid-sequence tutorial Word finish has no results screen —
+        // bounce to TutorialPage so SQ unlocks visibly. Completing finish and
+        // post-onboarding replays still render.
         $bounceModule = $session->module_type === 'word'
             ? WordModule::find($session->module_id)
             : ParagraphModule::find($session->module_id);
         if ($bounceModule?->is_tutorial && ! auth()->user()?->student?->tutorial_completed_at) {
+            // Word tutorial alone → TutorialPage (sequential)
+            if ($session->module_type === 'word') {
+                $state = $this->tutorialState(auth()->user());
+                if ($state['wordTutorialDone'] && ! $state['speakTutorialDone']) {
+                    return redirect()->route('student.tutorial');
+                }
+            }
             return redirect()->route('student.dashboard');
         }
 
@@ -563,7 +618,13 @@ class StudentController extends Controller
 
         if ($wordTutorialDone && $speakTutorialDone) {
             if (! $user->student->tutorial_completed_at) {
-                $user->student->update(['tutorial_completed_at' => now()]);
+                $updates = ['tutorial_completed_at' => now()];
+                if ($user->student->tutorial_skipped_at) {
+                    $updates['tutorial_skipped_at'] = null;
+                }
+                $user->student->update($updates);
+            } elseif ($user->student->tutorial_skipped_at) {
+                $user->student->update(['tutorial_skipped_at' => null]);
             }
 
             return $this->badgeService->awardOnboardingBadge($user, 'tutorial-complete');

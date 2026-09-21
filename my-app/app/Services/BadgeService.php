@@ -102,7 +102,8 @@ class BadgeService
 
         $actionBadges = [
             'profile-pioneer' => $student->avatar && ! in_array($student->avatar, ['/images/boy.svg', '/images/girl.svg']),
-            'tutorial-complete' => ! is_null($student->tutorial_completed_at),
+            // skipped users cannot claim until both tutorials replayed and skipped cleared
+            'tutorial-complete' => ! is_null($student->tutorial_completed_at) && is_null($student->tutorial_skipped_at),
         ];
 
         foreach ($actionBadges as $slug => $satisfied) {
@@ -268,7 +269,6 @@ class BadgeService
                 $total += $level['total_sentences'] ?? count($level['sentence_stats'] ?? []);
             }
             if ($total === 0) return 0;
-            // ponytail: whole number per DepEd — same rule as accuracies
             return (int) round(min(100, ($mastered / $total) * 100));
         }
 

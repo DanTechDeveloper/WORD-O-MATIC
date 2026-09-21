@@ -72,6 +72,8 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/avatar', [StudentController::class, 'updateAvatar'])->name('updateAvatar');
             // Main Application Routes
             Route::get('/dashboard', [StudentController::class, 'dashboard'])->name('dashboard');
+            Route::get('/tutorial', [StudentController::class, 'tutorialPage'])->name('tutorial');
+            Route::post('/tutorial/skip', [StudentController::class, 'skipTutorial'])->name('tutorial.skip');
             Route::get('/leaderboards', [StudentController::class, 'leaderboards'])->name('leaderboards');
             Route::get('/badges', [StudentController::class, 'badges'])->name('badges');
             Route::get('/readModeLevels', [StudentController::class, 'readModeLevels'])->name('readModeLevels');

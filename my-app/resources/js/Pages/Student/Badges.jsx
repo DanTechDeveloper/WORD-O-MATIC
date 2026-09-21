@@ -1,4 +1,4 @@
-import { Head } from "@inertiajs/react";
+import { Head, Link } from "@inertiajs/react";
 import DashboardLayout from "@/Layouts/Student/DashboardLayout";
 import DeadlineBanner from "@/Components/DeadlineBanner";
 import BackButton from "@/Components/Student/BackButton";
@@ -101,7 +101,7 @@ function LockedBadgeCard({ badge }) {
     );
 }
 
-export default function Badges({ badges }) {
+export default function Badges({ badges, tutorialSkipped = false, wordTutorialDone = false, speakTutorialDone = false }) {
     const isDeadlineClosed = useDeadlineStatus();
 
     const dynamicAchievements = (badges || []).map((badge) => {
@@ -141,6 +141,24 @@ export default function Badges({ badges }) {
             </div>
 
             <DeadlineBanner isDeadlineClosed={isDeadlineClosed} />
+
+            {tutorialSkipped && (
+                <div className="mb-6 bg-amber-500/15 border-2 border-amber-400/40 rounded-2xl px-5 py-4 flex items-start gap-3">
+                    <span className="material-symbols-outlined text-amber-400 text-2xl shrink-0 mt-0.5" style={{ fontVariationSettings: "'FILL' 1" }}>info</span>
+                    <div className="flex-1">
+                        <p className="text-amber-300 font-black uppercase text-sm">Tutorial skipped — badge locked</p>
+                        <p className="text-on-surface-variant text-sm mt-1">
+                            You skipped the tutorial, so <span className="font-bold text-on-surface">Tutorial Complete</span> is not claimable yet. Complete both phases to earn it.
+                            {wordTutorialDone && !speakTutorialDone && " Word Blast done — finish Story Quest!"}
+                            {!wordTutorialDone && " Start with Word Blast — then Story Quest unlocks."}
+                        </p>
+                        <Link href="/student/tutorial" data-sfx="major" className="inline-flex items-center gap-2 mt-3 rounded-xl px-4 py-2 font-black text-xs uppercase tracking-wider bg-amber-400 text-background hover:brightness-110 transition-all">
+                            <span className="material-symbols-outlined text-base">school</span>
+                            Go to Tutorial
+                        </Link>
+                    </div>
+                </div>
+            )}
 
             <PageHeader
                 icon="emoji_events"
