@@ -4,6 +4,7 @@ import Sidebar from "../../Components/Teacher/Sidebar";
 import DeadlineBanner from "@/Components/DeadlineBanner";
 import Toast from "@/Components/Shared/Toast";
 import Footer from "@/Components/Shared/Footer";
+import { getDeadlineInfo } from "@/hooks/Student/useDeadlineStatus";
 
 export default function DashboardLayout({ children }) {
     const [isSidebarOpen, setSidebarOpen] = useState(false);
@@ -14,10 +15,8 @@ export default function DashboardLayout({ children }) {
     const debounceRef = useRef(null);
     const { teacher } = usePage().props;
     const { auth } = usePage().props;
-    const deadline = auth?.deadline;
-    const isDeadlineClosed = deadline && new Date(deadline) <= new Date();
     const { filters = {}, searchResults = [] } = usePage().props.teacher ?? {};
-    const showDeadlineBanner = isDeadlineClosed;
+    const showDeadlineBanner = getDeadlineInfo(auth?.deadline).phase === "closed";
     const deadlineMessage = `The report deadline has passed. Gameplay is locked and all leaderboards, badges, and reports are now final. Module editing is locked as well.`;
     const alerts = teacher
         ? [
@@ -412,10 +411,7 @@ export default function DashboardLayout({ children }) {
                 </div>
             </header>
             <main className="md:ml-64 pt-28 pb-20 px-4 md:px-8 min-h-screen bg-background overflow-x-hidden min-w-0">
-                <DeadlineBanner
-                    isDeadlineClosed={showDeadlineBanner}
-                    message={deadlineMessage}
-                />
+                {showDeadlineBanner && <DeadlineBanner message={deadlineMessage} />}
                 {children}
             </main>
             <Toast />

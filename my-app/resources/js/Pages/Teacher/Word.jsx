@@ -2,9 +2,10 @@ import { Head } from "@inertiajs/react";
 import DashboardLayout from "@/Layouts/Teacher/DashboardLayout";
 import WordInputModal from "@/Components/Teacher/WordInputModal";
 import { useState, useEffect } from "react";
-import useDeadlineStatus from "@/hooks/Student/useDeadlineStatus";
+import { getDeadlineInfo } from "@/hooks/Student/useDeadlineStatus";
+import { usePage } from "@inertiajs/react";
 export default function Word({ modules }) {
-    const isDeadlineClosed = useDeadlineStatus();
+    const isDeadlineClosed = getDeadlineInfo(usePage().props.auth?.deadline).phase === "closed";
     const levels = modules?.map((m) => m.level).filter((l) => l > 0).sort((a, b) => a - b) ?? [];
     const nextLevel = levels.length > 0 ? Math.max(...levels) + 1 : 1;
     const transformModules = (modulesData) => {

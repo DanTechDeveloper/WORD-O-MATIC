@@ -6,11 +6,9 @@ import BackButton from "@/Components/Student/BackButton";
 import PageHeader from "@/Components/Student/PageHeader";
 import EmptyState from "@/Components/Student/EmptyState";
 import StudentAvatar from "@/Components/Student/StudentAvatar";
-import useDeadlineStatus from "@/hooks/Student/useDeadlineStatus";
 
 export default function Leaderboards({ leaderboard, totalStudents }) {
     const { auth } = usePage().props;
-    const isDeadlineClosed = useDeadlineStatus();
     const currentUserId = auth.user?.id;
     const currentUserName = auth.user?.name ?? "You";
     const currentEntry = leaderboard.find((e) => e.user_id === currentUserId);
@@ -20,12 +18,12 @@ export default function Leaderboards({ leaderboard, totalStudents }) {
         <DashboardLayout>
             <Head title="Leaderboard — Word-O-Matic">
                 <meta name="description" content="Leaderboard on Word-O-Matic — see your class ranking." />
-            </Head>
+        </Head>
             <div className="mb-4 pt-2">
                 <BackButton />
             </div>
             <div className="max-w-4xl mx-auto pt-2">
-                <DeadlineBanner isDeadlineClosed={isDeadlineClosed} />
+                <DeadlineBanner />
 
                 <PageHeader icon="emoji_events" title="Leaderboard" as="h1" />
 

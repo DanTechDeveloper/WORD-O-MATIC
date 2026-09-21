@@ -15,7 +15,7 @@ const LEVEL_ICONS = [
     "local_pizza", "music_note", "sports_soccer", "pets", "auto_awesome", "eco",
 ]
 
-export default function LevelCard({ module, emoji, gameUrl, index, highlightTutorial, tutorialColor, hasResume, isDeadlineClosed = false, disabled = false }) {
+export default function LevelCard({ module, emoji, gameUrl, index, highlightTutorial, tutorialColor, hasResume, disabled = false }) {
     const totalPoints = module.total_points || 0
     const wordsSmashed = module.words_smashed || 0
     const progress =

@@ -1,33 +1,17 @@
 import { usePage } from "@inertiajs/react";
 import { getDeadlineInfo, formatDeadlineDate } from "@/hooks/Student/useDeadlineStatus";
 
-export default function DeadlineBanner({ isDeadlineClosed, message, deadline: deadlineProp }) {
+export default function DeadlineBanner({ message, deadline: deadlineProp }) {
     const pageDeadline = usePage().props.auth?.deadline ?? deadlineProp ?? null;
     const info = getDeadlineInfo(pageDeadline);
 
-    // Custom message path (GameResults deadlineHit + teacher layout) — respect explicit isDeadlineClosed
     if (message) {
-        if (!isDeadlineClosed && info.phase !== "closed") return null;
         return (
             <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500 rounded-xl flex items-start gap-3">
                 <span className="material-symbols-outlined text-amber-600" style={{ fontVariationSettings: "'FILL' 1" }}>
                     emoji_events
                 </span>
                 <p className="text-amber-600 font-semibold">{message}</p>
-            </div>
-        );
-    }
-
-    // Backward compat: explicit boolean closed still wins (teacher/GameResults callers)
-    if (isDeadlineClosed) {
-        return (
-            <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500 rounded-xl flex items-start gap-3">
-                <span className="material-symbols-outlined text-amber-600" style={{ fontVariationSettings: "'FILL' 1" }}>
-                    emoji_events
-                </span>
-                <p className="text-amber-600 font-semibold">
-                    The Great Word Challenge is taking a break! Your points are safe — play again soon for a brand-new adventure!
-                </p>
             </div>
         );
     }

@@ -1,10 +1,10 @@
-import { Head, Link, usePage, router } from "@inertiajs/react";
+import { Head, Link, usePage } from "@inertiajs/react";
 import { useState } from "react";
 import BadgeUnlockFlow from "@/Components/Student/BadgeUnlockFlow";
 import NextBadge from "@/Components/Student/NextBadge";
 import StatTile from "@/Components/Student/StatTile";
 import DeadlineBanner from "@/Components/DeadlineBanner";
-import useDeadlineStatus from "@/hooks/Student/useDeadlineStatus";
+import { getDeadlineInfo } from "@/hooks/Student/useDeadlineStatus";
 
 const CONFETTI = [
     { icon: "celebration", color: "text-accent" },
@@ -62,8 +62,8 @@ export default function GameResults({
         session.module_type === "paragraph" &&
         Array.isArray(sentenceScores) &&
         sentenceScores.length > 0;
-    const { flash } = usePage().props;
-    const isDeadlineClosed = useDeadlineStatus();
+    const { flash, auth } = usePage().props;
+    const isGlobalClosed = getDeadlineInfo(auth?.deadline).phase === "closed";
     const newBadgeSlugs = flash?.new_badges?.map((b) => b.slug) ?? [];
     // ponytail: Dashboard AvatarSpeechBubble is now the tutorial-complete end, not GameResults
     const newBadges = badgeProgress?.filter((b) => newBadgeSlugs.includes(b.slug)) ?? [];
@@ -115,10 +115,7 @@ export default function GameResults({
                     </div>
 
                     {deadlineHit && (
-                        <DeadlineBanner
-                            isDeadlineClosed
-                            message="Time's up! The Game ended after the Challenge — so no points, no badges, and no leaderboard this time. You still played great!"
-                        />
+                        <DeadlineBanner message="Time's up! The Game ended after the Challenge — so no points, no badges, and no leaderboard this time. You still played great!" />
                     )}
                     {isPracticeMode && (
                         <div className="mb-6 p-4 bg-sky-500/10 border border-sky-500 rounded-xl flex items-start gap-3">
@@ -192,7 +189,7 @@ export default function GameResults({
                         <NextBadge badge={nextBadge} />
                     )}
 
-                    {isDeadlineClosed || isPracticeMode ? (
+                    {isGlobalClosed || isPracticeMode || deadlineHit ? (
                         <div className="flex gap-4">
                             <Link
                                 href="/student/dashboard"

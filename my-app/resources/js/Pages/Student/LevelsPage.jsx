@@ -5,7 +5,6 @@ import LevelCard from "../../Components/Student/LevelCard"
 import BackButton from "../../Components/Student/BackButton"
 import AvatarSpeechBubble from "@/Components/Student/AvatarSpeechBubble"
 import DeadlineBanner from "@/Components/DeadlineBanner"
-import useDeadlineStatus from "@/hooks/Student/useDeadlineStatus"
 import { readResumeSession } from "@/utils/resumeStorage"
 
 const LEVEL_ICONS = [
@@ -16,7 +15,6 @@ const LEVEL_ICONS = [
 
 export default function LevelsPage({ modules, mode, tutorialComplete = true, tutorialSkipped = false, wordTutorialDone = false, speakTutorialDone = false }) {
     const { auth, flash } = usePage().props
-    const isDeadlineClosed = useDeadlineStatus()
     const [error, setError] = useState(flash?.error ?? null)
     const avatarUrl = auth?.user?.student?.avatar
     const bodyUrl = avatarUrl?.replace("/head.png", "/body.png")
@@ -66,7 +64,7 @@ export default function LevelsPage({ modules, mode, tutorialComplete = true, tut
                     </button>
                 </div>
             )}
-            {!isTutorial && <DeadlineBanner isDeadlineClosed={isDeadlineClosed} />}
+            {!isTutorial && <DeadlineBanner />}
             {/* Header */}
             <div className="flex items-center gap-2 sm:gap-3 md:gap-4 mb-6 pt-2">
                 <BackButton />
@@ -108,7 +106,6 @@ export default function LevelsPage({ modules, mode, tutorialComplete = true, tut
                             highlightTutorial={isTutorial}
                             tutorialColor={isRead ? "accent" : "quest"}
                             hasResume={resumeModules.includes(module.id)}
-                            isDeadlineClosed={isDeadlineClosed}
                             disabled={isTutorial && !guideDone}
                         />
                     ))}

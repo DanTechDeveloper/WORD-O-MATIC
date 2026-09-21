@@ -4,7 +4,6 @@ import DeadlineBanner from "@/Components/DeadlineBanner";
 import BackButton from "@/Components/Student/BackButton";
 import PageHeader from "@/Components/Student/PageHeader";
 import ProgressBar from "@/Components/Student/ProgressBar";
-import useDeadlineStatus from "@/hooks/Student/useDeadlineStatus";
 
 const PALETTE = {
     accent: { bg: "bg-accent", text: "text-background", border: "border-accent", title: "text-accent" },
@@ -102,7 +101,6 @@ function LockedBadgeCard({ badge }) {
 }
 
 export default function Badges({ badges, tutorialSkipped = false, wordTutorialDone = false, speakTutorialDone = false }) {
-    const isDeadlineClosed = useDeadlineStatus();
 
     const dynamicAchievements = (badges || []).map((badge) => {
         const ui = BADGE_UI_CONFIG[badge.slug] || BADGE_UI_CONFIG.default;
@@ -140,7 +138,7 @@ export default function Badges({ badges, tutorialSkipped = false, wordTutorialDo
                 <BackButton />
             </div>
 
-            <DeadlineBanner isDeadlineClosed={isDeadlineClosed} />
+            <DeadlineBanner />
 
             {tutorialSkipped && (
                 <div className="mb-6 bg-amber-500/15 border-2 border-amber-400/40 rounded-2xl px-5 py-4 flex items-start gap-3">
