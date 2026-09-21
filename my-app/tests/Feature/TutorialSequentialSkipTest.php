@@ -150,10 +150,10 @@ class TutorialSequentialSkipTest extends TestCase
         $this->actingAs($s)->post(route('student.saveWordProgress'), [
             'module_id' => $tutWord->id, 'words_smashed' => 3, 'words_processed' => 3,
         ]);
-        // Speak done -> should complete
+        // Speak done -> should complete → Dashboard (AvatarSpeechBubble end, not GameResults)
         $this->actingAs($s)->post(route('student.saveParagraphProgress'), [
             'module_id' => $tutPara->id, 'words_smashed' => 3, 'words_processed' => 3,
-        ])->assertRedirect(route('student.results', GameSession::latest('id')->first()->id));
+        ])->assertRedirect(route('student.dashboard'));
 
         $s->refresh();
         $this->assertNotNull($s->student->tutorial_completed_at);

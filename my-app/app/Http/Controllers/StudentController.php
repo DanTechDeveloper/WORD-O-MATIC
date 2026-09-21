@@ -273,9 +273,9 @@ class StudentController extends Controller
             ->firstOrFail();
         $id = $module->id;
 
-        if (! $module->is_tutorial && $this->reportService->cutoff()) {
-            return redirect()->route($levelsRoute);
-        }
+        // ponytail: past deadline = practice — Level Page stays open until GameResults, all writes readonly (finishRound isPractice)
+        // KEEP mid-game readonly (cutoff hit while playing still readonly), but don't block entry.
+        // if (! $module->is_tutorial && $this->reportService->cutoff()) redirect removed.
 
         $isOnboarding = ! $user->student?->tutorial_completed_at && ! $user->student?->tutorial_skipped_at;
         if ($isOnboarding && ! $module->is_tutorial) {
@@ -417,7 +417,7 @@ class StudentController extends Controller
         return $this->finishRound(auth()->user(), $moduleClass::findOrFail($request->module_id), $request, $type);
     }
 
-    private function finishRound(User $user, WordModule|ParagraphModule $module, Request $request, string $type): RedirectResponse
+    private function finishRound(User $user, WordModule|ParagraphModule $module, Request $request, string $type): \Illuminate\Http\RedirectResponse|\Inertia\Response
     {
         // Tutorial execution is `!completed` only — skipped users replaying via
         // TutorialPage still run the guided tutorial (sequential), not scored play.
@@ -446,21 +446,19 @@ class StudentController extends Controller
             } else {
                 $this->progressService->updateParagraphProgress($user->student, $module, 0, $request->words_processed, 0, isTutorial: true, totalWords: $totalPossible);
             }
-            $redirect = redirect()->route('student.results', ['id' => $session->id]);
             $badgesData = $this->checkTutorialCompletion($user);
 
             if ($badgesData) {
-                // Full sequential completion — clear skipped flag and show results + badge
+                // Full sequential completion — Dashboard AvatarSpeechBubble is the end, not GameResults
                 if ($user->student->tutorial_skipped_at) {
                     $user->student->update(['tutorial_skipped_at' => null]);
                 }
-                return $redirect->with('new_badges', [$badgesData]);
+                return redirect()->route('student.dashboard')->with('new_badges', [$badgesData]);
             }
 
             // ponytail: Word Blast mid-sequence goes to Dashboard for fresh onboarding
             // (Dashboard highlight shows Story Quest next); skipped users replaying
-            // stay on TutorialPage so Story Quest unlock is visible. Completing
-            // finish (both done) shows GameResults.
+            // stay on TutorialPage so Story Quest unlock is visible.
             if (! $user->student->refresh()->tutorial_completed_at) {
                 // skipped replay → TutorialPage, fresh onboarding → Dashboard
                 if ($user->student->tutorial_skipped_at) {
@@ -469,7 +467,8 @@ class StudentController extends Controller
                 return redirect()->route('student.dashboard');
             }
 
-            return $redirect;
+            // Fallback (should not hit — completion returns above); keep for safety
+            return redirect()->route('student.dashboard');
         }
 
         $totalPossible = $module->words()->count();
@@ -488,17 +487,58 @@ class StudentController extends Controller
             ? (int) round(min(($wordsSmashed / $totalPossible) * 100, 100))
             : 0;
 
-        $isDeadlineHit = (bool) $this->reportService->cutoff();
+        // ponytail: past deadline = practice — keep mid-game readonly (cutoff hit while playing) and extend to all past,
+        // all aspects readonly (GameSession / ProgressService / BadgeService / mastery / students).
+        $isPractice = (bool) $this->reportService->cutoff();
+        
+        if ($isPractice) {
+            // zero writes: transient GameResults (no GameSession, no Progress, no Badge), bestScore stays persisted
+            $rawScores = $type === 'paragraph' ? $request->sentence_scores : null;
+            $sentenceScores = $rawScores ? array_map('intval', (array) $rawScores) : null;
+
+            $transientSession = [
+                'id' => 0,
+                'score' => $wordsSmashed,
+                'accuracy' => $accuracy,
+                'streak' => $streak,
+                'module_type' => $type,
+                'sentence_scores' => $sentenceScores,
+            ];
+
+            $nextModule = $type === 'word'
+                ? WordModule::where('level', $module->level + 1)->where('is_tutorial', false)->first()
+                : ParagraphModule::where('level', $module->level + 1)->where('is_tutorial', false)->first();
+            $maxLevel = $type === 'word'
+                ? WordModule::where('is_tutorial', false)->max('level')
+                : ParagraphModule::where('is_tutorial', false)->max('level');
+            $isMaxLevel = $maxLevel !== null && $module->level >= $maxLevel;
+            $bestScore = GameSession::where('user_id', $user->id)
+                ->where('module_id', $module->id)
+                ->where('module_type', $type)
+                ->where('is_deadline_hit', false)
+                ->max('score') ?? 0;
+
+            return \Inertia\Inertia::render('Student/GameResults', [
+                'session' => $transientSession,
+                'moduleTitle' => $module->title,
+                'totalItems' => $totalPossible,
+                'badgeProgress' => [],
+                'moduleLevel' => $module->level,
+                'nextModuleLevel' => $nextModule?->level,
+                'isMaxLevel' => $isMaxLevel,
+                'deadlineHit' => false,
+                'isPractice' => true,
+                'bestScore' => (int) $bestScore,
+                'isTutorial' => false,
+                'sentenceScores' => $sentenceScores,
+            ]);
+        }
 
         $rawScores = $type === 'paragraph' ? $request->sentence_scores : null;
         $sentenceScores = $rawScores ? array_map('intval', (array) $rawScores) : null;
-        $session = GameSession::logSession($user->id, $module->id, $type, $wordsSmashed, $accuracy, $streak, $isDeadlineHit, $sentenceScores);
+        $session = GameSession::logSession($user->id, $module->id, $type, $wordsSmashed, $accuracy, $streak, false, $sentenceScores);
         if ($request->filled('client_token')) {
             Cache::put("pending_token:{$user->id}:{$request->input('client_token')}", $session->id, 120);
-        }
-
-        if ($isDeadlineHit) {
-            return redirect()->route('student.results', ['id' => $session->id]);
         }
 
         if ($type === 'word') {

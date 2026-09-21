@@ -194,24 +194,26 @@ class GameplayTest extends TestCase
     public function test_round_logs_session_but_skips_progress_when_deadline_passed(): void
     {
         Setting::setValue('report_deadline', now()->subMinute()->format('Y-m-d H:i:s'));
+        $this->student->student->update(['tutorial_completed_at' => now()]);
 
+        // past deadline = practice (zero writes, transient GameResults)
+        // KEEP mid-game readonly (cutoff hit while playing) — also practice
         $this->actingAs($this->student)
             ->post(route('student.saveWordProgress'), [
                 'module_id' => $this->module->id,
                 'words_smashed' => 10,
                 'words_processed' => 10,
             ])
-            ->assertRedirect()
-            ->assertSessionMissing('info');
+            ->assertSuccessful()
+            ->assertInertia(fn ($p) => $p->component('Student/GameResults')->where('isPractice', true));
 
         $this->student->refresh();
         $this->assertEquals(0, $this->student->student->points);
         $this->assertDatabaseMissing('student_word_progress', [
             'user_id' => $this->student->id,
         ]);
-        $this->assertDatabaseHas('game_sessions', [
+        $this->assertDatabaseMissing('game_sessions', [
             'user_id' => $this->student->id,
-            'is_deadline_hit' => true,
         ]);
     }
 
@@ -575,10 +577,12 @@ class GameplayTest extends TestCase
     public function test_gameplay_page_redirects_when_deadline_passed(): void
     {
         Setting::setValue('report_deadline', now()->subMinute()->format('Y-m-d H:i:s'));
+        $this->student->student->update(['tutorial_completed_at' => now()]);
 
+        // past deadline = practice — Level Page stays open until GameResults, all reads still load
         $this->actingAs($this->student)
             ->get(route('student.gameplayReadMode', $this->module->level))
-            ->assertRedirect(route('student.readModeLevels'));
+            ->assertSuccessful();
     }
 
     public function test_gameplay_page_loads_when_no_deadline(): void
@@ -673,10 +677,12 @@ class GameplayTest extends TestCase
         }
 
         Setting::setValue('report_deadline', now()->subMinute()->format('Y-m-d H:i:s'));
+        $this->student->student->update(['tutorial_completed_at' => now()]);
 
+        // past deadline = practice — still loads
         $this->actingAs($this->student)
             ->get(route('student.gameplaySpeakMode', $paraModule->level))
-            ->assertRedirect(route('student.speakModeLevels'));
+            ->assertSuccessful();
     }
 
     public function test_speak_gameplay_page_loads_when_no_deadline(): void
@@ -864,15 +870,16 @@ class GameplayTest extends TestCase
 
     public function test_deadline_hit_session_stays_excluded_after_deadline_cleared(): void
     {
-        Setting::setValue('report_deadline', now()->subMinute()->format('Y-m-d H:i:s'));
-
-        $this->actingAs($this->student)
-            ->post(route('student.saveWordProgress'), [
-                'module_id' => $this->module->id,
-                'words_smashed' => 10,
-                'words_processed' => 10,
-            ])
-            ->assertRedirect();
+        // Direct sticky row (past deadline was practice, but historic is_deadline_hit rows still excluded even after clear)
+        GameSession::create([
+            'user_id' => $this->student->id,
+            'module_id' => $this->module->id,
+            'module_type' => 'word',
+            'score' => 10,
+            'accuracy' => 100,
+            'streak' => 10,
+            'is_deadline_hit' => true,
+        ]);
 
         $this->assertDatabaseHas('game_sessions', [
             'user_id' => $this->student->id,

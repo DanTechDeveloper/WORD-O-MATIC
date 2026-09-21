@@ -35,13 +35,14 @@ export default function DeadlineBanner({ isDeadlineClosed, message, deadline: de
     if (info.phase === "none" || !info.deadlineDate) return null;
 
     if (info.phase === "closed") {
+        const formatted = formatDeadlineDate(info.deadlineDate);
         return (
             <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500 rounded-xl flex items-start gap-3">
                 <span className="material-symbols-outlined text-amber-600" style={{ fontVariationSettings: "'FILL' 1" }}>
-                    emoji_events
+                    school
                 </span>
                 <p className="text-amber-600 font-semibold">
-                    The Great Word Challenge is taking a break! Your points are safe. play again soon for a brand-new adventure!
+                    Practice mode. you can still play until {formatted}, but scores won’t save while reports are closed.
                 </p>
             </div>
         );

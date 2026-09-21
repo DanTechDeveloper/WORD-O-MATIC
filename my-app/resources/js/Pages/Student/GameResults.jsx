@@ -39,10 +39,12 @@ export default function GameResults({
     bestScore = 0,
     isTutorial = false,
     sentenceScores = null,
+    isPractice = false,
 }) {
     const displayScore = parseInt(session.score) || 0;
     const accuracyPct = parseFloat(session.accuracy) || 0;
-    const isPerfect = !deadlineHit && accuracyPct >= 100;
+    const isPracticeMode = !!isPractice;
+    const isPerfect = !deadlineHit && !isPracticeMode && accuracyPct >= 100;
     const headlinePool =
         displayScore === 0
             ? HEADLINES.zero
@@ -51,12 +53,8 @@ export default function GameResults({
               : accuracyPct >= 60
                 ? HEADLINES.mid
                 : HEADLINES.low;
-    const headline = isTutorial
-        ? "TUTORIAL COMPLETE!"
-        : isPerfect
-          ? "PERFECT!"
-          : headlinePool[session.id % headlinePool.length];
-    const isCelebrating = !deadlineHit && (isTutorial || accuracyPct >= 80);
+    const headline = isPerfect ? "PERFECT!" : headlinePool[session.id % headlinePool.length];
+    const isCelebrating = !deadlineHit && !isPracticeMode && accuracyPct >= 80;
     // ponytail: SQ-only presentation detail — rendered from the persisted
     // array, never recalculated (score stays the authoritative aggregate).
     const sentenceBreakdown =
@@ -67,15 +65,9 @@ export default function GameResults({
     const { flash } = usePage().props;
     const isDeadlineClosed = useDeadlineStatus();
     const newBadgeSlugs = flash?.new_badges?.map((b) => b.slug) ?? [];
-    const rawFlashBadges = flash?.new_badges ?? [];
-    // ponytail: tutorial-complete is metric=action — include via badgeProgress now, fallback to raw flash so SQ tutorial Continue triggers modal
-    const newBadges = isTutorial
-        ? (badgeProgress?.filter((b) => newBadgeSlugs.includes(b.slug))?.length
-            ? badgeProgress.filter((b) => newBadgeSlugs.includes(b.slug))
-            : rawFlashBadges)
-        : (badgeProgress?.filter((b) => newBadgeSlugs.includes(b.slug)) ?? []);
+    // ponytail: Dashboard AvatarSpeechBubble is now the tutorial-complete end, not GameResults
+    const newBadges = badgeProgress?.filter((b) => newBadgeSlugs.includes(b.slug)) ?? [];
     const [badgeFlowDone, setBadgeFlowDone] = useState(false);
-    const [showBadge, setShowBadge] = useState(false);
 
     const nextBadge =
         badgeProgress
@@ -128,6 +120,12 @@ export default function GameResults({
                             message="Time's up! The Game ended after the Challenge — so no points, no badges, and no leaderboard this time. You still played great!"
                         />
                     )}
+                    {isPracticeMode && (
+                        <div className="mb-6 p-4 bg-sky-500/10 border border-sky-500 rounded-xl flex items-start gap-3">
+                            <span className="material-symbols-outlined text-sky-600" style={{ fontVariationSettings: "'FILL' 1" }}>school</span>
+                            <p className="text-sky-700 font-semibold">Practice mode — scores won’t save while reports are closed. Keep playing!</p>
+                        </div>
+                    )}
 
                     {!isTutorial && (
                         <div className="flex gap-3 sm:gap-4">
@@ -138,13 +136,15 @@ export default function GameResults({
                                 note={bestScore > displayScore ? "Your best" : bestScore === displayScore && bestScore > 0 ? "New best!" : undefined}
                             />
                             <StatTile
-                                label={deadlineHit ? "You played" : "Score"}
+                                label={deadlineHit ? "You played" : isPracticeMode ? "Practice" : "Score"}
                                 value={`${displayScore}/${totalItems}`}
-                                valueClassName={deadlineHit ? "text-on-surface-variant" : "text-accent"}
+                                valueClassName={deadlineHit || isPracticeMode ? "text-on-surface-variant" : "text-accent"}
                                 note={
                                     deadlineHit
                                         ? "Points not counted — deadline passed"
-                                        : undefined
+                                        : isPracticeMode
+                                          ? "Practice — not saved"
+                                          : undefined
                                 }
                             />
                         </div>
@@ -188,11 +188,11 @@ export default function GameResults({
                                   : "Every try counts keep going!"}
                     </div>
 
-                    {!deadlineHit && !isTutorial && nextBadge && (
+                    {!deadlineHit && !isPracticeMode && !isTutorial && nextBadge && (
                         <NextBadge badge={nextBadge} />
                     )}
 
-                    {isDeadlineClosed ? (
+                    {isDeadlineClosed || isPracticeMode ? (
                         <div className="flex gap-4">
                             <Link
                                 href="/student/dashboard"
@@ -203,33 +203,6 @@ export default function GameResults({
                                 </span>
                                 Home
                             </Link>
-                        </div>
-                    ) : isTutorial ? (
-                        <div className="flex gap-4">
-                            {newBadges.length > 0 ? (
-                                <button
-                                    type="button"
-                                    data-sfx="major"
-                                    onClick={() => setShowBadge(true)}
-                                    className="flex-1 bg-primary text-on-primary font-bold py-4 sm:py-5 rounded-2xl border border-surface-variant/20 text-sm sm:text-base uppercase tracking-wider active:scale-[0.97] transition-all hover:brightness-110 text-center flex items-center justify-center"
-                                >
-                                    <span className="material-symbols-outlined mr-2">
-                                        arrow_forward
-                                    </span>
-                                    Continue
-                                </button>
-                            ) : (
-                                <Link
-                                    href="/student/dashboard"
-                                    data-sfx="major"
-                                    className="flex-1 bg-primary text-on-primary font-bold py-4 sm:py-5 rounded-2xl border border-surface-variant/20 text-sm sm:text-base uppercase tracking-wider active:scale-[0.97] transition-all hover:brightness-110 text-center flex items-center justify-center"
-                                >
-                                    <span className="material-symbols-outlined mr-2">
-                                        arrow_forward
-                                    </span>
-                                    Continue
-                                </Link>
-                            )}
                         </div>
                     ) : (
                         <div className="flex flex-col xs:flex-row gap-3 sm:gap-4">
@@ -288,23 +261,12 @@ export default function GameResults({
         </div>
     );
 
-    if (newBadges.length > 0 && !badgeFlowDone && !isTutorial) {
+    if (newBadges.length > 0 && !badgeFlowDone && !isPracticeMode) {
         return (
             <div className="bg-background text-on-background font-body-md">
                 <BadgeUnlockFlow
                     badges={newBadges}
                     onDone={() => setBadgeFlowDone(true)}
-                />
-            </div>
-        );
-    }
-
-    if (showBadge && newBadges.length > 0) {
-        return (
-            <div className="bg-background text-on-background font-body-md">
-                <BadgeUnlockFlow
-                    badges={newBadges}
-                    onDone={() => router.visit("/student/dashboard")}
                 />
             </div>
         );

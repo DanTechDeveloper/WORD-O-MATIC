@@ -57,7 +57,7 @@ export default function LevelCard({ module, emoji, gameUrl, index, highlightTuto
         <div
             className={`absolute inset-0 ${tint} ${
                 isCompleted
-                    ? isDeadlineClosed ? "opacity-30" : "opacity-60"
+                    ? "opacity-60"
                     : isPlayable
                     ? "opacity-80 group-hover:opacity-100 transition-opacity"
                     : "opacity-50"
@@ -87,32 +87,18 @@ export default function LevelCard({ module, emoji, gameUrl, index, highlightTuto
                 {module.title}
             </h3>
 
-            {/* Play button / Completed indicator */}
+            {/* Play button / Completed indicator — practice: still PLAY even past deadline */}
             <div className="mt-4">
                 {isCompleted ? (
-                    isDeadlineClosed ? (
-                        <span className="inline-flex items-center gap-1.5 bg-gray-500/20 text-gray-500 font-black px-4 py-2 rounded-lg text-sm border-b-[6px] border-gray-500 cursor-not-allowed">
-                            <span className="material-symbols-outlined text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>replay</span>
-                            PLAY AGAIN
-                        </span>
-                    ) : (
-                        <span className="inline-flex items-center gap-1.5 bg-accent text-surface-container-lowest font-black px-4 py-2 rounded-lg text-sm border-b-[6px] border-accent-deep group-active:border-b-[2px] group-active:translate-y-1 transition-all">
-                            <span className="material-symbols-outlined text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>replay</span>
-                            PLAY AGAIN
-                        </span>
-                    )
+                    <span className="inline-flex items-center gap-1.5 bg-accent text-surface-container-lowest font-black px-4 py-2 rounded-lg text-sm border-b-[6px] border-accent-deep group-active:border-b-[2px] group-active:translate-y-1 transition-all">
+                        <span className="material-symbols-outlined text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>replay</span>
+                        PLAY AGAIN
+                    </span>
                 ) : (
-                    isDeadlineClosed ? (
-                        <span className="inline-flex items-center gap-1.5 bg-gray-500/20 text-gray-500 font-black px-4 py-2 rounded-lg text-sm border-b-[6px] border-gray-500 cursor-not-allowed">
-                            <span className="material-symbols-outlined text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>{hasResume ? "resume" : "play_arrow"}</span>
-                            {hasResume ? "CONTINUE" : "PLAY"}
-                        </span>
-                    ) : (
-                        <span className="inline-flex items-center gap-1.5 bg-accent text-surface-container-lowest font-black px-4 py-2 rounded-lg text-sm border-b-[6px] border-accent-deep group-active:border-b-[2px] group-active:translate-y-1 transition-all">
-                            <span className="material-symbols-outlined text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>play_arrow</span>
-                            {hasResume ? "CONTINUE" : "PLAY"}
-                        </span>
-                    )
+                    <span className="inline-flex items-center gap-1.5 bg-accent text-surface-container-lowest font-black px-4 py-2 rounded-lg text-sm border-b-[6px] border-accent-deep group-active:border-b-[2px] group-active:translate-y-1 transition-all">
+                        <span className="material-symbols-outlined text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>play_arrow</span>
+                        {hasResume ? "CONTINUE" : "PLAY"}
+                    </span>
                 )}
             </div>
 
@@ -140,7 +126,8 @@ export default function LevelCard({ module, emoji, gameUrl, index, highlightTuto
         ${disabled ? "opacity-50 cursor-not-allowed" : ""}
         ${highlightRing}`
 
-    const isClickable = !disabled && !isDeadlineClosed && (isPlayable || isCompleted)
+    // ponytail: past deadline = practice — Level Page stays open, all aspects readonly (see StudentController finishRound isPractice)
+    const isClickable = !disabled && (isPlayable || isCompleted)
 
     return (
         isClickable ? (
