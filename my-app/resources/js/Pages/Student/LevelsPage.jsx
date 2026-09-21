@@ -14,13 +14,13 @@ const LEVEL_ICONS = [
     "local_pizza", "music_note", "sports_soccer", "pets", "auto_awesome", "eco",
 ]
 
-export default function LevelsPage({ modules, mode, tutorialComplete = true, wordTutorialDone = false, speakTutorialDone = false }) {
+export default function LevelsPage({ modules, mode, tutorialComplete = true, tutorialSkipped = false, wordTutorialDone = false, speakTutorialDone = false }) {
     const { auth, flash } = usePage().props
     const isDeadlineClosed = useDeadlineStatus()
     const [error, setError] = useState(flash?.error ?? null)
     const avatarUrl = auth?.user?.student?.avatar
     const bodyUrl = avatarUrl?.replace("/head.png", "/body.png")
-    const isTutorial = mode === "read" ? !tutorialComplete && !wordTutorialDone : !tutorialComplete && wordTutorialDone && !speakTutorialDone
+    const isTutorial = tutorialSkipped ? false : mode === "read" ? !tutorialComplete && !wordTutorialDone : !tutorialComplete && wordTutorialDone && !speakTutorialDone
     const tutorialMessage = mode === "read"
         ? "Tap Level 1 to start! 10 words to learn."
         : "Read the story aloud. You've got this!"

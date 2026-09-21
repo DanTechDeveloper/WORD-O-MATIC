@@ -265,7 +265,7 @@ export default function GameplayReadMode({ module, tutorialComplete = true, tuto
                     {/* ponytail: no-clash — guide yields to coach/cheer so exactly one
                         bubble shows; the step index is preserved while they are up. */}
                     <TutorialGuide
-                        steps={GUIDE_STEPS}
+                    steps={GUIDE_STEPS}
                         stepIndex={guideStep}
                         color="accent"
                         bodyUrl={bodyUrl}
