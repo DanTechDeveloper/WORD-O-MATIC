@@ -457,12 +457,13 @@ class StudentController extends Controller
                 return $redirect->with('new_badges', [$badgesData]);
             }
 
-            // ponytail: Word Blast mid-sequence finish goes to TutorialPage
-            // (not dashboard/results) so SQ unlocks visibly. Only the completing
-            // finish (both done, tutorial_completed_at set) shows GameResults.
+            // ponytail: Word Blast mid-sequence goes to Dashboard for fresh onboarding
+            // (Dashboard highlight shows Story Quest next); skipped users replaying
+            // stay on TutorialPage so Story Quest unlock is visible. Completing
+            // finish (both done) shows GameResults.
             if (! $user->student->refresh()->tutorial_completed_at) {
-                $state = $this->tutorialState($user->fresh());
-                if ($state['wordTutorialDone'] && ! $state['speakTutorialDone']) {
+                // skipped replay → TutorialPage, fresh onboarding → Dashboard
+                if ($user->student->tutorial_skipped_at) {
                     return redirect()->route('student.tutorial');
                 }
                 return redirect()->route('student.dashboard');
@@ -535,18 +536,14 @@ class StudentController extends Controller
         }
 
         // ponytail: mid-sequence tutorial Word finish has no results screen —
-        // bounce to TutorialPage so SQ unlocks visibly. Completing finish and
-        // post-onboarding replays still render.
+        // fresh onboarding bounces to Dashboard (Story Quest via Dashboard highlight),
+        // skipped replay bounces to TutorialPage so unlock is visible.
         $bounceModule = $session->module_type === 'word'
             ? WordModule::find($session->module_id)
             : ParagraphModule::find($session->module_id);
         if ($bounceModule?->is_tutorial && ! auth()->user()?->student?->tutorial_completed_at) {
-            // Word tutorial alone → TutorialPage (sequential)
-            if ($session->module_type === 'word') {
-                $state = $this->tutorialState(auth()->user());
-                if ($state['wordTutorialDone'] && ! $state['speakTutorialDone']) {
-                    return redirect()->route('student.tutorial');
-                }
+            if (auth()->user()?->student?->tutorial_skipped_at) {
+                return redirect()->route('student.tutorial');
             }
             return redirect()->route('student.dashboard');
         }

@@ -119,9 +119,10 @@ class TutorialSequentialSkipTest extends TestCase
     {
         $s = $this->makeStudent();
         [$tutWord] = $this->seedTutorialModules();
+        // fresh onboarding (not skipped) → Dashboard (TutorialPage is for skipped replay)
         $this->actingAs($s)->post(route('student.saveWordProgress'), [
             'module_id' => $tutWord->id, 'words_smashed' => 3, 'words_processed' => 3,
-        ])->assertRedirect(route('student.tutorial'));
+        ])->assertRedirect(route('student.dashboard'));
 
         $this->assertTrue(StudentWordProgress::where('user_id', $s->id)->where('word_module_id', $tutWord->id)->where('status', 'completed')->exists());
         $this->assertNull($s->refresh()->student->tutorial_completed_at);
@@ -135,8 +136,9 @@ class TutorialSequentialSkipTest extends TestCase
             'module_id' => $tutWord->id, 'words_smashed' => 3, 'words_processed' => 3,
         ]);
         $session = GameSession::where('user_id', $s->id)->latest('id')->first();
+        // fresh onboarding bounces to Dashboard (TutorialPage is for skipped)
         $this->actingAs($s)->get(route('student.results', $session->id))
-            ->assertRedirect(route('student.tutorial'));
+            ->assertRedirect(route('student.dashboard'));
     }
 
     public function test_story_quest_finish_completes_tutorial_and_awards_badge(): void

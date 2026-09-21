@@ -66,7 +66,7 @@ export default function LevelsPage({ modules, mode, tutorialComplete = true, tut
                     </button>
                 </div>
             )}
-            <DeadlineBanner isDeadlineClosed={isDeadlineClosed} />
+            {!isTutorial && <DeadlineBanner isDeadlineClosed={isDeadlineClosed} />}
             {/* Header */}
             <div className="flex items-center gap-2 sm:gap-3 md:gap-4 mb-6 pt-2">
                 <BackButton />

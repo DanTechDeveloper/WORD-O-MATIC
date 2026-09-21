@@ -3,6 +3,7 @@ import { useState } from "react";
 import AvatarSpeechBubble from "@/Components/Student/AvatarSpeechBubble";
 import BadgeUnlockFlow from "@/Components/Student/BadgeUnlockFlow";
 import ProgressBar from "@/Components/Student/ProgressBar";
+import DeadlineBanner from "@/Components/DeadlineBanner";
 import DashboardLayout from "../../Layouts/Student/DashboardLayout";
 
 const MODE_STYLES = {
@@ -122,6 +123,7 @@ export default function Dashboard({
             )}
             <DashboardLayout disableNav={showGuide}>
                 <div className="flex flex-col py-6 sm:py-8 space-y-6 sm:space-y-8">
+                {!isOnboarding && <DeadlineBanner />}
                 <header className="relative z-10 text-center lg:text-left">
                     <h1 className="text-2xl xs:text-3xl sm:text-4xl lg:text-5xl font-black uppercase italic tracking-[-0.04em] text-on-surface">
                         Pick Your Game
