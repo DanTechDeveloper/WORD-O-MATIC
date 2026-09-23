@@ -18,7 +18,8 @@ class ReportsExport implements WithMultipleSheets
         return [
             'Student Progress Summary' => new SkillsOverviewSheet($this->students),
             'Words Needing Practice' => new SkillsWordsSheet($this->students),
-            'Class Summary' => new ClassReportSheet($this->students)
+            'Class Summary' => new ClassReportSheet($this->students),
+            'Session History' => new SessionHistorySheet($this->students),
         ];
     }
 }

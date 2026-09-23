@@ -4,9 +4,11 @@ namespace Tests\Feature;
 
 use App\Exports\ClassReportSheet;
 use App\Exports\ReportsExport;
+use App\Exports\SessionHistorySheet;
 use App\Exports\SkillsOverviewSheet;
 use App\Exports\SkillsWordsSheet;
 use App\Mail\StudentReportMail;
+use App\Models\GameSession;
 use App\Models\ParagraphModule;
 use App\Models\ParagraphWord;
 use App\Models\Setting;
@@ -761,14 +763,15 @@ class ReportTest extends TestCase
         $response->assertSessionHas('error');
     }
 
-    public function test_export_contains_three_sheets(): void
+    public function test_export_contains_four_sheets(): void
     {
         $sheets = (new ReportsExport([]))->sheets();
 
-        $this->assertCount(3, $sheets);
+        $this->assertCount(4, $sheets);
         $this->assertArrayHasKey('Class Summary', $sheets);
         $this->assertArrayHasKey('Student Progress Summary', $sheets);
         $this->assertArrayHasKey('Words Needing Practice', $sheets);
+        $this->assertArrayHasKey('Session History', $sheets);
     }
 
     public function test_skills_overview_sheet_has_correct_headings(): void
@@ -954,5 +957,136 @@ class ReportTest extends TestCase
         $barChart = $charts[1];
         $this->assertEquals('accuracy_bar_chart', $barChart->getName());
         $this->assertEquals('Student Accuracy Comparison (%)', $barChart->getTitle()->getCaption());
+    }
+
+    public function test_session_history_sheet_has_correct_headings(): void
+    {
+        $sheet = new SessionHistorySheet([]);
+
+        $this->assertEquals([
+            'Student Name',
+            'Student ID',
+            'Section',
+            'Date/Time Played',
+            'Mode',
+            'Level',
+            'Score',
+            'Accuracy (%)',
+            'Streak',
+        ], $sheet->headings());
+    }
+
+    public function test_session_history_sheet_maps_session_fields(): void
+    {
+        $teacher = User::factory()->create(['role' => 'teacher']);
+        $student = User::factory()->create([
+            'role' => 'student',
+            'student_id' => 'S7-100',
+            'name' => 'Session Tester',
+        ]);
+        $studentProfile = StudentProfile::create([
+            'user_id' => $student->id,
+            'section' => 'Section Z',
+            'status' => 'notStarted',
+        ]);
+
+        $wordModule = WordModule::create(['level' => 1, 'title' => 'Test Words', 'is_tutorial' => false]);
+        $session = GameSession::create([
+            'user_id' => $student->id,
+            'module_id' => $wordModule->id,
+            'module_type' => 'word',
+            'score' => 8,
+            'accuracy' => 80.00,
+            'streak' => 3,
+        ]);
+        $playedAt = $session->created_at;
+
+        $sheet = new SessionHistorySheet([]);
+        $collection = $sheet->collection();
+
+        $this->assertCount(1, $collection);
+        $row = $collection->first();
+        $this->assertEquals('Session Tester', $row[0]);
+        $this->assertEquals('S7-100', $row[1]);
+        $this->assertEquals('Section Z', $row[2]);
+        $this->assertEquals($playedAt->format('F j, Y g:i A'), $row[3]);
+        $this->assertEquals('Word Blast', $row[4]);
+        $this->assertEquals('Level 1 - Test Words', $row[5]);
+        $this->assertEquals(8, $row[6]);
+        $this->assertEquals(80.00, $row[7]);
+        $this->assertEquals(3, $row[8]);
+    }
+
+    public function test_session_history_sheet_handles_deleted_module(): void
+    {
+        $student = User::factory()->create([
+            'role' => 'student',
+            'student_id' => 'S7-101',
+            'name' => 'Deleted Module Student',
+        ]);
+        StudentProfile::create([
+            'user_id' => $student->id,
+            'section' => 'Section A',
+            'status' => 'notStarted',
+        ]);
+
+        $session = GameSession::create([
+            'user_id' => $student->id,
+            'module_id' => 9999,
+            'module_type' => 'word',
+            'score' => 0,
+            'accuracy' => 0,
+            'streak' => 0,
+            'created_at' => now(),
+        ]);
+
+        $sheet = new SessionHistorySheet([]);
+        $collection = $sheet->collection();
+
+        $this->assertCount(1, $collection);
+        $this->assertEquals('Module #9999', $collection->first()[5]);
+    }
+
+    public function test_session_history_sheet_excludes_tutorial_sessions(): void
+    {
+        $student = User::factory()->create([
+            'role' => 'student',
+            'student_id' => 'S7-102',
+            'name' => 'Tutorial Student',
+        ]);
+        StudentProfile::create([
+            'user_id' => $student->id,
+            'section' => 'Section A',
+            'status' => 'notStarted',
+        ]);
+
+        $tutorialModule = WordModule::create(['level' => 0, 'title' => 'Tutorial', 'is_tutorial' => true]);
+        $realModule = WordModule::create(['level' => 1, 'title' => 'Real Words', 'is_tutorial' => false]);
+
+        GameSession::create([
+            'user_id' => $student->id,
+            'module_id' => $tutorialModule->id,
+            'module_type' => 'word',
+            'score' => 5,
+            'accuracy' => 100.00,
+            'streak' => 5,
+            'created_at' => now()->subMinutes(5),
+        ]);
+
+        GameSession::create([
+            'user_id' => $student->id,
+            'module_id' => $realModule->id,
+            'module_type' => 'word',
+            'score' => 8,
+            'accuracy' => 80.00,
+            'streak' => 3,
+            'created_at' => now(),
+        ]);
+
+        $sheet = new SessionHistorySheet([]);
+        $collection = $sheet->collection();
+
+        $this->assertCount(1, $collection);
+        $this->assertEquals('Level 1 - Real Words', $collection->first()[5]);
     }
 }
