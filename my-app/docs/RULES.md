@@ -43,7 +43,7 @@
 
 - Deadline stored in `settings` table.
 - Before deadline: checkboxes disabled, Send locked, deadline save locked; student gameplay open.
-- After deadline: all enabled; student gameplay blocked — progress POSTs log the session only, no stat updates (see CAVEATS.md BF7).
+- After deadline: all enabled; student gameplay is practice — progress POSTs advance only the level-unlock status, scores/badges/points frozen (see CAVEATS.md BF7).
 - Emails queued, not synchronous.
 
 ## Student Deletion

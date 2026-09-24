@@ -1,5 +1,6 @@
 import { Link } from "@inertiajs/react"
 import ProgressBar from "./ProgressBar"
+import useDeadlineStatus from "@/hooks/Student/useDeadlineStatus"
 
 // ponytail: solid arcade chrome tints, no harsh gradients — one of four muted solids per level
 const COVER_TINTS = [
@@ -24,6 +25,8 @@ export default function LevelCard({ module, emoji, gameUrl, index, highlightTuto
         module.status === "in_progress" || module.status === "current"
     const tint = COVER_TINTS[(module.level - 1) % COVER_TINTS.length]
     const displayIcon = emoji || LEVEL_ICONS[(module.level - 1) % LEVEL_ICONS.length]
+    // ponytail: deadline is global — past it every card is practice (scores frozen), so the pill needs no props
+    const deadlineClosed = useDeadlineStatus()
 
     if (module.status === "locked") {
         return (
@@ -79,6 +82,11 @@ export default function LevelCard({ module, emoji, gameUrl, index, highlightTuto
                 `}>
                     {isCompleted ? "COMPLETE" : `LEVEL ${module.level}`}
                 </span>
+                {deadlineClosed && (
+                    <span className="text-[10px] sm:text-xs font-black uppercase px-2 sm:px-2.5 py-1 rounded-full border shrink-0 bg-amber-500/10 text-amber-600 border-amber-500/30">
+                        PRACTICE
+                    </span>
+                )}
                 <span className="material-symbols-outlined text-2xl sm:text-3xl shrink-0">{displayIcon}</span>
             </div>
 
@@ -126,7 +134,7 @@ export default function LevelCard({ module, emoji, gameUrl, index, highlightTuto
         ${disabled ? "opacity-50 cursor-not-allowed" : ""}
         ${highlightRing}`
 
-    // ponytail: past deadline = practice — Level Page stays open, all aspects readonly (see StudentController finishRound isPractice)
+    // ponytail: past deadline = practice — Level Page stays open, scored aspects readonly (see StudentController finishRound isPractice); status still unlocks
     const isClickable = !disabled && (isPlayable || isCompleted)
 
     return (

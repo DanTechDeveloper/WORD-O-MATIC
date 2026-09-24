@@ -191,12 +191,17 @@ class GameplayTest extends TestCase
         ]);
     }
 
-    public function test_round_logs_session_but_skips_progress_when_deadline_passed(): void
+    public function test_round_skips_scores_but_unlocks_next_level_when_deadline_passed(): void
     {
         Setting::setValue('report_deadline', now()->subMinute()->format('Y-m-d H:i:s'));
         $this->student->student->update(['tutorial_completed_at' => now()]);
 
-        // past deadline = practice (zero writes, transient GameResults)
+        $next = WordModule::create(['level' => 2, 'title' => 'Next Module']);
+        foreach (['fish', 'bird'] as $i => $word) {
+            Word::create(['word_module_id' => $next->id, 'word' => $word, 'position' => $i + 1]);
+        }
+
+        // past deadline = practice (unlock-only, transient GameResults)
         // KEEP mid-game readonly (cutoff hit while playing) — also practice
         $this->actingAs($this->student)
             ->post(route('student.saveWordProgress'), [
@@ -207,12 +212,120 @@ class GameplayTest extends TestCase
             ->assertSuccessful()
             ->assertInertia(fn ($p) => $p->component('Student/GameResults')->where('isPractice', true));
 
+        // Scored surfaces stay frozen: no session, no points, no accuracy.
         $this->student->refresh();
         $this->assertEquals(0, $this->student->student->points);
-        $this->assertDatabaseMissing('student_word_progress', [
+        $this->assertEquals(0, (float) $this->student->student->wordBlastAcc);
+        $this->assertDatabaseMissing('game_sessions', [
             'user_id' => $this->student->id,
         ]);
+
+        // Unlock-only row: status advances, smashed stays 0.
+        $this->assertDatabaseHas('student_word_progress', [
+            'user_id' => $this->student->id,
+            'word_module_id' => $this->module->id,
+            'status' => 'completed',
+            'words_smashed' => 0,
+        ]);
+
+        // Next level opens via the LevelService chain.
+        $this->assertTrue(
+            app(\App\Services\LevelService::class)->isModuleAccessible($this->student->id, $next->id, 'word')
+        );
+    }
+
+    public function test_partial_practice_round_does_not_unlock_next_level(): void
+    {
+        Setting::setValue('report_deadline', now()->subMinute()->format('Y-m-d H:i:s'));
+        $this->student->student->update(['tutorial_completed_at' => now()]);
+
+        $next = WordModule::create(['level' => 2, 'title' => 'Next Module']);
+        foreach (['fish', 'bird'] as $i => $word) {
+            Word::create(['word_module_id' => $next->id, 'word' => $word, 'position' => $i + 1]);
+        }
+
+        $this->actingAs($this->student)
+            ->post(route('student.saveWordProgress'), [
+                'module_id' => $this->module->id,
+                'words_smashed' => 3,
+                'words_processed' => 3,
+            ])
+            ->assertSuccessful()
+            ->assertInertia(fn ($p) => $p->component('Student/GameResults')->where('isPractice', true));
+
+        $this->assertDatabaseHas('student_word_progress', [
+            'user_id' => $this->student->id,
+            'word_module_id' => $this->module->id,
+            'status' => 'in_progress',
+            'words_smashed' => 0,
+        ]);
+        $this->assertFalse(
+            app(\App\Services\LevelService::class)->isModuleAccessible($this->student->id, $next->id, 'word')
+        );
+    }
+
+    public function test_paragraph_practice_round_unlocks_next_level_without_scores(): void
+    {
+        Setting::setValue('report_deadline', now()->subMinute()->format('Y-m-d H:i:s'));
+        $this->student->student->update(['tutorial_completed_at' => now()]);
+
+        $para = ParagraphModule::create([
+            'level' => 1,
+            'title' => 'Test Paragraph',
+            'content' => 'The cat is big and fat.',
+        ]);
+        foreach (['The', 'cat', 'is', 'big', 'and', 'fat'] as $pos => $w) {
+            ParagraphWord::create([
+                'paragraph_module_id' => $para->id,
+                'word' => $w,
+                'position' => $pos + 1,
+            ]);
+        }
+        $next = ParagraphModule::create([
+            'level' => 2,
+            'title' => 'Next Paragraph',
+            'content' => 'Dogs run fast.',
+        ]);
+
+        $this->actingAs($this->student)
+            ->post(route('student.saveParagraphProgress'), [
+                'module_id' => $para->id,
+                'words_smashed' => 6,
+                'words_processed' => 6,
+            ])
+            ->assertSuccessful()
+            ->assertInertia(fn ($p) => $p->component('Student/GameResults')->where('isPractice', true));
+
+        $this->student->refresh();
+        $this->assertEquals(0, $this->student->student->points);
         $this->assertDatabaseMissing('game_sessions', [
+            'user_id' => $this->student->id,
+        ]);
+        $this->assertDatabaseHas('student_paragraph_progress', [
+            'user_id' => $this->student->id,
+            'paragraph_module_id' => $para->id,
+            'status' => 'completed',
+            'words_smashed' => 0,
+        ]);
+        $this->assertTrue(
+            app(\App\Services\LevelService::class)->isModuleAccessible($this->student->id, $next->id, 'paragraph')
+        );
+    }
+
+    public function test_practice_round_rejects_words_processed_above_module_total(): void
+    {
+        Setting::setValue('report_deadline', now()->subMinute()->format('Y-m-d H:i:s'));
+        $this->student->student->update(['tutorial_completed_at' => now()]);
+
+        $this->actingAs($this->student)
+            ->post(route('student.saveWordProgress'), [
+                'module_id' => $this->module->id,
+                'words_smashed' => 3,
+                'words_processed' => 999,
+            ])
+            ->assertSessionHasErrors('words_processed');
+
+        $this->assertDatabaseMissing('student_word_progress', [
             'user_id' => $this->student->id,
         ]);
     }

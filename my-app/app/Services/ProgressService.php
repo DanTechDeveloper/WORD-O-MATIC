@@ -33,6 +33,58 @@ class ProgressService
         );
     }
 
+    public function recordWordPracticeUnlock(?StudentProfile $student, WordModule $module, int $wordsProcessed, ?int $totalWords = null): void
+    {
+        $this->recordPracticeUnlock($student, $module, $wordsProcessed,
+            StudentWordProgress::class, 'word_module_id', totalWords: $totalWords);
+    }
+
+    public function recordParagraphPracticeUnlock(?StudentProfile $student, ParagraphModule $module, int $wordsProcessed, ?int $totalWords = null): void
+    {
+        $this->recordPracticeUnlock($student, $module, $wordsProcessed,
+            StudentParagraphProgress::class, 'paragraph_module_id', totalWords: $totalWords);
+    }
+
+    // Past-deadline practice unlock: status-only write so the LevelService
+    // chain (completed/in_progress → next unlocks) keeps moving while every
+    // scored surface (words_smashed, accuracy, students denorm, sessions,
+    // badges) stays frozen. Sticky: never regresses a completed row.
+    private function recordPracticeUnlock(
+        ?StudentProfile $student,
+        WordModule|ParagraphModule $module,
+        int $wordsProcessed,
+        string $progressClass,
+        string $moduleKey,
+        ?int $totalWords = null,
+    ): void {
+        if (! $student) {
+            return;
+        }
+        DB::transaction(function () use (
+            $student, $module, $wordsProcessed, $progressClass, $moduleKey, $totalWords,
+        ) {
+            StudentProfile::where('id', $student->id)->lockForUpdate()->first();
+
+            $wordsProcessed = max(0, $wordsProcessed);
+            $totalWords ??= $module->words()->count();
+
+            $progress = $progressClass::firstOrNew([
+                'user_id' => $student->user_id,
+                $moduleKey => $module->id,
+            ]);
+
+            if (! $progress->exists) {
+                $progress->words_smashed = 0;
+                $progress->accuracy = 0;
+            }
+
+            $progress->status = ($progress->status === 'completed' || ($totalWords > 0 && $wordsProcessed >= $totalWords))
+                ? 'completed'
+                : 'in_progress';
+            $progress->save();
+        });
+    }
+
     private function updateModuleProgress(
         ?StudentProfile $student,
         WordModule|ParagraphModule $module,

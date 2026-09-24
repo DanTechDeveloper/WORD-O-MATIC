@@ -273,7 +273,7 @@ class StudentController extends Controller
             ->firstOrFail();
         $id = $module->id;
 
-        // ponytail: past deadline = practice — Level Page stays open until GameResults, all writes readonly (finishRound isPractice)
+        // ponytail: past deadline = practice — Level Page stays open until GameResults, scored writes readonly (finishRound isPractice unlocks status only)
         // KEEP mid-game readonly (cutoff hit while playing still readonly), but don't block entry.
         // if (! $module->is_tutorial && $this->reportService->cutoff()) redirect removed.
 
@@ -491,11 +491,25 @@ class StudentController extends Controller
             : 0;
 
         // ponytail: past deadline = practice — keep mid-game readonly (cutoff hit while playing) and extend to all past,
-        // all aspects readonly (GameSession / ProgressService / BadgeService / mastery / students).
+        // scored aspects readonly (GameSession / smashed+accuracy / BadgeService / mastery / students denorm);
+        // only the progress status row advances so the next level unlocks.
         $isPractice = (bool) $this->reportService->cutoff();
         
         if ($isPractice) {
-            // zero writes: transient GameResults (no GameSession, no Progress, no Badge), bestScore stays persisted
+            // Unlock-only: status row advances the LevelService chain so the
+            // next level opens, but every scored surface stays frozen (no
+            // GameSession, no smashed/accuracy, no badge, no students denorm).
+            if ($request->words_processed > $totalPossible) {
+                throw ValidationException::withMessages([
+                    'words_processed' => 'Words processed cannot exceed the module word count.',
+                ]);
+            }
+            if ($type === 'word') {
+                $this->progressService->recordWordPracticeUnlock($user->student, $module, $request->words_processed, totalWords: $totalPossible);
+            } else {
+                $this->progressService->recordParagraphPracticeUnlock($user->student, $module, $request->words_processed, totalWords: $totalPossible);
+            }
+            // transient GameResults (no GameSession, no Badge), bestScore stays persisted
             $rawScores = $type === 'paragraph' ? $request->sentence_scores : null;
             $sentenceScores = $rawScores ? array_map('intval', (array) $rawScores) : null;
 

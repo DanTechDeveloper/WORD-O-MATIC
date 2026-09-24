@@ -22,7 +22,7 @@ The **numeric Final Average** is a separate, derived metric surfaced everywhere 
 | State | Behavior |
 |---|---|
 | Before deadline | Checkboxes disabled, Send locked, deadline save locked; student gameplay fully open |
-| After deadline | All teacher actions enabled. **Student gameplay blocked** (Option A, see CAVEATS.md BF7): `saveWordProgress` / `saveParagraphProgress` log the session but skip all progress updates (`StudentController::finishRound`); PLAY AGAIN disabled and completed level cards non-clickable (`LevelCard.jsx`), amber banner on `LevelsPage.jsx`. No deadline set → gameplay open. |
+| After deadline | All teacher actions enabled. **Student gameplay is practice** (Option A, see CAVEATS.md BF7): `saveWordProgress` / `saveParagraphProgress` advance only the level-unlock status row (`StudentController::finishRound` `isPractice` branch — no session, no scores, no badges); LevelsPage stays open with the practice banner. No deadline set → gameplay open. |
 
 Post-deadline sessions are logged with `is_deadline_hit=true` (baked in at `finishRound`, sticky — see DATABASE.md). The results page renders the non-scoring "TIME'S UP!" view (`GameResults.jsx`: deadline banner, "You played" score card, NextBadge hidden), and `BadgeUnlockModal` auto-suppresses via `auth.deadline`. Streak/accuracy badge metrics (`BadgeService::bestSessionMetric`, `StudentController::badges()`) exclude flagged sessions permanently — even if the teacher clears the deadline afterward.
 

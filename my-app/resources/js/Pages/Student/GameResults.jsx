@@ -187,7 +187,8 @@ export default function GameResults({
                         <NextBadge badge={nextBadge} />
                     )}
 
-                    {isGlobalClosed || isPracticeMode || deadlineHit ? (
+                    {/* ponytail: practice unlocks the next level (status-only write), so Again/Next work like the scored flow; historic deadlineHit rounds stay Home-only */}
+                    {deadlineHit || (isGlobalClosed && !isPracticeMode) ? (
                         <div className="flex gap-4">
                             <Link
                                 href="/student/dashboard"

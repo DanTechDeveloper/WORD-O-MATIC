@@ -37,6 +37,7 @@
 - Progress overwritten on new best score only.
 - Mastery toggles per word — mastered words can still appear in retries (spaced repetition).
 - Completed modules are replayable for practice (results "Again" + level card "PLAY AGAIN"); retries never lower best scores or award extra points.
+- Past the report deadline, rounds are practice: only the level-unlock status advances (`ProgressService::recordWordPracticeUnlock` / `recordParagraphPracticeUnlock`) so level N+1 still opens; scores, badges, points, and leaderboards stay frozen (see CAVEATS.md BF7).
 - Direct URL access to a locked module (`gameplayReadMode/{level}`, `gameplaySpeakMode/{level}`) is blocked: `LevelService::isModuleAccessible()` redirects to the level-select page with a flash error.
 
 ## Tutorial
