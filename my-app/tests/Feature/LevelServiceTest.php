@@ -333,4 +333,23 @@ class LevelServiceTest extends TestCase
         $this->assertEquals('current', $statuses[0]['status']);
         $this->assertSame(0, $statuses[0]['total_points']);
     }
+
+    public function test_is_module_accessible_id_outside_chain_returns_false(): void
+    {
+        $word = WordModule::create(['level' => 1, 'title' => 'Word L1']);
+
+        // The speak chain is empty, so the word id is unknown there
+        // (wrong-type id). Deny by default instead of slipping through.
+        // Note: with colliding auto-increment ids across tables, an id that
+        // exists in the requested chain checks that chain's own status —
+        // cross-type confusion can't reach HTTP anyway (routes are level-based).
+        $this->assertFalse($this->levelService->isModuleAccessible($this->student->id, $word->id, 'paragraph'));
+    }
+
+    public function test_is_module_accessible_tutorial_paragraph_always_true(): void
+    {
+        $tutorial = ParagraphModule::create(['level' => 0, 'title' => 'Tutorial', 'content' => 'I see a cat.', 'is_tutorial' => true]);
+
+        $this->assertTrue($this->levelService->isModuleAccessible($this->student->id, $tutorial->id, 'paragraph'));
+    }
 }

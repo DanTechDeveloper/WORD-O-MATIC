@@ -316,4 +316,64 @@ class AddStudentTest extends TestCase
                 ->component('Teacher/Students')
                 ->where('data', fn ($data) => ! array_key_exists('pin', $data['data'][0])));
     }
+
+    public function test_store_rejects_invalid_email_and_gender(): void
+    {
+        $this->actingAs($this->teacher)->post('/teacher/addStudent', $this->validPayload([
+            'parent_email' => 'not-an-email',
+        ]))->assertSessionHasErrors('parent_email');
+
+        $this->actingAs($this->teacher)->post('/teacher/addStudent', $this->validPayload([
+            'gender' => 'other',
+        ]))->assertSessionHasErrors('gender');
+
+        $this->assertEquals(0, User::where('role', 'student')->count());
+    }
+
+    public function test_store_requires_name_id_and_section(): void
+    {
+        foreach (['fullName', 'studentID', 'section'] as $field) {
+            $this->actingAs($this->teacher)->post('/teacher/addStudent', $this->validPayload([
+                $field => '',
+            ]))->assertSessionHasErrors($field);
+        }
+
+        $this->assertEquals(0, User::where('role', 'student')->count());
+    }
+
+    public function test_store_seeds_profile_defaults_and_avatar_by_gender(): void
+    {
+        $this->actingAs($this->teacher)->post('/teacher/addStudent', $this->validPayload([
+            'studentID' => 'ID-M', 'gender' => 'male',
+        ]));
+        $this->actingAs($this->teacher)->post('/teacher/addStudent', $this->validPayload([
+            'fullName' => 'FEM STUDENT', 'studentID' => 'ID-F', 'gender' => 'female',
+        ]));
+        $this->actingAs($this->teacher)->post('/teacher/addStudent', $this->validPayload([
+            'fullName' => 'NO GENDER', 'studentID' => 'ID-X', 'gender' => '',
+        ]));
+
+        $male = User::where('student_id', 'ID-M')->first()->student;
+        $female = User::where('student_id', 'ID-F')->first()->student;
+        $none = User::where('student_id', 'ID-X')->first()->student;
+
+        $this->assertEquals('/images/boy.svg', $male->avatar);
+        $this->assertEquals('/images/girl.svg', $female->avatar);
+        $this->assertNull($none->avatar);
+
+        foreach ([$male, $female, $none] as $profile) {
+            $this->assertEquals(0, $profile->read_level);
+            $this->assertEquals(0, $profile->speak_level);
+            $this->assertEquals('notStarted', $profile->status);
+            $this->assertEquals(0, $profile->points);
+        }
+    }
+
+    public function test_guest_cannot_add_students(): void
+    {
+        $this->post('/teacher/addStudent', $this->validPayload())
+            ->assertRedirect(route('teacher.login'));
+
+        $this->assertEquals(0, User::where('role', 'student')->count());
+    }
 }

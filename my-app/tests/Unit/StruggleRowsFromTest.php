@@ -71,4 +71,52 @@ class StruggleRowsFromTest extends TestCase
             ['level' => 'Level 2: B', 'word' => 'The', 'attempts' => 4],
         ], (new ReportService)->struggleRowsFrom($curriculum));
     }
+
+    public function test_sentence_struggle_rows_include_only_training(): void
+    {
+        $curriculum = [[
+            'level' => 'Level 1: Stories',
+            'sentence_stats' => [
+                ['sentence' => 'Dogs run.', 'mastery' => 'training', 'failed_attempts' => 3],
+                ['sentence' => 'Cats nap.', 'mastery' => 'mastered', 'failed_attempts' => 5],
+                ['sentence' => 'Birds fly.', 'mastery' => 'unseen', 'failed_attempts' => 0],
+            ],
+        ]];
+
+        $service = new ReportService;
+
+        $this->assertSame(
+            [['level' => 'Level 1: Stories', 'word' => 'Dogs run.', 'sentence' => 'Dogs run.', 'attempts' => 3]],
+            $service->sentenceStruggleRowsFrom($curriculum),
+        );
+        $this->assertSame(
+            ['Level 1: Stories' => ['Dogs run.']],
+            $service->trainingSentenceGroupsFrom($curriculum),
+        );
+        $this->assertSame(['Dogs run.' => 3], $service->trainingSentenceAttemptsFrom($curriculum));
+    }
+
+    public function test_sentence_curriculum_percent_handles_empty_and_counts_mastered(): void
+    {
+        $service = new ReportService;
+
+        $this->assertSame(0, $service->sentenceCurriculumPercent([]));
+        $this->assertSame(0, $service->curriculumPercent([]));
+
+        $this->assertSame(25, $service->sentenceCurriculumPercent([[
+            'level' => 'Level 1: Stories',
+            'mastered_sentences' => 1,
+            'total_sentences' => 4,
+            'sentence_stats' => [],
+        ]]));
+    }
+
+    public function test_sentences_from_content_splitting(): void
+    {
+        $this->assertSame([], ReportService::sentencesFromContent(null));
+        $this->assertSame([], ReportService::sentencesFromContent('   '));
+        $this->assertSame(['No punctuation here'], ReportService::sentencesFromContent('No punctuation here'));
+        $this->assertSame(['Dogs run.', 'Cats nap!'], ReportService::sentencesFromContent('Dogs run. Cats nap!'));
+        $this->assertSame(['Really?', 'Yes.'], ReportService::sentencesFromContent('Really?   Yes.'));
+    }
 }

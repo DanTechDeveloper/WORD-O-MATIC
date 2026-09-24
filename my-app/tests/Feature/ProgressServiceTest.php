@@ -740,4 +740,19 @@ class ProgressServiceTest extends TestCase
         $this->student->refresh();
         $this->assertEquals(7, $this->student->student->points);
     }
+
+    public function test_tutorial_only_rows_leave_status_not_started(): void
+    {
+        $tutWord = WordModule::create(['level' => 0, 'title' => 'Tut', 'is_tutorial' => true]);
+        Word::create(['word_module_id' => $tutWord->id, 'word' => 'a', 'position' => 1]);
+
+        $this->progressService->updateWordProgress(
+            $this->student->student, $tutWord,
+            wordsSmashed: 1, wordsProcessed: 1, accuracy: 100, isTutorial: true
+        );
+
+        // Tutorial rows are excluded from the started signal — still notStarted.
+        $this->student->refresh();
+        $this->assertSame('notStarted', $this->student->student->status);
+    }
 }

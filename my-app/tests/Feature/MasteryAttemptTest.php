@@ -342,4 +342,38 @@ class MasteryAttemptTest extends TestCase
         $this->assertSame(2, $row->failed_attempts);
     }
 
+    public function test_paragraph_mastery_rejects_bad_payloads(): void
+    {
+        $this->actingAs($this->student, 'web')
+            ->postJson('/student/updateParagraphMastery', ['paragraph_word_id' => 99999, 'status' => 'training'])
+            ->assertStatus(422);
+
+        $this->actingAs($this->student, 'web')
+            ->postJson('/student/updateParagraphMastery', ['paragraph_word_id' => $this->makeParagraphWord()->id, 'status' => 'nope'])
+            ->assertStatus(422);
+
+        $this->actingAs($this->student, 'web')
+            ->postJson('/student/updateParagraphMastery', ['status' => 'training'])
+            ->assertStatus(422);
+
+        $this->assertDatabaseMissing('student_paragraph_mastery', [
+            'user_id' => $this->student->id,
+        ]);
+    }
+
+    public function test_post_deadline_paragraph_training_post_writes_nothing(): void
+    {
+        Setting::setValue('report_deadline', now()->subMinute()->format('Y-m-d H:i:s'));
+        $word = $this->makeParagraphWord();
+
+        $this->actingAs($this->student, 'web')
+            ->post('/student/updateParagraphMastery', [
+                'paragraph_word_id' => $word->id,
+                'status' => 'training',
+            ]);
+
+        $this->assertDatabaseMissing('student_paragraph_mastery', [
+            'user_id' => $this->student->id,
+        ]);
+    }
 }

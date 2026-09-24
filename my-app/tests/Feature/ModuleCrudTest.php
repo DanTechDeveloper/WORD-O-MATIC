@@ -558,4 +558,98 @@ class ModuleCrudTest extends TestCase
         $response->assertSessionHas('error');
         $this->assertEquals(0, ParagraphModule::count());
     }
+
+    public function test_update_word_module_rejects_bad_levels(): void
+    {
+        foreach ([-1, 'abc', 1.5] as $level) {
+            $this->actingAs($this->teacher)->put('/teacher/wordModules', [
+                'level' => $level,
+                'title' => 'Bad Level',
+                'words' => $this->tenUniqueWords(),
+            ])->assertSessionHasErrors('level');
+        }
+
+        $this->assertEquals(0, WordModule::count());
+    }
+
+    public function test_update_word_module_rejects_bad_titles(): void
+    {
+        $this->actingAs($this->teacher)->put('/teacher/wordModules', [
+            'level' => 1,
+            'words' => $this->tenUniqueWords(),
+        ])->assertSessionHasErrors('title');
+
+        $this->actingAs($this->teacher)->put('/teacher/wordModules', [
+            'level' => 1,
+            'title' => str_repeat('A', 256),
+            'words' => $this->tenUniqueWords(),
+        ])->assertSessionHasErrors('title');
+
+        $this->assertEquals(0, WordModule::count());
+    }
+
+    public function test_update_word_module_rejects_non_array_words_and_bad_total_score(): void
+    {
+        $this->actingAs($this->teacher)->put('/teacher/wordModules', [
+            'level' => 1,
+            'title' => 'Not Array',
+            'words' => 'not-an-array',
+        ])->assertSessionHasErrors('words');
+
+        $this->actingAs($this->teacher)->put('/teacher/wordModules', [
+            'level' => 1,
+            'title' => 'Bad Score',
+            'words' => $this->tenUniqueWords(),
+            'totalScore' => 'abc',
+        ])->assertSessionHasErrors('totalScore');
+
+        // Nullable totalScore passes when numeric.
+        $this->actingAs($this->teacher)->put('/teacher/wordModules', [
+            'level' => 1,
+            'title' => 'Good Score',
+            'words' => $this->tenUniqueWords(),
+            'totalScore' => 100,
+        ])->assertSessionHasNoErrors();
+
+        $this->assertEquals(1, WordModule::count());
+    }
+
+    public function test_update_paragraph_module_rejects_bad_levels_and_titles(): void
+    {
+        foreach ([-1, 'abc'] as $level) {
+            $this->actingAs($this->teacher)->put('/teacher/paragraphModules', [
+                'level' => $level,
+                'title' => 'Bad Level',
+                'content' => 'Some story here.',
+            ])->assertSessionHasErrors('level');
+        }
+
+        $this->actingAs($this->teacher)->put('/teacher/paragraphModules', [
+            'level' => 1,
+            'content' => 'Some story here.',
+        ])->assertSessionHasErrors('title');
+
+        $this->actingAs($this->teacher)->put('/teacher/paragraphModules', [
+            'level' => 1,
+            'title' => str_repeat('A', 256),
+            'content' => 'Some story here.',
+        ])->assertSessionHasErrors('title');
+
+        $this->assertEquals(0, ParagraphModule::count());
+    }
+
+    public function test_update_paragraph_module_preserves_case_as_entered(): void
+    {
+        $this->actingAs($this->teacher)->put('/teacher/paragraphModules', [
+            'level' => 1,
+            'title' => 'Case',
+            'content' => 'MiXeD CaSe WoRdS here now.',
+        ])->assertRedirect();
+
+        $module = ParagraphModule::where('level', 1)->firstOrFail();
+        $this->assertSame(
+            ['MiXeD', 'CaSe', 'WoRdS', 'here', 'now.'],
+            $module->words->sortBy('position')->pluck('word')->values()->all(),
+        );
+    }
 }

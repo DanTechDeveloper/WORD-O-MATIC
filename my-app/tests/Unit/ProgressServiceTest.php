@@ -60,4 +60,18 @@ class ProgressServiceTest extends TestCase
         // Odd sum yields whole number per DepEd (0.5 rounds up).
         $this->assertSame(67, ProgressService::finalAverage(66, 67, true, true));
     }
+
+    public function test_classify_threshold_boundaries(): void
+    {
+        $this->assertSame('support', ProgressService::classify(80, 79, true, true));
+        $this->assertSame('onTrack', ProgressService::classify(80, 80, true, true));
+        $this->assertSame('atRisk', ProgressService::classify(60, 59, true, true));
+        $this->assertSame('support', ProgressService::classify(60, 60, true, true));
+    }
+
+    public function test_final_average_rounds_half_up(): void
+    {
+        $this->assertSame(80, ProgressService::finalAverage(79, 80, true, true));
+        $this->assertSame(60, ProgressService::finalAverage(60, 60, true, true));
+    }
 }

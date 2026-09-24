@@ -196,4 +196,92 @@ class TeacherStudentManageTest extends TestCase
                 ->has('data.speakCurriculum', 1)
                 ->has('data.speakCurriculum.0.sentence_stats', 2));
     }
+
+    public function test_update_student_rejects_bad_fields(): void
+    {
+        $student = $this->makeStudent('Valid Name', '1111');
+
+        $base = [
+            'fullName' => 'Valid Name',
+            'section' => 'Sector 7-G',
+            'pin' => '',
+            'gender' => '',
+            'parent_email' => '',
+        ];
+
+        $this->actingAs($this->teacher)
+            ->put("/teacher/students/{$student->id}", array_merge($base, ['fullName' => '']))
+            ->assertSessionHasErrors('fullName');
+
+        $this->actingAs($this->teacher)
+            ->put("/teacher/students/{$student->id}", array_merge($base, ['section' => '']))
+            ->assertSessionHasErrors('section');
+
+        $this->actingAs($this->teacher)
+            ->put("/teacher/students/{$student->id}", array_merge($base, ['gender' => 'other']))
+            ->assertSessionHasErrors('gender');
+
+        $this->actingAs($this->teacher)
+            ->put("/teacher/students/{$student->id}", array_merge($base, ['parent_email' => 'bad']))
+            ->assertSessionHasErrors('parent_email');
+
+        $this->assertDatabaseHas('users', ['id' => $student->id, 'name' => 'Valid Name']);
+    }
+
+    public function test_update_student_blank_pin_keeps_hash_byte_identical(): void
+    {
+        $student = $this->makeStudent('Pin Keeper', '1234');
+        $before = $student->fresh()->pin;
+
+        $this->actingAs($this->teacher)
+            ->put("/teacher/students/{$student->id}", [
+                'fullName' => 'Pin Keeper',
+                'section' => 'Sector 7-G',
+                'pin' => '',
+                'gender' => '',
+                'parent_email' => '',
+            ])
+            ->assertRedirect();
+
+        $this->assertSame($before, $student->fresh()->pin);
+    }
+
+    public function test_destroy_nonexistent_student_404s(): void
+    {
+        $this->actingAs($this->teacher)
+            ->delete('/teacher/students/999999')
+            ->assertNotFound();
+    }
+
+    public function test_student_and_guest_cannot_manage_students(): void
+    {
+        $victim = $this->makeStudent('Victim', '1111');
+        $payload = [
+            'fullName' => 'Hijacked',
+            'section' => 'Sector 7-G',
+            'pin' => '',
+            'gender' => '',
+            'parent_email' => '',
+        ];
+
+        $student = User::factory()->create(['role' => 'student']);
+
+        // Guests bounce to the teacher login (actingAs persists, so check first).
+        $this->put("/teacher/students/{$victim->id}", $payload)
+            ->assertRedirect(route('teacher.login'));
+        $this->get("/teacher/studentDetails/{$victim->id}")
+            ->assertRedirect(route('teacher.login'));
+
+        $this->actingAs($student)
+            ->put("/teacher/students/{$victim->id}", $payload)
+            ->assertRedirect(route('student.dashboard'));
+        $this->actingAs($student)
+            ->get("/teacher/studentDetails/{$victim->id}")
+            ->assertRedirect(route('student.dashboard'));
+        $this->actingAs($student)
+            ->delete("/teacher/students/{$victim->id}")
+            ->assertRedirect(route('student.dashboard'));
+
+        $this->assertDatabaseHas('users', ['id' => $victim->id, 'name' => 'Victim']);
+    }
 }

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\GameSession;
+use App\Models\ParagraphModule;
 use App\Models\StudentProfile;
 use App\Models\User;
 use App\Models\Word;
@@ -98,5 +99,61 @@ class StudentResultsTest extends TestCase
         $this->actingAs($student)
             ->get(route('student.results', $session->id))
             ->assertRedirect(route('student.dashboard'));
+    }
+
+    public function test_stale_session_redirects_to_latest(): void
+    {
+        $student = $this->makeStudent('Stale Redirect');
+        $module = $this->makeWordModule(1, 10);
+
+        $old = $this->play($student, $module, 5);
+        $latest = $this->play($student, $module, 9);
+
+        $this->actingAs($student)
+            ->get(route('student.results', $old->id))
+            ->assertRedirect(route('student.results', $latest->id));
+    }
+
+    public function test_best_score_ignores_deadline_hit_sessions(): void
+    {
+        $student = $this->makeStudent('Best Score');
+        $module = $this->makeWordModule(1, 10);
+
+        GameSession::create([
+            'user_id' => $student->id, 'module_id' => $module->id, 'module_type' => 'word',
+            'score' => 10, 'accuracy' => 100, 'streak' => 10, 'is_deadline_hit' => true,
+        ]);
+        $clean = GameSession::create([
+            'user_id' => $student->id, 'module_id' => $module->id, 'module_type' => 'word',
+            'score' => 6, 'accuracy' => 60, 'streak' => 2, 'is_deadline_hit' => false,
+        ]);
+
+        $this->actingAs($student)
+            ->get(route('student.results', $clean->id))
+            ->assertSuccessful()
+            ->assertInertia(fn ($page) => $page
+                ->component('Student/GameResults')
+                ->where('bestScore', 6)
+                ->where('sentenceScores', null)
+                ->has('badgeProgress'));
+    }
+
+    public function test_results_exposes_sentence_scores(): void
+    {
+        $student = $this->makeStudent('Sentence Scores');
+        $para = ParagraphModule::create(['level' => 1, 'title' => 'P1', 'content' => 'The cat sat.', 'is_tutorial' => false]);
+
+        $session = GameSession::create([
+            'user_id' => $student->id, 'module_id' => $para->id, 'module_type' => 'paragraph',
+            'score' => 4, 'accuracy' => 80, 'streak' => 0,
+            'sentence_scores' => [3, 1], 'is_deadline_hit' => false,
+        ]);
+
+        $this->actingAs($student)
+            ->get(route('student.results', $session->id))
+            ->assertSuccessful()
+            ->assertInertia(fn ($page) => $page
+                ->where('sentenceScores', [3, 1])
+                ->where('bestScore', 4));
     }
 }

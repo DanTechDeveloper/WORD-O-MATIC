@@ -205,4 +205,37 @@ class StudentDashboardBadgesTest extends TestCase
                 ->where('leaderboard.1.points', 20)
                 ->where('leaderboard.2.points', 10));
     }
+
+    public function test_student_leaderboards_exclude_teachers(): void
+    {
+        $teacher = User::factory()->create(['role' => 'teacher', 'name' => 'Top Teacher']);
+        StudentProfile::factory()->for($teacher)->create([
+            'points' => 9999,
+            'avatar' => '/images/avatars/juan/head.png',
+        ]);
+
+        $student = $this->makeStudent('Only Student');
+        $student->student->update(['points' => 5]);
+
+        $this->actingAs($student)
+            ->get(route('student.leaderboards'))
+            ->assertSuccessful()
+            ->assertInertia(fn ($page) => $page
+                ->where('totalStudents', 1)
+                ->where('leaderboard.0.points', 5));
+    }
+
+    public function test_badges_page_null_threshold_has_null_current_value(): void
+    {
+        $student = $this->makeStudent('Action Badge');
+        $student->student->update(['tutorial_completed_at' => now()]);
+
+        Badges::create(['name' => 'Tutorial Complete', 'slug' => 'tutorial-complete', 'description' => 'd', 'metric' => 'action', 'threshold_score' => null, 'icon' => 'x']);
+
+        $this->actingAs($student)
+            ->get(route('student.badges'))
+            ->assertSuccessful()
+            ->assertInertia(fn ($page) => $page
+                ->where('badges', fn ($badges) => collect($badges)->firstWhere('slug', 'tutorial-complete')['current_value'] === null));
+    }
 }

@@ -228,4 +228,58 @@ class ReportDeadlineTest extends TestCase
 
         $this->assertEquals($deadline, Setting::getValue('report_deadline'));
     }
+
+    public function test_save_deadline_rejects_past_date()
+    {
+        $response = $this->actingAs($this->teacher)
+            ->post(route('teacher.reports.deadline'), ['deadline' => now()->subDay()->format('Y-m-d\TH:i')]);
+
+        $response->assertSessionHasErrors('deadline');
+        $this->assertNull(Setting::getValue('report_deadline'));
+    }
+
+    public function test_save_deadline_rejects_invalid_date()
+    {
+        $response = $this->actingAs($this->teacher)
+            ->post(route('teacher.reports.deadline'), ['deadline' => 'not-a-date']);
+
+        $response->assertSessionHasErrors('deadline');
+        $this->assertNull(Setting::getValue('report_deadline'));
+    }
+
+    public function test_save_deadline_without_key_clears()
+    {
+        Setting::setValue('report_deadline', now()->addDays(7)->format('Y-m-d\TH:i'));
+
+        $response = $this->actingAs($this->teacher)
+            ->post(route('teacher.reports.deadline'), []);
+
+        $response->assertSessionHas('deadline_cleared');
+        $this->assertNull(Setting::getValue('report_deadline'));
+    }
+
+    public function test_clear_deadline_resets_report_sent_at()
+    {
+        Setting::setValue('report_deadline', now()->addDays(7)->format('Y-m-d\TH:i'));
+        $this->student->student->update(['report_sent_at' => now()]);
+
+        $this->actingAs($this->teacher)
+            ->post(route('teacher.reports.deadline'), ['deadline' => '']);
+
+        // CLEAR starts a new period — previously sent students become selectable again.
+        $this->assertNull($this->student->student->refresh()->report_sent_at);
+    }
+
+    public function test_cutoff_is_null_until_deadline_passes()
+    {
+        $service = new \App\Services\ReportService();
+
+        $this->assertNull($service->cutoff());
+
+        Setting::setValue('report_deadline', Carbon::now()->addHour()->format('Y-m-d H:i:s'));
+        $this->assertNull($service->cutoff());
+
+        Setting::setValue('report_deadline', Carbon::now()->subMinute()->format('Y-m-d H:i:s'));
+        $this->assertNotNull($service->cutoff());
+    }
 }

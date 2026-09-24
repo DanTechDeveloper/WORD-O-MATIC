@@ -1141,4 +1141,207 @@ class GameplayTest extends TestCase
             'module_id' => $this->module->id,
         ]);
     }
+
+    // ─── SAVE-PROGRESS VALIDATION EDGES ─────────────────────────────
+
+    public function test_save_word_rejects_missing_module_id(): void
+    {
+        Setting::where('key', 'report_deadline')->delete();
+
+        $this->actingAs($this->student)
+            ->post(route('student.saveWordProgress'), [
+                'words_smashed' => 5,
+                'words_processed' => 10,
+            ])
+            ->assertSessionHasErrors('module_id');
+
+        $this->assertDatabaseMissing('game_sessions', [
+            'user_id' => $this->student->id,
+        ]);
+    }
+
+    public function test_save_word_rejects_unknown_module_id(): void
+    {
+        Setting::where('key', 'report_deadline')->delete();
+
+        // The exists rule fires before findOrFail, so this is a 302 + error, not a 404.
+        $this->actingAs($this->student)
+            ->post(route('student.saveWordProgress'), [
+                'module_id' => 999999,
+                'words_smashed' => 5,
+                'words_processed' => 10,
+            ])
+            ->assertSessionHasErrors('module_id');
+
+        $this->assertDatabaseMissing('game_sessions', [
+            'user_id' => $this->student->id,
+        ]);
+    }
+
+    public function test_save_word_rejects_negative_counts(): void
+    {
+        Setting::where('key', 'report_deadline')->delete();
+
+        foreach ([
+            ['words_smashed' => -1, 'words_processed' => 5],
+            ['words_smashed' => 3, 'words_processed' => -1],
+        ] as $counts) {
+            $this->actingAs($this->student)
+                ->post(route('student.saveWordProgress'), ['module_id' => $this->module->id] + $counts)
+                ->assertSessionHasErrors();
+        }
+
+        $this->assertDatabaseMissing('game_sessions', [
+            'user_id' => $this->student->id,
+        ]);
+    }
+
+    public function test_save_word_rejects_non_integer_streak_and_defaults_to_zero(): void
+    {
+        Setting::where('key', 'report_deadline')->delete();
+
+        $this->actingAs($this->student)
+            ->post(route('student.saveWordProgress'), [
+                'module_id' => $this->module->id,
+                'words_smashed' => 5,
+                'words_processed' => 10,
+                'streak' => 'hot',
+            ])
+            ->assertSessionHasErrors('streak');
+
+        $this->actingAs($this->student)
+            ->post(route('student.saveWordProgress'), [
+                'module_id' => $this->module->id,
+                'words_smashed' => 5,
+                'words_processed' => 10,
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('game_sessions', [
+            'user_id' => $this->student->id,
+            'module_id' => $this->module->id,
+            'streak' => 0,
+        ]);
+    }
+
+    public function test_save_word_clamps_smashed_above_processed(): void
+    {
+        Setting::where('key', 'report_deadline')->delete();
+
+        $this->actingAs($this->student)
+            ->post(route('student.saveWordProgress'), [
+                'module_id' => $this->module->id,
+                'words_smashed' => 8,
+                'words_processed' => 5,
+                'streak' => 2,
+            ])
+            ->assertRedirect();
+
+        // The session logs the raw smash count; the progress row clamps to processed.
+        $this->assertDatabaseHas('game_sessions', [
+            'user_id' => $this->student->id,
+            'module_id' => $this->module->id,
+            'score' => 8,
+        ]);
+        $this->assertDatabaseHas('student_word_progress', [
+            'user_id' => $this->student->id,
+            'word_module_id' => $this->module->id,
+            'words_smashed' => 5,
+        ]);
+        $this->assertSame(5, $this->student->refresh()->student->points);
+    }
+
+    public function test_paragraph_sentence_scores_rejects_bad_elements(): void
+    {
+        Setting::where('key', 'report_deadline')->delete();
+        $para = $this->makeParagraphModule();
+
+        // Float, negative, and non-numeric elements each fail validation.
+        foreach ([[2.5], [-1], ['x']] as $bad) {
+            $this->actingAs($this->student)
+                ->post(route('student.saveParagraphProgress'), [
+                    'module_id' => $para->id,
+                    'words_smashed' => 5,
+                    'words_processed' => 5,
+                    'sentence_scores' => $bad,
+                ])
+                ->assertSessionHasErrors();
+        }
+
+        $this->assertDatabaseMissing('game_sessions', [
+            'user_id' => $this->student->id,
+        ]);
+    }
+
+    public function test_paragraph_round_without_sentence_scores_stores_null(): void
+    {
+        Setting::where('key', 'report_deadline')->delete();
+        $para = $this->makeParagraphModule();
+
+        $this->actingAs($this->student)
+            ->post(route('student.saveParagraphProgress'), [
+                'module_id' => $para->id,
+                'words_smashed' => 4,
+                'words_processed' => 5,
+            ])
+            ->assertRedirect();
+
+        $session = GameSession::where('user_id', $this->student->id)
+            ->where('module_id', $para->id)->firstOrFail();
+        $this->assertNull($session->sentence_scores);
+    }
+
+    public function test_word_round_on_empty_module_scores_zero_without_crash(): void
+    {
+        Setting::where('key', 'report_deadline')->delete();
+
+        $empty = WordModule::create(['level' => 9, 'title' => 'Empty']);
+
+        $this->actingAs($this->student)
+            ->post(route('student.saveWordProgress'), [
+                'module_id' => $empty->id,
+                'words_smashed' => 0,
+                'words_processed' => 0,
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('game_sessions', [
+            'user_id' => $this->student->id,
+            'module_id' => $empty->id,
+            'score' => 0,
+            'accuracy' => 0,
+        ]);
+    }
+
+    // ─── LEVEL / GAMEPLAY GUARDS ────────────────────────────────────
+
+    public function test_locked_level_redirects_to_levels_page(): void
+    {
+        Setting::where('key', 'report_deadline')->delete();
+        $this->student->student->update(['tutorial_completed_at' => now()]);
+        WordModule::create(['level' => 2, 'title' => 'Locked']);
+
+        // Level 1 untouched, so level 2 is still locked.
+        $this->actingAs($this->student)
+            ->get(route('student.gameplayReadMode', 2))
+            ->assertRedirect(route('student.readModeLevels'));
+    }
+
+    public function test_unknown_level_returns_404(): void
+    {
+        $this->student->student->update(['tutorial_completed_at' => now()]);
+
+        $this->actingAs($this->student)
+            ->get(route('student.gameplayReadMode', 999))
+            ->assertNotFound();
+    }
+
+    public function test_skipped_student_can_open_real_level(): void
+    {
+        $this->student->student->update(['tutorial_skipped_at' => now()]);
+
+        $this->actingAs($this->student)
+            ->get(route('student.gameplayReadMode', $this->module->level))
+            ->assertSuccessful();
+    }
 }

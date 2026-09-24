@@ -181,6 +181,94 @@ class ReportTest extends TestCase
         $response->assertSessionHas('failed', 1);
     }
 
+    public function test_send_emails_rejects_bad_student_ids(): void
+    {
+        Setting::setValue('report_deadline', now()->subDay()->format('Y-m-d\TH:i'));
+        $this->actingAs($this->teacher);
+
+        $this->post(route('teacher.reports.sendEmails'), [])
+            ->assertSessionHasErrors('student_ids');
+        $this->post(route('teacher.reports.sendEmails'), ['student_ids' => 'not-an-array'])
+            ->assertSessionHasErrors('student_ids');
+        $this->post(route('teacher.reports.sendEmails'), ['student_ids' => []])
+            ->assertSessionHasErrors('student_ids');
+        $this->post(route('teacher.reports.sendEmails'), ['student_ids' => [999999]])
+            ->assertSessionHasErrors('student_ids.0');
+    }
+
+    public function test_send_emails_counts_teacher_id_as_failed_without_crash(): void
+    {
+        // A non-student id passes exists:users but has no profile/email — failed, not a crash.
+        Setting::setValue('report_deadline', now()->subDay()->format('Y-m-d\TH:i'));
+
+        $response = $this->actingAs($this->teacher)
+            ->post(route('teacher.reports.sendEmails'), [
+                'student_ids' => [$this->teacher->id],
+            ]);
+
+        $response->assertSessionHas('sent', 0);
+        $response->assertSessionHas('failed', 1);
+    }
+
+    public function test_send_emails_requires_a_deadline(): void
+    {
+        Setting::where('key', 'report_deadline')->delete();
+
+        $this->actingAs($this->teacher)
+            ->post(route('teacher.reports.sendEmails'), [
+                'student_ids' => [$this->student->id],
+            ])
+            ->assertSessionHas('error');
+    }
+
+    public function test_send_emails_blocked_before_deadline_passes(): void
+    {
+        Setting::setValue('report_deadline', now()->addDays(7)->format('Y-m-d\TH:i'));
+
+        $this->actingAs($this->teacher)
+            ->post(route('teacher.reports.sendEmails'), [
+                'student_ids' => [$this->student->id],
+            ])
+            ->assertSessionHas('error');
+    }
+
+    public function test_send_emails_deduplicates_repeat_ids(): void
+    {
+        Setting::setValue('report_deadline', now()->subDay()->format('Y-m-d\TH:i'));
+
+        $response = $this->actingAs($this->teacher)
+            ->post(route('teacher.reports.sendEmails'), [
+                'student_ids' => [$this->student->id, $this->student->id],
+            ]);
+
+        // whereIn collapses duplicates — one email, one stamp.
+        $response->assertSessionHas('sent', 1);
+        $response->assertSessionHas('failed', 0);
+    }
+
+    public function test_send_emails_stamps_sent_at_only_on_sent_and_redirects_to_thanks(): void
+    {
+        $noEmailStudent = User::factory()->create(['role' => 'student']);
+        StudentProfile::factory()->for($noEmailStudent)->create([
+            'parent_email' => null,
+        ]);
+
+        Setting::setValue('report_deadline', now()->subDay()->format('Y-m-d\TH:i'));
+
+        $response = $this->actingAs($this->teacher)
+            ->post(route('teacher.reports.sendEmails'), [
+                'student_ids' => [$this->student->id, $noEmailStudent->id],
+            ]);
+
+        $response->assertRedirect(route('teacher.reports.thanks'));
+        $response->assertSessionHas('sent', 1);
+        $response->assertSessionHas('failed', 1);
+        $response->assertSessionHas('reported_at');
+
+        $this->assertNotNull($this->student->student->refresh()->report_sent_at);
+        $this->assertNull($noEmailStudent->student->refresh()->report_sent_at);
+    }
+
     // ─── WORD ATTEMPT ANALYTICS ─────────────────────────────────────
 
     private function seedWordMastery(string $text, int $fails, string $status = 'training'): void
@@ -726,6 +814,57 @@ class ReportTest extends TestCase
         $response->assertStatus(404);
     }
 
+    public function test_update_parent_email_clears_when_null(): void
+    {
+        $this->actingAs($this->teacher);
+
+        $response = $this->put(route('teacher.reports.parentEmail', $this->student->id), [
+            'parent_email' => null,
+        ]);
+
+        $response->assertRedirect();
+        $this->assertNull($this->student->student->refresh()->parent_email);
+    }
+
+    public function test_update_parent_email_rejects_overlong(): void
+    {
+        $this->actingAs($this->teacher);
+
+        $response = $this->put(route('teacher.reports.parentEmail', $this->student->id), [
+            'parent_email' => str_repeat('a', 250).'@example.com',
+        ]);
+
+        $response->assertSessionHasErrors('parent_email');
+        $this->assertEquals('parent@email.com', $this->student->student->refresh()->parent_email);
+    }
+
+    public function test_student_and_guest_cannot_update_parent_email(): void
+    {
+        $other = User::factory()->create(['role' => 'student']);
+
+        // Guest first — actingAs persists for the rest of the test.
+        $this->put(route('teacher.reports.parentEmail', $this->student->id), [
+            'parent_email' => 'x@y.com',
+        ])->assertRedirect(route('teacher.login'));
+
+        $this->actingAs($other)
+            ->put(route('teacher.reports.parentEmail', $this->student->id), [
+                'parent_email' => 'x@y.com',
+            ])
+            ->assertRedirect(route('student.dashboard'));
+
+        $this->assertEquals('parent@email.com', $this->student->student->refresh()->parent_email);
+    }
+
+    public function test_latest_badge_returns_null_without_badges(): void
+    {
+        $service = new ReportService();
+
+        $this->assertNull($service->latestBadge(null));
+        $this->assertNull($service->latestBadge(999999));
+        $this->assertNull($service->latestBadge($this->student->id));
+    }
+
     // ─── EXCEL EXPORT ────────────────────────────────────────────────
 
     public function test_teacher_can_export_reports_after_deadline(): void
@@ -1088,5 +1227,60 @@ class ReportTest extends TestCase
 
         $this->assertCount(1, $collection);
         $this->assertEquals('Level 1 - Real Words', $collection->first()[5]);
+    }
+
+    public function test_export_with_no_students_returns_file(): void
+    {
+        Setting::setValue('report_deadline', now()->subDay()->format('Y-m-d\TH:i'));
+        $this->student->delete();
+
+        $this->actingAs($this->teacher)
+            ->get(route('teacher.reports.export'))
+            ->assertStatus(200)
+            ->assertHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    }
+
+    public function test_export_skills_overview_row_formats_top_struggle_labels_and_null_average(): void
+    {
+        Setting::setValue('report_deadline', now()->subDay()->format('Y-m-d\TH:i'));
+
+        // Unknown levels (no titles) + one zero accuracy → null finalAverage.
+        $this->student->student->update([
+            'read_level' => 99,
+            'speak_level' => 98,
+            'storyQuestAcc' => 0,
+        ]);
+
+        // Three training words — only the top two by attempts reach Top Struggle, desc.
+        $module = WordModule::create(['level' => 1, 'title' => 'Level 1']);
+        foreach ([['CAT', 5], ['BIRD', 4], ['ZOO', 1]] as $i => [$text, $fails]) {
+            $word = Word::create(['word_module_id' => $module->id, 'word' => $text, 'position' => $i + 1]);
+            $row = StudentWordMastery::create([
+                'user_id' => $this->student->id,
+                'word_id' => $word->id,
+                'status' => 'training',
+                'failed_attempts' => $fails,
+            ]);
+            // Backdate inside the report cutoff.
+            $row->created_at = now()->subDays(2);
+            $row->save();
+        }
+
+        // Fake the writer (CLI has no ZipArchive) and inspect the export payload.
+        \Maatwebsite\Excel\Facades\Excel::fake();
+
+        $this->actingAs($this->teacher)
+            ->get(route('teacher.reports.export'))
+            ->assertSuccessful();
+
+        \Maatwebsite\Excel\Facades\Excel::assertDownloaded('class-report.xlsx', function (ReportsExport $export) {
+            $prop = new \ReflectionProperty(ReportsExport::class, 'students');
+            $row = collect($prop->getValue($export))->firstWhere('name', 'Test Student');
+
+            return $row['topStruggle'] === 'WB: CAT ×5 · WB: BIRD ×4'
+                && $row['wbLevelLabel'] === 'Level 99 - '
+                && $row['sqLevelLabel'] === 'Level 98 - '
+                && $row['finalAverage'] === null;
+        });
     }
 }
