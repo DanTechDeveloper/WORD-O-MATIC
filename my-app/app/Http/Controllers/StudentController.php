@@ -437,9 +437,14 @@ class StudentController extends Controller
             $totalPossible = $module->words()->count();
             $wordsSmashed = min($request->words_smashed, $totalPossible);
             $accuracy = $totalPossible > 0 ? (int) round(min(($wordsSmashed / $totalPossible) * 100, 100)) : 0;
-            $session = GameSession::logSession($user->id, $module->id, $type, $wordsSmashed, $accuracy, 0, false);
-            if ($request->filled('client_token')) {
-                Cache::put("pending_token:{$user->id}:{$request->input('client_token')}", $session->id, 120);
+            // ponytail: past deadline = zero writes, tutorial included — the
+            // session row is just a log (progress + completion + badge below
+            // still run, so onboarding never strands). Matches practice path.
+            if (! $this->reportService->cutoff()) {
+                $session = GameSession::logSession($user->id, $module->id, $type, $wordsSmashed, $accuracy, 0, false);
+                if ($request->filled('client_token')) {
+                    Cache::put("pending_token:{$user->id}:{$request->input('client_token')}", $session->id, 120);
+                }
             }
             if ($type === 'word') {
                 $this->progressService->updateWordProgress($user->student, $module, 0, $request->words_processed, 0, isTutorial: true, totalWords: $totalPossible);

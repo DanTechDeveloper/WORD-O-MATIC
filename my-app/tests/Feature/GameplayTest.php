@@ -369,10 +369,11 @@ class GameplayTest extends TestCase
             'word_module_id' => $tutorialModule->id,
             'status' => 'completed',
         ]);
-        $this->assertDatabaseHas('game_sessions', [
+        // ponytail: past deadline = zero writes, tutorial included — progress
+        // records (onboarding never strands) but no session row is logged.
+        $this->assertDatabaseMissing('game_sessions', [
             'user_id' => $this->student->id,
             'module_id' => $tutorialModule->id,
-            'is_deadline_hit' => false,
         ]);
     }
 
