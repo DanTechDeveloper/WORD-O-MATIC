@@ -5,7 +5,9 @@ export function normalizeText(text) {
         .trim();
 }
 
-// ponytail: stitch cap — exact join max 3 tokens (O(n*3), hindi O(n^2)).
+// ponytail: stitch cap — exact join max 3 tokens (covers real STT splits:
+// "ca t", "b a t", "air plane"). Letter-spelling ("f r o g") never comes
+// out of the acoustic model, so no cap for it (YAGNI).
 const MAX_STITCH = 3;
 
 /**
@@ -18,7 +20,8 @@ const MAX_STITCH = 3;
  *
  * Stitch ceiling: exact join max 3 tokens both directions (spoken-split
  * "b a t" -> "bat", spoken-joined inverse "cupcake" -> "cup cake").
- * 4+ tokens unsupported; filler skip unbounded by design (turn-taking).
+ * Joins longer than the target break early (can never match); filler
+ * skip unbounded by design (turn-taking).
  */
 export function isWordMatch(spoken, target) {
     if (!spoken || !target) return false;
@@ -34,7 +37,8 @@ export function isWordMatch(spoken, target) {
 
     // Strategy 1: Single-Word Target — exact token sa sliding window,
     // o exact pinagdurugtong na magkatabing token ("ca t" -> "cat",
-    // "b a t" -> "bat"; cap 3 para hindi O(n^2)).
+    // "b a t" -> "bat"). Length early-break: joined na mas mahaba sa
+    // target, hindi na pwedeng mag-match.
     if (wordsB.length === 1) {
         const singleTarget = wordsB[0];
 
@@ -44,6 +48,7 @@ export function isWordMatch(spoken, target) {
             let joined = "";
             for (let k = 1; k <= MAX_STITCH && i + k - 1 < wordsA.length; k++) {
                 joined += wordsA[i + k - 1];
+                if (joined.length > singleTarget.length) break;
                 if (k >= 2 && joined === singleTarget) return true;
             }
         }
@@ -67,6 +72,7 @@ export function isWordMatch(spoken, target) {
         let joined = "";
         for (let k = 1; k <= MAX_STITCH && i + k - 1 < wordsA.length; k++) {
             joined += wordsA[i + k - 1];
+            if (joined.length > wordsB[j].length) break;
             if (k >= 2 && joined === wordsB[j]) {
                 j++;
                 i += k;
@@ -82,6 +88,7 @@ export function isWordMatch(spoken, target) {
         let targetJoined = "";
         for (let k = 1; k <= MAX_STITCH && j + k - 1 < wordsB.length; k++) {
             targetJoined += wordsB[j + k - 1];
+            if (targetJoined.length > wordsA[i].length) break;
             if (k >= 2 && wordsA[i] === targetJoined) {
                 j += k;
                 i++;

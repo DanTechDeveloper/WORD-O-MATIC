@@ -105,6 +105,8 @@ export function useDeepgramRecognition({
     const timeoutRefs = useRef({
         graceEnd: Date.now() + 500,
         restartCount: 0,
+        tokenRetries: 0,
+        openAt: 0,
         target: null,
         prevTarget: null,
         targetChangedAt: 0,
@@ -176,6 +178,24 @@ export function useDeepgramRecognition({
         }
     };
 
+    // ponytail: token grant gets the same backoff ladder as reconnects —
+    // a single 500 from the grant endpoint must not strand the kid mic-less
+    // until remount. Reuses the restart timer slot so unmount/preload-off
+    // cancels it via the existing stopAll path.
+    const scheduleTokenRetry = () => {
+        if (!stateRefs.current.isMounted) return;
+        if (timeoutRefs.current.tokenRetries >= 3) {
+            timeoutRefs.current.tokenRetries = 0;
+            propsRef.current.onRecognitionError?.("token_failed");
+            return;
+        }
+        timeoutRefs.current.tokenRetries++;
+        const delay = Math.min(500 * 2 ** timeoutRefs.current.tokenRetries, 3000);
+        timerRefs.current.restart = setTimeout(() => {
+            startConnection();
+        }, delay);
+    };
+
     const startConnection = async () => {
         if (
             !stateRefs.current.isMounted ||
@@ -196,12 +216,13 @@ export function useDeepgramRecognition({
                     headers: { Accept: "application/json" },
                 });
                 if (!resp.ok) {
-                    propsRef.current.onRecognitionError?.("token_failed");
+                    scheduleTokenRetry();
                     return;
                 }
                 const json = await resp.json();
                 token = json.token;
                 baseUrl = json.baseUrl;
+                timeoutRefs.current.tokenRetries = 0;
                 // Cache with 60s safety buffer (Deepgram TTL is 3600s)
                 cachedToken = json.token;
                 cachedBaseUrl = json.baseUrl;
@@ -213,7 +234,7 @@ export function useDeepgramRecognition({
                         "ms",
                     );
             } catch {
-                propsRef.current.onRecognitionError?.("token_failed");
+                scheduleTokenRetry();
                 return;
             }
         }
@@ -262,7 +283,7 @@ export function useDeepgramRecognition({
                     return;
                 }
                 permissionDeniedRef.current = false;
-                timeoutRefs.current.restartCount = 0;
+                timeoutRefs.current.openAt = Date.now();
                 // ponytail: fresh open re-arms grace — mount/targetWord grace
                 // expires during slow token+mic setup, so without this the
                 // first mic transient could instant-fail. Drops Wrong only;
@@ -413,6 +434,14 @@ export function useDeepgramRecognition({
                 propsRef.current.onRecognitionError?.(
                     String(err?.message || err),
                 );
+                // ponytail: an errored conn never recovers on its own — close
+                // it so the close handler below owns restart policy. Bounded
+                // by the quick-death cap, so auth errors can't loop forever.
+                try {
+                    conn.close();
+                } catch {
+                    /* already dead */
+                }
             });
 
             conn.on("close", () => {
@@ -421,6 +450,14 @@ export function useDeepgramRecognition({
                 if (!stateRefs.current.isMounted || !propsRef.current.isActive)
                     return;
                 if (permissionDeniedRef.current) return;
+                // ponytail: only QUICK deaths count — a conn that lived >=10s
+                // was healthy (transient blip), so the streak resets. Three
+                // quick deaths in a row means the server keeps dropping us;
+                // give up instead of reconnecting forever (the old code reset
+                // the counter on every open, so it never gave up).
+                if (Date.now() - (timeoutRefs.current.openAt || 0) >= 10000) {
+                    timeoutRefs.current.restartCount = 0;
+                }
                 if (timeoutRefs.current.restartCount < 3) {
                     timeoutRefs.current.restartCount++;
                     const delay = Math.min(

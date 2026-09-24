@@ -92,7 +92,7 @@ describe("isWordMatch — SSOT strict exact-only (Word Blast + Story Quest)", ()
     });
 
     describe("N-token stitch (3-cap, exact-only)", () => {
-        test("returns true when STT spells a target letter-by-letter (b a t vs bat)", () => {
+        test("returns true when STT splits a target into three (b a t vs bat)", () => {
             expect(isWordMatch("b a t", "bat")).toBe(true);
         });
         test("returns true for 3-token split inside a sentence (b a t naps vs bat naps)", () => {
@@ -106,6 +106,9 @@ describe("isWordMatch — SSOT strict exact-only (Word Blast + Story Quest)", ()
         });
         test("returns false when 4-token join exceeds the cap (c a t s vs cats)", () => {
             expect(isWordMatch("c a t s", "cats")).toBe(false);
+        });
+        test("letter-spelling stays out: the acoustic model never emits it (f r o g vs frog)", () => {
+            expect(isWordMatch("f r o g", "frog")).toBe(false);
         });
     });
 
@@ -172,20 +175,21 @@ describe("isWordMatch — SSOT strict exact-only (Word Blast + Story Quest)", ()
     });
 });
 
-// ponytail: WORD BLAST curriculum guard — verdict-gated reseed (fox/quiz...),
-// same guard shape; isWordMatch signature unchanged.
+// ponytail: WORD BLAST curriculum guard — 1:1 mirror of
+// CurriculumSeeder::wordsByModule (resync on any reseed); same guard shape,
+// isWordMatch signature unchanged.
 describe("WORD BLAST curriculum (seeded words) — regression guard (verdict-gated)", () => {
     const wordsByModule = [
-        ["fox", "gum", "wag", "zip", "van", "yak", "jam", "kit", "log", "quiz"],
-        ["peach", "cloud", "snail", "green", "light", "sheep", "queen", "toast", "paint", "globe"],
-        ["brush", "clock", "smile", "plant", "crash", "dress", "frost", "twist", "thumb", "prince"],
-        ["splash", "street", "stripe", "crane", "flute", "skate", "brave", "crown", "purse", "drift"],
-        ["tiger", "river", "lemon", "pocket", "circus", "magnet", "violin", "tulip", "robot", "camel"],
-        ["remake", "unlock", "repay", "unzip", "dislike", "distrust", "misplace", "misspell", "retell", "recycle"],
-        ["thankful", "endless", "softly", "muddy", "wishful", "harmless", "neatly", "rusty", "sticky", "weekly"],
-        ["airplane", "sailboat", "mailbox", "raincoat", "snowman", "bookshelf", "campground", "dragonfly", "wheelchair", "keyboard"],
-        ["thunder", "journey", "whisper", "meadow", "clever", "beacon", "voyage", "harbor", "blanket", "canyon"],
-        ["architecture", "temperature", "electricity", "expedition", "horizon", "fortress", "galaxy", "lagoon", "mosaic", "oasis"],
+        ["frog", "crab", "drum", "swim", "snack", "slide", "stone", "bloom", "grape", "grill"],
+        ["dream", "cloud", "snail", "green", "shade", "train", "queen", "roast", "paint", "cloak"],
+        ["brush", "clock", "smile", "plant", "crash", "dress", "frost", "twist", "shark", "phone"],
+        ["splash", "street", "stripe", "crane", "flute", "skate", "brave", "brick", "spark", "blast"],
+        ["tiger", "river", "lemon", "pocket", "circus", "magnet", "violin", "planet", "robot", "camel"],
+        ["remake", "unlock", "rewrite", "unzip", "dislike", "distrust", "misplace", "misspell", "reopen", "recycle"],
+        ["thankful", "endless", "softly", "muddy", "wishful", "harmless", "neatly", "sleepy", "sticky", "kindly"],
+        ["airplane", "sailboat", "mailbox", "raincoat", "suitcase", "bookshelf", "campground", "dragonfly", "wheelchair", "keyboard"],
+        ["thunder", "journey", "whisper", "meadow", "clever", "spirit", "voyage", "village", "comet", "canyon"],
+        ["architecture", "temperature", "electricity", "expedition", "horizon", "fortress", "galaxy", "lagoon", "mosaic", "pyramid"],
     ];
     test("every WORD BLAST word matches itself (d=0)", () => {
         for (const level of wordsByModule) for (const w of level) expect(isWordMatch(w, w)).toBe(true);

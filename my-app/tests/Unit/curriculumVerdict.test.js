@@ -196,3 +196,54 @@ describe("Tutorial transcript lesson — locked (strict)", () => {
         for (const w of tutorialWords) expect(w.length).toBeGreaterThanOrEqual(3);
     });
 });
+
+describe("Seeded STT-split compatibility — new matcher favors the curriculum", () => {
+    test("L8 compounds survive STT splits (air plane vs airplane)", () => {
+        const splits = {
+            airplane: "air plane", sailboat: "sail boat", mailbox: "mail box",
+            raincoat: "rain coat", suitcase: "suit case", bookshelf: "book shelf",
+            campground: "camp ground", dragonfly: "dragon fly", wheelchair: "wheel chair",
+            keyboard: "key board",
+        };
+        for (const [target, spoken] of Object.entries(splits)) {
+            expect(isWordMatch(spoken, target)).toBe(true);
+        }
+    });
+    test("L6 prefixed words survive STT splits (re make vs remake)", () => {
+        const splits = {
+            remake: "re make", unlock: "un lock", rewrite: "re write", unzip: "un zip",
+            dislike: "dis like", distrust: "dis trust", misplace: "mis place",
+            misspell: "mis spell", reopen: "re open", recycle: "re cycle",
+        };
+        for (const [target, spoken] of Object.entries(splits)) {
+            expect(isWordMatch(spoken, target)).toBe(true);
+        }
+    });
+    test("letter-spelling stays out: the acoustic model never emits it", () => {
+        expect(isWordMatch("f r o g", "frog")).toBe(false);
+        expect(isWordMatch("c l o c k", "clock")).toBe(false);
+        expect(isWordMatch("a p p l e", "apple")).toBe(false);
+    });
+});
+
+describe("Inverse cross-collision — chapter joins never spell a seeded word", () => {
+    test("2..20-token windows of every chapter never equal a seeded word", () => {
+        const seeded = new Set(allWordBlast);
+        const collisions = [];
+        for (const sentence of allSentences) {
+            const words = normalizeText(sentence).split(/\s+/).filter(Boolean);
+            for (let start = 0; start < words.length; start++) {
+                let joined = "";
+                for (let k = 1; k <= 20 && start + k - 1 < words.length; k++) {
+                    joined += words[start + k - 1];
+                    if (joined.length > 20) break;
+                    if (k >= 2 && seeded.has(joined)) {
+                        collisions.push(`"${sentence}" :: "${joined}"`);
+                    }
+                }
+            }
+        }
+        // Bagsak dito = swap word (Step 4), never loosen the matcher.
+        expect(collisions).toEqual([]);
+    });
+});

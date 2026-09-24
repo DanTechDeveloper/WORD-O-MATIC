@@ -281,3 +281,146 @@ describe("useDeepgramRecognition — stale guards", () => {
         vi.useRealTimers();
     });
 });
+
+describe("useDeepgramRecognition — restart policy, token retry, error teardown", () => {
+    test("four quick deaths in a row give up instead of looping forever", async () => {
+        const { useHook } = await loadHook();
+        const stubs = stubBrowser();
+        const props = baseProps();
+        await renderOpen(stubs, props, useHook);
+
+        vi.useFakeTimers();
+        // Deaths 1-3 (each lived ~0ms): 3 retries with 1000/2000/3000ms backoff.
+        const backoffs = [1000, 2000, 3000];
+        for (let d = 0; d < 3; d++) {
+            await act(async () => {
+                dg.conns[d].handlers.close();
+                vi.advanceTimersByTime(100);
+            });
+            await act(async () => {
+                vi.advanceTimersByTime(backoffs[d]);
+            });
+            await act(async () => {});
+            expect(dg.conns.length).toBe(d + 2);
+        }
+        expect(props.onRestartFailed).not.toHaveBeenCalled();
+        // Death 4: streak exhausted → give up, no 5th conn ever.
+        await act(async () => {
+            dg.conns[3].handlers.close();
+            vi.advanceTimersByTime(100);
+        });
+        await act(async () => {});
+        expect(props.onRestartFailed).toHaveBeenCalledTimes(1);
+        expect(dg.conns.length).toBe(4);
+        await act(async () => {
+            vi.advanceTimersByTime(30000);
+        });
+        await act(async () => {});
+        expect(dg.conns.length).toBe(4);
+        vi.useRealTimers();
+    });
+
+    test("a healthy long-lived conn resets the quick-death streak", async () => {
+        const { useHook } = await loadHook();
+        const stubs = stubBrowser();
+        const props = baseProps();
+        await renderOpen(stubs, props, useHook);
+
+        vi.useFakeTimers();
+        // Death after 11s healthy: streak resets, retries like a first blip.
+        await act(async () => {
+            vi.advanceTimersByTime(11000);
+        });
+        await act(async () => {
+            dg.conns[0].handlers.close();
+            vi.advanceTimersByTime(1000);
+        });
+        await act(async () => {});
+        expect(dg.conns.length).toBe(2);
+        // Another death after a short life: streak is 1 again, not 2.
+        await act(async () => {
+            dg.conns[1].handlers.close();
+            vi.advanceTimersByTime(2000);
+        });
+        await act(async () => {});
+        expect(dg.conns.length).toBe(3);
+        expect(props.onRestartFailed).not.toHaveBeenCalled();
+        vi.useRealTimers();
+    });
+
+    test("token failure retries with backoff, then reports token_failed", async () => {
+        const { useHook } = await loadHook();
+        const stubs = stubBrowser();
+        stubs.fetchMock.mockRejectedValue(new Error("grant down"));
+        const props = baseProps();
+
+        vi.useFakeTimers();
+        renderHook(() => useHook(props));
+        await act(async () => {});
+        expect(stubs.fetchMock).toHaveBeenCalledTimes(1);
+        await act(async () => {
+            vi.advanceTimersByTime(1000);
+        });
+        await act(async () => {});
+        expect(stubs.fetchMock).toHaveBeenCalledTimes(2);
+        await act(async () => {
+            vi.advanceTimersByTime(2000);
+        });
+        await act(async () => {});
+        expect(stubs.fetchMock).toHaveBeenCalledTimes(3);
+        await act(async () => {
+            vi.advanceTimersByTime(3000);
+        });
+        await act(async () => {});
+        expect(stubs.fetchMock).toHaveBeenCalledTimes(4);
+        expect(props.onRecognitionError).toHaveBeenCalledTimes(1);
+        expect(props.onRecognitionError).toHaveBeenCalledWith("token_failed");
+        expect(dg.conns.length).toBe(0);
+        vi.useRealTimers();
+    });
+
+    test("token failure recovers when the retry succeeds", async () => {
+        const { useHook } = await loadHook();
+        const stubs = stubBrowser();
+        stubs.fetchMock.mockRejectedValueOnce(new Error("grant down"));
+        const props = baseProps();
+
+        vi.useFakeTimers();
+        renderHook(() => useHook(props));
+        await act(async () => {});
+        expect(stubs.fetchMock).toHaveBeenCalledTimes(1);
+        await act(async () => {
+            vi.advanceTimersByTime(1000);
+        });
+        await act(async () => {});
+        expect(stubs.fetchMock).toHaveBeenCalledTimes(2);
+        expect(dg.conns.length).toBe(1);
+        expect(props.onRecognitionError).not.toHaveBeenCalled();
+        vi.useRealTimers();
+    });
+
+    test("conn error tears the conn down and reconnects", async () => {
+        const { useHook } = await loadHook();
+        const stubs = stubBrowser();
+        const props = baseProps();
+        await renderOpen(stubs, props, useHook);
+        const conn = dg.conns[0];
+
+        act(() => {
+            conn.handlers.error(new Error("boom"));
+        });
+        expect(props.onRecognitionError).toHaveBeenCalledWith("boom");
+        expect(conn.close).toHaveBeenCalled();
+        // The real SDK emits close after close(): simulate the event, then
+        // the close handler owns restart policy.
+        vi.useFakeTimers();
+        await act(async () => {
+            conn.handlers.close();
+            vi.advanceTimersByTime(1100);
+        });
+        await act(async () => {});
+        expect(dg.conns.length).toBe(2);
+        expect(props.onRestartFailed).not.toHaveBeenCalled();
+        vi.useRealTimers();
+    });
+});
