@@ -263,6 +263,11 @@ export function useDeepgramRecognition({
                 }
                 permissionDeniedRef.current = false;
                 timeoutRefs.current.restartCount = 0;
+                // ponytail: fresh open re-arms grace — mount/targetWord grace
+                // expires during slow token+mic setup, so without this the
+                // first mic transient could instant-fail. Drops Wrong only;
+                // a fast correct still wins (500ms, like session transitions).
+                timeoutRefs.current.graceEnd = Date.now() + 500;
                 stateRefs.current.isListening = true;
                 stateRefs.current.lastSpeechAt = Date.now();
                 stateRefs.current.hasMatched = false;
@@ -514,7 +519,7 @@ export function useDeepgramRecognition({
 
     useEffect(() => {
         // ponytail: 500ms grace on session transitions (IDLE→ACTIVE flip) absorbs
-        // the mic/connection resume transient, but per-word grace above is only 50ms.
+        // the mic/connection resume transient, but per-word grace above is 800ms.
         timeoutRefs.current.graceEnd = Date.now() + 500;
         if (propsRef.current?.isActive && connRef.current) {
             armForCurrentTarget();

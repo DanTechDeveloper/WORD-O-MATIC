@@ -91,6 +91,24 @@ describe("isWordMatch — SSOT strict exact-only (Word Blast + Story Quest)", ()
         });
     });
 
+    describe("N-token stitch (3-cap, exact-only)", () => {
+        test("returns true when STT spells a target letter-by-letter (b a t vs bat)", () => {
+            expect(isWordMatch("b a t", "bat")).toBe(true);
+        });
+        test("returns true for 3-token split inside a sentence (b a t naps vs bat naps)", () => {
+            expect(isWordMatch("b a t naps", "bat naps")).toBe(true);
+        });
+        test("returns true for spoken-joined inverse (cupcake vs cup cake)", () => {
+            expect(isWordMatch("cupcake", "cup cake")).toBe(true);
+        });
+        test("returns false when 3-token join doesn't match (c a x vs cat)", () => {
+            expect(isWordMatch("c a x", "cat")).toBe(false);
+        });
+        test("returns false when 4-token join exceeds the cap (c a t s vs cats)", () => {
+            expect(isWordMatch("c a t s", "cats")).toBe(false);
+        });
+    });
+
     describe("multi-word target — ordered two-pointer (Story Quest semantics)", () => {
         test("returns true when target words appear in spoken with filler (um i like to explore)", () => {
             expect(isWordMatch("um i like to explore", "i like to explore")).toBe(true);

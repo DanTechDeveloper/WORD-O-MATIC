@@ -456,9 +456,7 @@ class StudentController extends Controller
                 return redirect()->route('student.dashboard')->with('new_badges', [$badgesData]);
             }
 
-            // ponytail: Word Blast mid-sequence goes to Dashboard for fresh onboarding
-            // (Dashboard highlight shows Story Quest next); skipped users replaying
-            // stay on TutorialPage so Story Quest unlock is visible.
+           
             if (! $user->student->refresh()->tutorial_completed_at) {
                 // skipped replay → TutorialPage, fresh onboarding → Dashboard
                 if ($user->student->tutorial_skipped_at) {
