@@ -203,12 +203,14 @@ class ParagraphModule extends Model
     }
 
     // Batched multi-user read; projects one status out of buildLevels().
+    // ponytail: modules hoisted — was re-fetched per user (N×2 queries).
     private static function statusGroups(array $userIds, string $status, ?string $cutoff): Collection
     {
+        $modules = self::modules();
         $masteryByUser = self::masteryQuery($userIds, $cutoff)->get()->groupBy('user_id');
 
         return collect($userIds)->mapWithKeys(fn ($id) => [
-            $id => collect(self::buildLevels(self::modules(), ($masteryByUser->get($id) ?? collect())->keyBy('paragraph_word_id')))
+            $id => collect(self::buildLevels($modules, ($masteryByUser->get($id) ?? collect())->keyBy('paragraph_word_id')))
                 ->filter(fn ($level) => $level[$status] !== [])
                 ->mapWithKeys(fn ($level) => [$level['level'] => $level[$status]])
                 ->all(),

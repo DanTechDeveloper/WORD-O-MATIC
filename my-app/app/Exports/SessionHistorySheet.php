@@ -41,7 +41,11 @@ class SessionHistorySheet implements FromCollection, WithColumnWidths, WithHeadi
         $tutorialWordIds = WordModule::where('is_tutorial', true)->pluck('id')->all();
         $tutorialParaIds = ParagraphModule::where('is_tutorial', true)->pluck('id')->all();
 
-        $rows = GameSession::with('user')->orderByDesc('created_at')->get()->map(function ($session) use ($tutorialWordIds, $tutorialParaIds) {
+        // ponytail: preload modules once — was ::find() per session row (N+1 on export).
+        $wordModules = WordModule::select('id', 'level', 'title')->get()->keyBy('id');
+        $paraModules = ParagraphModule::select('id', 'level', 'title')->get()->keyBy('id');
+
+        $rows = GameSession::with('user')->orderByDesc('created_at')->get()->map(function ($session) use ($tutorialWordIds, $tutorialParaIds, $wordModules, $paraModules) {
             if (($session->module_type === 'word' && in_array($session->module_id, $tutorialWordIds, true))
                 || ($session->module_type === 'paragraph' && in_array($session->module_id, $tutorialParaIds, true))) {
                 return null;
@@ -49,8 +53,8 @@ class SessionHistorySheet implements FromCollection, WithColumnWidths, WithHeadi
 
             $user = $session->user;
             $module = $session->module_type === 'word'
-                ? WordModule::find($session->module_id)
-                : ParagraphModule::find($session->module_id);
+                ? ($wordModules[$session->module_id] ?? null)
+                : ($paraModules[$session->module_id] ?? null);
 
             $levelLabel = $module
                 ? 'Level '.$module->level.' - '.$module->title

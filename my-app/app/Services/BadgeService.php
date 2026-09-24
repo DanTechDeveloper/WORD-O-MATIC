@@ -52,6 +52,16 @@ class BadgeService
     // deadline-hit sessions excluded like every other session metric.
     public function calculateBestSentence(User $user): int
     {
+        // ponytail: request-scoped memo (request attributes, NOT a static prop —
+        // statics survive across requests in FrankenPHP workers and would go stale).
+        // Safe: the only session writer is finishRound, and every read here runs
+        // after its logSession within the same request — no mid-request writer.
+        $memoKey = "best_sentence.{$user->id}";
+        $request = request();
+        if ($request->attributes->has($memoKey)) {
+            return (int) $request->attributes->get($memoKey);
+        }
+
         $tutParaId = ParagraphModule::tutorialId();
 
         $best = GameSession::where('user_id', $user->id)
@@ -63,7 +73,10 @@ class BadgeService
             ->map(fn ($v) => (int) $v)
             ->max();
 
-        return (int) ($best ?? 0);
+        $best = (int) ($best ?? 0);
+        $request->attributes->set($memoKey, $best);
+
+        return $best;
     }
     public function awardOnboardingBadge(User $user, string $slug): ?array
     {
@@ -227,10 +240,12 @@ class BadgeService
 
         $badges = Badges::whereIn('metric', ['total_points', 'streak', 'accuracy', 'paragraph_completion', 'word_completion', 'best_sentence', 'action'])->get();
 
-        $progress = [];
-
-        foreach ($badges as $badge) {
-            $currentValue = match ($badge->metric) {
+        // ponytail: compute once per metric, not per badge — was re-running
+        // the full curriculum build / session scan for every badge sharing
+        // a metric. Loop below keeps original badge order for the UI.
+        $values = [];
+        foreach ($badges->groupBy('metric') as $metric => $group) {
+            $values[$metric] = match ($metric) {
                 'total_points' => $student ? $student->points : 0,
                 'streak' => $this->bestSessionMetric($user, 'streak'),
                 'accuracy' => (int) round((float) $session->accuracy),
@@ -240,6 +255,12 @@ class BadgeService
                 'action' => null,
                 default => 0,
             };
+        }
+
+        $progress = [];
+
+        foreach ($badges as $badge) {
+            $currentValue = $values[$badge->metric] ?? 0;
 
             $progress[] = [
                 'name' => $badge->name,

@@ -374,14 +374,20 @@ class TeacherController extends Controller
     {
         $modules = WordModule::with('words')->get();
 
-        $transformedModules = $modules->map(function ($module) {
+        // ponytail: one batched exists-check — was one query per module.
+        $allWordIds = $modules->flatMap(fn ($module) => $module->words->pluck('id'))->unique()->values();
+        $progressWordIds = $allWordIds->isEmpty()
+            ? collect()
+            : StudentWordMastery::whereIn('word_id', $allWordIds)->distinct()->pluck('word_id');
+
+        $transformedModules = $modules->map(function ($module) use ($progressWordIds) {
             return [
                 'id' => $module->id,
                 'level' => $module->level,
                 'title' => $module->title,
                 'total_points' => $module->total_points,
                 'has_progress' => $module->words->isNotEmpty()
-                    && StudentWordMastery::whereIn('word_id', $module->words->pluck('id'))->exists(),
+                    && $module->words->pluck('id')->intersect($progressWordIds)->isNotEmpty(),
                 'words' => $module->words->map(function ($word) {
                     return [
                         'id' => $word->id,
