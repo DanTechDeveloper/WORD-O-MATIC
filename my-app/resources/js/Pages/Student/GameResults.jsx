@@ -16,13 +16,11 @@ const CONFETTI = [
     { icon: "bolt", color: "text-yellow-300" },
 ];
 
+// ponytail: headlines stay short — the h1 is whitespace-nowrap, so long
+// lines overflow on small screens. Two words max per pool entry.
 const HEADLINES = {
-    zero: [
-        "EVERY CHAMPION STARTS SOMEWHERE!",
-        "FIRST TRY DONE, LET'S GO!",
-        "EVERY WORD COUNTS!",
-    ],
-    low: ["YOU GOT THIS!", "KEEP GOING!", "GOOD TRY! KEEP PRACTICING!"],
+    zero: ["NICE START!", "GOOD TRY!", "NEXT TIME!"],
+    low: ["YOU GOT THIS!", "KEEP GOING!", "GOOD TRY!"],
     mid: ["GREAT JOB!", "NICE WORK!", "KEEP IT UP!"],
     high: ["INCREDIBLE!", "OUTSTANDING!", "AMAZING!"],
 };
@@ -177,12 +175,12 @@ export default function GameResults({
                         {isPerfect
                             ? "Amazing!"
                             : accuracyPct >= 80
-                              ? "Outstanding keep shining!"
+                              ? "Outstanding!"
                               : accuracyPct >= 60
                                 ? "Great progress!"
                                 : accuracyPct >= 40
-                                  ? "Good try practice makes progress!"
-                                  : "Every try counts keep going!"}
+                                  ? "Good try!"
+                                  : "Keep going!"}
                     </div>
 
                     {!deadlineHit && !isPracticeMode && !isTutorial && nextBadge && (
