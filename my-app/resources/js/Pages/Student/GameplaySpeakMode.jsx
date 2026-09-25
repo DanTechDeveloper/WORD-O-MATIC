@@ -21,8 +21,7 @@ const GUIDE_STEPS = [
     { id: "read-sentence", title: "READ THE SENTENCE", message: "Say the whole sentence clearly, not just one word!", emoji: "menu_book", color: "quest", action: "tap-continue", spotlight: "sentence" },
     { id: "light-up", title: "WATCH IT LIGHT UP", message: "Words glow BLUE as you say them. GREEN locks in — RED moves on, so keep reading!", emoji: "auto_awesome", color: "quest", action: "tap-continue", spotlight: "sentence" },
     { id: "sentence-score", title: "SENTENCE SCORE", message: "After each sentence you get a score card — then jump to the glowing next line!", emoji: "celebration", color: "quest", action: "tap-continue", spotlight: "sentence" },
-    { id: "tap-mic", title: "TAP TO PLAY!", message: "Tap the mic below when you're ready. 3-2-1 countdown, then go!", emoji: "mic", color: "quest", action: "tap-mic", spotlight: "mic" },
-    { id: "keep-reading", title: "KEEP READING!", message: "Nice — it's hearing you! Finish the sentence!", emoji: "graphic_eq", color: "quest", action: "say-sentence-start", spotlight: "sentence" },
+    { id: "tap-mic", title: "TAP TO PLAY!", message: "Tap the mic below when you're ready. 3-2-1 countdown, then go!", emoji: "mic", color: "quest", action: "tap-mic", spotlight: "mic" }
 ];
 
 export default function GameplaySpeakMode({ module, tutorialComplete = true, tutorialSkipped = false, wordTutorialDone = false, speakTutorialDone = false }) {
@@ -51,6 +50,7 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true, tut
         startGame,
         handleWordRecognized,
         handleMispronounce,
+        handleSentenceVerdict,
         handleFatalError,
         persistProgress,
         verdicts,
@@ -200,6 +200,7 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true, tut
         lookahead: speakLookahead,
         onProgress: handleSpeakProgress,
         onWordRecognized: handleWordRecognized,
+        onSentenceVerdict: handleSentenceVerdict,
         onPermissionDenied: handlePermissionDenied,
         onMispronounced: handleMispronounce,
         onRecognitionError: undefined,
@@ -298,20 +299,6 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true, tut
                             variant="mini"
                             footerText={null}
                             className={coachLeaving ? "opacity-0 transition-opacity duration-300" : ""}
-                        />
-                    )}
-                    {/* ponytail: this IS the SQ pronounced coach (tutorial + main) —
-                        no separate correct-cheer bubble, or it would double up here. */}
-                    {sentenceBreak && sentenceFeedback && bodyUrl && (
-                        <AvatarSpeechBubble
-                            emoji={sentenceFeedback.score >= sentenceFeedback.total ? "celebration" : "sentiment_very_satisfied"}
-                            title={sentenceFeedback.message}
-                            message={`Sentence Score: ${sentenceFeedback.score} / ${sentenceFeedback.total} — ${sentenceFeedback.note ?? "Nice try!"}`}
-                            bodyUrl={bodyUrl}
-                            color="quest"
-                            position="bottom-right"
-                            variant="mini"
-                            footerText={null}
                         />
                     )}
                 </>

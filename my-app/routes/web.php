@@ -22,7 +22,8 @@ Route::get('/sitemap.xml', function () {
     return response()->file(public_path('sitemap.xml'));
 })->name('sitemap');
 
-//   Route::inertia("/", "Testing/Microphone");
+// Manual mic/RNNoise A/B harness (no auth, no data — mic needs user gesture anyway)
+Route::get('/testing/microphone', fn () => Inertia::render('Testing/Microphone'))->name('testing.microphone');
 
 Route::middleware(['auth'])->group(function () {
     Route::get('/auth/check', function (Illuminate\Http\Request $request) {

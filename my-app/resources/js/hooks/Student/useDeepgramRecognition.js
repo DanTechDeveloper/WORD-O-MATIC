@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { DeepgramClient } from "@deepgram/sdk";
 import { normalizeText } from "@/lib/speechUtils";
 import { applyNoiseGate } from "@/lib/audioGate";
+import { RNNOISE, createRnnoiseNode, downsample48kTo16k } from "@/lib/rnnoise";
 import {
     clearAllTimers,
     armWordTimeout,
@@ -29,11 +30,13 @@ export function useDeepgramRecognition({
     onRecognitionError,
     onRestartFailed,
     onProgress,
+    onSentenceVerdict,
     lookahead = "",
     matchMode = "word",
     muted = false,
     keyterms = [],
     resetKey,
+    denoise = true,
 }) {
     const isWordMode = matchMode === "word";
     const propsRef = useRef({
@@ -43,12 +46,14 @@ export function useDeepgramRecognition({
         targetWord,
         muted,
         keyterms,
+        denoise,
         onWordRecognized,
         onPermissionDenied,
         onMispronounced,
         onRecognitionError,
         onRestartFailed,
         onProgress,
+        onSentenceVerdict,
         lookahead,
     });
 
@@ -60,12 +65,14 @@ export function useDeepgramRecognition({
             targetWord,
             muted,
             keyterms,
+            denoise,
             onWordRecognized,
             onPermissionDenied,
             onMispronounced,
             onRecognitionError,
             onRestartFailed,
             onProgress,
+            onSentenceVerdict,
             lookahead,
         };
     }, [
@@ -75,12 +82,14 @@ export function useDeepgramRecognition({
         targetWord,
         muted,
         keyterms,
+        denoise,
         onWordRecognized,
         onPermissionDenied,
         onMispronounced,
         onRecognitionError,
         onRestartFailed,
         onProgress,
+        onSentenceVerdict,
         lookahead,
     ]);
 
@@ -117,10 +126,24 @@ export function useDeepgramRecognition({
     const audioCtxRef = useRef(null);
     const sourceNodeRef = useRef(null);
     const scriptNodeRef = useRef(null);
+    const rnnoiseNodeRef = useRef(null);
     const permissionDeniedRef = useRef(false);
     const gateStateRef = useRef({ isOpen: false });
 
     const teardownAudio = () => {
+        if (rnnoiseNodeRef.current) {
+            try {
+                rnnoiseNodeRef.current.update?.(false);
+            } catch {
+                /* noop */
+            }
+            try {
+                rnnoiseNodeRef.current.disconnect();
+            } catch {
+                /* noop */
+            }
+            rnnoiseNodeRef.current = null;
+        }
         if (scriptNodeRef.current) {
             try {
                 scriptNodeRef.current.disconnect();
@@ -242,7 +265,14 @@ export function useDeepgramRecognition({
 
         try {
             const AudioCtx = window.AudioContext || window.webkitAudioContext;
-            const audioCtx = new AudioCtx({ sampleRate: 16000 });
+            // ponytail: 48k context feeds RNNoise at its native rate; pushPcm
+            // decimates back to 16k for Deepgram. Legacy 16k path when denoise off.
+            const audioCtx = new AudioCtx({
+                sampleRate:
+                    propsRef.current.denoise === false
+                        ? 16000
+                        : RNNOISE.inRate,
+            });
             audioCtxRef.current = audioCtx;
             const dg = new DeepgramClient({ accessToken: token, baseUrl });
             // ponytail: batch keyterm = level words (Word Blast 10 + Story Quest sentence words) — set once at open, survives targetWord re-arm without reconnect
@@ -258,7 +288,10 @@ export function useDeepgramRecognition({
                 model: MODEL,
                 language: LANGUAGE,
                 encoding: "linear16",
-                sample_rate: audioCtx.sampleRate,
+                // ponytail: always 16000 — the denoise path runs a 48k
+                // context (RNNoise native rate) but pushPcm decimates
+                // back to 16k before sending.
+                sample_rate: 16000,
                 channels: 1,
                 interim_results: true,
                 smart_format: false,
@@ -362,10 +395,44 @@ export function useDeepgramRecognition({
                 const audioCtx = audioCtxRef.current;
                 const source = audioCtx.createMediaStreamSource(stream);
 
+                // ponytail: RNNoise ML denoise (local WASM, 48k-native). Any
+                // failure — no SIMD, missing assets, worklet error — falls
+                // back to the legacy peak-gate path, never a broken mic.
+                let denoiseNode = null;
+                if (
+                    propsRef.current.denoise !== false &&
+                    audioCtx.sampleRate === RNNOISE.inRate
+                ) {
+                    try {
+                        denoiseNode = await createRnnoiseNode(audioCtx);
+                    } catch {
+                        denoiseNode = null;
+                    }
+                }
+                if (!stateRefs.current.isMounted) {
+                    if (denoiseNode) {
+                        try {
+                            denoiseNode.disconnect();
+                        } catch {
+                            /* noop */
+                        }
+                    }
+                    stream.getTracks().forEach((t) => t.stop());
+                    conn.close();
+                    return;
+                }
+                rnnoiseNodeRef.current = denoiseNode;
+
                 const pushPcm = (float32) => {
                     if (propsRef.current?.muted) return;
                     if (!stateRefs.current.isMounted) return;
-                    const gated = applyNoiseGate(float32, gateStateRef.current);
+                    // ponytail: 48k denoise context → decimate to 16k before
+                    // gate+send; legacy 16k path passes through untouched.
+                    const at16k =
+                        audioCtx.sampleRate === RNNOISE.inRate
+                            ? downsample48kTo16k(float32)
+                            : float32;
+                    const gated = applyNoiseGate(at16k, gateStateRef.current);
                     const int16 = new Int16Array(gated.length);
                     for (let i = 0; i < gated.length; i++) {
                         const s = Math.max(-1, Math.min(1, gated[i]));
@@ -402,7 +469,12 @@ export function useDeepgramRecognition({
                 scriptNodeRef.current = processor;
                 const sink = audioCtx.createGain();
                 sink.gain.value = 0;
-                source.connect(processor);
+                if (denoiseNode) {
+                    source.connect(denoiseNode);
+                    denoiseNode.connect(processor);
+                } else {
+                    source.connect(processor);
+                }
                 processor.connect(sink);
                 sink.connect(audioCtx.destination);
             });

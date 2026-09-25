@@ -424,3 +424,27 @@ describe("useDeepgramRecognition — restart policy, token retry, error teardown
         vi.useRealTimers();
     });
 });
+
+describe("useDeepgramRecognition — RNNoise denoise path", () => {
+    test("default: 48k context for RNNoise, Deepgram still gets 16k", async () => {
+        const { useHook, Client } = await loadHook();
+        const stubs = stubBrowser();
+        await renderOpen(stubs, baseProps(), useHook);
+        expect(window.AudioContext).toHaveBeenCalledWith({
+            sampleRate: 48000,
+        });
+        const client = vi.mocked(Client).mock.results[0].value;
+        expect(client.listen.v1.connect).toHaveBeenCalledWith(
+            expect.objectContaining({ sample_rate: 16000 }),
+        );
+    });
+
+    test("denoise:false keeps the legacy 16k context", async () => {
+        const { useHook } = await loadHook();
+        const stubs = stubBrowser();
+        await renderOpen(stubs, { ...baseProps(), denoise: false }, useHook);
+        expect(window.AudioContext).toHaveBeenCalledWith({
+            sampleRate: 16000,
+        });
+    });
+});

@@ -119,6 +119,48 @@ export function countConsecutiveMatches(full, lookahead) {
     return matched;
 }
 
+// ponytail: word-level alignment for mid-sentence substitutions. Prefix
+// counting alone can never advance past a wrong word ("the DOG is very big"
+// vs "the cat is very big" stalls the BLUE frontier at "cat" until the 5s
+// watchdog, then reds the innocent remainder too). Walking the transcript
+// against the lookahead marks the substitution wrong and keeps the correct
+// remainder green in one authoritative pass. Returns outcomes aligned to
+// lookahead positions, or null when nothing aligns (watchdog owns it).
+export function alignSentence(full, lookahead) {
+    const fw = normalizeText(full)
+        .split(/\s+/)
+        .filter(Boolean)
+        .filter((w, i, arr) => i === 0 || w !== arr[i - 1]);
+    const tw = normalizeText(lookahead).split(/\s+/).filter(Boolean);
+    if (fw.length === 0 || tw.length === 0) return null;
+    let start = -1;
+    for (let i = 0; i < fw.length; i++) {
+        if (fw[i] === tw[0] || isWordMatch(fw[i], tw[0])) {
+            start = i;
+            break;
+        }
+    }
+    if (start === -1) return null;
+    const outcomes = [];
+    let i = start;
+    for (let j = 0; j < tw.length; j++) {
+        if (i >= fw.length) break; // nothing more spoken — watchdog owns rest
+        if (fw[i] === tw[j] || isWordMatch(fw[i], tw[j])) {
+            outcomes.push("correct");
+            i++;
+            continue;
+        }
+        // Mismatch is only a real wrong word when the kid moved on (more
+        // speech after it) or the lookahead is fully covered (sentence done).
+        // A frontier stutter-fragment ("ca" for "cat", nothing after) defers
+        // to the watchdog instead of locking a false RED.
+        if (i + 1 >= fw.length && j < tw.length - 1) break;
+        outcomes.push("wrong");
+        i++;
+    }
+    return outcomes.length > 0 ? outcomes : null;
+}
+
 export function armSentenceTimeout(stateRefs, timerRefs, propsRef) {
     clearTimeout(timerRefs.current.sentence);
 
@@ -232,6 +274,28 @@ export function processSentenceModeResult(
     if (rawLookahead) {
         const advanceCount = countConsecutiveMatches(full, rawLookahead);
         const fullMatch = advanceCount >= refWordCount;
+        // ponytail: mid-sentence substitution verdict — a partial
+        // authoritative final with speech past the mismatch aligns to
+        // GREEN/RED/…GREEN in one pass instead of stalling the BLUE
+        // frontier until the watchdog. Falls through to the legacy prefix
+        // path when nothing aligns or no batch callback is wired.
+        if (
+            !stateRefs.current.hasMatched &&
+            hasAuthoritative &&
+            confidence >= 0.6 &&
+            Date.now() >= timeoutRefs.current.graceEnd &&
+            typeof propsRef.current.onSentenceVerdict === "function"
+        ) {
+            const outcomes = alignSentence(full, rawLookahead);
+            if (outcomes && outcomes.length > 0) {
+                bump("sentence.align");
+                stateRefs.current.hasMatched = true;
+                stateRefs.current.mispronouncedSentence = false;
+                propsRef.current.onSentenceVerdict(outcomes);
+                clearAllTimers(timerRefs.current);
+                return;
+            }
+        }
         if (
             !stateRefs.current.hasMatched &&
             advanceCount > 0 &&

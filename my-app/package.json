@@ -36,6 +36,7 @@
         "@maikokan/kilo-hindsight": "^0.1.1",
         "axios": "^1.13.5",
         "react-is": "^19.2.7",
-        "recharts": "^3.8.1"
+        "recharts": "^3.8.1",
+        "simple-rnnoise-wasm": "^1.1.0"
     }
 }

@@ -307,6 +307,64 @@ export function useStoryQuestEngine({ saveEndpoint = "/student/saveParagraphProg
         rest.words,
     ]);
 
+    // ponytail: batch verdicts from sentence alignment (GREEN/RED/…GREEN in
+    // one authoritative pass). Sequential single calls can't do this — each
+    // would read a stale currentWordIndex closure in the same tick — so the
+    // batch computes from one base index, one verdict write, one index move.
+    const handleSentenceVerdict = useCallback((outcomes) => {
+        if (gameStateRef.current !== "ACTIVE" || sentenceBreak) return;
+        if (!Array.isArray(outcomes) || outcomes.length === 0) return;
+        const idx = core.currentWordIndex;
+        if (idx >= core.totalWords) return;
+        if (verdictsRef.current[idx] !== undefined) return;
+
+        const range = sentenceRanges[sentenceScoresRef.current.length];
+        const rangeEnd = range ? range.end : core.totalWords;
+        // ponytail: same sentence-boundary clamp as handleWordRecognized —
+        // cross-sentence words re-evaluate after the break instead.
+        const applied = outcomes.slice(0, Math.max(rangeEnd - idx, 1));
+        if (applied.length === 0) return;
+
+        // ponytail: side effects stay out of the setState updater (StrictMode
+        // double-invokes updaters — mastery POSTs must fire exactly once).
+        const marked = {};
+        let correct = 0;
+        let wrong = 0;
+        applied.forEach((v, k) => {
+            const verdict = v === "wrong" ? "wrong" : "correct";
+            marked[idx + k] = verdict;
+            const w = rest.words?.[idx + k];
+            if (!w) return;
+            if (verdict === "correct") {
+                correct++;
+                onWordRecognizedRef.current?.(w);
+            } else {
+                wrong++;
+                onMispronounceRef.current?.(w);
+            }
+        });
+        verdictsRef.current = { ...verdictsRef.current, ...marked };
+        setVerdicts(verdictsRef.current);
+        if (correct > 0) core.addScore(correct);
+        if (wrong > 0) pulseWrong();
+
+        if (idx + applied.length >= rangeEnd) {
+            completeSentence(sentenceScoresRef.current.length);
+        } else {
+            core.moveToNextWord(applied.length);
+        }
+    }, [
+        sentenceBreak,
+        sentenceRanges,
+        completeSentence,
+        pulseWrong,
+        core.currentWordIndex,
+        core.totalWords,
+        core.addScore,
+        core.moveToNextWord,
+        rest.words,
+    ]);
+
     const handleMispronounce = useCallback(() => {
         if (gameStateRef.current !== "ACTIVE" || sentenceBreak) return;
         const idx = core.currentWordIndex;
@@ -381,6 +439,7 @@ export function useStoryQuestEngine({ saveEndpoint = "/student/saveParagraphProg
         handleFatalError,
         handleWordRecognized,
         handleMispronounce,
+        handleSentenceVerdict,
         // New sentence-level state.
         verdicts,
         sentenceScores,
