@@ -47,6 +47,7 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true, tut
         timeLeft,
         isResume,
         isSaving,
+        online,
         handleTimeUp,
         startGame,
         handleWordRecognized,
@@ -54,6 +55,7 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true, tut
         handleSentenceVerdict,
         handleFatalError,
         persistProgress,
+        refillRoundClock,
         verdicts,
         sentenceFeedback,
         sentenceBreak,
@@ -122,6 +124,15 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true, tut
     }, [setGameState]);
 
     const handleMicrophoneClick = useCallback(async () => {
+        // ponytail: refuse to START a round with no connection — same reason as
+        // Word Blast: a round that begins offline never opens the mic, and its
+        // 0/0 persist banks a junk 0-score GameSession (no server zero-guard at
+        // StudentController:558-562). SILENT on purpose: the mic and the
+        // TapToStartOverlay already read "No Connection" from `online`, so the
+        // kid sees why on the control he tapped. Reads navigator.onLine, not
+        // `online`: click-time truth, no render lag.
+        // === false, not ! — fail open under Node/SSR.
+        if (navigator.onLine === false) return;
         if (guideArmed) {
             // ponytail: the tour's mic step is the ONLY tour moment the mic is
             // live — the tap itself is the required action (tap-mic advances).
@@ -147,6 +158,10 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true, tut
         if (gameState === "ACTIVE") {
             pauseBackgroundMusic();
             setMicLive(true);
+        } else {
+            // ponytail: micLive early-returns the /student click listener
+            // (sounds.js) — leaving it true after the round kills BGM + SFX.
+            setMicLive(false);
         }
     }, [gameState]);
 
@@ -190,7 +205,7 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true, tut
         }
     }, [guideArmed, guideStep, hasSpoken]);
 
-    useDeepgramRecognition({
+    const { reconnecting } = useDeepgramRecognition({
         isActive: gameState === "ACTIVE",
         preload: gameState === "COUNTDOWN" || gameState === "ACTIVE",
         muted: sentenceBreak,
@@ -205,7 +220,14 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true, tut
         onPermissionDenied: handlePermissionDenied,
         onMispronounced: handleMispronounce,
         onRecognitionError: undefined,
-        onRestartFailed: handleFatalError,
+        // ponytail: order is load-bearing — handleFatalError (the SQ wrapper,
+        // which also clearBreak()s the celebration timers) persists FIRST, then
+        // refillRoundClock returns to IDLE. Reversed = the score is lost.
+        // Same three guards as Word Blast; see GameplayReadMode.jsx.
+        onRestartFailed: () => {
+            handleFatalError();
+            if (!isResume && !isTutorial && navigator.onLine) refillRoundClock();
+        },
         matchMode: "sentence",
     });
     const avatarUrl = auth?.user?.student?.avatar;
@@ -273,7 +295,7 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true, tut
             ) : (
                 <>
                     {gameState === "IDLE" && !isResume && (!guideArmed || guideStepObj?.action === "tap-mic") && (
-                        <TapToStartOverlay color="quest" permissionState={permissionState} spotlight={guideArmed} />
+                        <TapToStartOverlay color="quest" permissionState={permissionState} spotlight={guideArmed} noConnection={!online} />
                     )}
                     {/* ponytail: no-clash priority — the mispronounce coach
                         outranks the guide; the guide hides and the step is
@@ -320,6 +342,8 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true, tut
                 <Microphone
                     isListening={gameState === "ACTIVE"}
                     disabled={gameState === "COUNTDOWN" || isSaving}
+                    offline={!online}
+                    reconnecting={reconnecting}
                     onClick={handleMicrophoneClick}
                     color="quest"
                     spotlight={guideArmed && guideStepObj?.spotlight === "mic"}

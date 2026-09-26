@@ -194,6 +194,20 @@ export function armSentenceTimeout(stateRefs, timerRefs, propsRef) {
             return;
         }
         if (Date.now() - s.lastSpeechAt >= 5000) {
+            // ponytail: this watchdog reports SILENCE, and silence caused by a
+            // dead link is infrastructure, not the child. Gating it here stops a
+            // dropped connection from silently marking one word Wrong, bumping
+            // the index, and losing the training POST (no speech arrives
+            // offline, so no `mastered` write can be lost either).
+            // === false, not !: navigator.onLine is undefined under Node/SSR, and
+            // a truthiness test there would silence the watchdog permanently —
+            // fail-open, suppress only on positive evidence of offline.
+            // The speech-verdict path above stays connectivity-free on purpose —
+            // an offline early-return there would mark EVERY child Wrong.
+            if (navigator.onLine === false) {
+                timerRefs.current.sentence = null;
+                return;
+            }
             s.mispronouncedSentence = true;
             propsRef.current.onMispronounced?.(s.transcript);
             timerRefs.current.sentence = null;
@@ -225,6 +239,11 @@ export function armWordTimeout(
             !timerRefs.current.wordSettle &&
             timeoutRefs.current.target === target
         ) {
+            // ponytail: same rationale as armSentenceTimeout — this reports
+            // silence, not a wrong word. Checked at FIRE time (not arm time)
+            // because the link can drop between arming and firing. `=== false`
+            // so an undefined navigator.onLine (Node/SSR) fails open.
+            if (navigator.onLine === false) return;
             bump("word.timeout5s");
             stateRefs.current.mispronouncedInWord = true;
             propsRef.current.onMispronounced?.();

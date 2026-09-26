@@ -23,8 +23,25 @@ const COLOR_MAP = {
     },
 };
 
-const Microphone = memo(function Microphone({ isListening, disabled, onClick, color = "accent", spotlight = false }) {
+const Microphone = memo(function Microphone({ isListening, disabled, offline, reconnecting, onClick, color = "accent", spotlight = false }) {
     const c = COLOR_MAP[color] || COLOR_MAP.accent;
+    // ponytail: offline reuses the idle aura dim (opacity-40) — no new color,
+    // and a mic that cannot work must not pulse like a live one. reconnecting
+    // dims too: a live round waiting on a socket has no audio to show.
+    const live = isListening && !offline && !reconnecting;
+    // ponytail: offline outranks disabled — disabled means "Get Ready!" (a
+    // countdown that IS coming), offline means nothing will happen at all.
+    // Wrong order shows a kid "Get Ready!" for a round that never starts.
+    // reconnecting outranks disabled so a live round never promises a countdown.
+    const prompt = live
+        ? "Listening..."
+        : offline
+          ? "No Connection"
+          : reconnecting
+            ? "Reconnecting..."
+            : disabled
+              ? "Get Ready!"
+              : "Speak to Smash!";
     // ponytail: tutorial tour glow on the mic step only — null/false everywhere else.
     const spotRing = spotlight ? (color === "quest" ? " ring-4 ring-quest animate-pulse" : " ring-4 ring-accent animate-pulse") : "";
     return (
@@ -39,31 +56,31 @@ const Microphone = memo(function Microphone({ isListening, disabled, onClick, co
                 >
                     {/* <!-- Glowing Aura --> */}
                     <div
-                        className={`absolute inset-0 rounded-full bg-gradient-to-tr ${c.glow} blur-[30px] sm:blur-[40px] md:blur-[45px] ${c.glowShadow} transition-opacity duration-500 ${isListening ? "opacity-80 animate-pulse" : "opacity-40 group-hover:opacity-60"}`}
+                        className={`absolute inset-0 rounded-full bg-gradient-to-tr ${c.glow} blur-[30px] sm:blur-[40px] md:blur-[45px] ${c.glowShadow} transition-opacity duration-500 ${live ? "opacity-80 animate-pulse" : "opacity-40 group-hover:opacity-60"}`}
                     ></div>
 
                     {/* <!-- Main Mic Housing --> */}
                     <div className={`relative flex items-center justify-center w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-full bg-on-background/10 border-2 sm:border-3 md:border-4 border-on-background/10 shadow-2xl backdrop-blur-xl${spotRing}`}>
                         {/* <!-- Tech Inner Ring --> */}
                         <div
-                            className={`absolute w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-full border border-dashed ${c.ringIdle} ${isListening ? `animate-[spin_3s_linear_infinite] ${c.ringActive}` : "animate-[spin_10s_linear_infinite]"}`}
+                            className={`absolute w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-full border border-dashed ${c.ringIdle} ${live ? `animate-[spin_3s_linear_infinite] ${c.ringActive}` : "animate-[spin_10s_linear_infinite]"}`}
                         ></div>
 
                         {/* <!-- Core Mic Icon --> */}
                         <div
-                            className={`w-16 h-16 sm:w-18 sm:h-18 md:w-20 md:h-20 rounded-full bg-gradient-to-tr ${c.core} flex items-center justify-center shadow-inner ring-4 ring-white/10 transition-transform duration-300 ${isListening ? `scale-110 ${c.coreRing}` : "group-hover:scale-110"}`}
+                            className={`w-16 h-16 sm:w-18 sm:h-18 md:w-20 md:h-20 rounded-full bg-gradient-to-tr ${c.core} flex items-center justify-center shadow-inner ring-4 ring-white/10 transition-transform duration-300 ${live ? `scale-110 ${c.coreRing}` : "group-hover:scale-110"}`}
                         >
                             <span
-                                className={`material-symbols-outlined text-white text-4xl sm:text-5xl transition-all ${isListening ? "scale-125" : ""}`}
+                                className={`material-symbols-outlined text-white text-4xl sm:text-5xl transition-all ${live ? "scale-125" : ""}`}
                             >
-                                {isListening ? "graphic_eq" : "mic"}
+                                {live ? "graphic_eq" : "mic"}
                             </span>
                         </div>
                     </div>
 
                     {/* <!-- Floating Tech Bits --> */}
                     <div
-                        className={`absolute -top-4 -right-2 ${c.badge} text-surface-container-lowest p-1 rounded-full border-2 border-white shadow-lg ${isListening ? "animate-spin" : "animate-bounce"}`}
+                        className={`absolute -top-4 -right-2 ${c.badge} text-surface-container-lowest p-1 rounded-full border-2 border-white shadow-lg ${live ? "animate-spin" : "animate-bounce"}`}
                     >
                         <span className="material-symbols-outlined text-[10px] sm:text-sm font-black">
                             graphic_eq
@@ -78,10 +95,10 @@ const Microphone = memo(function Microphone({ isListening, disabled, onClick, co
 
                 {/* <!-- Action Prompt --> */}
                 <div
-                    className={`bg-on-background/10 backdrop-blur-md px-4 sm:px-6 md:px-8 py-2 sm:py-3 rounded-full border border-white/10 flex items-center gap-2 sm:gap-3 shadow-xl transition-all duration-300 ${isListening ? `${c.promptBorder} scale-105` : ""}`}
+                    className={`bg-on-background/10 backdrop-blur-md px-4 sm:px-6 md:px-8 py-2 sm:py-3 rounded-full border border-white/10 flex items-center gap-2 sm:gap-3 shadow-xl transition-all duration-300 ${live ? `${c.promptBorder} scale-105` : ""}`}
                 >
                     <span className="text-on-background font-black italic tracking-widest uppercase text-sm sm:text-base md:text-lg whitespace-nowrap">
-                        {isListening
+                        {live
                             ? "Listening..."
                             : disabled
                               ? "Get Ready!"

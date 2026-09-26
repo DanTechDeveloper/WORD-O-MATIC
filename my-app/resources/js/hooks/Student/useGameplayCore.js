@@ -53,6 +53,24 @@ export function useGameplayCore({
         return Math.max(0, Math.min(60, Math.floor(raw)));
     });
     const [isSaving, setIsSaving] = useState(false);
+    // ponytail: the only re-render source for connectivity. Lives here because
+    // BOTH pages reach this hook (Story Quest via useStoryQuestEngine's
+    // `...core` spread), so one subscription covers Word Blast + Story Quest
+    // and no new hook file exists. RENDER-ONLY — the click-time gate reads
+    // navigator.onLine directly, because state can lag the event by a render.
+    // !== false, not navigator.onLine: undefined under Node/SSR must read
+    // as online, matching the gate's fail-open.
+    const [online, setOnline] = useState(() => navigator.onLine !== false);
+
+    useEffect(() => {
+        const sync = () => setOnline(navigator.onLine !== false);
+        window.addEventListener("online", sync);
+        window.addEventListener("offline", sync);
+        return () => {
+            window.removeEventListener("online", sync);
+            window.removeEventListener("offline", sync);
+        };
+    }, []);
 
     const currentStreakRef = useRef(currentStreak);
     const hasSaved = useRef(false);
@@ -174,6 +192,31 @@ export function useGameplayCore({
     const clearResume = useCallback(() => {
         clearResumeSession(moduleId);
     }, [moduleId]);
+
+    // ponytail: post-fatal-ASR recovery. Refill the clock instead of "pausing"
+    // it — the 60s interval is ACTIVE-gated so it already froze, and a dropout at
+    // t=58s would leave 2 playable seconds. Return to IDLE so TapToStartOverlay
+    // comes back (it only renders at IDLE, never COUNTDOWN).
+    // Position is deliberately KEPT (startGame() resets no counters, so wiping it
+    // would hand back word 7-of-10 with 2s left). Keeping the Story Quest
+    // verdicts matters too: useStoryQuestEngine early-returns on
+    // `verdicts[idx] !== undefined`, so clearing them makes every already-read
+    // sentence a silent dead input. resumeStorage.js needs no change — both
+    // resume writers are ACTIVE-gated, so the key reappears on its own.
+    // The four visual clears are mandatory: clearAllTimers just orphaned their
+    // timers, so nothing else would ever reset them.
+    const refillRoundClock = useCallback(() => {
+        setTimeLeft(60);
+        setIsMispronounced(false);
+        setIsExploding(false);
+        setFeedbackType(null);
+        setFeedbackMessage("");
+        // Microphone is disabled on isSaving — clear it so the retry is playable.
+        setIsSaving(false);
+        // handleFatalError consumed the one-shot save guard; the retry must persist.
+        hasSaved.current = false;
+        setGameState("IDLE");
+    }, []);
 
     useEffect(() => {
         if (gameState === "COMPLETED" || gameState === "GAMEOVER") {
@@ -454,6 +497,7 @@ export function useGameplayCore({
         timeLeft,
         isResume: !!resume,
         isSaving,
+        online,
         handleTimeUp,
         startGame,
         handleWordRecognized,
@@ -462,6 +506,7 @@ export function useGameplayCore({
         moveToNextWord,
         addScore,
         persistProgress,
+        refillRoundClock,
         targetWordFalsy: !targetWord,
     };
 }

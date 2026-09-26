@@ -47,12 +47,14 @@ export default function GameplayReadMode({ module, tutorialComplete = true, tuto
         timeLeft,
         isResume,
         isSaving,
+        online,
         handleTimeUp,
         startGame,
         handleWordRecognized,
         handleMispronounce,
         handleFatalError,
         persistProgress,
+        refillRoundClock,
         targetWordFalsy,
     } = useWordBlastEngine({
         words: module?.words,
@@ -103,6 +105,18 @@ export default function GameplayReadMode({ module, tutorialComplete = true, tuto
     }, [permissionState, setGameState]);
 
     const handleMicrophoneClick = useCallback(async () => {
+        // ponytail: refuse to START a round with no connection. Without this the
+        // round begins, the preload preconnect bails on !navigator.onLine, and
+        // the kid stares at 60s of unplayable word-drop before handleTimeUp
+        // persists 0/0 — which StudentController:558-562 has no zero-guard for,
+        // so it banks a junk 0-score GameSession + 0-smashed progress row.
+        // SILENT on purpose: the mic and the TapToStartOverlay already read
+        // "No Connection" from `online`, so the kid sees why on the very
+        // control he tapped. Dispatching a modal here instead read as a broken
+        // app — he asked to PLAY, not to check the network.
+        // Reads navigator.onLine, not `online`: click-time truth, no render lag.
+        // === false, not ! — navigator.onLine is undefined under Node/SSR.
+        if (navigator.onLine === false) return;
         if (guideArmed) {
             // ponytail: the tour's mic step is the ONLY tour moment the mic is
             // live — the tap itself is the required action (tap-mic advances).
@@ -128,6 +142,11 @@ export default function GameplayReadMode({ module, tutorialComplete = true, tuto
         if (gameState === "ACTIVE") {
             pauseBackgroundMusic();
             setMicLive(true);
+        } else {
+            // ponytail: micLive is read by the /student click listener as an
+            // early-return (sounds.js) — leaving it true after the round kills
+            // BGM AND every SFX for the rest of this page's life.
+            setMicLive(false);
         }
     }, [gameState]);
 
@@ -143,7 +162,7 @@ export default function GameplayReadMode({ module, tutorialComplete = true, tuto
 
     const cheerTimerRef = useMemo(() => ({ current: null }), []);
 
-    useDeepgramRecognition({
+    const { reconnecting } = useDeepgramRecognition({
         isActive: gameState === "ACTIVE",
         preload: gameState === "COUNTDOWN" || gameState === "ACTIVE",
         muted: isExploding,
@@ -167,7 +186,15 @@ export default function GameplayReadMode({ module, tutorialComplete = true, tuto
         onPermissionDenied: () => setGameState("DENIED"),
         onMispronounced: handleMispronounce,
         onRecognitionError: (err) => console.error("Recognition error:", err),
-        onRestartFailed: handleFatalError,
+        // ponytail: order is load-bearing — handleFatalError persists the aborted
+        // round FIRST (durable sessionStorage commit); refillRoundClock then wipes
+        // hasSaved and sends us back to IDLE. Reversed = the score is lost.
+        // Guards: onLine avoids an 8s dead-mic retry loop; !isTutorial keeps the
+        // celebration bubble; !isResume avoids an IDLE round with no overlay to start.
+        onRestartFailed: () => {
+            handleFatalError();
+            if (!isResume && !isTutorial && navigator.onLine) refillRoundClock();
+        },
     });
     const avatarUrl = auth?.user?.student?.avatar;
     const bodyUrl = avatarUrl?.replace("/head.png", "/body.png");
@@ -305,12 +332,15 @@ export default function GameplayReadMode({ module, tutorialComplete = true, tuto
                     color="accent"
                     permissionState={permissionState}
                     spotlight={guideArmed}
+                    noConnection={!online}
                 />
             )}
             <div className="flex-shrink-0 relative z-50">
                 <Microphone
                     isListening={gameState === "ACTIVE"}
                     disabled={gameState === "COUNTDOWN" || isSaving}
+                    offline={!online}
+                    reconnecting={reconnecting}
                     onClick={handleMicrophoneClick}
                     color="accent"
                     spotlight={guideArmed && guideStepObj?.spotlight === "mic"}

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { DeepgramClient } from "@deepgram/sdk";
 import { normalizeText } from "@/lib/speechUtils";
 import { applyNoiseGate } from "@/lib/audioGate";
@@ -123,6 +123,15 @@ export function useDeepgramRecognition({
     });
 
     const connRef = useRef(null);
+    // ponytail: the one thing the mic must not lie about. The page derives
+    // isListening from gameState === "ACTIVE", which stays true through a
+    // dropout — so after the network returns the UI said "Listening..." for
+    // the ~400ms the socket needed, and the kid's word hit a dead pipe.
+    // Audio is NOT buffered (the send at :453 drops it when the socket is
+    // still connecting), so mic-first would not help; this just stops the UI
+    // claiming a link that is not up. Only ever true while isActive, so the
+    // normal COUNTDOWN preconnect never flashes it.
+    const [reconnecting, setReconnecting] = useState(false);
     const streamRef = useRef(null);
     const audioCtxRef = useRef(null);
     const sourceNodeRef = useRef(null);
@@ -227,6 +236,11 @@ export function useDeepgramRecognition({
             connRef.current
         )
             return;
+        // ponytail: don't burn the 3-death ladder (~7-8s of dead air for the
+        // kid) against a link that isn't there. The 'online' listener below
+        // re-arms the moment the network is back, so bailing here loses nothing.
+        // If the browser never fires 'online' the 60s timer still ends the round.
+        if (!navigator.onLine) return;
 
         let token, baseUrl;
 
@@ -308,6 +322,13 @@ export function useDeepgramRecognition({
             connRef.current = conn;
 
             conn.on("open", async () => {
+                // ponytail: a socket we already replaced must not touch shared
+                // state. Its late open/message/error/close would otherwise
+                // null the LIVE connRef, kill the live audio, and burn a
+                // restart rung — see onBackOnline, which retires a half-open
+                // socket on the network's return.
+                if (connRef.current !== conn) return;
+                setReconnecting(false);
                 if (DEBUG_ASR) window.__dgOpenAt = performance.now();
                 if (
                     !stateRefs.current.isMounted ||
@@ -485,6 +506,7 @@ export function useDeepgramRecognition({
             });
 
             conn.on("message", (data) => {
+                if (connRef.current !== conn) return;
                 if (
                     DEBUG_ASR &&
                     window.__dgOpenAt &&
@@ -507,6 +529,7 @@ export function useDeepgramRecognition({
             });
 
             conn.on("error", (err) => {
+                if (connRef.current !== conn) return;
                 console.error("Deepgram error:", err);
                 propsRef.current.onRecognitionError?.(
                     String(err?.message || err),
@@ -522,11 +545,22 @@ export function useDeepgramRecognition({
             });
 
             conn.on("close", () => {
+                if (connRef.current !== conn) return;
                 connRef.current = null;
                 teardownAudio();
                 if (!stateRefs.current.isMounted || !propsRef.current.isActive)
                     return;
                 if (permissionDeniedRef.current) return;
+                // ponytail: offline is not a dead server. startConnection bails on
+                // !navigator.onLine, so scheduling a rung here would fire once,
+                // get swallowed, and leave the round waiting on the 60s timer
+                // instead of reconnecting. The 'online' listener owns recovery;
+                // returning early also keeps restartCount unburned, so the
+                // ladder is still fully available for real server drops.
+        if (!navigator.onLine) return;
+        // isActive only: during COUNTDOWN the preload connect is expected, and
+        // flagging it would flash "Reconnecting..." at the start of every round.
+        if (propsRef.current.isActive) setReconnecting(true);
                 // ponytail: only QUICK deaths count — a conn that lived >=10s
                 // was healthy (transient blip), so the streak resets. Three
                 // quick deaths in a row means the server keeps dropping us;
@@ -545,6 +579,8 @@ export function useDeepgramRecognition({
                         startConnection();
                     }, delay);
                 } else {
+                    // Gave up on the ladder — stop claiming a link is coming.
+                    setReconnecting(false);
                     propsRef.current.onRestartFailed?.();
                 }
             });
@@ -566,6 +602,39 @@ export function useDeepgramRecognition({
             stateRefs.current.isMounted = false;
             stopAll();
         };
+    }, []);
+
+    // ponytail: network came back — reconnect now instead of waiting out a
+    // ladder whose every rung is a no-op while offline. startConnection's own
+    // guards keep this inert once the round ends (isActive + preload both false).
+    // The restart timer is cleared so a queued rung doesn't race this attempt;
+    // a truly concurrent in-flight connect would still leak one socket, which is
+    // not worth extra state for a rare race.
+    useEffect(() => {
+        const onBackOnline = () => {
+            clearTimeout(timerRefs.current.restart);
+            // ponytail: the link went down and came back, so ANY socket still
+            // in connRef is presumed dead. The browser does not fire `close` on
+            // a half-open WebSocket until TCP times out (~minutes), so connRef
+            // stays truthy and startConnection's own guard (:227) swallows this
+            // very reconnect — the round then sits mute until the 60s timer and
+            // only a hard refresh recovers it. Retire the socket first so
+            // recovery actually runs. Null the ref BEFORE close() so a
+            // synchronous close event hits the identity guard as a no-op.
+            if (connRef.current) {
+                const stale = connRef.current;
+                connRef.current = null;
+                try {
+                    stale.close();
+                } catch {
+                    /* already dead */
+                }
+                teardownAudio();
+            }
+            startConnection();
+        };
+        window.addEventListener("online", onBackOnline);
+        return () => window.removeEventListener("online", onBackOnline);
     }, []);
 
     // Re-arm on target word change (without tearing down the connection)
@@ -639,6 +708,9 @@ export function useDeepgramRecognition({
             armForCurrentTarget();
         } else if (!propsRef.current?.isActive) {
             clearAllTimers(timerRefs.current);
+            // Round ended (or GAMEOVER/DENIED) — a stale true would keep the mic
+            // reading "Reconnecting..." on the results screen.
+            setReconnecting(false);
         }
     }, [isActive]);
 
@@ -660,6 +732,13 @@ export function useDeepgramRecognition({
                 gateStateRef.current.isOpen = false;
                 clearAllTimers(timerRefs.current);
                 if (connRef.current) return;
+                // ponytail: the root of the dead-round bug — a preconnect that
+                // startConnection immediately rejects leaves connRef null, so the
+                // mic NEVER opens for the whole 60s round. A round is never
+                // started offline (handleMicrophoneClick refuses), so this
+                // preconnect has no purpose without a link. The 'online' listener
+                // re-runs it the moment the network is back.
+                if (navigator.onLine === false) return;
                 startConnection();
             } catch (e) {
                 console.debug("Deepgram start failed:", e);
@@ -669,4 +748,9 @@ export function useDeepgramRecognition({
             stopAll();
         }
     }, [preload]);
+
+    // ponytail: display-only. The gameplay pages own isListening (they derive it
+    // from gameState), so this is the single extra fact the mic needs — that a
+    // live round is waiting on a socket.
+    return { reconnecting };
 }

@@ -9,17 +9,22 @@ const COLOR_MAP = {
     },
 };
 
-export default function TapToStartOverlay({ color = "accent", permissionState, spotlight = false }) {
+export default function TapToStartOverlay({ color = "accent", permissionState, spotlight = false, noConnection = false }) {
     const colors = COLOR_MAP[color] || COLOR_MAP.accent;
 
-    const subtitle =
-        permissionState != null
-            ? permissionState === "granted"
-                ? "Tap to play!"
-                : permissionState === "denied"
-                  ? "Permission denied"
-                  : "To grant access & play"
-            : "To grant access & play";
+    // ponytail: noConnection outranks permissionState — a denied mic is still
+    // unplayable offline, and "turn your Wi-Fi back on" is the first thing to
+    // fix. Still pointer-events-none: this overlay only ever explains, the mic
+    // button below it is the real target.
+    const subtitle = noConnection
+        ? "No connection — turn Wi-Fi back on"
+        : permissionState != null
+          ? permissionState === "granted"
+              ? "Tap to play!"
+              : permissionState === "denied"
+                ? "Permission denied"
+                : "To grant access & play"
+          : "To grant access & play";
 
     return (
         <div className="fixed inset-0 bg-background/60 z-40 pointer-events-none flex flex-col items-center justify-end pb-[110px] sm:pb-[140px] md:pb-[160px]">

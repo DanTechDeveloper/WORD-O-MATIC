@@ -1,5 +1,5 @@
 import { router } from "@inertiajs/react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { startBackgroundMusic } from "@/utils/sounds";
 
 const BG_WORDS = ["BLAST", "READ", "SPEAK", "QUEST", "LEARN", "HERO", "STAR", "LEVEL", "PLAY", "WIN"];
@@ -90,11 +90,19 @@ function FallingWordBg() {
 
 export default function SplashScreen() {
     const [starting, setStarting] = useState(false);
+    const startTimer = useRef(null);
+
+    // ponytail: OfflineGuard cancels the visit at inertia:before, BEFORE Inertia
+    // builds a Request — so onError/onFinish/onCancel never exist to release the
+    // latch. Time-based release instead; a re-enabled button mid-flight is
+    // harmless (Inertia interrupts the in-flight visit to the same URL).
+    useEffect(() => () => clearTimeout(startTimer.current), []);
 
     const handleStart = () => {
         if (starting) return;
         setStarting(true);
         startBackgroundMusic();
+        startTimer.current = setTimeout(() => setStarting(false), 3000);
         router.visit(route("student.avatarSelection"));
     };
 

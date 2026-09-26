@@ -8,6 +8,7 @@ import { createInertiaApp } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createRoot } from 'react-dom/client';
 import { initStudentAudio } from '@/utils/sounds';
+import OfflineGuard from '@/Components/Shared/OfflineGuard';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
@@ -23,7 +24,12 @@ createInertiaApp({
 
         initStudentAudio();
 
-        root.render(<App {...props} />);
+        root.render(
+            <>
+                <App {...props} />
+                <OfflineGuard />
+            </>,
+        );
     },
     progress: {
         color: '#a3e635',

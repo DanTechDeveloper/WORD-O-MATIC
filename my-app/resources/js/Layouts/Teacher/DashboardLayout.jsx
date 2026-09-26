@@ -106,6 +106,12 @@ export default function DashboardLayout({ children }) {
                     preserveState: true,
                     preserveScroll: true,
                     replace: true,
+                    // ponytail: the searchResults effect only clears the spinner
+                    // when a response lands. OfflineGuard cancels the visit at
+                    // inertia:before (no Request → no onError), and a 500 never
+                    // changes props — either way the spinner would stick forever.
+                    // onFinish fires from Request's .finally(), so it always clears.
+                    onFinish: () => setIsSearching(false),
                 },
             );
         }, 300);
