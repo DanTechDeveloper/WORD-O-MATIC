@@ -26,6 +26,9 @@ Vercel Container: `dunglas/frankenphp:1-php8.4` `my-app/Dockerfile.vercel:1` (`i
 
 Speech recognition: Deepgram streaming ASR (nova-3) via `useDeepgramRecognition.js`; pure transcript processors (SSOT `isWordMatch`, timeout arming, `graceEnd`) live in `resources/js/lib/speechProcessors.js` (+ `speechUtils.js`) and are driven by Deepgram events (token from `StudentController::deepgramToken`). Word-mode confidence gates only the Wrong path: accepts trust exact-match at any confidence, authoritative-wrong fires immediately at `≥0.6`; sentence mode ignores confidence (pause-artifact finals defer to the 5s watchdog).
 
+Audio chain (client-only, nothing leaves the device until the Deepgram send):
+`getUserMedia` (browser NS + AEC on, **AGC off** — 40 kids in one room, auto-gain amplifies far chatter) → **RNNoise WASM @48k** (`public/rnnoise/`, vendored, no CDN) → `pcm-processor` (128-frame worklet = 2.67ms) → `downsample48kTo16k` (**anti-aliased**, see CAVEATS) → `applyNoiseGate` (near-field) → Int16 → `socket.send`. `rnnoise.js` + `audioGate.js` fall back gracefully — any WASM/worklet failure drops to the legacy peak-gate path, never a broken mic. Room is ~40 children: **bystander chatter, not hiss, is the dominant noise problem**, and no denoiser solves it — the near-field gate + strict `isWordMatch` stand in for speaker separation.
+
 ## Commands
 
 | Action | Command |

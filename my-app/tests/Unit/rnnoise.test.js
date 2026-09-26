@@ -1,32 +1,100 @@
 // @vitest-environment happy-dom
-import { RNNOISE, loadRnnoiseModule, downsample48kTo16k } from "@/lib/rnnoise.js";
+import {
+    RNNOISE,
+    loadRnnoiseModule,
+    downsample48kTo16k,
+    resetRnnoiseFilter,
+} from "@/lib/rnnoise.js";
 
 const zeros = (n) => new Float32Array(n);
 const at = (v, n) => new Float32Array(n).fill(v);
 
-describe("downsample48kTo16k — 48k box-filter decimate to 16k", () => {
+const RMS_REF = 0.3 / Math.SQRT2; // full-scale sine at 0.3 peak
+const db = (r) => 20 * Math.log10(r / RMS_REF);
+
+// Continuous phase across blocks — a per-block reset would inject a
+// discontinuity every 2.67ms and corrupt every RMS reading below.
+function feed(freq, blocks = 52, amp = 0.3) {
+    let phase = 0;
+    const collected = [];
+    for (let b = 0; b < blocks; b++) {
+        const frame = new Float32Array(128);
+        for (let i = 0; i < 128; i++) {
+            frame[i] = amp * Math.sin(phase);
+            phase += (2 * Math.PI * freq) / 48000;
+        }
+        const out = downsample48kTo16k(frame);
+        if (b >= 12) collected.push(...out); // let the filter reach steady state
+    }
+    return Math.sqrt(
+        collected.reduce((a, v) => a + v * v, 0) / collected.length,
+    );
+}
+
+describe("downsample48kTo16k — 48k anti-aliased decimate to 16k", () => {
+    beforeEach(() => resetRnnoiseFilter());
+
     test("128-sample worklet frame -> 42 samples", () => {
         expect(downsample48kTo16k(zeros(128)).length).toBe(42);
     });
 
-    test("constant input passes through at the same level", () => {
-        expect(Array.from(downsample48kTo16k(at(0.3, 128)))).toEqual(
-            Array.from(at(0.3, 42)),
-        );
+    test("the speech band passes at unity", () => {
+        // A filter that mangles 1kHz would cost more than the aliasing it
+        // removes. -0.05dB measured.
+        expect(db(feed(1000))).toBeGreaterThan(-0.5);
+        expect(db(feed(1000))).toBeLessThan(0.5);
     });
 
-    test("each output is the mean of its 3-sample group", () => {
-        const frame = new Float32Array([0.0, 0.3, 0.6, 1.0, 1.0, 1.0]);
-        const out = downsample48kTo16k(frame);
-        expect(out.length).toBe(2);
-        expect(out[0]).toBeCloseTo(0.3, 5);
-        expect(out[1]).toBeCloseTo(1.0, 5);
+    test("8kHz — the fold boundary — is rejected hard", () => {
+        // The old bare 3-tap box left only -9.5dB here. Measured -34dB.
+        const speech = db(feed(1000));
+        expect(speech - db(feed(8000))).toBeGreaterThan(20);
+    });
+
+    test("12kHz aliasing is suppressed, not passed through", () => {
+        // THE anti-alias proof, and it fails on the old bare box. Measured:
+        // before -9.5dB, after -43dB.
+        const speech = db(feed(1000));
+        expect(db(feed(12000))).toBeLessThan(-25);
+        expect(speech - db(feed(12000))).toBeGreaterThan(25);
+    });
+
+    test("the filter is continuous, not restarted per block", () => {
+        // Zero-padding each block instead truncates ~37% off the first and
+        // last output of EVERY block (a 375Hz tremolo) — worse than the
+        // aliasing. Carried history keeps it at a 0.73dB ripple.
+        const rms = feed(1000);
+        expect(db(rms)).toBeGreaterThan(-0.5);
+        // Warm up past stream start (one truncated block is the accepted
+        // ceiling), then a DC stream must hold every sample at unity —
+        // a per-block restart would dip ~37% on each block's first sample.
+        for (let b = 0; b < 6; b++) downsample48kTo16k(at(0.3, 128));
+        for (let b = 0; b < 6; b++) {
+            const out = downsample48kTo16k(at(0.3, 128));
+            for (const v of out) {
+                expect(v).toBeGreaterThan(0.3 * 0.85);
+                expect(v).toBeLessThan(0.3 * 1.15);
+            }
+        }
     });
 
     test("trailing partial group is dropped, never reads out of bounds", () => {
         expect(downsample48kTo16k(zeros(5)).length).toBe(1);
         expect(downsample48kTo16k(zeros(2)).length).toBe(0);
         expect(downsample48kTo16k(zeros(0)).length).toBe(0);
+    });
+
+    test("a short frame is filtered, not amplified into garbage", () => {
+        // Carried history is why this needs no special case: the 6-sample
+        // frame reads real history instead of mostly zeros.
+        for (let b = 0; b < 8; b++) downsample48kTo16k(at(0.3, 128));
+        const short = downsample48kTo16k(at(0.3, 6));
+        expect(short.length).toBe(2);
+        for (const v of short) {
+            expect(Number.isFinite(v)).toBe(true);
+            expect(v).toBeGreaterThan(0.3 * 0.85);
+            expect(v).toBeLessThan(0.3 * 1.15);
+        }
     });
 });
 

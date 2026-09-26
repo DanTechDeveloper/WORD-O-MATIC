@@ -10,7 +10,20 @@
 export const NOISE_GATE = {
     floorInit: 0.02, // assume noisy; falls fast to a quiet room in ~0.3s
     floorMin: 0.008, // absolute quiet-room bar (== old openLevel)
-    openRatio: 4, // open when peak >= max(floorMin, floor*openRatio)
+    // ponytail: 4 -> 6. Opening takes ONE 2.67ms frame, so a classmate who
+    // starts talking in a quiet room clears even 4x, and once open the floor
+    // is frozen (:33) so it can never rise to exclude them — the WHOLE burst
+    // was admitted, which is exactly how a stranger's words reach Deepgram and
+    // lock a Wrong. 6 rejects a 14dB-above-floor voice (0.02 against a 0.004
+    // floor) while the 32dB child (0.15) still opens immediately in BOTH a
+    // quiet and a loud room.
+    //
+    // ponytail ceiling: 8 would also reject an 18dB voice, but it STARVES the
+    // child once the floor sits at 0.02 (openAt 0.16 > 0.15) and the floor then
+    // rises toward the child, spiralling. A scalar energy gate cannot separate
+    // "loud room + close talker" from "close talker + quiet room" — 6 is the
+    // widest safe window, and the 18dB case stays open by design. See CAVEATS.
+    openRatio: 6,
     closeFraction: 0.5, // close when peak <= openThreshold*closeFraction
     riseK: 0.005, // floor rise per rejected frame (babble adapt ~0.5s)
     fallK: 0.05, // floor fall per frame (fast toward quiet)
