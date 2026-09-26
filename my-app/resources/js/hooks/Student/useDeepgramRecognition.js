@@ -24,6 +24,7 @@ export function useDeepgramRecognition({
     isActive,
     preload = false,
     targetWord,
+    targetIndex,
     onWordRecognized,
     onPermissionDenied,
     onMispronounced,
@@ -600,7 +601,7 @@ export function useDeepgramRecognition({
         if (propsRef.current?.isActive && connRef.current) {
             armForCurrentTarget();
         }
-    }, [targetWord]);
+    }, [targetWord, targetIndex]);
 
     // ponytail: sentence-transition hard reset (Story Quest) — same block as
     // the targetWord re-arm above, plus a transcript wipe. Forces a clean

@@ -75,6 +75,12 @@ export function useStoryQuestEngine({ saveEndpoint = "/student/saveParagraphProg
 
     const sentenceRanges = useMemo(() => rangesFromWords(rest.words), [rest.words]);
 
+    const currentSentenceIndex = useMemo(() => {
+        const idx = core.currentWordIndex;
+        const sIdx = sentenceRanges.findIndex((r) => idx >= r.start && idx < r.end);
+        return sIdx >= 0 ? sIdx : Math.max(0, sentenceRanges.length - 1);
+    }, [sentenceRanges, core.currentWordIndex]);
+
     const [verdicts, setVerdicts] = useState(() => resume?.verdicts ?? {});
     const [sentenceScores, setSentenceScores] = useState(() => resume?.sentenceScores ?? []);
     const [sentenceFeedback, setSentenceFeedback] = useState(null);
@@ -391,6 +397,7 @@ export function useStoryQuestEngine({ saveEndpoint = "/student/saveParagraphProg
         handleMispronounce,
         handleSentenceVerdict,
         // New sentence-level state.
+        currentSentenceIndex,
         verdicts,
         sentenceScores,
         sentenceFeedback,

@@ -100,27 +100,31 @@ export function countConsecutiveMatches(full, lookahead) {
         .filter((w, i, arr) => i === 0 || w !== arr[i - 1]);
     const tw = normalizeText(lookahead).split(/\s+/).filter(Boolean);
     if (fw.length === 0 || tw.length === 0) return 0;
-    // ponytail: anchor sa HULING occurrence ng unang lookahead word —
-    // straight-through: ang transcript may dala pang tapos nang sentence
-    // ("a puppy naps A hamster..."), kaya ang unang "a" ay stale. Ang
-    // pinakabagong salita ang tunay na simula ng kasalukuyang window.
-    let start = -1;
-    for (let i = fw.length - 1; i >= 0; i--) {
-        if (fw[i] === tw[0] || isWordMatch(fw[i], tw[0])) {
-            start = i;
-            break;
+
+    let bestMatched = 0;
+    for (let s = fw.length - 1; s >= 0; s--) {
+        if (fw[s] === tw[0] || isWordMatch(fw[s], tw[0])) {
+            let matched = 0;
+            let i = s;
+            while (matched < tw.length && i < fw.length) {
+                if (fw[i] === tw[matched] || isWordMatch(fw[i], tw[matched])) {
+                    matched++;
+                    i++;
+                } else {
+                    break;
+                }
+            }
+            if (matched >= tw.length) {
+                return matched;
+            }
+            if (i === fw.length && matched > bestMatched) {
+                bestMatched = matched;
+            } else if (bestMatched === 0 && matched > 0) {
+                bestMatched = matched;
+            }
         }
     }
-    if (start === -1) return 0;
-    let matched = 0;
-    let i = start;
-    while (matched < tw.length && i < fw.length) {
-        if (fw[i] === tw[matched] || isWordMatch(fw[i], tw[matched])) {
-            matched++;
-        }
-        i++;
-    }
-    return matched;
+    return bestMatched;
 }
 
 // ponytail: word-level alignment for mid-sentence substitutions. Prefix
@@ -137,34 +141,40 @@ export function alignSentence(full, lookahead) {
         .filter((w, i, arr) => i === 0 || w !== arr[i - 1]);
     const tw = normalizeText(lookahead).split(/\s+/).filter(Boolean);
     if (fw.length === 0 || tw.length === 0) return null;
-    // ponytail: HULING occurrence ang anchor (tulad ng countConsecutiveMatches
-    // sa itaas) — ang unang tugma ay madalas stale na tapos nang sentence.
-    let start = -1;
-    for (let i = fw.length - 1; i >= 0; i--) {
-        if (fw[i] === tw[0] || isWordMatch(fw[i], tw[0])) {
-            start = i;
-            break;
+
+    let bestOutcomes = null;
+    for (let s = fw.length - 1; s >= 0; s--) {
+        if (fw[s] === tw[0] || isWordMatch(fw[s], tw[0])) {
+            const outcomes = [];
+            let i = s;
+            for (let j = 0; j < tw.length; j++) {
+                if (i >= fw.length) break; // nothing more spoken — watchdog owns rest
+                if (fw[i] === tw[j] || isWordMatch(fw[i], tw[j])) {
+                    outcomes.push("correct");
+                    i++;
+                    continue;
+                }
+                // Mismatch is only a real wrong word when the kid moved on (more
+                // speech after it) or the lookahead is fully covered (sentence done).
+                // A frontier stutter-fragment ("ca" for "cat", nothing after) defers
+                // to the watchdog instead of locking a false RED.
+                if (i + 1 >= fw.length && j < tw.length - 1) break;
+                outcomes.push("wrong");
+                i++;
+            }
+            if (outcomes.length > 0) {
+                const correctCount = outcomes.filter((o) => o === "correct").length;
+                const isFull = outcomes.length === tw.length && correctCount === tw.length;
+                if (isFull) {
+                    return outcomes;
+                }
+                if (!bestOutcomes || correctCount > bestOutcomes.filter((o) => o === "correct").length) {
+                    bestOutcomes = outcomes;
+                }
+            }
         }
     }
-    if (start === -1) return null;
-    const outcomes = [];
-    let i = start;
-    for (let j = 0; j < tw.length; j++) {
-        if (i >= fw.length) break; // nothing more spoken — watchdog owns rest
-        if (fw[i] === tw[j] || isWordMatch(fw[i], tw[j])) {
-            outcomes.push("correct");
-            i++;
-            continue;
-        }
-        // Mismatch is only a real wrong word when the kid moved on (more
-        // speech after it) or the lookahead is fully covered (sentence done).
-        // A frontier stutter-fragment ("ca" for "cat", nothing after) defers
-        // to the watchdog instead of locking a false RED.
-        if (i + 1 >= fw.length && j < tw.length - 1) break;
-        outcomes.push("wrong");
-        i++;
-    }
-    return outcomes.length > 0 ? outcomes : null;
+    return bestOutcomes;
 }
 
 export function armSentenceTimeout(stateRefs, timerRefs, propsRef) {
@@ -471,6 +481,7 @@ export function processWordModeResult(
         : Infinity;
     if (
         timeoutRefs.current.prevTarget &&
+        timeoutRefs.current.prevTarget !== target &&
         sinceSwitch < 500 &&
         isWordMatch(transcript, timeoutRefs.current.prevTarget)
     ) {

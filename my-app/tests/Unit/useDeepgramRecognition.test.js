@@ -280,6 +280,59 @@ describe("useDeepgramRecognition — stale guards", () => {
         expect(props.onMispronounced).toHaveBeenCalledTimes(1);
         vi.useRealTimers();
     });
+
+    test("re-arm fires when targetWord is identical but targetIndex changes", async () => {
+        const { useHook } = await loadHook();
+        const stubs = stubBrowser();
+        const props = { ...baseProps(), targetWord: "a", targetIndex: 0 };
+        const { rerender } = renderHook(
+            ({ word, idx }) => useHook({ ...props, targetWord: word, targetIndex: idx }),
+            { initialProps: { word: "a", idx: 0 } },
+        );
+        await waitFor(() => expect(dg.conns.length).toBeGreaterThan(0));
+        const conn = dg.conns[0];
+
+        // Word 0 matched
+        act(() => {
+            conn.handlers.message(dgMsg("a", { isFinal: true, confidence: 0.9 }));
+        });
+        expect(props.onWordRecognized).toHaveBeenCalledTimes(1);
+
+        // Advance to index 5 which ALSO has targetWord "a"
+        rerender({ word: "a", idx: 5 });
+
+        // Second "a" at index 5 recognizes because targetIndex changed re-armed the hook
+        act(() => {
+            conn.handlers.message(dgMsg("a", { isFinal: true, confidence: 0.9 }));
+        });
+        expect(props.onWordRecognized).toHaveBeenCalledTimes(2);
+    });
+
+    test("resetKey resets state and enables speech matching in sentence mode", async () => {
+        const { useHook } = await loadHook();
+        const stubs = stubBrowser();
+        const props = {
+            ...baseProps(),
+            matchMode: "sentence",
+            lookahead: "a robot holds a lemon",
+            targetWord: "a",
+            resetKey: 0,
+        };
+        const { rerender } = renderHook(
+            ({ rk }) => useHook({ ...props, resetKey: rk }),
+            { initialProps: { rk: 0 } },
+        );
+        await waitFor(() => expect(dg.conns.length).toBeGreaterThan(0));
+        const conn = dg.conns[0];
+
+        // Advance sentence: resetKey changes 0 -> 1
+        rerender({ rk: 1 });
+
+        act(() => {
+            conn.handlers.message(dgMsg("a robot holds a lemon", { isFinal: true, confidence: 0.95 }));
+        });
+        expect(props.onWordRecognized).toHaveBeenCalledWith(5);
+    });
 });
 
 describe("useDeepgramRecognition — restart policy, token retry, error teardown", () => {
