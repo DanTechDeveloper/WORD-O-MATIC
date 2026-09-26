@@ -43,17 +43,9 @@ const BREAK_MS = 2500;
 // only — score/ratio/badges/teacher data stay deterministic.
 const LOW_TIER_POOL = ["Nope!", "Not Quite!", "Again!", "Keep Trying!", "Try Again"];
 
-// ponytail: consolation subcopy rotates text-only (no audio) so repeats feel
-// fresh. Picked once per completion — never inline in render (timer ticks
-// would reshuffle it every second).
-const CONSOLATION_POOL = [
-    (missed) => `${missed} tricky word${missed === 1 ? "" : "s"}. you'll get them next time!`,
-    (missed) => `Good effort. listen for those ${missed} tricky word${missed === 1 ? "" : "s"}!`,
-    (missed) => `Almost there. practice those ${missed} tricky word${missed === 1 ? "" : "s"}!`,
-];
-
 // ponytail: ratio tiers (100/75/50 ~ percentage) drive message + audio.
-// Display is always point-based ("Sentence Score: 4 / 5") — scoreRatio never renders.
+// Straight-through: fed the OVERALL ratio at final completion — the message
+// is the only feedback rendered, never a score.
 function tierMessage(scoreRatio) {
     if (scoreRatio >= 1) return "Excellent!";
     if (scoreRatio >= 0.75) return "Nailed It!";
@@ -89,15 +81,11 @@ export function useStoryQuestEngine({ saveEndpoint = "/student/saveParagraphProg
     const [sentenceBreak, setSentenceBreak] = useState(false);
     const [isWrong, setIsWrong] = useState(false);
     const [justScored, setJustScored] = useState(false);
-    const [sentenceEpoch, setSentenceEpoch] = useState(0);
-    const [breakJustEnded, setBreakJustEnded] = useState(false);
 
     const verdictsRef = useRef(verdicts);
     const gameStateRef = useRef(core.gameState);
-    const breakTimerRef = useRef(null);
     const finalTimerRef = useRef(null);
     const finalizingRef = useRef(false);
-    const justEndedTimerRef = useRef(null);
     const wrongTimerRef = useRef(null);
     const scoredTimerRef = useRef(null);
     const completionGuardRef = useRef(false);
@@ -112,24 +100,18 @@ export function useStoryQuestEngine({ saveEndpoint = "/student/saveParagraphProg
 
     const clearBreak = useCallback(() => {
         clearTimeout(previewTimerRef.current);
-        clearTimeout(breakTimerRef.current);
-        clearTimeout(justEndedTimerRef.current);
         clearTimeout(finalTimerRef.current);
         finalTimerRef.current = null;
         finalizingRef.current = false;
-        breakTimerRef.current = null;
         previewTimerRef.current = null;
         completionGuardRef.current = false;
         setSentenceBreak(false);
-        setBreakJustEnded(false);
     }, []);
 
     useEffect(() => {
         return () => {
             clearTimeout(previewTimerRef.current);
-            clearTimeout(breakTimerRef.current);
             clearTimeout(finalTimerRef.current);
-            clearTimeout(justEndedTimerRef.current);
             clearTimeout(wrongTimerRef.current);
             clearTimeout(scoredTimerRef.current);
         };
@@ -180,85 +162,47 @@ export function useStoryQuestEngine({ saveEndpoint = "/student/saveParagraphProg
         if (completionGuardRef.current) return;
         const range = sentenceRanges[rangeIdx];
         if (!range) return;
+        // ponytail: straight-through — only the FINAL range completes here.
+        // Mid ranges never stop (callers moveToNextWord instead), so the kid
+        // reads the whole paragraph in one go.
+        if (rangeIdx + 1 < sentenceRanges.length) return;
         completionGuardRef.current = true;
 
-        let correct = 0;
-        for (let i = range.start; i < range.end; i++) {
-            if (verdictsRef.current[i] === "correct") correct++;
-        }
-        const total = Math.max(1, range.end - range.start);
-        const message = tierMessage(correct / total);
+        // ponytail: end-computed scores — count correct verdicts per range so
+        // sentence_scores stays intact for badges/results (sum == smashed).
+        // Sync the ref alongside state (see persistExtra comment above).
+        const allScores = sentenceRanges.map((r) => {
+            let correct = 0;
+            for (let i = r.start; i < r.end; i++) {
+                if (verdictsRef.current[i] === "correct") correct++;
+            }
+            return correct;
+        });
+        sentenceScoresRef.current = allScores;
+        setSentenceScores(allScores);
 
-        // ponytail: sync the ref alongside state — core's COMPLETED effect
-        // may persist before this commit's effects run, and the getter must
-        // already include the final sentence.
-        const newScores = [...sentenceScoresRef.current, correct];
-        sentenceScoresRef.current = newScores;
-        setSentenceScores(newScores);
-        const missed = total - correct;
-        const note = correct >= total
-            ? "Flawless reading!"
-            : CONSOLATION_POOL[Math.floor(Math.random() * CONSOLATION_POOL.length)](missed);
-        setSentenceFeedback({ message, score: correct, total, note });
+        const totalCorrect = allScores.reduce((a, b) => a + b, 0);
+        const total = core.totalWords > 0 ? core.totalWords : 1;
+        const message = tierMessage(totalCorrect / total);
+        setSentenceFeedback({ message });
 
-        if (rangeIdx + 1 >= sentenceRanges.length) {
-            // Last sentence: verdicts visible 1000ms silent preview before
-            // modal, then hold the celebration (bubble + modal + sound late
-            // with modal). The move is deferred so the review moment shows.
-            clearTimeout(previewTimerRef.current);
-            previewTimerRef.current = setTimeout(() => {
-                previewTimerRef.current = null;
-                playFeedbackSound(message);
-                pulseScored();
-                setSentenceBreak(true);
-                finalizingRef.current = true;
-                clearTimeout(finalTimerRef.current);
-                finalTimerRef.current = setTimeout(() => {
-                    finalTimerRef.current = null;
-                    finalizingRef.current = false;
-                    core.moveToNextWord(Math.max(1, core.totalWords - core.currentWordIndex));
-                }, BREAK_MS);
-            }, VERDICT_PREVIEW_MS);
-        } else {
-            clearTimeout(previewTimerRef.current);
-            previewTimerRef.current = setTimeout(() => {
-                previewTimerRef.current = null;
-                playFeedbackSound(message);
-                pulseScored();
-                // ponytail: move index only after VERDICT_PREVIEW_MS so the
-                // next sentence's BLUE highlight stays hidden during review
-                // (requirement: walang BLUE muna habang preview).
-                core.moveToNextWord(Math.max(1, range.end - core.currentWordIndex));
-                setSentenceBreak(true);
-                clearTimeout(breakTimerRef.current);
-                breakTimerRef.current = setTimeout(() => {
-                    breakTimerRef.current = null;
-                    completionGuardRef.current = false;
-                    setSentenceBreak(false);
-                    setSentenceFeedback(null);
-                    // ponytail: pulse the next sentence's first word for ~1s as a
-                    // "continue here" cue, then fall back to the static BLUE
-                    // frontier. Same visual language as the fresh-mount start cue.
-                    setBreakJustEnded(true);
-                    clearTimeout(justEndedTimerRef.current);
-                    justEndedTimerRef.current = setTimeout(() => setBreakJustEnded(false), 1000);
-                    // ponytail: bump the epoch (Deepgram reset runs even when the
-                    // next target normalizes equal) — the targetWord re-arm from
-                    // the completion jump above follows as second guarantee. No
-                    // index move here: already at the next sentence start. Debug
-                    // line stays so manual repro confirms in DevTools.
-                    setSentenceEpoch((e) => e + 1);
-                    if (typeof window !== "undefined") {
-                        console.debug("[SQ] sentence transition", {
-                            fromRange: rangeIdx,
-                            toIndex: range.end,
-                            prevTarget: rest.words?.[range.end - 1]?.word,
-                            nextTarget: rest.words?.[range.end]?.word,
-                        });
-                    }
-                }, BREAK_MS);
-            }, VERDICT_PREVIEW_MS);
-        }
+        // Last sentence: verdicts visible 1000ms silent preview before
+        // modal, then hold the celebration (bubble + modal + sound late
+        // with modal). The move is deferred so the review moment shows.
+        clearTimeout(previewTimerRef.current);
+        previewTimerRef.current = setTimeout(() => {
+            previewTimerRef.current = null;
+            playFeedbackSound(message);
+            pulseScored();
+            setSentenceBreak(true);
+            finalizingRef.current = true;
+            clearTimeout(finalTimerRef.current);
+            finalTimerRef.current = setTimeout(() => {
+                finalTimerRef.current = null;
+                finalizingRef.current = false;
+                core.moveToNextWord(Math.max(1, core.totalWords - core.currentWordIndex));
+            }, BREAK_MS);
+        }, VERDICT_PREVIEW_MS);
     }, [
         sentenceRanges,
         pulseScored,
@@ -273,11 +217,9 @@ export function useStoryQuestEngine({ saveEndpoint = "/student/saveParagraphProg
         if (idx >= core.totalWords) return;
         if (verdictsRef.current[idx] !== undefined) return;
 
-        const range = sentenceRanges[sentenceScoresRef.current.length];
-        const rangeEnd = range ? range.end : core.totalWords;
-        // ponytail: clamp lookahead overshoot at the sentence boundary —
-        // cross-sentence words re-evaluate after the break instead.
-        const n = Math.max(1, Math.min(count | 0 || 1, Math.max(rangeEnd - idx, 1)));
+        // ponytail: straight-through — no sentence-boundary clamp; overshoot
+        // just reads on (clamped only at the paragraph end).
+        const n = Math.max(1, Math.min(count | 0 || 1, Math.max(core.totalWords - idx, 1)));
 
         // ponytail: side effects stay out of the setState updater (StrictMode
         // double-invokes updaters — mastery POSTs must fire exactly once).
@@ -291,8 +233,12 @@ export function useStoryQuestEngine({ saveEndpoint = "/student/saveParagraphProg
         setVerdicts(verdictsRef.current);
         core.addScore(n);
 
-        if (idx + n >= rangeEnd) {
-            completeSentence(sentenceScoresRef.current.length);
+        // ponytail: straight-through — only the final word completes the
+        // round; mid-sentence ends just advance.
+        if (idx + n >= core.totalWords) {
+            let rangeIdx = sentenceRanges.findIndex((r) => idx < r.end);
+            if (rangeIdx < 0) rangeIdx = sentenceRanges.length - 1;
+            completeSentence(rangeIdx);
         } else {
             core.moveToNextWord(n);
         }
@@ -318,11 +264,9 @@ export function useStoryQuestEngine({ saveEndpoint = "/student/saveParagraphProg
         if (idx >= core.totalWords) return;
         if (verdictsRef.current[idx] !== undefined) return;
 
-        const range = sentenceRanges[sentenceScoresRef.current.length];
-        const rangeEnd = range ? range.end : core.totalWords;
-        // ponytail: same sentence-boundary clamp as handleWordRecognized —
-        // cross-sentence words re-evaluate after the break instead.
-        const applied = outcomes.slice(0, Math.max(rangeEnd - idx, 1));
+        // ponytail: straight-through — no sentence-boundary clamp; the batch
+        // applies to the paragraph tail (clamped only at the paragraph end).
+        const applied = outcomes.slice(0, Math.max(core.totalWords - idx, 1));
         if (applied.length === 0) return;
 
         // ponytail: side effects stay out of the setState updater (StrictMode
@@ -348,8 +292,12 @@ export function useStoryQuestEngine({ saveEndpoint = "/student/saveParagraphProg
         if (correct > 0) core.addScore(correct);
         if (wrong > 0) pulseWrong();
 
-        if (idx + applied.length >= rangeEnd) {
-            completeSentence(sentenceScoresRef.current.length);
+        // ponytail: straight-through — only the final word completes the
+        // round; mid-sentence ends just advance.
+        if (idx + applied.length >= core.totalWords) {
+            let rangeIdx = sentenceRanges.findIndex((r) => idx < r.end);
+            if (rangeIdx < 0) rangeIdx = sentenceRanges.length - 1;
+            completeSentence(rangeIdx);
         } else {
             core.moveToNextWord(applied.length);
         }
@@ -379,10 +327,12 @@ export function useStoryQuestEngine({ saveEndpoint = "/student/saveParagraphProg
         verdictsRef.current = { ...verdictsRef.current, [idx]: "wrong" };
         pulseWrong();
 
-        const range = sentenceRanges[sentenceScoresRef.current.length];
-        const rangeEnd = range ? range.end : core.totalWords;
-        if (idx + 1 >= rangeEnd) {
-            completeSentence(sentenceScoresRef.current.length);
+        // ponytail: straight-through — only the final word completes the
+        // round; mid-sentence ends just advance.
+        if (idx + 1 >= core.totalWords) {
+            let rangeIdx = sentenceRanges.findIndex((r) => idx < r.end);
+            if (rangeIdx < 0) rangeIdx = sentenceRanges.length - 1;
+            completeSentence(rangeIdx);
         } else {
             core.moveToNextWord(1);
         }
@@ -445,7 +395,5 @@ export function useStoryQuestEngine({ saveEndpoint = "/student/saveParagraphProg
         sentenceScores,
         sentenceFeedback,
         sentenceBreak,
-        sentenceEpoch,
-        breakJustEnded,
     };
 }

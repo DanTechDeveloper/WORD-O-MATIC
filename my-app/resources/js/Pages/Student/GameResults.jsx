@@ -36,7 +36,6 @@ export default function GameResults({
     deadlineHit,
     bestScore = 0,
     isTutorial = false,
-    sentenceScores = null,
     isPractice = false,
 }) {
     const displayScore = parseInt(session.score) || 0;
@@ -53,13 +52,6 @@ export default function GameResults({
                 : HEADLINES.low;
     const headline = isPerfect ? "PERFECT!" : headlinePool[session.id % headlinePool.length];
     const isCelebrating = !deadlineHit && !isPracticeMode && accuracyPct >= 80;
-    // ponytail: SQ-only presentation detail — rendered from the persisted
-    // array, never recalculated (score stays the authoritative aggregate).
-    const sentenceBreakdown =
-        !isTutorial &&
-        session.module_type === "paragraph" &&
-        Array.isArray(sentenceScores) &&
-        sentenceScores.length > 0;
     const { flash, auth } = usePage().props;
     const isGlobalClosed = getDeadlineInfo(auth?.deadline).phase === "closed";
     const newBadgeSlugs = flash?.new_badges?.map((b) => b.slug) ?? [];
@@ -142,26 +134,6 @@ export default function GameResults({
                                           : undefined
                                 }
                             />
-                        </div>
-                    )}
-
-                    {sentenceBreakdown && (
-                        <div className="bg-surface-container rounded-3xl border-4 border-outline/20 p-4 sm:p-6">
-                            <div className="text-on-surface-variant font-black uppercase text-[10px] sm:text-xs tracking-widest mb-3">
-                                Sentence Scores
-                            </div>
-                            <div className="space-y-2">
-                                {sentenceScores.map((s, i) => (
-                                    <div key={i} className="flex justify-between items-center gap-2">
-                                        <span className="text-on-surface-variant font-bold text-sm sm:text-base md:text-lg">
-                                            Sentence {i + 1}
-                                        </span>
-                                        <span className="text-quest font-black uppercase italic tracking-tighter text-xl sm:text-2xl">
-                                            {s}
-                                        </span>
-                                    </div>
-                                ))}
-                            </div>
                         </div>
                     )}
 

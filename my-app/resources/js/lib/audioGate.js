@@ -1,7 +1,21 @@
-// ponytail: steady-background (fan/aircon/traffic) gate — peak-level + hysteresis.
-// Open threshold biased low so soft/quiet students aren't gated to silence;
-// tune per device in NOISE_GATE.
-export const NOISE_GATE = { openLevel: 0.008, closeLevel: 0.003, hangover: 12 };
+// ponytail: near-field gate — sa classroom na 40 sabay-sabay na bata, ang
+// chatter ng kaklase ay malayo (~2m, ~20dB mahina vs bibig 20cm sa mic).
+// Kaya ang gate hindi fixed: ang open bar sumasakay sa slow-tracked room
+// floor (maingay na room = mataas na bar, tahimik = lumang 0.008 bar para
+// sa mahihinang bata). Asymmetric + frozen-when-open: floor mabilis bumaba
+// sa tahimik, mabagal tumaas sa maingay, at FROZEN habang bukas — kaya ang
+// sariling boses ng holder hindi kailanman itinataas ang bar mid-word.
+// Field-tune sa NOISE_GATE kapag may tunay na hardware (ponytail ceiling:
+// proportion-based, hindi per-device calibrated).
+export const NOISE_GATE = {
+    floorInit: 0.02, // assume noisy; falls fast to a quiet room in ~0.3s
+    floorMin: 0.008, // absolute quiet-room bar (== old openLevel)
+    openRatio: 4, // open when peak >= max(floorMin, floor*openRatio)
+    closeFraction: 0.5, // close when peak <= openThreshold*closeFraction
+    riseK: 0.005, // floor rise per rejected frame (babble adapt ~0.5s)
+    fallK: 0.05, // floor fall per frame (fast toward quiet)
+    hangover: 12,
+};
 
 // ponytail: reused zero buffer — every gated frame previously allocated a fresh
 // Float32Array on the audio hot path.
@@ -13,8 +27,23 @@ export function applyNoiseGate(frame, state) {
         const a = Math.abs(frame[i]);
         if (a > level) level = a;
     }
+    if (state.floor == null) state.floor = NOISE_GATE.floorInit;
+    // ponytail: floor tracks REJECTED background only — frozen while open so
+    // the holder's own voice never drags its own bar upward mid-utterance.
+    if (!state.isOpen) {
+        if (level < state.floor) {
+            state.floor += (level - state.floor) * NOISE_GATE.fallK;
+        } else {
+            state.floor += (level - state.floor) * NOISE_GATE.riseK;
+        }
+    }
+    const openAt = Math.max(
+        NOISE_GATE.floorMin,
+        state.floor * NOISE_GATE.openRatio,
+    );
+    const closeAt = openAt * NOISE_GATE.closeFraction;
     if (state.isOpen) {
-        if (level <= NOISE_GATE.closeLevel) {
+        if (level <= closeAt) {
             // ponytail: hangover (~100ms of 8ms frames) — a word-boundary dip
             // no longer snaps the gate shut and zeroes the next speech frames.
             state.hold = (state.hold ?? NOISE_GATE.hangover) - 1;
@@ -25,7 +54,7 @@ export function applyNoiseGate(frame, state) {
         } else {
             state.hold = NOISE_GATE.hangover;
         }
-    } else if (level >= NOISE_GATE.openLevel) {
+    } else if (level >= openAt) {
         state.isOpen = true;
         state.hold = NOISE_GATE.hangover;
     }

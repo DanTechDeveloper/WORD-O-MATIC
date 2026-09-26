@@ -335,13 +335,17 @@ export function useDeepgramRecognition({
                 let stream;
                 // ponytail: browser AEC/noise-suppression/AGC for cleaner ASR; native
                 // constraints vary by device, so fall back to baseline on OverconstrainedError.
+                // ponytail: AGC OFF by design — 40 sabay-sabay na bata sa room:
+                // auto-gain pinapalakas ang malayong chatter kapag tahimik ang
+                // holder, sinisira ang distance attenuation na inaasahan ng
+                // near-field gate (audioGate.js). Relative levels preserved.
                 try {
                     stream = await navigator.mediaDevices.getUserMedia({
                         audio: {
                             channelCount: 1,
                             echoCancellation: true,
                             noiseSuppression: true,
-                            autoGainControl: true,
+                            autoGainControl: false,
                         },
                     });
                 } catch (e) {

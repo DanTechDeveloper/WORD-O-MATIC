@@ -81,6 +81,14 @@ describe("alignSentence — mid-sentence substitution walk", () => {
         expect(alignSentence("", LOOK)).toBeNull();
         expect(alignSentence("   ", LOOK)).toBeNull();
     });
+
+    test("stale tapos nang sentence -> anchor sa HULI, hindi false RED", () => {
+        // straight-through: transcript may dala pang first sentence dahil
+        // tinanggal ang per-sentence wipe. Ang unang "a" ay stale.
+        expect(
+            alignSentence("a puppy naps a hamster runs", "a hamster runs"),
+        ).toEqual(["correct", "correct", "correct"]);
+    });
 });
 
 describe("processSentenceModeResult — alignment verdict path", () => {

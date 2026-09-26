@@ -74,4 +74,33 @@ describe("lookahead multi-word advance (Story Quest frontend)", () => {
     test("nilaktawang salita -> hinto sa nilaktawan", () => {
         expect(countConsecutiveMatches("the runs", LOOK)).toBe(1);
     });
+    test("stale tapos nang sentence -> hindi inflated ang bilang", () => {
+        // straight-through: transcript may "the dog runs" pang luma, kid
+        // nagsabi pa lang ng "the" sa bagong window — dapat 1, hindi 3.
+        // (Lumang first-anchor: 3, BLUE tumatalon nang maaga.)
+        expect(
+            countConsecutiveMatches("the dog runs the", LOOK),
+        ).toBe(1);
+    });
+    test("interim sa loob ng grace -> progress pa rin, walang freeze", () => {
+        const r = makeRefs(LOOK);
+        r.timeoutRefs.current.graceEnd = Date.now() + 8000;
+        processSentenceModeResult(
+            { isFinal: false, 0: { transcript: "the dog" } },
+            "the", r.stateRefs, r.timeoutRefs, r.timerRefs, r.propsRef,
+        );
+        expect(r.propsRef.current.onProgress).toHaveBeenCalledWith(2);
+        expect(r.propsRef.current.onWordRecognized).not.toHaveBeenCalled();
+        expect(r.propsRef.current.onMispronounced).not.toHaveBeenCalled();
+    });
+    test("authoritative Wrong sa loob ng grace -> gated pa rin", () => {
+        const r = makeRefs(LOOK);
+        r.timeoutRefs.current.graceEnd = Date.now() + 8000;
+        processSentenceModeResult(
+            { isFinal: true, confidence: 0.9, 0: { transcript: "zebra queens jump high" } },
+            "the", r.stateRefs, r.timeoutRefs, r.timerRefs, r.propsRef,
+        );
+        expect(r.propsRef.current.onMispronounced).not.toHaveBeenCalled();
+        expect(r.propsRef.current.onWordRecognized).not.toHaveBeenCalled();
+    });
 });

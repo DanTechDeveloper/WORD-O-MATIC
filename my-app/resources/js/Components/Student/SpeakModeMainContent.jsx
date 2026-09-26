@@ -1,12 +1,13 @@
 import { memo, useRef, useEffect } from "react";
 
-// Story Quest sentence view: karaoke-style live highlight (BLUE current +
+// Story Quest paragraph view: karaoke-style live highlight (BLUE current +
 // quest glow following interim speech) with GREEN/RED verdicts locking on
 // authoritative results. Fresh mount starts neutral with a start-here pulse
 // (no static border until speech begins); resume mounts show restored
 // verdicts + a you-are-here marker. Sentence-final punctuation renders dim
-// outside the chip (display-only; matching is normalized). Sentence level =
-// ONE feedback overlay per completed sentence. No streak, no per-word popups.
+// outside the chip (display-only; matching is normalized). Paragraph level =
+// ONE message-only feedback overlay at the final word (straight-through —
+// no mid-sentence stops). No streak, no per-word popups.
 function renderWordText(word) {
     const m = String(word ?? "").match(/^(.*?)([.!?]+)$/);
     if (!m) return word;
@@ -28,7 +29,6 @@ const SpeakModeMainContent = memo(function SpeakModeMainContent({
     countdownValue,
     isResume = false,
     hasSpoken = false,
-    breakJustEnded = false,
     previewWords = null,
 }) {
     const activeWordRef = useRef(null);
@@ -96,9 +96,7 @@ const SpeakModeMainContent = memo(function SpeakModeMainContent({
                                                     ? "font-bold sm:font-extrabold text-accent opacity-100 relative z-10 border-2 border-accent/80 rounded-xl px-3 py-2 bg-slate-900/80 drop-shadow-[0_0_10px_rgba(163,230,53,0.5)]"
                                                     : verdict === "wrong"
                                                       ? "font-bold sm:font-extrabold text-rose-400 opacity-100 relative z-10 border-2 border-rose-500 rounded-xl px-3 py-2 bg-slate-900/80 drop-shadow-[0_0_12px_rgba(244,63,94,0.6)]"
-                                                      : index === currentIndex && breakJustEnded
-                                                        ? "font-bold text-quest animate-pulse opacity-80"
-                                                        : index === currentIndex && showFrontier
+                                                      : index === currentIndex && showFrontier
                                                         ? "font-bold sm:font-extrabold text-quest opacity-100 relative z-10 border-2 border-quest/80 rounded-xl px-3 py-2 bg-slate-900/80 drop-shadow-[0_0_10px_rgba(56,189,248,0.5)]"
                                                         : index > currentIndex && index < currentIndex + activeCount && showFrontier
                                                           ? "font-bold text-quest opacity-100 border-2 border-quest/40 rounded-xl px-2 py-1 bg-slate-900/60"
@@ -124,9 +122,6 @@ const SpeakModeMainContent = memo(function SpeakModeMainContent({
                                 <div className="relative text-center bg-slate-900/90 border-2 border-quest/60 rounded-3xl px-6 sm:px-10 py-6 sm:py-8 shadow-[0_0_30px_rgba(56,189,248,0.4)]">
                                     <div className="font-black uppercase italic tracking-tighter text-white text-2xl sm:text-4xl">
                                         {sentenceFeedback.message}
-                                    </div>
-                                    <div className="mt-2 font-bold text-quest text-lg sm:text-2xl">
-                                        Sentence Score: {sentenceFeedback.score} / {sentenceFeedback.total}
                                     </div>
                                 </div>
                             </div>

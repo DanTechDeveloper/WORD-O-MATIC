@@ -100,8 +100,12 @@ export function countConsecutiveMatches(full, lookahead) {
         .filter((w, i, arr) => i === 0 || w !== arr[i - 1]);
     const tw = normalizeText(lookahead).split(/\s+/).filter(Boolean);
     if (fw.length === 0 || tw.length === 0) return 0;
+    // ponytail: anchor sa HULING occurrence ng unang lookahead word —
+    // straight-through: ang transcript may dala pang tapos nang sentence
+    // ("a puppy naps A hamster..."), kaya ang unang "a" ay stale. Ang
+    // pinakabagong salita ang tunay na simula ng kasalukuyang window.
     let start = -1;
-    for (let i = 0; i < fw.length; i++) {
+    for (let i = fw.length - 1; i >= 0; i--) {
         if (fw[i] === tw[0] || isWordMatch(fw[i], tw[0])) {
             start = i;
             break;
@@ -133,8 +137,10 @@ export function alignSentence(full, lookahead) {
         .filter((w, i, arr) => i === 0 || w !== arr[i - 1]);
     const tw = normalizeText(lookahead).split(/\s+/).filter(Boolean);
     if (fw.length === 0 || tw.length === 0) return null;
+    // ponytail: HULING occurrence ang anchor (tulad ng countConsecutiveMatches
+    // sa itaas) — ang unang tugma ay madalas stale na tapos nang sentence.
     let start = -1;
-    for (let i = 0; i < fw.length; i++) {
+    for (let i = fw.length - 1; i >= 0; i--) {
         if (fw[i] === tw[0] || isWordMatch(fw[i], tw[0])) {
             start = i;
             break;
@@ -314,12 +320,17 @@ export function processSentenceModeResult(
             return;
         }
 
-        if (Date.now() < timeoutRefs.current.graceEnd) return;
         if (stateRefs.current.mispronouncedSentence) return;
 
+        // ponytail: interim BLUE bago ang grace gate — ang 800ms re-arm kada
+        // word advance ay para sa Wrong verdicts lang (mic transient), pero
+        // straight-through tuloy ang basa kaya ang BLUE hindi dapat mag-freeze
+        // kada advance. Authoritative verdicts nananatiling gated sa baba.
         if (!hasAuthoritative && propsRef.current.onProgress) {
             if (advanceCount > 0) propsRef.current.onProgress(advanceCount);
         }
+
+        if (Date.now() < timeoutRefs.current.graceEnd) return;
 
         if (hasAuthoritative) {
             if (advanceCount === 0 && confidence >= 0.6) {
@@ -361,10 +372,11 @@ export function processSentenceModeResult(
         return;
     }
 
-    if (Date.now() < timeoutRefs.current.graceEnd) return;
     if (stateRefs.current.mispronouncedSentence) return;
 
     // Live progress: emit count of prefix-matched target words for interim
+    // ponytail: bago ang grace gate (tulad ng lookahead path sa itaas) —
+    // BLUE hindi nag-freeze kada advance; Wrong verdicts gated pa rin.
     if (!hasAuthoritative && propsRef.current.onProgress) {
         const targetWords = target.split(/\s+/).filter(Boolean);
         const fullWords = full
@@ -386,6 +398,10 @@ export function processSentenceModeResult(
         }
         if (prefixMatched > 0) propsRef.current.onProgress(prefixMatched);
     }
+
+    // ponytail: grace drops Wrong verdicts only — nasa itaas na ang BLUE,
+    // kaya tuloy ang highlight kahit loob ng 800ms window.
+    if (Date.now() < timeoutRefs.current.graceEnd) return;
 
     // Authoritative mismatch → immediate verdict (Deepgram empty/low-conf or speechFinal)
     // FIX: low-confidence mismatch defers to the 5s watchdog (noise, not wrong).
