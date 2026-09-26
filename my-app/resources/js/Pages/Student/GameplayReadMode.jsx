@@ -12,6 +12,7 @@ import { useWordBlastEngine } from "@/hooks/Student/useWordBlastEngine";
 import { useDeepgramRecognition } from "@/hooks/Student/useDeepgramRecognition";
 import { useMicrophonePermission } from "@/hooks/Student/useMicrophonePermission";
 import { pauseBackgroundMusic, setMicLive } from "@/utils/sounds";
+import { probe as probeConnection, markUnreachable } from "@/utils/connection";
 import { normalizeText } from "@/lib/speechUtils";
 
 const GUIDE_STEPS = [
@@ -105,18 +106,25 @@ export default function GameplayReadMode({ module, tutorialComplete = true, tuto
     }, [permissionState, setGameState]);
 
     const handleMicrophoneClick = useCallback(async () => {
-        // ponytail: refuse to START a round with no connection. Without this the
-        // round begins, the preload preconnect bails on !navigator.onLine, and
-        // the kid stares at 60s of unplayable word-drop before handleTimeUp
-        // persists 0/0 — which StudentController:558-562 has no zero-guard for,
-        // so it banks a junk 0-score GameSession + 0-smashed progress row.
-        // SILENT on purpose: the mic and the TapToStartOverlay already read
-        // "No Connection" from `online`, so the kid sees why on the very
-        // control he tapped. Dispatching a modal here instead read as a broken
-        // app — he asked to PLAY, not to check the network.
-        // Reads navigator.onLine, not `online`: click-time truth, no render lag.
-        // === false, not ! — navigator.onLine is undefined under Node/SSR.
-        if (navigator.onLine === false) return;
+        // ponytail: refuse to START a round the server cannot serve. Without
+        // this the round begins, the preload preconnect bails, and the kid
+        // stares at 60s of unplayable word-drop before handleTimeUp persists
+        // 0/0 — which StudentController:558-562 has no zero-guard for, so it
+        // banks a junk 0-score GameSession + 0-smashed progress row.
+        //
+        // The store's probe, NOT navigator.onLine: that only reports the
+        // interface is up, so a WiFi link with no uplink (captive portal, dead
+        // router, weak LTE) read as online and waved the round onto a dead
+        // link. One GET /up (~0.1-0.2s) decides it BEFORE the countdown, so a
+        // dead link never opens a round. Imperative, not `online`: click-time
+        // truth, no render lag.
+        //
+        // SILENT on purpose: the probe already flipped the store, so the mic
+        // and the TapToStartOverlay already read "No Connection" from `online`,
+        // so the kid sees why on the very control he tapped. Dispatching a modal
+        // here instead read as a broken app — he asked to PLAY, not to check
+        // the network.
+        if (!(await probeConnection())) return;
         if (guideArmed) {
             // ponytail: the tour's mic step is the ONLY tour moment the mic is
             // live — the tap itself is the required action (tap-mic advances).
@@ -185,7 +193,16 @@ export default function GameplayReadMode({ module, tutorialComplete = true, tuto
         },
         onPermissionDenied: () => setGameState("DENIED"),
         onMispronounced: handleMispronounce,
-        onRecognitionError: (err) => console.error("Recognition error:", err),
+        // ponytail: token_failed is the ASR saying the uplink is dead — the
+        // socket never opened, so the round has no score to bank. refillRoundClock
+        // is the one recovery path that does NOT persist (handleFatalError would
+        // POST the 0/0), and it returns the kid to IDLE in ~4s instead of 60s.
+        onRecognitionError: (err) => {
+            console.error("Recognition error:", err);
+            if (err !== "token_failed") return;
+            markUnreachable("server");
+            if (!isResume && !isTutorial) refillRoundClock();
+        },
         // ponytail: order is load-bearing — handleFatalError persists the aborted
         // round FIRST (durable sessionStorage commit); refillRoundClock then wipes
         // hasSaved and sends us back to IDLE. Reversed = the score is lost.

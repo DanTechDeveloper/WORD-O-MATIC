@@ -9,6 +9,7 @@ import {
     armSentenceTimeout,
     routeRecognitionMessage,
 } from "@/lib/speechProcessors";
+import { isReachable } from "@/utils/connection";
 
 const MODEL = "nova-3";
 const LANGUAGE = "en-US";
@@ -36,7 +37,6 @@ export function useDeepgramRecognition({
     matchMode = "word",
     muted = false,
     keyterms = [],
-    resetKey,
     denoise = true,
 }) {
     const isWordMode = matchMode === "word";
@@ -240,7 +240,9 @@ export function useDeepgramRecognition({
         // kid) against a link that isn't there. The 'online' listener below
         // re-arms the moment the network is back, so bailing here loses nothing.
         // If the browser never fires 'online' the 60s timer still ends the round.
-        if (!navigator.onLine) return;
+        // The store, not navigator.onLine: a WiFi link with no uplink reads as
+        // online, so this used to wave the ladder at a server that never answers.
+        if (!isReachable()) return;
 
         let token, baseUrl;
 
@@ -552,12 +554,12 @@ export function useDeepgramRecognition({
                     return;
                 if (permissionDeniedRef.current) return;
                 // ponytail: offline is not a dead server. startConnection bails on
-                // !navigator.onLine, so scheduling a rung here would fire once,
+                // !isReachable(), so scheduling a rung here would fire once,
                 // get swallowed, and leave the round waiting on the 60s timer
                 // instead of reconnecting. The 'online' listener owns recovery;
                 // returning early also keeps restartCount unburned, so the
                 // ladder is still fully available for real server drops.
-        if (!navigator.onLine) return;
+        if (!isReachable()) return;
         // isActive only: during COUNTDOWN the preload connect is expected, and
         // flagging it would flash "Reconnecting..." at the start of every round.
         if (propsRef.current.isActive) setReconnecting(true);
@@ -672,34 +674,6 @@ export function useDeepgramRecognition({
         }
     }, [targetWord, targetIndex]);
 
-    // ponytail: sentence-transition hard reset (Story Quest) — same block as
-    // the targetWord re-arm above, plus a transcript wipe. Forces a clean
-    // slate even when the new target normalizes equal to the old one (effect
-    // above would skip), stale transcript poisons anchoring, or a tail flag
-    // survives the break. No-op when resetKey is undefined (Word Blast never
-    // passes it); word-mode transcript is preserved like above.
-    useEffect(() => {
-        if (resetKey === undefined) return;
-        stateRefs.current.hasMatched = false;
-        stateRefs.current.mispronouncedInWord = false;
-        stateRefs.current.mispronouncedSentence = false;
-        if (!propsRef.current.isWordMode) {
-            stateRefs.current.transcript = "";
-            stateRefs.current.interim = "";
-        }
-        stateRefs.current.stoppedAt = 0;
-        stateRefs.current.lastSpeechAt = Date.now();
-        timeoutRefs.current.target = null;
-        timeoutRefs.current.graceEnd = Date.now() + 800;
-        timeoutRefs.current.restartCount = 0;
-        gateStateRef.current.isOpen = false;
-        clearAllTimers(timerRefs.current);
-
-        if (propsRef.current?.isActive && connRef.current) {
-            armForCurrentTarget();
-        }
-    }, [resetKey]);
-
     useEffect(() => {
         // ponytail: 500ms grace on session transitions (IDLE→ACTIVE flip) absorbs
         // the mic/connection resume transient, but per-word grace above is 800ms.
@@ -735,10 +709,10 @@ export function useDeepgramRecognition({
                 // ponytail: the root of the dead-round bug — a preconnect that
                 // startConnection immediately rejects leaves connRef null, so the
                 // mic NEVER opens for the whole 60s round. A round is never
-                // started offline (handleMicrophoneClick refuses), so this
-                // preconnect has no purpose without a link. The 'online' listener
-                // re-runs it the moment the network is back.
-                if (navigator.onLine === false) return;
+                // started without a link (handleMicrophoneClick probes first), so
+                // this preconnect has no purpose without one. The 'online'
+                // listener re-runs it the moment the network is back.
+                if (!isReachable()) return;
                 startConnection();
             } catch (e) {
                 console.debug("Deepgram start failed:", e);

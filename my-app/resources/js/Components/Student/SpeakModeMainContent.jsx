@@ -7,7 +7,7 @@ import { memo, useRef, useEffect } from "react";
 // verdicts + a you-are-here marker. Sentence-final punctuation renders dim
 // outside the chip (display-only; matching is normalized). Paragraph level =
 // ONE message-only feedback overlay at the final word (straight-through —
-// no mid-sentence stops). No streak, no per-word popups.
+// no mid-paragraph stops). No streak, no per-word popups.
 function renderWordText(word) {
     const m = String(word ?? "").match(/^(.*?)([.!?]+)$/);
     if (!m) return word;
@@ -45,9 +45,11 @@ const SpeakModeMainContent = memo(function SpeakModeMainContent({
         <main className="flex-1 flex relative overflow-hidden">
             {gameState === "IDLE" ? (
                 previewWords?.length ? (
-                    // ponytail: tutorial tour shows the sentence statically — the
-                    // IDLE stage is otherwise empty, so READ THE SENTENCE would
-                    // point at nothing. Neutral styling; karaoke takes over live.
+                    // ponytail: the IDLE stage (tutorial tour, pre-tap) shows the
+                    // WHOLE paragraph statically — the read is one pass, so there
+                    // is no "current sentence" to preview, and READ IT ALL would
+                    // otherwise point at an empty stage. Neutral styling; karaoke
+                    // takes over live.
                     <div className="flex-1 flex items-start justify-center overflow-y-auto px-3 xs:px-4 sm:px-6 md:px-8 pt-12 sm:pt-15 pb-12 sm:pb-16">
                         <div className="relative w-full max-w-7xl my-auto">
                             <div className="font-headline-xl text-left leading-relaxed tracking-normal sm:tracking-tight select-none font-medium sm:font-semibold lg:font-bold text-3xl xs:text-4xl sm:text-5xl md:text-6xl lg:text-7xl flex flex-wrap gap-x-2 xs:gap-x-3 sm:gap-x-4 gap-y-4 sm:gap-y-6 md:gap-y-8">

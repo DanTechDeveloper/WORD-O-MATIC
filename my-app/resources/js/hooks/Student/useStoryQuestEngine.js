@@ -3,17 +3,24 @@ import { useGameplayCore } from "./useGameplayCore";
 import { playFeedbackSound } from "@/utils/sounds";
 import { readResumeSession, writeResumeSession } from "@/utils/resumeStorage";
 
-// Story Quest sentence engine — word level = highlight verdicts only,
-// sentence level = score + ONE feedback, game level = accumulated score.
-// Core owns gameState/countdown/timer/resume/persist; this wrapper owns
-// verdicts, sentence completion, the 3s break, and tiered feedback. Core's
-// per-word feedback machine (streak/explosion/points popups) is never
-// invoked here, so Word Blast behavior is untouched.
+// Story Quest engine — one continuous read of the whole paragraph. Word level
+// = highlight verdicts only, game level = accumulated score + ONE feedback at
+// the last word. There are NO sentence boundaries in the flow: nothing stops,
+// nothing resets, and no period anywhere gets its own checkpoint. Core owns
+// gameState/countdown/timer/resume/persist; this wrapper owns verdicts, the
+// end-of-round celebration, and tiered feedback. Core's per-word feedback
+// machine (streak/explosion/points popups) is never invoked here, so Word
+// Blast behavior is untouched.
 
-// ponytail: sentence boundaries come from the word tokens themselves —
-// ParagraphWord rows are whitespace-split case-as-entered, so a sentence
-// ends at a token with trailing [.!?]. Mirrors the server split
-// (ParagraphModule::sentencesFromContent). No content prop needed.
+// ponytail: SCORING ONLY, never flow. Buckets the finished per-word verdicts
+// into per-sentence counts for the `sentence_scores` payload — the Sentence
+// Star badge (BadgeService::calculateBestSentence) is its only consumer, and
+// the server cannot derive it (it never learns WHICH words were correct).
+// Nothing here stops the read or resets the recognizer; the whole array is
+// computed once, at the end. Boundaries come from the word tokens themselves
+// (ParagraphWord rows are whitespace-split case-as-entered, so a sentence ends
+// at a token with trailing [.!?]) — mirrors the server split
+// (ParagraphModule::sentencesFromContent).
 function rangesFromWords(words) {
     const ranges = [];
     let start = 0;
@@ -72,14 +79,6 @@ export function useStoryQuestEngine({ saveEndpoint = "/student/saveParagraphProg
     );
 
     const core = useGameplayCore({ ...rest, saveEndpoint, persistExtra });
-
-    const sentenceRanges = useMemo(() => rangesFromWords(rest.words), [rest.words]);
-
-    const currentSentenceIndex = useMemo(() => {
-        const idx = core.currentWordIndex;
-        const sIdx = sentenceRanges.findIndex((r) => idx >= r.start && idx < r.end);
-        return sIdx >= 0 ? sIdx : Math.max(0, sentenceRanges.length - 1);
-    }, [sentenceRanges, core.currentWordIndex]);
 
     const [verdicts, setVerdicts] = useState(() => resume?.verdicts ?? {});
     const [sentenceScores, setSentenceScores] = useState(() => resume?.sentenceScores ?? []);
@@ -164,20 +163,27 @@ export function useStoryQuestEngine({ saveEndpoint = "/student/saveParagraphProg
         scoredTimerRef.current = setTimeout(() => setJustScored(false), 500);
     }, []);
 
-    const completeSentence = useCallback((rangeIdx) => {
+    // ponytail: the round's ONLY stop — reached at the last word, whatever
+    // sentence the reader happens to be in. No range argument, and no
+    // `rangeIdx + 1 < ranges.length` guard: that leftover from the old
+    // per-sentence-break design made callers resolve the range with
+    // findIndex(r => idx < r.end) = the FIRST range the index sits in, so a
+    // final batch starting inside a non-final sentence (a fluent reader
+    // swallowing the tail in one breath) hit the guard and swallowed the whole
+    // completion — no modal, no sound, no moveToNextWord, verdicts already
+    // locked so every handler early-returns: a dead round to the 60s cap.
+    // ponytail: the `sentence*` names below are legacy vocabulary for
+    // paragraph-level state (same as the DB column) — nothing steps per
+    // sentence anymore.
+    const completeSentence = useCallback(() => {
         if (completionGuardRef.current) return;
-        const range = sentenceRanges[rangeIdx];
-        if (!range) return;
-        // ponytail: straight-through — only the FINAL range completes here.
-        // Mid ranges never stop (callers moveToNextWord instead), so the kid
-        // reads the whole paragraph in one go.
-        if (rangeIdx + 1 < sentenceRanges.length) return;
         completionGuardRef.current = true;
 
-        // ponytail: end-computed scores — count correct verdicts per range so
-        // sentence_scores stays intact for badges/results (sum == smashed).
-        // Sync the ref alongside state (see persistExtra comment above).
-        const allScores = sentenceRanges.map((r) => {
+        // ponytail: end-of-round bucketing, scoring only (see rangesFromWords).
+        // Counted from the finished verdicts so sentence_scores stays intact
+        // for the Sentence Star badge (sum == smashed). Sync the ref alongside
+        // state (see persistExtra comment above).
+        const allScores = rangesFromWords(rest.words).map((r) => {
             let correct = 0;
             for (let i = r.start; i < r.end; i++) {
                 if (verdictsRef.current[i] === "correct") correct++;
@@ -192,7 +198,7 @@ export function useStoryQuestEngine({ saveEndpoint = "/student/saveParagraphProg
         const message = tierMessage(totalCorrect / total);
         setSentenceFeedback({ message });
 
-        // Last sentence: verdicts visible 1000ms silent preview before
+        // End of the paragraph: verdicts visible 1000ms silent preview before
         // modal, then hold the celebration (bubble + modal + sound late
         // with modal). The move is deferred so the review moment shows.
         clearTimeout(previewTimerRef.current);
@@ -210,7 +216,7 @@ export function useStoryQuestEngine({ saveEndpoint = "/student/saveParagraphProg
             }, BREAK_MS);
         }, VERDICT_PREVIEW_MS);
     }, [
-        sentenceRanges,
+        rest.words,
         pulseScored,
         core.moveToNextWord,
         core.totalWords,
@@ -242,15 +248,12 @@ export function useStoryQuestEngine({ saveEndpoint = "/student/saveParagraphProg
         // ponytail: straight-through — only the final word completes the
         // round; mid-sentence ends just advance.
         if (idx + n >= core.totalWords) {
-            let rangeIdx = sentenceRanges.findIndex((r) => idx < r.end);
-            if (rangeIdx < 0) rangeIdx = sentenceRanges.length - 1;
-            completeSentence(rangeIdx);
+            completeSentence();
         } else {
             core.moveToNextWord(n);
         }
     }, [
         sentenceBreak,
-        sentenceRanges,
         completeSentence,
         core.currentWordIndex,
         core.totalWords,
@@ -301,15 +304,12 @@ export function useStoryQuestEngine({ saveEndpoint = "/student/saveParagraphProg
         // ponytail: straight-through — only the final word completes the
         // round; mid-sentence ends just advance.
         if (idx + applied.length >= core.totalWords) {
-            let rangeIdx = sentenceRanges.findIndex((r) => idx < r.end);
-            if (rangeIdx < 0) rangeIdx = sentenceRanges.length - 1;
-            completeSentence(rangeIdx);
+            completeSentence();
         } else {
             core.moveToNextWord(applied.length);
         }
     }, [
         sentenceBreak,
-        sentenceRanges,
         completeSentence,
         pulseWrong,
         core.currentWordIndex,
@@ -336,15 +336,12 @@ export function useStoryQuestEngine({ saveEndpoint = "/student/saveParagraphProg
         // ponytail: straight-through — only the final word completes the
         // round; mid-sentence ends just advance.
         if (idx + 1 >= core.totalWords) {
-            let rangeIdx = sentenceRanges.findIndex((r) => idx < r.end);
-            if (rangeIdx < 0) rangeIdx = sentenceRanges.length - 1;
-            completeSentence(rangeIdx);
+            completeSentence();
         } else {
             core.moveToNextWord(1);
         }
     }, [
         sentenceBreak,
-        sentenceRanges,
         completeSentence,
         pulseWrong,
         core.currentWordIndex,
@@ -396,8 +393,6 @@ export function useStoryQuestEngine({ saveEndpoint = "/student/saveParagraphProg
         handleWordRecognized,
         handleMispronounce,
         handleSentenceVerdict,
-        // New sentence-level state.
-        currentSentenceIndex,
         verdicts,
         sentenceScores,
         sentenceFeedback,

@@ -1,13 +1,17 @@
 import { useEffect, useRef, useState } from "react";
+import { isReachable, reason, markUnreachable, probe } from "@/utils/connection";
 
 // ponytail: no Inertia import on purpose — CANCEL dismisses; the guard never
 // navigates and never decides where a student belongs. Locked by
 // tests/Unit/offlineGuard.test.js.
-// ponytail: navigator.onLine reports "network interface up", not "internet
-// reachable" — a captive portal reads as online. Upgrade path: probe the server
-// on RETRY + listen for the inertia:exception event.
+// ponytail: the shared connection store answers "can we reach the server", not
+// navigator.onLine (that only says the interface is up, so a WiFi link with no
+// uplink read as online and this modal never appeared). `offline` stays LOCAL
+// state on purpose: the store supplies WHAT is wrong — the copy and the block
+// decision — never WHETHER to raise. The trigger list below is the locked
+// contract, and a mic tap must keep reading as a request to PLAY.
 export default function OfflineGuard() {
-    const [offline, setOffline] = useState(() => !navigator.onLine);
+    const [offline, setOffline] = useState(() => !isReachable());
     const [status, setStatus] = useState(null);
     const timer = useRef(null);
 
@@ -15,9 +19,21 @@ export default function OfflineGuard() {
         const goOffline = () => {
             clearTimeout(timer.current);
             setStatus(null);
+            markUnreachable("interface");
             setOffline(true);
         };
-        const goOnline = () => setOffline(false);
+        // The interface came back — that does not mean the SERVER did. Probe
+        // before dismissing, so an access point that re-associated without an
+        // uplink upgrades the copy to "No Internet" instead of claiming
+        // success. The failing branch also re-renders: `reason` is read during
+        // render, and without a state change the modal would keep telling the
+        // kid to switch on a Wi-Fi that is already on.
+        const goOnline = () => {
+            probe().then((ok) => {
+                if (ok) setOffline(false);
+                else setStatus("still-offline");
+            });
+        };
 
         window.addEventListener("offline", goOffline);
         window.addEventListener("online", goOnline);
@@ -39,7 +55,7 @@ export default function OfflineGuard() {
     // Those fail the normal way instead: axios rejects → .finally fires onFinish.
     useEffect(() => {
         const blockOfflineVisit = (e) => {
-            if (navigator.onLine) return;
+            if (isReachable()) return;
             if (e.detail?.visit?.method !== "get") return;
             e.preventDefault();
             clearTimeout(timer.current);
@@ -52,28 +68,40 @@ export default function OfflineGuard() {
     }, []);
 
     // ponytail: this modal is NOT a click reaction. It appears on exactly three
-    // things: initial mount while offline, the browser `offline` event, and an
-    // offline page switch (inertia:before, above). A round start is NOT one of
-    // them — the kid tapping the mic is asking to PLAY, and answering a play
-    // tap with a connection error reads as a broken app. The mic and the
-    // "Tap Microphone" overlay say "No Connection" themselves instead, and
-    // handleMicrophoneClick returns silently (no round, so no junk GameSession).
-    // If a third site ever needs to raise this, build utils/connection.js.
+    // things: initial mount while the server is unreachable, the browser
+    // `offline` event, and an unreachable page switch (inertia:before, above).
+    // A round start is NOT one of them — the kid tapping the mic is asking to
+    // PLAY, and answering a play tap with a connection error reads as a broken
+    // app. The probe in handleMicrophoneClick flips the store, so the mic and
+    // the "Tap Microphone" overlay say "No Connection" themselves instead, and
+    // that silent bail is also what stops a 0/0 round from being persisted.
 
     if (!offline) return null;
 
-    // Re-read the flag, never reload — a reload remounts the page and would
+    // Re-read the store, never reload — a reload remounts the page and would
     // reset the onboarding guide step and every teacher form field.
     const handleRetry = () => {
-        if (!navigator.onLine) {
-            setStatus("still-offline");
-            return;
-        }
-        setStatus("restored");
-        timer.current = setTimeout(() => setOffline(false), 1200);
+        probe().then((ok) => {
+            if (!ok) {
+                setStatus("still-offline");
+                return;
+            }
+            setStatus("restored");
+            timer.current = setTimeout(() => setOffline(false), 1200);
+        });
     };
 
     const restored = status === "restored";
+    // "You're on Wi-Fi but the server is not answering" is a different problem
+    // with a different fixer — the kid cannot fix the network themselves, so this
+    // sends them to the teacher.
+    const noServer = reason() === "server";
+    const title = restored ? "Connected!" : noServer ? "No Internet" : "No Connection";
+    const body = restored
+        ? "Connection restored! You are back online."
+        : noServer
+          ? "You're connected to Wi-Fi but there's no internet. Tell your teacher, then tap RETRY."
+          : "Turn your Wi-Fi back on, then tap RETRY.";
 
     return (
         <div className="fixed inset-0 z-[120] flex items-end sm:items-center justify-center p-0 sm:p-4">
@@ -100,22 +128,22 @@ export default function OfflineGuard() {
                 </div>
 
                 <h2 id="offline-title" className="text-2xl sm:text-3xl font-black uppercase italic tracking-tighter text-white">
-                    {restored ? "Connected!" : "No Connection"}
+                    {title}
                 </h2>
 
                 {restored ? (
                     <p role="status" className="mt-3 text-on-surface-variant font-bold leading-relaxed">
-                        Connection restored! You are back online.
+                        {body}
                     </p>
                 ) : (
                     <>
                         <p className="mt-3 text-on-surface-variant font-bold leading-relaxed">
-                            Turn your Wi-Fi back on, then tap RETRY.
+                            {body}
                         </p>
 
                         {status === "still-offline" && (
                             <p role="status" className="mt-3 text-error font-black uppercase text-sm tracking-wider">
-                                Still offline — check your Wi-Fi
+                                {noServer ? "Still no internet — tell your teacher" : "Still offline — check your Wi-Fi"}
                             </p>
                         )}
 

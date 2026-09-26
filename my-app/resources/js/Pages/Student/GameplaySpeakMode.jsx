@@ -13,14 +13,17 @@ import { useStoryQuestEngine } from "@/hooks/Student/useStoryQuestEngine";
 import { useDeepgramRecognition } from "@/hooks/Student/useDeepgramRecognition";
 import { useMicrophonePermission } from "@/hooks/Student/useMicrophonePermission";
 import { pauseBackgroundMusic, setMicLive } from "@/utils/sounds";
+import { probe as probeConnection, markUnreachable } from "@/utils/connection";
 import { normalizeText } from "@/lib/speechUtils";
 
 // ponytail: SQ mechanics ONLY — score/timer/streak/mic-basics/pronounced/
 // mispronounced were already taught in Word Blast and are NOT re-introduced.
+// One read of the WHOLE paragraph: no step, and no spotlight, is per-sentence
+// (`spotlight` is read only as `=== "mic"`, so the read steps declare none).
 const GUIDE_STEPS = [
-    { id: "read-sentence", title: "READ IT ALL", message: "Read straight through to the end — basahin nang diretso hanggang dulo!", emoji: "menu_book", color: "quest", action: "tap-continue", spotlight: "sentence" },
-    { id: "light-up", title: "WATCH IT LIGHT UP", message: "Words glow BLUE as you say them. GREEN locks in — RED moves on, so keep reading!", emoji: "auto_awesome", color: "quest", action: "tap-continue", spotlight: "sentence" },
-    { id: "sentence-score", title: "SCORE CARD", message: "At the end you get a score card for the whole paragraph!", emoji: "celebration", color: "quest", action: "tap-continue", spotlight: "sentence" },
+    { id: "read-it-all", title: "READ IT ALL", message: "Read straight through to the end — basahin nang diretso hanggang dulo!", emoji: "menu_book", color: "quest", action: "tap-continue" },
+    { id: "light-up", title: "WATCH IT LIGHT UP", message: "Words glow BLUE as you say them. GREEN locks in — RED moves on, so keep reading!", emoji: "auto_awesome", color: "quest", action: "tap-continue" },
+    { id: "score-card", title: "SCORE CARD", message: "At the end you get a score card for the whole paragraph!", emoji: "celebration", color: "quest", action: "tap-continue" },
     { id: "tap-mic", title: "TAP TO PLAY!", message: "Tap the mic below when you're ready. 3-2-1 countdown, then go!", emoji: "mic", color: "quest", action: "tap-mic", spotlight: "mic" }
 ];
 
@@ -37,7 +40,6 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true, tut
         gameState,
         setGameState,
         currentWordIndex,
-        currentSentenceIndex,
         wordsSmashed,
         isMispronounced,
         scoreEmphasize,
@@ -87,7 +89,7 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true, tut
 
     const [guideStep, setGuideStep] = useState(0);
     // ponytail: SQ tour gates on speakTutorialDone ONLY — finishing Word Blast
-    // must not skip it (karaoke/sentence-score mechanics differ entirely).
+    // must not skip it (karaoke/score-card mechanics differ entirely).
     // wordTutorialDone stays in props (backend sends it) but no longer gates.
     const [guideDone, setGuideDone] = useState(() => !isTutorial || speakTutorialDone || isResume);
     const guideStepObj = GUIDE_STEPS[guideStep];
@@ -124,15 +126,26 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true, tut
     }, [setGameState]);
 
     const handleMicrophoneClick = useCallback(async () => {
-        // ponytail: refuse to START a round with no connection — same reason as
-        // Word Blast: a round that begins offline never opens the mic, and its
-        // 0/0 persist banks a junk 0-score GameSession (no server zero-guard at
-        // StudentController:558-562). SILENT on purpose: the mic and the
-        // TapToStartOverlay already read "No Connection" from `online`, so the
-        // kid sees why on the control he tapped. Reads navigator.onLine, not
+        // ponytail: refuse to START a round the server cannot serve. Without
+        // this the round begins, the token fetch fails three times, and the kid
+        // stares at 60s of nothing before handleTimeUp persists 0/0 — which
+        // StudentController:558-562 has no zero-guard for, so it banks a junk
+        // 0-score GameSession plus a 0-smashed progress row.
+        //
+        // The store's probe, NOT navigator.onLine: a WiFi link with no uplink
+        // (captive portal, dead router, weak LTE) reads as online, so the old
+        // gate waved the round through onto a dead link. One GET /up
+        // (~0.1-0.2s on Aiven sfo) decides it BEFORE the countdown, so a dead
+        // link never opens a round and nothing can be persisted. Imperative, not
         // `online`: click-time truth, no render lag.
-        // === false, not ! — fail open under Node/SSR.
-        if (navigator.onLine === false) return;
+        //
+        // SILENT on purpose: the probe already flipped the store, so the mic
+        // and the TapToStartOverlay read "No Connection" from `online` and the
+        // kid sees why on the control he tapped. Dispatching a modal here
+        // instead read as a broken app — he asked to PLAY, not to check the
+        // network. Must stay above the tutorial branch and above the first
+        // startGame call (locked by gameplayRecovery.test.js).
+        if (!(await probeConnection())) return;
         if (guideArmed) {
             // ponytail: the tour's mic step is the ONLY tour moment the mic is
             // live — the tap itself is the required action (tap-mic advances).
@@ -196,22 +209,12 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true, tut
     // anything or any verdict locked. Drives the karaoke mount states.
     const hasSpoken = progressCount > 0 || Object.keys(verdicts).length > 0;
 
-    useEffect(() => {
-        // ponytail: KEEP READING step completes on first proof of speech —
-        // interim highlight or a locked verdict. A full instant sentence also
-        // ends here via the break, which suppresses the guide (no clash).
-        if (guideArmed && GUIDE_STEPS[guideStep]?.action === "say-sentence-start" && hasSpoken) {
-            setGuideDone(true);
-        }
-    }, [guideArmed, guideStep, hasSpoken]);
-
     const { reconnecting } = useDeepgramRecognition({
         isActive: gameState === "ACTIVE",
         preload: gameState === "COUNTDOWN" || gameState === "ACTIVE",
         muted: sentenceBreak,
         targetWord: targetWord,
         targetIndex: currentWordIndex,
-        resetKey: currentSentenceIndex,
         keyterms: speakKeyterms,
         lookahead: speakLookahead,
         onProgress: handleSpeakProgress,
@@ -219,7 +222,17 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true, tut
         onSentenceVerdict: handleSentenceVerdict,
         onPermissionDenied: handlePermissionDenied,
         onMispronounced: handleMispronounce,
-        onRecognitionError: undefined,
+        // ponytail: token_failed is the ASR saying the uplink is dead — the
+        // socket never opened, so the round has no score to bank and nothing
+        // real was learned. refillRoundClock is the one recovery path that does
+        // NOT persist (handleFatalError would POST the 0/0), and it returns the
+        // kid to IDLE in ~4s instead of 60s. The overlay already reads "No
+        // Connection" because markUnreachable flipped the store.
+        onRecognitionError: (err) => {
+            if (err !== "token_failed") return;
+            markUnreachable("server");
+            if (!isResume && !isTutorial) refillRoundClock();
+        },
         // ponytail: order is load-bearing — handleFatalError (the SQ wrapper,
         // which also clearBreak()s the celebration timers) persists FIRST, then
         // refillRoundClock returns to IDLE. Reversed = the score is lost.
@@ -337,6 +350,7 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true, tut
                 countdownValue={countdownValue}
                 isResume={isResume}
                 hasSpoken={hasSpoken}
+                previewWords={speechRecognitionWords}
             />
             <div className="flex-shrink-0 relative z-50">
                 <Microphone

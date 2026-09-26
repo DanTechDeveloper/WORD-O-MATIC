@@ -4,13 +4,16 @@
 import fs from "fs";
 
 const src = fs.readFileSync("resources/js/Components/Shared/OfflineGuard.jsx", "utf8");
+const connection = fs.readFileSync("resources/js/utils/connection.js", "utf8");
 const app = fs.readFileSync("resources/js/app.jsx", "utf8");
 const splash = fs.readFileSync("resources/js/Pages/Student/SplashScreen.jsx", "utf8");
 const layout = fs.readFileSync("resources/js/Layouts/Teacher/DashboardLayout.jsx", "utf8");
 
 describe("OfflineGuard", () => {
-    test("detects an already-offline page load via the useState initializer", () => {
-        expect(src).toContain("useState(() => !navigator.onLine)");
+    test("detects an unreachable server on load via the useState initializer", () => {
+        // Not navigator.onLine: that only says the interface is up, so a WiFi
+        // link with no uplink read as online and this modal never appeared.
+        expect(src).toContain("useState(() => !isReachable())");
     });
 
     test("registers and cleans up both online and offline listeners", () => {
@@ -47,9 +50,43 @@ describe("OfflineGuard", () => {
         expect(src).toContain("Connection restored!");
     });
 
-    test("retry re-reads the flag and auto-closes after success", () => {
-        expect(src).toContain("if (!navigator.onLine)");
+    test("a server-side outage gets its own copy — the kid cannot fix a router", () => {
+        // Same modal, different problem: the interface is UP, so "turn your
+        // Wi-Fi back on" is a lie and RETRY would fail forever. Send them to the
+        // person who holds the router.
+        expect(src).toContain('const noServer = reason() === "server";');
+        expect(src).toContain('"No Internet"');
+        expect(src).toContain(
+            "You're connected to Wi-Fi but there's no internet. Tell your teacher, then tap RETRY.",
+        );
+        expect(src).toContain("Still no internet — tell your teacher");
+    });
+
+    test("retry PROBES the server and only claims success on a 200", () => {
+        // The old check was `if (!navigator.onLine)`, which said "restored" on a
+        // link with no uplink — the exact lie this modal exists to stop.
+        expect(src).toContain("probe().then((ok) => {");
+        expect(src).toContain("if (!ok) {");
+        // Prose may still name it — only CODE is read here.
+        const code = src
+            .split("\n")
+            .filter((line) => !line.trim().startsWith("//"))
+            .join("\n");
+        expect(code).not.toContain("navigator.onLine");
         expect(src).toContain("setTimeout(() => setOffline(false), 1200)");
+    });
+
+    test("the browser online event re-proves the server before dismissing", () => {
+        expect(src).toContain("const goOnline = () => {");
+        expect(src).toContain("if (ok) setOffline(false);");
+    });
+
+    test("the guard never SUBSCRIBES to the store", () => {
+        // The store supplies the copy and the block decision, never WHETHER to
+        // raise: a mic tap flips it and the kid asked to PLAY. Trigger list
+        // stays mount / offline event / blocked GET.
+        expect(src).not.toContain("subscribe");
+        expect(src).not.toContain("useSyncExternalStore");
     });
 
     test("success timer is cleared on unmount, a drop, and a blocked visit", () => {
@@ -70,7 +107,7 @@ describe("OfflineGuard", () => {
         expect(src).toContain('document.addEventListener("inertia:before", blockOfflineVisit)');
         expect(src).toContain('document.removeEventListener("inertia:before", blockOfflineVisit)');
         expect(src).toContain("e.preventDefault()");
-        expect(src).toContain("if (navigator.onLine) return;");
+        expect(src).toContain("if (isReachable()) return;");
     });
 
     test("blocks page switches (GET) only — writes must still be attempted", () => {
@@ -86,6 +123,34 @@ describe("OfflineGuard", () => {
     test("mounted once in app.jsx next to the Inertia app", () => {
         expect(app).toContain("import OfflineGuard from '@/Components/Shared/OfflineGuard'");
         expect(app).toContain("<OfflineGuard />");
+    });
+});
+
+describe("the shared store the guard reads", () => {
+    test("initConnection runs at boot, before the pages mount their handlers", () => {
+        // Ordering is load-bearing: the store's `online` listener must be
+        // registered before the ASR hook's onBackOnline, or startConnection's
+        // reachability bail swallows the reconnect of a LIVE round.
+        expect(app).toContain("import { initConnection } from '@/utils/connection'");
+        expect(app.indexOf("initConnection();")).toBeLessThan(
+            app.indexOf("root.render("),
+        );
+    });
+
+    test("the probe target is Laravel's own health route — no new endpoint", () => {
+        expect(connection).toContain('fetch("/up"');
+        expect(connection).toContain("cache: \"no-store\"");
+    });
+
+    test("a captive portal's cross-origin redirect cannot pass as success", () => {
+        expect(connection).toContain("!res.redirected");
+        expect(connection).toContain("res.url.startsWith(location.origin)");
+    });
+
+    test("no polling: a probe only happens where a human is waiting", () => {
+        // A heartbeat would be one request per kid per interval forever, to
+        // learn what inertia:exception and token_failed report for free.
+        expect(connection).not.toContain("setInterval");
     });
 });
 

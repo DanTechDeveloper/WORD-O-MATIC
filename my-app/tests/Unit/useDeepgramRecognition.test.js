@@ -308,25 +308,22 @@ describe("useDeepgramRecognition — stale guards", () => {
         expect(props.onWordRecognized).toHaveBeenCalledTimes(2);
     });
 
-    test("resetKey resets state and enables speech matching in sentence mode", async () => {
+    test("sentence mode reads straight through — nothing resets at a period", async () => {
+        // The kid reads the whole paragraph in one go. There is no sentence
+        // step, so the recognizer must keep one continuous transcript: the
+        // sentence-mode reset (resetKey) that used to wipe it at every period
+        // is gone, and a whole-paragraph final still aligns and advances.
         const { useHook } = await loadHook();
-        const stubs = stubBrowser();
+        stubBrowser();
         const props = {
             ...baseProps(),
             matchMode: "sentence",
             lookahead: "a robot holds a lemon",
             targetWord: "a",
-            resetKey: 0,
         };
-        const { rerender } = renderHook(
-            ({ rk }) => useHook({ ...props, resetKey: rk }),
-            { initialProps: { rk: 0 } },
-        );
+        renderHook(() => useHook(props));
         await waitFor(() => expect(dg.conns.length).toBeGreaterThan(0));
         const conn = dg.conns[0];
-
-        // Advance sentence: resetKey changes 0 -> 1
-        rerender({ rk: 1 });
 
         act(() => {
             conn.handlers.message(dgMsg("a robot holds a lemon", { isFinal: true, confidence: 0.95 }));

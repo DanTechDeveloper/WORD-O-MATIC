@@ -1,10 +1,11 @@
-import { useState, useCallback, useEffect, useMemo, useRef } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef, useSyncExternalStore } from "react";
 import { useCountdown } from "./useCountdown";
 import { router } from "@inertiajs/react";
 import { playSuccessSound, playFeedbackSound, playMispronounceFeedback } from "@/utils/sounds";
 import { readResumeSession, clearResumeSession, readPendingSession, writePendingSession, clearPendingSession } from "@/utils/resumeStorage";
 import { normalizeText as normalizeWord } from "@/lib/speechUtils";
 import { clearAllTimers } from "@/lib/speechProcessors";
+import { subscribe as subscribeConnection, isReachable } from "@/utils/connection";
 
 function getStreakFeedbackMessage(streak) {
     if (streak >= 6) return "Excellent!";
@@ -53,24 +54,18 @@ export function useGameplayCore({
         return Math.max(0, Math.min(60, Math.floor(raw)));
     });
     const [isSaving, setIsSaving] = useState(false);
-    // ponytail: the only re-render source for connectivity. Lives here because
-    // BOTH pages reach this hook (Story Quest via useStoryQuestEngine's
-    // `...core` spread), so one subscription covers Word Blast + Story Quest
-    // and no new hook file exists. RENDER-ONLY — the click-time gate reads
-    // navigator.onLine directly, because state can lag the event by a render.
-    // !== false, not navigator.onLine: undefined under Node/SSR must read
-    // as online, matching the gate's fail-open.
-    const [online, setOnline] = useState(() => navigator.onLine !== false);
-
-    useEffect(() => {
-        const sync = () => setOnline(navigator.onLine !== false);
-        window.addEventListener("online", sync);
-        window.addEventListener("offline", sync);
-        return () => {
-            window.removeEventListener("online", sync);
-            window.removeEventListener("offline", sync);
-        };
-    }, []);
+    // ponytail: the only re-render source for connectivity, and the ONE
+    // subscription in the app. It lives here because BOTH pages reach this hook
+    // (Story Quest via useStoryQuestEngine's `...core` spread), so one store
+    // subscription covers Word Blast + Story Quest and no new hook file exists.
+    // RENDER-ONLY — the click-time gate in the pages calls the store's
+    // imperative probe instead, because state can lag an event by a render.
+    //
+    // The store, not navigator.onLine: that only reports the interface is up,
+    // so a WiFi link with no uplink read as online and the mic promised
+    // "Speak to Smash!" on a dead link. `isReachable` is a boolean getter, so
+    // it is a stable useSyncExternalStore snapshot.
+    const online = useSyncExternalStore(subscribeConnection, isReachable);
 
     const currentStreakRef = useRef(currentStreak);
     const hasSaved = useRef(false);

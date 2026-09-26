@@ -4,6 +4,8 @@
 // sounds), leave the engine's own state machine under test.
 import { renderHook, act } from "@testing-library/react";
 import { useGameplayCore } from "@/hooks/Student/useGameplayCore";
+import { useStoryQuestEngine } from "@/hooks/Student/useStoryQuestEngine";
+import { markReachable, markUnreachable } from "@/utils/connection";
 import { armWordTimeout, armSentenceTimeout } from "@/lib/speechProcessors";
 import { writeResumeSession, readPendingSession } from "@/utils/resumeStorage";
 import fs from "fs";
@@ -14,23 +16,29 @@ const speakMode = read("resources/js/Pages/Student/GameplaySpeakMode.jsx");
 const resumeStorage = read("resources/js/utils/resumeStorage.js");
 const deepgram = read("resources/js/hooks/Student/useDeepgramRecognition.js");
 const speechProcessors = read("resources/js/lib/speechProcessors.js");
+const storyQuest = read("resources/js/hooks/Student/useStoryQuestEngine.js");
 
 // ponytail: happy-dom exposes navigator.onLine as a prototype getter, so the
-// instance has to be shadowed. Restored after every test.
+// instance has to be shadowed. The connection store is a module singleton, so
+// it is reset too — otherwise one case's "unreachable" decides the next one.
 const setOnline = (value) =>
     Object.defineProperty(window.navigator, "onLine", {
         value,
         configurable: true,
     });
-afterEach(() => setOnline(true));
+afterEach(() => {
+    setOnline(true);
+    markReachable();
+});
 
 const routerMock = vi.hoisted(() => ({ post: vi.fn() }));
-vi.mock("@inertiajs/react", () => ({ router: routerMock }));
-vi.mock("@/utils/sounds", () => ({
+const soundsMock = vi.hoisted(() => ({
     playSuccessSound: vi.fn(),
     playFeedbackSound: vi.fn(),
     playMispronounceFeedback: vi.fn(),
 }));
+vi.mock("@inertiajs/react", () => ({ router: routerMock }));
+vi.mock("@/utils/sounds", () => soundsMock);
 
 const WORDS = [
     { id: 1, word: "apple" },
@@ -64,10 +72,12 @@ function mountMidRound() {
     );
 }
 
-// ponytail: the one connectivity subscription, tested as behaviour not file
-// text. It exists so the mic and the TapToStartOverlay can say "No Connection"
-// — the modal deliberately does NOT react to it.
-describe("online state tracks the browser connectivity events", () => {
+// ponytail: the hook is now a MIRROR of the shared store, not a listener owner.
+// The store's own transitions are behaviour-tested in connection.test.js; what
+// matters here is that the mic and the TapToStartOverlay read a value that goes
+// false when the server cannot be reached — and that the hook holds the app's
+// single store subscription (the modal deliberately does NOT subscribe).
+describe("the core mirrors the shared connection store", () => {
     const mount = () =>
         renderHook(() =>
             useGameplayCore({
@@ -78,32 +88,34 @@ describe("online state tracks the browser connectivity events", () => {
             }),
         );
 
-    test("mounts online", () => {
+    test("mounts reachable", () => {
         expect(mount().result.current.online).toBe(true);
     });
 
-    test("flips to false on the offline event and back on online", () => {
+    test("goes offline when the store marks the server unreachable", () => {
+        // The whole point of the store: a WiFi link with no uplink used to read
+        // as online here, so the mic promised "Speak to Smash!" on a dead link.
         const { result } = mount();
         act(() => {
-            setOnline(false);
-            window.dispatchEvent(new Event("offline"));
+            markUnreachable("server");
         });
         expect(result.current.online).toBe(false);
         act(() => {
-            setOnline(true);
-            window.dispatchEvent(new Event("online"));
+            markReachable();
         });
         expect(result.current.online).toBe(true);
     });
 
-    test("unsubscribes on unmount", () => {
-        const remove = vi.spyOn(window, "removeEventListener");
+    test("holds no connectivity listener of its own", () => {
+        // One subscription in the app. A second one here would let the two
+        // disagree about the same network.
+        const add = vi.spyOn(window, "addEventListener");
         const { unmount } = mount();
         unmount();
-        const events = remove.mock.calls.map((c) => c[0]);
-        expect(events).toContain("online");
-        expect(events).toContain("offline");
-        remove.mockRestore();
+        const events = add.mock.calls.map((c) => c[0]);
+        expect(events).not.toContain("online");
+        expect(events).not.toContain("offline");
+        add.mockRestore();
     });
 });
 
@@ -224,9 +236,27 @@ describe("page wiring", () => {
         ["GameplaySpeakMode", speakMode],
     ])("%s persists the aborted round BEFORE refilling the clock", (_name, src) => {
         // Reversed = the aborted round's score is silently dropped.
-        expect(src.indexOf("handleFatalError();")).toBeGreaterThan(-1);
-        expect(src.indexOf("handleFatalError();")).toBeLessThan(
-            src.indexOf("refillRoundClock();"),
+        // Scoped to the onRestartFailed body: the token_failed handler also
+        // refills, and a file-wide indexOf would compare across the two.
+        const fn = src.indexOf("onRestartFailed:");
+        const body = src.slice(fn, src.indexOf("}),", fn));
+        expect(body.indexOf("handleFatalError();")).toBeGreaterThan(-1);
+        expect(body.indexOf("handleFatalError();")).toBeLessThan(
+            body.indexOf("refillRoundClock();"),
+        );
+    });
+
+    test.each([
+        ["GameplayReadMode", readMode],
+        ["GameplaySpeakMode", speakMode],
+    ])("%s recycles a dead uplink instead of burning the 60s round", (_name, src) => {
+        // token_failed means the socket never opened, so the round has no score
+        // to bank. refillRoundClock is the ONE recovery path that does not
+        // persist — handleFatalError here would POST the 0/0 junk row.
+        expect(src).toContain('if (err !== "token_failed") return;');
+        expect(src).toContain('markUnreachable("server");');
+        expect(src).toContain(
+            'if (!isResume && !isTutorial) refillRoundClock();',
         );
     });
 
@@ -271,10 +301,12 @@ describe("deliberately unchanged", () => {
         }
     });
 
-    test("the ASR hook bails when offline and re-arms on 'online'", () => {
+    test("the ASR hook bails when the server is unreachable and re-arms on 'online'", () => {
         // Without the online listener the bail strands the round for the full
         // 60s — every ladder rung is a no-op while the link is down.
-        expect(deepgram).toContain("if (!navigator.onLine) return;");
+        // The store, not navigator.onLine: a WiFi link with no uplink reads as
+        // online, so the ladder used to be spent on a server that never answers.
+        expect(deepgram).toContain("if (!isReachable()) return;");
         expect(deepgram).toContain(
             'window.addEventListener("online", onBackOnline)',
         );
@@ -291,7 +323,7 @@ describe("deliberately unchanged", () => {
         const ladderStart = deepgram.indexOf("restartCount++", closeStart);
         expect(closeStart).toBeGreaterThan(-1);
         expect(ladderStart).toBeGreaterThan(closeStart);
-        const bail = deepgram.indexOf("if (!navigator.onLine) return;", closeStart);
+        const bail = deepgram.indexOf("if (!isReachable()) return;", closeStart);
         expect(bail).toBeGreaterThan(closeStart);
         expect(bail).toBeLessThan(ladderStart);
     });
@@ -484,7 +516,7 @@ describe("round start is blocked while offline", () => {
     });
 
     test("the guard still opens on mount, the offline event, and offline GETs", () => {
-        expect(guard).toContain("useState(() => !navigator.onLine)");
+        expect(guard).toContain("useState(() => !isReachable())");
         expect(guard).toContain('window.addEventListener("offline", goOffline)');
         expect(guard).toContain('window.addEventListener("online", goOnline)');
         expect(guard).toContain('document.addEventListener("inertia:before", blockOfflineVisit)');
@@ -496,8 +528,10 @@ describe("round start is blocked while offline", () => {
         ["GameplayReadMode", readMode],
         ["GameplaySpeakMode", speakMode],
     ])("%s returns silently instead of starting", (_name, src) => {
-        // No dispatch, no modal, no state change — just a bail.
-        expect(src).toMatch(/if \(navigator\.onLine === false\) return;/);
+        // No dispatch, no modal, no state change — just a bail. The probe is
+        // what makes it honest: navigator.onLine said yes on a WiFi link with
+        // no uplink, and the round banked a junk 0/0.
+        expect(src).toMatch(/if \(!\(await probeConnection\(\)\)\) return;/);
     });
 
     test.each([
@@ -506,7 +540,7 @@ describe("round start is blocked while offline", () => {
     ])("%s gates inside handleMicrophoneClick, before any startGame", (_name, src) => {
         // Above the tutorial branch too, or the guide's mic step slips past it.
         const fn = src.indexOf("const handleMicrophoneClick");
-        const gate = src.indexOf("if (navigator.onLine === false) return;");
+        const gate = src.indexOf("if (!(await probeConnection())) return;");
         const firstStart = src.indexOf("startGame()");
         expect(fn).toBeGreaterThan(-1);
         expect(gate).toBeGreaterThan(fn);
@@ -516,24 +550,33 @@ describe("round start is blocked while offline", () => {
     test.each([
         ["GameplayReadMode", readMode],
         ["GameplaySpeakMode", speakMode],
-    ])("%s uses === false, never a truthiness gate", (_name, src) => {
-        // navigator.onLine is undefined under Node/SSR; an `if (!navigator.onLine`
-        // gate would block the round there and kill the watchdog verdict path.
-        expect(src).toContain("navigator.onLine === false");
-        expect(src).not.toContain("if (!navigator.onLine");
+    ])("%s gates the round START on the store, not navigator.onLine", (_name, src) => {
+        // navigator.onLine is undefined under Node/SSR, and it reads true on a
+        // WiFi link with no uplink; neither answer is usable for a start, and a
+        // wrong "yes" is what banked the 0/0 junk row. The fail-open lives in
+        // the store (connection.test.js pins it). Prose may still name it, and
+        // onRestartFailed still reads it (a Deepgram socket death is a different
+        // host — see "keeps all three recovery guards"), so scope to the gate.
+        const fn = src.indexOf("const handleMicrophoneClick");
+        const code = src
+            .slice(fn, src.indexOf("}, [", fn))
+            .split("\n")
+            .filter((line) => !line.trim().startsWith("//"))
+            .join("\n");
+        expect(code).not.toContain("navigator.onLine");
+        expect(code).toContain("probeConnection()");
     });
 
-    test("useGameplayCore owns the one connectivity subscription and fails open", () => {
+    test("useGameplayCore holds the one store subscription and no listener of its own", () => {
         // Both pages reach this hook (Story Quest via useStoryQuestEngine's
-        // `...core` spread), so this is the only place the listeners may live.
-        expect(core).toContain('window.addEventListener("online", sync)');
-        expect(core).toContain('window.addEventListener("offline", sync)');
-        expect(core).toContain('window.removeEventListener("online", sync)');
-        // !== false, not navigator.onLine: undefined under Node/SSR must read
-        // as online, matching the click gate's fail-open.
-        expect(core).toContain("useState(() => navigator.onLine !== false)");
-        expect(core).toContain("setOnline(navigator.onLine !== false)");
-        expect(core).not.toContain("useState(() => navigator.onLine)");
+        // `...core` spread), so this is the only place the app may subscribe.
+        // The window listeners moved to initConnection (app.jsx) — a second
+        // pair here would let the two disagree about the same network.
+        expect(core).toContain(
+            "useSyncExternalStore(subscribeConnection, isReachable)",
+        );
+        expect(core).not.toContain('window.addEventListener("online"');
+        expect(core).not.toContain('window.addEventListener("offline"');
     });
 
     test.each([
@@ -544,6 +587,25 @@ describe("round start is blocked while offline", () => {
         expect(src).toContain("offline={!online}");
         expect(src).toContain("noConnection={!online}");
         expect(src).toContain("online,");
+    });
+
+    test("Story Quest has no sentence step — nothing divides the read at a period", () => {
+        // The student reads one whole paragraph. Every period is a plain word
+        // token: no sentence index, no recognizer reset, no guide step that
+        // waits for a sentence. Sentence boundaries survive only as end-of-round
+        // scoring buckets for the Sentence Star badge.
+        expect(speakMode).not.toContain("currentSentenceIndex");
+        expect(speakMode).not.toContain("resetKey");
+        expect(speakMode).not.toContain("say-sentence-start");
+        expect(speakMode).not.toContain('spotlight: "sentence"');
+        expect(storyQuest).not.toContain("currentSentenceIndex");
+        expect(storyQuest).not.toContain("resetKey");
+        // The recognizer kept one continuous transcript across the whole read.
+        expect(deepgram).not.toContain("resetKey");
+        // The tour's read steps preview the WHOLE paragraph, not one sentence —
+        // otherwise IDLE (tour + TapToStartOverlay stage) renders empty and
+        // READ IT ALL points at nothing.
+        expect(speakMode).toContain("previewWords={speechRecognitionWords}");
     });
 
     test("the mic prompt ranks live > offline > reconnecting > disabled", () => {
@@ -583,7 +645,7 @@ describe("round start is blocked while offline", () => {
         // (the send at :453 drops it while the socket is still connecting), so
         // the fix is to stop claiming a link that is not up — not to go mic-first.
         const set = deepgram.indexOf("if (propsRef.current.isActive) setReconnecting(true);");
-        const bail = deepgram.indexOf("if (!navigator.onLine) return;", set - 400);
+        const bail = deepgram.indexOf("if (!isReachable()) return;", set - 400);
         expect(set).toBeGreaterThan(-1);
         // After the bail: while offline there is nothing to reconnect FROM.
         expect(set).toBeGreaterThan(bail);
@@ -630,7 +692,7 @@ describe("round start is blocked while offline", () => {
         const preloadStart = deepgram.indexOf("if (preload) {");
         const preconnect = deepgram.indexOf("startConnection();", preloadStart);
         const bail = deepgram.indexOf(
-            "if (navigator.onLine === false) return;",
+            "if (!isReachable()) return;",
             preloadStart,
         );
         expect(preloadStart).toBeGreaterThan(-1);
@@ -694,5 +756,89 @@ describe("round start is blocked while offline", () => {
                 "if (connRef.current !== conn) return;",
             );
         }
+    });
+});
+
+// ponytail: 12 words over 2 sentences — ranges [{0,10},{10,12}]. The last
+// batch starts at word 6, i.e. inside the FIRST sentence, which is exactly
+// what a fluent reader does when they swallow the tail in one breath. The
+// removed `rangeIdx + 1 < ranges.length` guard resolved that batch to range 0
+// and returned: no modal, no sound, no advance, verdicts already locked so
+// every handler early-returns — a dead round until the 60s cap.
+const PARAGRAPH = [
+    "one",
+    "two",
+    "three",
+    "four",
+    "five",
+    "six",
+    "seven",
+    "eight",
+    "nine",
+    "ten.",
+    "eleven",
+    "twelve.",
+].map((word, id) => ({ id, word }));
+
+describe("Story Quest completion from a batch inside a non-final sentence", () => {
+    beforeEach(() => {
+        vi.useFakeTimers();
+        sessionStorage.clear();
+        soundsMock.playFeedbackSound.mockClear();
+    });
+    afterEach(() => vi.useRealTimers());
+
+    const mountStoryQuest = () =>
+        renderHook(() =>
+            useStoryQuestEngine({
+                words: PARAGRAPH,
+                totalWords: PARAGRAPH.length,
+                moduleId: 707,
+                saveEndpoint: "/student/saveParagraphProgress",
+            }),
+        );
+
+    const startRound = (engine) => {
+        act(() => engine.startGame());
+        act(() => vi.advanceTimersByTime(4000)); // 3-2-1-GO! → ACTIVE
+    };
+
+    test("scores the whole paragraph, plays one sound, and completes", () => {
+        const { result } = mountStoryQuest();
+        startRound(result.current);
+
+        act(() => result.current.handleWordRecognized(6));
+        expect(result.current.currentWordIndex).toBe(6);
+
+        act(() => result.current.handleSentenceVerdict(Array(6).fill("correct")));
+
+        // The message rates the WHOLE paragraph (12/12), never a slice of it,
+        // and sentence_scores stays per-sentence for badges/results.
+        expect(result.current.sentenceFeedback).toEqual({ message: "Excellent!" });
+        expect(result.current.sentenceScores).toEqual([10, 2]);
+
+        // 1000ms silent verdict preview, then the modal and its one sound.
+        act(() => vi.advanceTimersByTime(1000));
+        expect(result.current.sentenceBreak).toBe(true);
+        expect(soundsMock.playFeedbackSound).toHaveBeenCalledTimes(1);
+        expect(soundsMock.playFeedbackSound).toHaveBeenCalledWith("Excellent!");
+
+        // 2500ms celebration, then the round ends — not a dead round.
+        act(() => vi.advanceTimersByTime(2500));
+        expect(result.current.gameState).toBe("COMPLETED");
+    });
+
+    test("one message per round even if the tail is batched again", () => {
+        const { result } = mountStoryQuest();
+        startRound(result.current);
+
+        act(() => result.current.handleWordRecognized(6));
+        act(() => result.current.handleSentenceVerdict(Array(6).fill("correct")));
+        // A late final for the same tail (the path that used to re-enter
+        // completeSentence) must not re-score or replay the celebration.
+        act(() => result.current.handleSentenceVerdict(Array(6).fill("correct")));
+        act(() => vi.advanceTimersByTime(1000));
+
+        expect(soundsMock.playFeedbackSound).toHaveBeenCalledTimes(1);
     });
 });
