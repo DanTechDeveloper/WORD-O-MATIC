@@ -707,6 +707,10 @@ export function useDeepgramRecognition({
                 timeoutRefs.current.target = null;
                 timeoutRefs.current.graceEnd = Date.now() + 500;
                 timeoutRefs.current.restartCount = 0;
+                // ponytail: reset tokenRetries on each new round — partial
+                // failures in the prev round would starve the new round's
+                // backoff ladder (e.g. 2 retries → only 1 left → token_failed).
+                timeoutRefs.current.tokenRetries = 0;
                 permissionDeniedRef.current = false;
                 gateStateRef.current.isOpen = false;
                 clearAllTimers(timerRefs.current);

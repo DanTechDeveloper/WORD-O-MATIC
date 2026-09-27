@@ -334,7 +334,13 @@ export function processSentenceModeResult(
         if (
             !stateRefs.current.hasMatched &&
             advanceCount > 0 &&
-            (hasAuthoritative || fullMatch)
+            (hasAuthoritative || fullMatch) &&
+            // ponytail: same 800ms grace as the alignSentence path above —
+            // transcript accumulates across word advances (intentional) so
+            // stale tail words from the previous sentence can hit the new
+            // lookahead within the switch window and fire a premature advance.
+            // graceEnd drops the advance-count path too, not just Wrong verdicts.
+            Date.now() >= timeoutRefs.current.graceEnd
         ) {
             bump("sentence.advance");
             stateRefs.current.hasMatched = true;
