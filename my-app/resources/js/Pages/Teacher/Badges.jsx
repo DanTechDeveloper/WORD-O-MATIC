@@ -1,22 +1,43 @@
-import { Head } from "@inertiajs/react";
+import { Head, usePage } from "@inertiajs/react";
 import DashboardLayout from "@/Layouts/Teacher/DashboardLayout";
 import { router } from "@inertiajs/react";
 import { useRef } from "react";
+import LiveStatusDot from "@/Components/Shared/LiveStatusDot";
+import { useLiveStats } from "@/hooks/Teacher/useLiveStats";
+import { getDeadlineInfo } from "@/hooks/Student/useDeadlineStatus";
 
 const RANK_COLORS = ["#fbbf24", "#94a3b8", "#d97706"];
 // ponytail: Halfway Hero / Story Explorer 50% (was 100% finisher) — forgiving for ASR, 11 badges stay
 
 export default function Badges({
-    badges,
-    topEarners,
-    totalStudents,
-    totalBadges,
-    totalEarned,
-    mostEarnedBadge,
+    badges: serverBadges,
+    topEarners: serverTopEarners,
+    totalStudents: serverTotalStudents,
+    totalBadges: serverTotalBadges,
+    totalEarned: serverTotalEarned,
+    mostEarnedBadge: serverMostEarned,
     sections = [],
     filters = {},
     auth,
 }) {
+    // Past the report deadline every scored surface is frozen, so the poll could
+    // never report a change — see StudentController.php:496-551.
+    const deadlineClosed =
+        getDeadlineInfo(usePage().props.auth?.deadline).phase === "closed";
+    const { data, status } = useLiveStats({
+        endpoint: "/teacher/live-badges",
+        enabled: !deadlineClosed,
+    });
+    // The live payload is the SAME query the page rendered (the hook forwards
+    // window.location.search), so the section/search filter survives. Every
+    // field falls back to the server render, so first paint is never empty.
+    const badges = data?.badges ?? serverBadges;
+    const topEarners = data?.topEarners ?? serverTopEarners;
+    const totalStudents = data?.totalStudents ?? serverTotalStudents;
+    const totalBadges = data?.totalBadges ?? serverTotalBadges;
+    const totalEarned = data?.totalEarned ?? serverTotalEarned;
+    const mostEarnedBadge = data?.mostEarnedBadge ?? serverMostEarned;
+
     const searchRef = useRef(null);
     const debounceRef = useRef(null);
 
@@ -95,6 +116,9 @@ export default function Badges({
                     {auth?.user?.name || "Teacher"} • Monitor badge distribution
                     across {totalStudents} students
                 </p>
+                <div className="mt-2">
+                    <LiveStatusDot status={status} />
+                </div>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-6 mb-10">

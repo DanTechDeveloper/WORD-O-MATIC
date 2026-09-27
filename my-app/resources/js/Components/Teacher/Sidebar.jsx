@@ -50,7 +50,12 @@ export default function Sidebar({ isOpen, onClose }) {
                 </div>
                 <nav className="flex-1 space-y-2">
                     {navItems.map((item) => {
-                        const isActive = url === item.href;
+                        // ponytail: pathname, not the raw url. usePage().url is the
+                        // FULL url INCLUDING the query string, so `url === item.href`
+                        // went false on any filtered page — /teacher/students?sort=level
+                        // left the Students item unhighlighted (same for Leaderboards
+                        // and Badges). Same fix as Student/DashboardLayout.jsx:6.
+                        const isActive = url.split("?")[0] === item.href;
                         return (
                             <Link
                                 key={item.href}

@@ -1,6 +1,9 @@
-import { Head } from "@inertiajs/react";
+import { Head, usePage } from "@inertiajs/react";
 import DashboardLayout from "../../Layouts/Teacher/DashboardLayout";
 import { useState, useEffect } from "react";
+import { useLiveStats } from "@/hooks/Teacher/useLiveStats";
+import LiveStatusDot from "@/Components/Shared/LiveStatusDot";
+import { getDeadlineInfo } from "@/hooks/Student/useDeadlineStatus";
 import {
     BarChart,
     ResponsiveContainer,
@@ -13,17 +16,39 @@ import {
 } from "recharts";
 
 export default function Dashboard({
-    totalStudents,
-    avgReadAccuracy,
-    avgSpeakAccuracy,
-    avgFinalAccuracy,
-    totalClassPoints,
-    sectionPerformance = [],
-    chartCounts,
-    topStudents = [],
-    students = [],
+    totalStudents: serverTotalStudents,
+    avgReadAccuracy: serverAvgRead,
+    avgSpeakAccuracy: serverAvgSpeak,
+    avgFinalAccuracy: serverAvgFinal,
+    totalClassPoints: serverClassPoints,
+    sectionPerformance: serverSectionPerformance = [],
+    chartCounts: serverChartCounts,
+    topStudents: serverTopStudents = [],
+    students: serverStudents = [],
     auth,
 }) {
+    // The one place a teacher page decides whether polling is even allowed:
+    // past the report deadline every scored surface is frozen, so the numbers
+    // are provably final and the poll could never report a change. Same idiom
+    // as Word.jsx:8 / Paragraph.jsx:8 / DashboardLayout.jsx:19.
+    const deadlineClosed =
+        getDeadlineInfo(usePage().props.auth?.deadline).phase === "closed";
+
+    // ponytail: the poll returns the SAME shape as these props, so each live
+    // value just falls back to the server render — instant first paint, and the
+    // poll can only ever overwrite it. Renamed at the signature boundary so the
+    // ~600 lines below keep their original names untouched.
+    const { data, status } = useLiveStats({ enabled: !deadlineClosed });
+    const totalStudents = data?.totalStudents ?? serverTotalStudents;
+    const avgReadAccuracy = data?.avgReadAccuracy ?? serverAvgRead;
+    const avgSpeakAccuracy = data?.avgSpeakAccuracy ?? serverAvgSpeak;
+    const avgFinalAccuracy = data?.avgFinalAccuracy ?? serverAvgFinal;
+    const totalClassPoints = data?.totalClassPoints ?? serverClassPoints;
+    const sectionPerformance = data?.sectionPerformance ?? serverSectionPerformance;
+    const chartCounts = data?.chartCounts ?? serverChartCounts;
+    const topStudents = data?.topStudents ?? serverTopStudents;
+    const students = data?.students ?? serverStudents;
+
     const [selectedSection, setSelectedSection] = useState("");
     const [nameFilter, setNameFilter] = useState("");
     const [activeMetric, setActiveMetric] = useState("points");
@@ -169,9 +194,12 @@ export default function Dashboard({
                 <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white uppercase italic tracking-tighter mb-2 whitespace-normal break-words [overflow-wrap:anywhere] leading-tight block" title={`Welcome back, ${auth?.user?.name || "Teacher"}!`}>
                     Welcome back, {auth?.user?.name || "Teacher"}!
                 </h1>
-                <p className="text-on-surface-variant font-black uppercase text-[11px] sm:text-xs tracking-widest">
-                    All set • Tracking your classes
-                </p>
+                <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
+                    <p className="text-on-surface-variant font-black uppercase text-[11px] sm:text-xs tracking-widest">
+                        All set • Tracking your classes
+                    </p>
+                    <LiveStatusDot status={status} />
+                </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-10">

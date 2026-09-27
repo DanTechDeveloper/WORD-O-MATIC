@@ -1,7 +1,10 @@
 import { Head } from "@inertiajs/react";
 import DashboardLayout from "@/Layouts/Teacher/DashboardLayout";
 import { Link, usePage } from "@inertiajs/react";
-	import { attentionMeta, attemptsShown } from "@/utils/masteryLabels.js";
+import { attentionMeta, attemptsShown } from "@/utils/masteryLabels.js";
+import LiveStatusDot from "@/Components/Shared/LiveStatusDot";
+import { useLiveStats } from "@/hooks/Teacher/useLiveStats";
+import { getDeadlineInfo } from "@/hooks/Student/useDeadlineStatus";
 
 function aggregateZoneRows(wordStats) {
     const rows = [...(wordStats || [])].map((s) => ({
@@ -120,8 +123,20 @@ export default function StudentDetail({ data }) {
     const attentionThreshold =
         usePage().props.teacher?.attention_threshold ?? 3;
 
-    const _readCurriculum = data.readCurriculum || [];
-    const _speakCurriculum = data.speakCurriculum || [];
+    // Past the report deadline every scored surface is frozen, so the poll could
+    // never report a change — see StudentController.php:496-551.
+    const deadlineClosed =
+        getDeadlineInfo(usePage().props.auth?.deadline).phase === "closed";
+    const live = useLiveStats({
+        endpoint: `/teacher/live-student/${data.student_id}`,
+        enabled: !deadlineClosed,
+    });
+
+    // The live payload is the same shape show() rendered, so one spread covers
+    // it and no line below has to change.
+    const src = live.data ? { ...data, ...live.data } : data;
+    const _readCurriculum = src.readCurriculum || [];
+    const _speakCurriculum = src.speakCurriculum || [];
     const wbMasteredAll = _readCurriculum.flatMap((l) => aggregateZoneRows(l.word_stats).mastered);
     const wbTrainingAll = _readCurriculum.flatMap((l) => aggregateZoneRows(l.word_stats).training);
     const sqSentencesAll = _speakCurriculum.flatMap((l) => l.sentence_stats || []);
@@ -130,46 +145,46 @@ export default function StudentDetail({ data }) {
     const hasSqModules = _speakCurriculum.length > 0;
 
     const student = {
-        id: data.student_id,
-        section: data.student?.section,
-        name: data.name,
+        id: src.student_id,
+        section: src.student?.section,
+        name: src.name,
         avatar:
-            data.student?.avatar ||
+            src.student?.avatar ||
             "https://lh3.googleusercontent.com/aida-public/AB6AXuAgZOj0Csd-wTVehC2hKqya5LsWjibMtl2k7u0rwLw07NOodqBRyJcyz6B0y62wGMLC79R0wuZ-SV8Kr8YSHaqJwAVOBZDyviTPvbCDrAHaipLpSQOokfSwI9XsnNao1SCIhxKx3Mi5ETvcIpX9Ntt2OHt60MHNrAUovC6X0ncME1-6gTNBMsN5aKev3-NmGumU2wxIwgHHHUa723xho1Hohi3sOwLMcl2mY38bLFL8aQtMTcrcVRJ6MKFkfdO7JnGX-IZqR9qpKr6F",
         stats: [
             {
                 label: "Word Smashed",
-                value: data.student?.points?.toLocaleString() || "0",
+                value: src.student?.points?.toLocaleString() || "0",
                 icon: "reorder",
                 color: "text-accent",
             },
             {
                 label: "Word Blast Acc",
-                value: data.student?.wordBlastAcc
-                    ? `${data.student.wordBlastAcc}%`
+                value: src.student?.wordBlastAcc
+                    ? `${src.student.wordBlastAcc}%`
                     : "N/A",
                 icon: "auto_stories",
                 color: "text-purple-400",
             },
             {
                 label: "Story Quest Acc",
-                value: data.student?.storyQuestAcc
-                    ? `${data.student.storyQuestAcc}%`
+                value: src.student?.storyQuestAcc
+                    ? `${src.student.storyQuestAcc}%`
                     : "N/A",
                 icon: "record_voice_over",
                 color: "text-cyan-400",
             },
             {
                 label: "Final Average",
-                value: data.student?.finalAverage != null
-                    ? `${data.student.finalAverage}%`
+                value: src.student?.finalAverage != null
+                    ? `${src.student.finalAverage}%`
                     : "N/A",
                 icon: "star",
                 color: "text-amber-400",
             },
         ],
-        readCurriculum: data.readCurriculum || [],
-        speakCurriculum: data.speakCurriculum || [],
+        readCurriculum: src.readCurriculum || [],
+        speakCurriculum: src.speakCurriculum || [],
     };
 
     const calcOverallProgress = (curriculum) => {
@@ -220,14 +235,14 @@ export default function StudentDetail({ data }) {
     const modes = [
         {
             name: "Word Blast",
-            level: `LV ${data.student?.read_level ?? 1}`,
+            level: `LV ${src.student?.read_level ?? 1}`,
             sub: readTotal > 0 ? `${readMastered} of ${readTotal} Words Mastered` : "No words yet",
             progress: calcOverallProgress(student.readCurriculum),
             color: "bg-accent",
         },
         {
             name: "Story Quest",
-            level: `LV ${data.student?.speak_level ?? 1}`,
+            level: `LV ${src.student?.speak_level ?? 1}`,
             sub: speakTotal > 0 ? `${speakMastered} of ${speakTotal} Sentences Mastered` : "No sentences yet",
             progress: calcSentenceProgress(student.speakCurriculum),
             color: "bg-cyan-400",
@@ -285,18 +300,18 @@ export default function StudentDetail({ data }) {
             "Making progress. Completing both skills will finish the curriculum.",
     };
 
-    const statusKey = data.student?.status || "notStarted";
+    const statusKey = src.student?.status || "notStarted";
     const status = statusMeta[statusKey] || statusMeta.notStarted;
-    const wbAcc = data.student?.wordBlastAcc
-        ? `${data.student.wordBlastAcc}%`
+    const wbAcc = src.student?.wordBlastAcc
+        ? `${src.student.wordBlastAcc}%`
         : "N/A";
-    const sqAcc = data.student?.storyQuestAcc
-        ? `${data.student.storyQuestAcc}%`
+    const sqAcc = src.student?.storyQuestAcc
+        ? `${src.student.storyQuestAcc}%`
         : "N/A";
     const wbProgress = calcOverallProgress(student.readCurriculum);
     const sqProgress = calcSentenceProgress(student.speakCurriculum);
 
-    const latestBadge = data.latestBadge;
+    const latestBadge = src.latestBadge;
     const badgeCard =
         latestBadge && latestBadge.name
             ? {
@@ -315,8 +330,8 @@ export default function StudentDetail({ data }) {
 
     return (
         <DashboardLayout>
-            <Head title={`${data.name} — Word-O-Matic`}>
-                <meta name="description" content={`Student details for ${data.name} on Word-O-Matic.`} />
+            <Head title={`${src.name} — Word-O-Matic`}>
+                <meta name="description" content={`Student details for ${src.name} on Word-O-Matic.`} />
             </Head>
             <div className="mb-10">
                 <Link
@@ -328,6 +343,10 @@ export default function StudentDetail({ data }) {
                     </span>
                     Back to Students
                 </Link>
+
+                <div className="mb-2">
+                    <LiveStatusDot status={live.status} />
+                </div>
 
                 <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 lg:gap-8 items-start">
                     <div className="bg-surface-container rounded-xl border-4 border-outline/20 p-4 sm:p-6 md:p-8 flex items-center gap-4 sm:gap-6 w-full lg:w-auto max-w-full overflow-hidden">
@@ -454,7 +473,7 @@ export default function StudentDetail({ data }) {
                                         Final Average
                                     </span>
                                     <span className="text-amber-400 font-black uppercase italic tracking-tighter text-xl sm:text-2xl md:text-3xl bg-amber-400/10 border border-amber-400/20 rounded-xl px-3 py-1">
-                                        {data.student?.finalAverage != null ? `${data.student.finalAverage}%` : 'N/A'}
+                                        {src.student?.finalAverage != null ? `${src.student.finalAverage}%` : 'N/A'}
                                     </span>
                                 </div>
                             </div>

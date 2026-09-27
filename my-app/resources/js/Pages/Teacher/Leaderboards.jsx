@@ -1,9 +1,26 @@
-import { Head } from "@inertiajs/react";
+import { Head, usePage } from "@inertiajs/react";
 import DashboardLayout from "@/Layouts/Teacher/DashboardLayout";
 import { router } from "@inertiajs/react";
 import { useRef, useState } from "react";
+import LiveStatusDot from "@/Components/Shared/LiveStatusDot";
+import { useLiveStats } from "@/hooks/Teacher/useLiveStats";
+import { getDeadlineInfo } from "@/hooks/Student/useDeadlineStatus";
 
-export default function Leaderboards({ leaderboard, totalStudents, sections = [], filters = {}, auth }) {
+export default function Leaderboards({ leaderboard: serverLeaderboard, totalStudents: serverTotal, sections = [], filters = {}, auth }) {
+    // Past the report deadline every scored surface is frozen, so the poll could
+    // never report a change — see StudentController.php:496-551. Same idiom as
+    // Word.jsx:8 / Paragraph.jsx:8.
+    const deadlineClosed =
+        getDeadlineInfo(usePage().props.auth?.deadline).phase === "closed";
+    const { data, status } = useLiveStats({
+        endpoint: "/teacher/live-leaderboards",
+        enabled: !deadlineClosed,
+    });
+    // The live payload is the SAME query the page rendered (the hook forwards
+    // window.location.search), so the active section/search filter survives.
+    const leaderboard = data?.leaderboard ?? serverLeaderboard;
+    const totalStudents = data?.totalStudents ?? serverTotal;
+
     const [activeTab, setActiveTab] = useState("points");
     const searchRef = useRef(null);
     const debounceRef = useRef(null);
@@ -56,6 +73,9 @@ export default function Leaderboards({ leaderboard, totalStudents, sections = []
                     {auth?.user?.name || "Teacher"} • {activeStudents.length} of{" "}
                     {totalStudents} word-warriors
                 </p>
+                <div className="mt-2">
+                    <LiveStatusDot status={status} />
+                </div>
             </div>
 
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">

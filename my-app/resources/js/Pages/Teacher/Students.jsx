@@ -1,9 +1,12 @@
 import DashboardLayout from "@/Layouts/Teacher/DashboardLayout";
-import { Head, Link, router } from "@inertiajs/react";
+import { Head, Link, router, usePage } from "@inertiajs/react";
 import { useRef, useState } from "react";
 import AddStudentModal from "@/Components/Teacher/AddStudentModal";
 import EditStudentModal from "@/Components/Teacher/EditStudentModal";
 import ConfirmDeleteModal from "@/Components/Teacher/ConfirmDeleteModal";
+import LiveStatusDot from "@/Components/Shared/LiveStatusDot";
+import { useLiveStats } from "@/hooks/Teacher/useLiveStats";
+import { getDeadlineInfo } from "@/hooks/Student/useDeadlineStatus";
 
 const sortOptions = [
     { value: "risk", label: "Risk Level" },
@@ -23,15 +26,31 @@ const statusTabs = [
 ];
 
 export default function Students({ data, sections, filters, existingStudentIds }) {
-    const students = data.data ?? [];
+    // Past the report deadline every scored surface is frozen, so the poll could
+    // never report a change — see StudentController.php:496-551. Same idiom as
+    // Word.jsx:8 / Paragraph.jsx:8.
+    const deadlineClosed =
+        getDeadlineInfo(usePage().props.auth?.deadline).phase === "closed";
+    const live = useLiveStats({ enabled: !deadlineClosed });
+
+    // The live payload is the SAME query the page rendered (the hook forwards
+    // window.location.search), so the list stays filtered by whatever
+    // sort/section/search/status/page the teacher picked — no params to thread
+    // and no way for the two to drift.
+    const livePage = live.data?.data ? live.data : data;
+    const students = livePage.data ?? [];
     const meta = {
-        current_page: data.current_page ?? 1,
-        last_page: data.last_page ?? 1,
-        from: data.from,
-        to: data.to,
-        total: data.total,
+        current_page: livePage.current_page ?? 1,
+        last_page: livePage.last_page ?? 1,
+        from: livePage.from,
+        to: livePage.to,
+        total: livePage.total,
     };
 
+    // existingIds stays on the SERVER prop on purpose: the live endpoint omits
+    // existingStudentIds (it derives from users.student_id, which no round
+    // touches), and the duplicate check is server-enforced anyway via
+    // Rule::unique + TeacherController::pinIsTaken.
     const existingIds = new Set(
         (existingStudentIds || []).map((id) => String(id).trim().toLowerCase()),
     );
@@ -142,6 +161,9 @@ export default function Students({ data, sections, filters, existingStudentIds }
                         <p className="text-on-surface-variant font-black uppercase text-xs tracking-widest">
                             Monitoring {meta.total ?? 0} word-warriors
                         </p>
+                        <div className="mt-2">
+                            <LiveStatusDot status={live.status} />
+                        </div>
                     </div>
                     <div className="flex flex-col gap-3 lg:gap-4 lg:flex-row lg:items-center">
                         <button

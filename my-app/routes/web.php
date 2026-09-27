@@ -45,7 +45,18 @@ Route::middleware(['auth'])->group(function () {
             Route::put('/paragraphModules', [TeacherController::class, 'updateParagraphModule'])->name('paragraphModules.update');
 
             Route::get('/dashboard', [TeacherController::class, 'dashboard'])->name('dashboard');
-            Route::get('/classes', [TeacherController::class, 'classes'])->name('classes');
+            // ponytail: 10s poll targets for the live teacher views, consumed by
+            // hooks/Teacher/useLiveStats.js. All five are watermark-gated, so an
+            // unchanged tick costs two cheap queries and returns a tiny
+            // {"changed":false}. JSON, not Inertia — a router.get here would
+            // replace page props and reset DashboardLayout's search selection on
+            // every tick. The hook forwards window.location.search, so these
+            // honour the same filters the page rendered.
+            Route::get('/live-stats', [TeacherController::class, 'liveStats'])->name('liveStats');
+            Route::get('/live-students', [TeacherController::class, 'liveStudents'])->name('liveStudents');
+            Route::get('/live-student/{student}', [TeacherController::class, 'liveStudent'])->name('liveStudent');
+            Route::get('/live-leaderboards', [TeacherController::class, 'liveLeaderboards'])->name('liveLeaderboards');
+            Route::get('/live-badges', [TeacherController::class, 'liveBadges'])->name('liveBadges');
             Route::get('/students', [TeacherController::class, 'students'])->name('students');
             Route::get('/studentDetails/{student}', [TeacherController::class, 'show'])->name('studentDetails.show');
             Route::get('/reports', [ReportController::class, 'reports'])->name('reports');

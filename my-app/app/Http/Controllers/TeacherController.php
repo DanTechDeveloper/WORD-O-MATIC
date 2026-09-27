@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Badges;
+use App\Models\GameSession;
 use App\Models\ParagraphModule;
 use App\Models\StudentProfile;
 use App\Models\StudentWordMastery;
@@ -11,6 +12,7 @@ use App\Models\WordModule;
 use App\Services\BadgeService;
 use App\Services\ProgressService;
 use App\Services\ReportService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -30,7 +32,150 @@ class TeacherController extends Controller
         return Inertia::render('Teacher/Dashboard', $this->dashboardStats());
     }
 
+    // ponytail: the ONE place the poll protocol lives, for all five views:
+    // watermark → `since` equality → {"changed":false} short-circuit →
+    // {"changed":true, watermark, …payload} → no-store. Every view method below
+    // is ~4 lines and reuses its own page method's query code, so a live payload
+    // can never drift from what the page rendered. A second hand-written copy of
+    // these aggregates is exactly the kind of silent divergence this file
+    // already avoids elsewhere.
+    private function liveJson(Request $request, array $payload)
+    {
+        $watermark = $this->liveWatermark();
+        $since = $request->query('since');
+
+        // Exact string equality, not a timestamp comparison: the watermark is
+        // already a composite, so "identical" proves nothing moved, with no
+        // parsing or timezone/precision edge cases.
+        if ($since !== null && $since === $watermark) {
+            return response()->json(['changed' => false, 'watermark' => $watermark])
+                ->withHeaders(['Cache-Control' => 'no-store']);
+        }
+
+        return response()->json([
+            'changed' => true,
+            'watermark' => $watermark,
+            ...$payload,
+        ])->withHeaders(['Cache-Control' => 'no-store']);
+    }
+
+    public function liveStats(Request $request)
+    {
+        return $this->liveJson($request, $this->dashboardStats());
+    }
+
+    // Students list. Reads the SAME sort/direction/section/search/status/page
+    // the page request carried — the hook forwards window.location.search, so
+    // the live payload is filtered identically by construction. Omits
+    // existingStudentIds and sections: both derive from users.student_id /
+    // students.section, neither of which a round touches, so shipping them every
+    // tick would be pure bytes.
+    public function liveStudents(Request $request)
+    {
+        // toArray(), not ->data: LengthAwarePaginator exposes no ->data
+        // property, and this yields exactly the shape Inertia serialized the
+        // page prop as, so the client's merge is a straight swap.
+        $page = $this->studentsPage($request)->toArray();
+
+        return $this->liveJson($request, [
+            'data' => $page['data'],
+            'current_page' => $page['current_page'],
+            'last_page' => $page['last_page'],
+            'from' => $page['from'],
+            'to' => $page['to'],
+            'total' => $page['total'],
+        ]);
+    }
+
+    // Per-student. Same prop shape as show(), so the page spread-merges it.
+    public function liveStudent(Request $request, $studentId)
+    {
+        $user = User::with(['student'])->where('role', 'student')->findOrFail($studentId);
+        $cutoff = $this->reportService->cutoff();
+
+        return $this->liveJson($request, array_merge($user->toArray(), [
+            'readCurriculum' => WordModule::curriculumForUser($studentId, $cutoff),
+            'speakCurriculum' => ParagraphModule::curriculumForUser($studentId, $cutoff),
+            'latestBadge' => $this->reportService->latestBadge($studentId),
+        ]));
+    }
+
+    public function liveLeaderboards(Request $request)
+    {
+        $props = $this->leaderboardPage($request);
+
+        return $this->liveJson($request, [
+            'leaderboard' => $props['leaderboard'],
+            'totalStudents' => $props['totalStudents'],
+            'sections' => $props['sections'],
+            'isDeadlineClosed' => $props['isDeadlineClosed'],
+        ]);
+    }
+
+    public function liveBadges(Request $request)
+    {
+        $props = $this->badgesPage($request);
+
+        return $this->liveJson($request, [
+            'badges' => $props['badges'],
+            'topEarners' => $props['topEarners'],
+            'totalStudents' => $props['totalStudents'],
+            'totalBadges' => $props['totalBadges'],
+            'totalEarned' => $props['totalEarned'],
+            'mostEarnedBadge' => $props['mostEarnedBadge'],
+            'sections' => $props['sections'],
+        ]);
+    }
+
+    // Composite watermark, and BOTH halves are load-bearing:
+    //
+    //  - students.updated_at moves on every scored round (ProgressService
+    //    update/level/status) AND on every teacher write (add/edit student,
+    //    settings). A ~100-row MAX() scan — trivial.
+    //  - game_sessions.id is an AUTO_INCREMENT PK, so MAX() is O(1) on InnoDB,
+    //    and logSession() inserts on EVERY round. This half is what catches a
+    //    round that improved nothing: ProgressService skips $student->update()
+    //    when the best score did not change ($isNewBest false, $delta 0), so
+    //    students.updated_at stays put — yet checkGameplayBadges() still runs
+    //    and can award a streak / best_sentence badge off that session. A
+    //    students-only watermark would silently drop those awards forever.
+    private function liveWatermark(): string
+    {
+        $studentTs = StudentProfile::max('updated_at');
+        $sessionId = GameSession::max('id');
+
+        return ($studentTs ? Carbon::parse($studentTs)->toIso8601String() : '-')
+            .'|'
+            .($sessionId ?? 0);
+    }
+
     public function students(Request $request)
+    {
+        $page = $this->studentsPage($request);
+
+        return Inertia::render('Teacher/Students', [
+            'data' => $page,
+            'sections' => $this->sectionList(),
+            'existingStudentIds' => User::where('role', 'student')->whereNotNull('student_id')->pluck('student_id'),
+            'filters' => $this->studentFilters($request),
+        ]);
+    }
+
+    private function studentFilters(Request $request): array
+    {
+        return [
+            'sort' => $request->input('sort', 'name'),
+            'direction' => $request->input('direction', 'asc'),
+            'section' => $request->input('section', ''),
+            'search' => $request->input('search', ''),
+            'status' => $request->input('status', ''),
+        ];
+    }
+
+    // Shared by students() and liveStudents() so the live payload is the SAME
+    // query the page rendered — same filters, same sort, same page, same
+    // per-student accuracy math.
+    private function studentsPage(Request $request)
     {
         $sort = $request->input('sort', 'name');
         $direction = $request->input('direction', 'asc');
@@ -38,6 +183,15 @@ class TeacherController extends Controller
         $search = $request->input('search', '');
         $status = $request->input('status', '');
 
+        // ponytail: with() here is already page-scoped, whatever the reader
+        // expects. Eloquent eager-loads AFTER the main query returns
+        // (Eloquent/Builder.php:890-891), so paginate(8) below caps the model
+        // set to 8 and the relation load binds 8 ids — NOT every student the
+        // filters matched. The relations are genuinely needed: through() averages
+        // wordProgress/paragraphProgress per student. Do not "fix" this by moving
+        // with() after paginate() — it is the same two queries, and the reorder
+        // only makes through()'s eager transform ordering load-bearing.
+        // Locked at real scale by tests/Feature/StudentsEagerLoadScopeTest.php.
         $query = User::with([
             'student.wordProgress.wordModule',
             'student.paragraphProgress.paragraphModule',
@@ -76,7 +230,7 @@ class TeacherController extends Controller
             $query->orderBy($sortCol, $sortDir);
         }
 
-        $students = $query->paginate(8)
+        return $query->paginate(8)
             ->through(function ($user) {
                 $student = $user->student;
                 $readLevel = $student?->read_level ?? 1;
@@ -109,21 +263,6 @@ class TeacherController extends Controller
                     'status' => $this->computeStatus($student?->status ?? 'notStarted'),
                 ];
             });
-
-        $sections = $this->sectionList();
-
-        return Inertia::render('Teacher/Students', [
-            'data' => $students,
-            'sections' => $sections,
-            'existingStudentIds' => User::where('role', 'student')->whereNotNull('student_id')->pluck('student_id'),
-            'filters' => [
-                'sort' => $sort,
-                'direction' => $direction,
-                'section' => $section,
-                'search' => $search,
-                'status' => $status,
-            ],
-        ]);
     }
 
     private function computeStatus(string $status): array
@@ -496,6 +635,17 @@ class TeacherController extends Controller
 
     public function leaderboards(Request $request)
     {
+        $props = $this->leaderboardPage($request);
+
+        return Inertia::render('Teacher/Leaderboards', $props);
+    }
+
+    // Shared by leaderboards() and liveLeaderboards(). The cheapest view in the
+    // app: ONE students×users join, then pure in-memory maps. finalAverage is
+    // computed inline here rather than via the accessor, matching the null-when-
+    // either-accuracy-is-zero rule.
+    private function leaderboardPage(Request $request): array
+    {
         $section = $request->input('section', '');
         $search = $request->input('search', '');
 
@@ -517,16 +667,26 @@ class TeacherController extends Controller
         }
         $isDeadlineClosed = (bool) $this->reportService->deadline()?->isPast();
 
-        return Inertia::render('Teacher/Leaderboards', [
+        return [
             'leaderboard' => ['points' => $students->sortByDesc('points')->values()->toArray(), 'wordBlast' => $students->sortByDesc('wordBlastAcc')->values()->toArray(), 'storyQuest' => $students->sortByDesc('storyQuestAcc')->values()->toArray()],
             'totalStudents' => $allStudents->count(),
             'sections' => $sections,
             'isDeadlineClosed' => $isDeadlineClosed,
             'filters' => ['section' => $section, 'search' => $search],
-        ]);
+        ];
     }
 
     public function badges(Request $request)
+    {
+        $props = $this->badgesPage($request);
+
+        return Inertia::render('Teacher/Badges', $props);
+    }
+
+    // Shared by badges() and liveBadges(). Second-heaviest view: the badge pivot
+    // is eager-loaded for EVERY student, so a changed tick returns one row per
+    // (student, earned badge).
+    private function badgesPage(Request $request): array
     {
         $section = $request->input('section', '');
         $search = $request->input('search', '');
@@ -587,7 +747,7 @@ class TeacherController extends Controller
 
         $isDeadlineClosed = (bool) $this->reportService->deadline()?->isPast();
 
-        return Inertia::render('Teacher/Badges', [
+        return [
             'badges' => $badges->toArray(),
             'topEarners' => $students->toArray(),
             'totalStudents' => $totalStudents,
@@ -597,7 +757,7 @@ class TeacherController extends Controller
             'sections' => $sections,
             'isDeadlineClosed' => $isDeadlineClosed,
             'filters' => ['section' => $section, 'search' => $search],
-        ]);
+        ];
     }
 
     public function updateStudent(Request $request, $id)
