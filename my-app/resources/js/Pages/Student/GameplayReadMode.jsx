@@ -147,7 +147,10 @@ export default function GameplayReadMode({ module, tutorialComplete = true, tuto
     }, [guideArmed, guideStepObj, gameState, permissionState, requestPermission, completeGuideEvent, startGame]);
 
     useEffect(() => {
-        if (gameState === "ACTIVE") {
+        if (gameState === "COUNTDOWN" || gameState === "ACTIVE") {
+            // ponytail: pause BGM at COUNTDOWN, not ACTIVE — mic access +
+            // countdown SFX + BGM all fighting is the AUDIO→CALL→AUDIO blip
+            // the phone hears when the mic permission dialog fires mid-BGM.
             pauseBackgroundMusic();
             setMicLive(true);
         } else {

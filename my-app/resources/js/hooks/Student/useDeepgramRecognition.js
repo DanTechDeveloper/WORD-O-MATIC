@@ -454,6 +454,11 @@ export function useDeepgramRecognition({
                 const pushPcm = (float32) => {
                     if (propsRef.current?.muted) return;
                     if (!stateRefs.current.isMounted) return;
+                    // ponytail: COUNTDOWN = preload-only (isActive false) — drop
+                    // PCM frames until ACTIVE. Sending during preload burns ASR
+                    // budget on ambient noise and can fire premature verdicts
+                    // before the countdown even finishes.
+                    if (!propsRef.current?.isActive) return;
                     // ponytail: 48k denoise context → decimate to 16k before
                     // gate+send; legacy 16k path passes through untouched.
                     const at16k =
