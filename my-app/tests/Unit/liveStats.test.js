@@ -193,6 +193,28 @@ describe("the five polling pages", () => {
         // not read the live payload.
         expect(students).toContain("existingStudentIds || []");
     });
+
+    // REGRESSION GUARD for a shipped 404. StudentDetails built its endpoint from
+    // `data.student_id` — the human code "2301-00000" — while `show()` resolves
+    // with findOrFail() on the users PRIMARY KEY, the same value Students.jsx
+    // links to (`studentDetails/${student.id}`). Every tick 404'd.
+    //
+    // The PHP test called the endpoint with the correct id directly, so it
+    // passed, and nothing asserted which prop the page used. This does.
+    test("StudentDetails builds its endpoint from the PRIMARY KEY, not the human code", () => {
+        expect(details).toContain("`/teacher/live-student/${data.id}`");
+        const code = details
+            .split("\n")
+            .filter((line) => !line.trim().startsWith("//"))
+            .join("\n");
+        // The endpoint is the only place the id may appear; student_id must not
+        // reach it.
+        const endpointLine = code
+            .split("\n")
+            .find((l) => l.includes("live-student/"));
+        expect(endpointLine).toBeDefined();
+        expect(endpointLine).not.toContain("student_id");
+    });
 });
 
 describe("Sidebar active state", () => {

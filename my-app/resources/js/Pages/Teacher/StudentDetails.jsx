@@ -128,7 +128,12 @@ export default function StudentDetail({ data }) {
     const deadlineClosed =
         getDeadlineInfo(usePage().props.auth?.deadline).phase === "closed";
     const live = useLiveStats({
-        endpoint: `/teacher/live-student/${data.student_id}`,
+        // data.id, NOT data.student_id. `show()` resolves with
+        // User::where('role','student')->findOrFail(), and the route param is
+        // the users primary key — the same value Students.jsx links to
+        // (`studentDetails/${student.id}`). data.student_id is the human code
+        // ("2301-00000"), which 404s against a bigint PK.
+        endpoint: `/teacher/live-student/${data.id}`,
         enabled: !deadlineClosed,
     });
 
