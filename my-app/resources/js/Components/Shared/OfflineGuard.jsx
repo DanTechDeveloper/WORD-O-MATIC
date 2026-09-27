@@ -16,18 +16,40 @@ export default function OfflineGuard() {
     const timer = useRef(null);
 
     useEffect(() => {
-        const goOffline = () => {
+        // ponytail: one raise, two reasons. Every trigger does the same four
+        // things, so they share a body instead of four near-copies drifting.
+        const raise = (why) => {
             clearTimeout(timer.current);
             setStatus(null);
-            markUnreachable("interface");
+            markUnreachable(why);
             setOffline(true);
         };
+        // The window `offline` listener hands us an Event, never a string, so
+        // it stays a zero-arg passthrough and cannot leak an Event as `why`.
+        const goOffline = () => raise("interface");
+        // ponytail: a dead request is the loudest reachability datapoint there
+        // is. Without this, the ~12 unwritten writes (both logins, logout,
+        // tutorial.skip, the 5 teacher settings/report routes, add/edit/delete
+        // student) dropped silently: on a network failure axios rejects with NO
+        // error.response, so Response.handle() never runs and `onError` never
+        // fires (core/dist/index.esm.js:2308) — only `.finally()` → `onFinish`
+        // (:2314) does, which clears the spinner and says nothing. The teacher
+        // tapped Save, the save did not happen, and the app looked fine.
+        // `connection.js` already flips the store on this same event, so the
+        // copy was already correct; this only decides to SHOW it.
+        //
+        // This is NOT the click-reaction channel that was removed. That one
+        // answered a play tap with a connection error; this answers a write
+        // that genuinely did not land — including a student's round save, where
+        // the honest message is the whole point (the score is in
+        // sessionStorage and replays, but the child must know it is not banked).
+        const goUnreachable = () => raise("server");
         // The interface came back — that does not mean the SERVER did. Probe
         // before dismissing, so an access point that re-associated without an
         // uplink upgrades the copy to "No Internet" instead of claiming
         // success. The failing branch also re-renders: `reason` is read during
-        // render, and without a state change the modal would keep telling the
-        // kid to switch on a Wi-Fi that is already on.
+        // render, and without a state change the copy would stay on the
+        // wrong-diagnosis branch.
         const goOnline = () => {
             probe().then((ok) => {
                 if (ok) setOffline(false);
@@ -37,10 +59,12 @@ export default function OfflineGuard() {
 
         window.addEventListener("offline", goOffline);
         window.addEventListener("online", goOnline);
+        document.addEventListener("inertia:exception", goUnreachable);
         return () => {
             clearTimeout(timer.current);
             window.removeEventListener("offline", goOffline);
             window.removeEventListener("online", goOnline);
+            document.removeEventListener("inertia:exception", goUnreachable);
         };
     }, []);
 
@@ -67,9 +91,11 @@ export default function OfflineGuard() {
         return () => document.removeEventListener("inertia:before", blockOfflineVisit);
     }, []);
 
-    // ponytail: this modal is NOT a click reaction. It appears on exactly three
+    // ponytail: this modal is NOT a click reaction. It appears on exactly four
     // things: initial mount while the server is unreachable, the browser
-    // `offline` event, and an unreachable page switch (inertia:before, above).
+    // `offline` event, an unreachable page switch (inertia:before, above), and
+    // a request that died (inertia:exception, above) — the last one being the
+    // only one that reports a write the user believed had landed.
     // A round start is NOT one of them — the kid tapping the mic is asking to
     // PLAY, and answering a play tap with a connection error reads as a broken
     // app. The probe in handleMicrophoneClick flips the store, so the mic and
@@ -92,16 +118,26 @@ export default function OfflineGuard() {
     };
 
     const restored = status === "restored";
-    // "You're on Wi-Fi but the server is not answering" is a different problem
-    // with a different fixer — the kid cannot fix the network themselves, so this
-    // sends them to the teacher.
+    // "The server is not answering" is a different problem with a different
+    // fixer — the kid cannot fix the network themselves, so this sends them to
+    // the teacher.
+    //
+    // ponytail: NO transport detection, and none is possible. The copy must not
+    // claim Wi-Fi, because no browser can confirm it: navigator.connection.type
+    // was removed from every engine, .effectiveType is a BANDWIDTH class (WiFi
+    // reports "4g" all day), and the whole object is undefined in Safari — the
+    // school iPad this app actually runs on. `reason` is all we know, so the
+    // copy says what we know and what the child can do, never which radio is on.
+    // The old "You're connected to Wi-Fi but there's no internet" was the worst
+    // case: a server outage on LTE is the `server` path, so a kid on mobile data
+    // was told to check a WiFi that was never switched on.
     const noServer = reason() === "server";
     const title = restored ? "Connected!" : noServer ? "No Internet" : "No Connection";
     const body = restored
         ? "Connection restored! You are back online."
         : noServer
-          ? "You're connected to Wi-Fi but there's no internet. Tell your teacher, then tap RETRY."
-          : "Turn your Wi-Fi back on, then tap RETRY.";
+          ? "You're online but the app can't reach the server. Tell your teacher, then tap RETRY."
+          : "No internet connection. Tap RETRY when you're back online.";
 
     return (
         <div className="fixed inset-0 z-[120] flex items-end sm:items-center justify-center p-0 sm:p-4">
@@ -143,7 +179,7 @@ export default function OfflineGuard() {
 
                         {status === "still-offline" && (
                             <p role="status" className="mt-3 text-error font-black uppercase text-sm tracking-wider">
-                                {noServer ? "Still no internet — tell your teacher" : "Still offline — check your Wi-Fi"}
+                                {noServer ? "Still no internet — tell your teacher" : "Still offline — check your internet"}
                             </p>
                         )}
 

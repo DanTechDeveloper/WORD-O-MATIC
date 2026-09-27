@@ -108,9 +108,16 @@ export default function DashboardLayout({ children }) {
                     replace: true,
                     // ponytail: the searchResults effect only clears the spinner
                     // when a response lands. OfflineGuard cancels the visit at
-                    // inertia:before (no Request → no onError), and a 500 never
-                    // changes props — either way the spinner would stick forever.
-                    // onFinish fires from Request's .finally(), so it always clears.
+                    // inertia:before, and a 500 never changes props — either way
+                    // this spinner would stick. onFinish fires from Request's
+                    // .finally(), so it covers the 500.
+                    // NOT the guard-prevented case: a cancelled visit never
+                    // builds a Request at all (Inertia returns at
+                    // core/dist/index.esm.js:2538, before Request.create), so
+                    // nothing fires. That one is covered by OfflineGuard
+                    // re-raising the modal over the stuck spinner — the next
+                    // keystroke re-triggers the search anyway. Costly to fix for
+                    // a spinner nobody can see; don't add a channel for it.
                     onFinish: () => setIsSearching(false),
                 },
             );

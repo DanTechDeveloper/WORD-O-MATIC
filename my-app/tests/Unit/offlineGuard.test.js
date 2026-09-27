@@ -45,19 +45,40 @@ describe("OfflineGuard", () => {
     });
 
     test("copy names the physical action and both retry outcomes", () => {
-        expect(src).toContain("Turn your Wi-Fi back on, then tap RETRY.");
-        expect(src).toContain("Still offline — check your Wi-Fi");
+        expect(src).toContain("No internet connection. Tap RETRY when you're back online.");
+        expect(src).toContain("Still offline — check your internet");
         expect(src).toContain("Connection restored!");
     });
 
+    test("copy never claims a transport — no browser can confirm one", () => {
+        // The lock that matters. navigator.connection.type was removed from every
+        // engine, .effectiveType is a BANDWIDTH class (WiFi reports "4g"), and the
+        // whole object is undefined in Safari — the school iPad this app runs on.
+        // So the modal must describe what it knows (no link / server not
+        // answering) and what the child can do, never which radio is on. A server
+        // outage on LTE is the `server` reason, so the old "You're connected to
+        // Wi-Fi" body was worst exactly on mobile data.
+        const code = src
+            .split("\n")
+            .filter((line) => !line.trim().startsWith("//"))
+            .join("\n")
+            // The one deliberate exception: a Material Symbols glyph NAME, not
+            // prose. "wifi_off" reads as "no network" to a six-year-old, which is
+            // the only job the icon has, and there is no better "disconnected"
+            // glyph. Strip it so the lock below is about what the copy CLAIMS.
+            .replace(/"wifi_off"/, "");
+        expect(code).not.toMatch(/wi-?fi/i);
+    });
+
     test("a server-side outage gets its own copy — the kid cannot fix a router", () => {
-        // Same modal, different problem: the interface is UP, so "turn your
-        // Wi-Fi back on" is a lie and RETRY would fail forever. Send them to the
-        // person who holds the router.
+        // Same modal, different problem: the interface is UP, so blaming the
+        // connection is a lie and RETRY would fail forever. Send them to the
+        // person who holds the router. Copy stays transport-agnostic (locked by
+        // the "never claims a transport" test above).
         expect(src).toContain('const noServer = reason() === "server";');
         expect(src).toContain('"No Internet"');
         expect(src).toContain(
-            "You're connected to Wi-Fi but there's no internet. Tell your teacher, then tap RETRY.",
+            "You're online but the app can't reach the server. Tell your teacher, then tap RETRY.",
         );
         expect(src).toContain("Still no internet — tell your teacher");
     });
@@ -91,9 +112,36 @@ describe("OfflineGuard", () => {
 
     test("success timer is cleared on unmount, a drop, and a blocked visit", () => {
         // A pending 1.2s "restored" auto-close must not fire while the modal is
-        // being re-shown. The third clear (the mic-tap reopen) is gone with the
-        // click-reaction channel — the modal no longer reacts to a tap.
+        // being re-shown. The two interface/dead-request triggers share one
+        // `raise` body, so the three sites are: raise (offline + exception),
+        // blockOfflineVisit, and the effect cleanup.
         expect(src.match(/clearTimeout\(timer\.current\)/g)).toHaveLength(3);
+    });
+
+    test("a dead request re-raises — the silent-write path", () => {
+        // ~12 writes (both logins, logout, tutorial.skip, 5 teacher
+        // settings/report routes, add/edit/delete student) previously vanished
+        // with no message: a network failure rejects with no error.response, so
+        // Response.handle() never runs and onError never fires. onFinish does
+        // fire, which clears the spinner and implies success.
+        expect(src).toContain('document.addEventListener("inertia:exception", goUnreachable)');
+        expect(src).toContain('document.removeEventListener("inertia:exception", goUnreachable)');
+    });
+
+    test("a dead request reads as a SERVER problem, not a dead interface", () => {
+        // Same modal, different fixer: the interface is up, so "turn your Wi-Fi
+        // back on" is a lie. reason() drives the copy, so the reason must be
+        // "server" here and "interface" only for the browser's own event.
+        expect(src).toContain('const goOffline = () => raise("interface");');
+        expect(src).toContain('const goUnreachable = () => raise("server");');
+    });
+
+    test("every trigger shares one raise body instead of four near-copies", () => {
+        expect(src).toContain("const raise = (why) => {");
+        expect(src).toContain("markUnreachable(why);");
+        // The window `offline` listener hands over an Event, so it must stay a
+        // zero-arg passthrough or that Event lands in `why`.
+        expect(src).toContain("const goOffline = () => raise(");
     });
 
     test("the modal never reacts to a tap", () => {
