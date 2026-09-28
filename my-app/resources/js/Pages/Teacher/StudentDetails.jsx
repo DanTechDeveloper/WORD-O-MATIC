@@ -113,19 +113,20 @@ function SentencePerformanceBlock({ stat, threshold }) {
             {problems.length > 0 && (
                 <ul className="mt-2 space-y-1 text-[10px] sm:text-xs uppercase tracking-widest">
                     {problems.map((w) => {
+                        // ATTEMPT + STATUS on EVERY row. attentionMeta() is
+                        // threshold-gated, which is right for a Word Blast chip
+                        // (the Mastery/Training Zone already says where you
+                        // stand) but wrong here: a sentence has no zone, so
+                        // "ATTEMPTS: 1" under a red NEEDS ATTENTION heading read
+                        // as a contradiction. mergeSentenceWords already carries
+                        // the per-word verdict, so one lookup gives the label AND
+                        // its colour, and the same hue the sentence text uses.
                         const wordMeta = VERDICT_META[w.verdict];
-                        // "N recorded failures", never "N tries". failed_attempts
-                        // is NOT a count of the child's pronunciation attempts —
-                        // the 5s silence watchdog fires onMispronounce too, so a
-                        // word the child never even tried (stalled, confused,
-                        // wandered off) still increments it. Claiming "took 4
-                        // tries" would assert four attempts that never happened.
                         return (
                             <li key={w.word} className="flex items-center gap-1.5">
-                                <span className={`w-2 h-2 rounded-full shrink-0 ${VERDICT_STYLE[w.verdict].dot}`} />
                                 <span className="font-black text-white">{w.word}</span>
-                                <span className="text-on-surface-variant">— {w.failed_attempts} Attempt{w.failed_attempts === 1 ? "" : "s"}</span>
-                                {!wordMeta.quiet && <span className={wordMeta.cls}>· {wordMeta.label}</span>}
+                                <span className="text-on-surface-variant">Attempts: {attemptsShown(w)}</span>
+                                <span className={wordMeta.cls}>· {wordMeta.label}</span>
                             </li>
                         );
                     })}
@@ -338,7 +339,12 @@ export default function StudentDetail({ data }) {
     // Grouped by verdict so the teacher opens on the words that need work. Every
     // sentence renders exactly once, and each one names its own module because
     // grouping by verdict scatters a module's sentences across groups.
+    // A brand-new student's sentences are all NOT_ATTEMPTED, so this is the
+    // list that makes levels 1-10 readable — behind two empty headings it read
+    // as an empty panel. Filtered HERE, not in bucketize, which deliberately
+    // returns empty buckets so the count line and the tests can read them.
     const { groups: sqGroups, counts: sqCounts } = groupSentences(_speakCurriculum, attentionThreshold);
+    const visibleSqGroups = sqGroups.filter((g) => g.rows.length > 0);
 
     const latestBadge = src.latestBadge;
     const badgeCard =
@@ -683,11 +689,12 @@ export default function StudentDetail({ data }) {
                     </div>
                     {sqSentencesAll.length > 0 && (
                         <>
-                            {/* Counted by verdict, not by "had any slip ever" — the
-                                old `> 0` filter reported a strong student as needing
-                                attention on nearly every sentence. */}
+                            {/* "In curriculum", not "total": only three verdicts
+                                render, so a student with 16 mastered sentences has 20
+                                here and 4 on screen. Named as scope so the three
+                                counts beside it read as "of those", not "of 20". */}
                             <p className="text-on-surface-variant font-black uppercase text-[10px] sm:text-xs tracking-widest">
-                                {sqSentencesAll.length} sentences total ·{" "}
+                                {sqSentencesAll.length} sentences in curriculum ·{" "}
                                 {sqCounts[VERDICT.NEEDS_ATTENTION]} need attention · {sqCounts[VERDICT.RECOVERED]} recovered ·{" "}
                                 {sqCounts[VERDICT.NOT_ATTEMPTED]} not attempted yet
                             </p>
@@ -695,38 +702,37 @@ export default function StudentDetail({ data }) {
                     )}
                     <div className="bg-surface-container-lowest rounded-xl border-4 border-outline/20 p-4 sm:p-6 md:p-8 min-h-[400px] max-h-[600px] overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-surface-container-high [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-cyan-400">
                         {!hasSqModules ? (
-                            /* G5: a level always yields at least one sentence
-                               (buildLevels has a fallback), so the old
-                               "All sentences mastered!" branch was unreachable.
-                               A fully-mastered student now sees the collapsed
-                               Mastered group instead of an empty state. */
                             <div className="flex flex-col items-center justify-center py-16 text-center">
                                 <span className="material-symbols-outlined text-4xl text-on-surface-variant/40 mb-3" aria-hidden="true">menu_book</span>
                                 <p className="text-on-surface-variant font-black uppercase text-xs tracking-widest">No Story Quest modules yet</p>
                                 <p className="text-on-surface-variant/60 text-xs font-semibold mt-1">Create Level 1 in Story Quest to get started.</p>
                             </div>
+                        ) : visibleSqGroups.length === 0 ? (
+                            /* The three buckets cover at most three verdicts, so a
+                               student whose every sentence is Practicing or
+                               Mastered leaves nothing to render. Without this the
+                               panel is a blank white box — which reads as broken,
+                               not as good news. */
+                            <div className="flex flex-col items-center justify-center py-16 text-center">
+                                <span className="material-symbols-outlined text-4xl text-accent/40 mb-3" aria-hidden="true">verified</span>
+                                <p className="text-on-surface-variant font-black uppercase text-xs tracking-widest">No sentences to review</p>
+                                <p className="text-on-surface-variant/60 text-xs font-semibold mt-1">Every sentence is mastered, and none still needs practice.</p>
+                            </div>
                         ) : (
-                            sqGroups.map((group) => {
+                            visibleSqGroups.map((group) => {
                                 const meta = VERDICT_META[group.key];
-                                const dot = group.key === VERDICT.NEEDS_ATTENTION
-                                    ? "bg-red-500 shadow-[0_0_8px_#ef4444]"
-                                    : group.key === VERDICT.RECOVERED
-                                      ? "bg-emerald-400 shadow-[0_0_8px_#34d399]"
-                                      : "bg-surface-container-high";
                                 return (
                                     <div key={group.key} className="mb-6 last:mb-0">
+                                        {/* No dot: the heading already carries its verdict
+                                            in colour, and every word below is coloured by
+                                            its own. The dot was a third copy. */}
                                         <div
-                                            className={`font-black uppercase text-xs tracking-widest mb-3 flex items-center gap-2 ${meta.cls}`}
+                                            className={`font-black uppercase text-xs tracking-widest mb-3 ${meta.cls}`}
                                         >
-                                            <div className={`w-2 h-2 rounded-full shrink-0 ${dot}`} />
                                             {group.title} ({group.rows.length})
                                         </div>
-                                        {/* No group is collapsed. "Mastered" used to
-                                            collapse to a one-line summary, which hid
-                                            every sentence AND its module — and for a
-                                            brand-new student it claimed untouched
-                                            sentences were "conquered on the first
-                                            try". */}
+                                        {/* No group is collapsed — a bare summary line
+                                            hid every sentence AND its module. */}
                                         <div className="flex flex-col gap-3">
                                             {group.rows.map((row) => (
                                                 <SentencePerformanceBlock

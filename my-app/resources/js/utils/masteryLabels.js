@@ -33,14 +33,26 @@ export function verdict(mastery, failed, threshold = NEEDS_ATTENTION_ATTEMPTS) {
 }
 
 // Label + color per verdict, so the JSX stops hand-writing text-red-500 /
-// text-emerald-400 at three separate call sites. `quiet` marks the two states
-// that are context, not a problem.
+// text-emerald-400 at three separate call sites.
+//
+// THE RULE: `cls` is the same shade as that verdict's chip BORDER in
+// VERDICT_STYLE below — red-500 for needs attention, emerald-400 for recovered,
+// accent for mastered, orange-400 for practicing. The sentence text paints a
+// word's border and the drill list prints its status, so a word wears the same
+// hue in both places; a mismatch makes the two look like different verdicts.
+// `quiet` marks the states that are context, not a problem.
 export const VERDICT_META = {
     [VERDICT.NOT_ATTEMPTED]: { label: "Not Yet Mastered", cls: "text-on-surface-variant", quiet: true },
     [VERDICT.NEEDS_ATTENTION]: { label: "Needs Attention", cls: "text-red-500", quiet: false },
-    [VERDICT.PRACTICING]: { label: "Practicing", cls: "text-on-surface-variant", quiet: true },
+    // Not muted: the drill list labels EVERY word, and a word sitting below the
+    // threshold next to a hard word is exactly what the teacher needs to see.
+    // Practicing is orange, matching its own chip border — grey here read as
+    // "no verdict at all" rather than "still going".
+    [VERDICT.PRACTICING]: { label: "Practicing", cls: "text-orange-400", quiet: true },
     [VERDICT.RECOVERED]: { label: "Recovered", cls: "text-emerald-400", quiet: false },
-    [VERDICT.MASTERED]: { label: "Mastered", cls: "text-emerald-400", quiet: true },
+    // accent (lime), same rule: emerald is Recovered, and a word conquered
+    // without ever struggling must not look like one that was rescued.
+    [VERDICT.MASTERED]: { label: "Mastered", cls: "text-accent", quiet: true },
 };
 
 // Per-verdict styling, so a word that took 4 tries cannot look like one that
@@ -134,12 +146,18 @@ export function mergeSentenceWords(words, threshold = NEEDS_ATTENTION_ATTEMPTS) 
 // the words. Word Blast does NOT group — it keeps the two Mastery / Training
 // columns and splits on the `mastery` column alone.
 
+// Only three, because those are the only three the count line names — and a
+// new student's 20 unread sentences were rendering behind two dead "(0)"
+// headings, which made the panel read as empty. Practicing and Mastered are
+// the ones dropped: a sentence with every word below the threshold has no
+// action behind it, and a conquered sentence is already reported by the
+// "N of M Sentences Mastered" line. `counts` still carries all five keys
+// (bucketize seeds it from VERDICT, not from this list), so nothing that
+// reads a count loses one.
 const SENTENCE_BUCKETS = [
     VERDICT.NEEDS_ATTENTION,
-    VERDICT.PRACTICING,
     VERDICT.RECOVERED,
     VERDICT.NOT_ATTEMPTED,
-    VERDICT.MASTERED,
 ];
 
 function bucketize(keys, fill) {
@@ -153,15 +171,19 @@ function bucketize(keys, fill) {
     return { groups: keys.map((key) => ({ key, title: VERDICT_META[key].label, rows: rows[key] })), counts };
 }
 
-// Story Quest: every sentence renders, and each names its own module — grouping
-// by verdict scatters a module's sentences across groups.
+// Story Quest: each sentence names its own module — grouping by verdict
+// scatters a module's sentences across groups. A verdict outside
+// SENTENCE_BUCKETS is COUNTED but not bucketed: dropping the row is the
+// caller's display decision, and the count line above the panel still reports
+// it, so an un-guarded push here would throw on any Practicing or Mastered
+// sentence in the curriculum.
 export function groupSentences(curriculum, threshold = NEEDS_ATTENTION_ATTEMPTS) {
     return bucketize(SENTENCE_BUCKETS, (rows, counts) => {
         for (const level of curriculum || []) {
             for (const stat of level.sentence_stats || []) {
                 const key = sentenceVerdict(stat.words || [], threshold);
                 counts[key]++;
-                rows[key].push({ ...stat, level: level.level });
+                if (rows[key]) rows[key].push({ ...stat, level: level.level });
             }
         }
     });

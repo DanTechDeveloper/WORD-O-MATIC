@@ -9,6 +9,11 @@ export default {
         './storage/framework/views/*.php',
         './resources/views/**/*.blade.php',
         './resources/js/**/*.jsx',
+        // masteryLabels.js is the SSOT for every verdict COLOUR, and it is a .js
+        // file. Without this glob Tailwind purged the whole emerald family and
+        // red-300 — "Recovered" rendered as the inherited body colour (black on a
+        // dark panel) in BOTH the Word Blast chip and the Story Quest heading.
+        './resources/js/**/*.js',
     ],
 
     theme: {
