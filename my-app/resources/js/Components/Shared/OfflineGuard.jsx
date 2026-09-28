@@ -50,9 +50,26 @@ export default function OfflineGuard() {
         // success. The failing branch also re-renders: `reason` is read during
         // render, and without a state change the copy would stay on the
         // wrong-diagnosis branch.
+        //
+        // ponytail: the celebration lives in confirmRestored() and BOTH this and
+        // the RETRY button go through it. It used to be inline in handleRetry
+        // only, so an automatic reconnect just called setOffline(false) and the
+        // "Connected!" modal appeared and vanished with no acknowledgement —
+        // on every page, and on the 5 polling teacher pages the modal often is
+        // not even open, so the teacher got nothing at all. One body, two
+        // callers, and the two paths cannot drift apart again.
+        //
+        // No clearTimeout here on purpose: `raise`, blockOfflineVisit and the
+        // effect cleanup already cancel a pending dismiss, so a drop during
+        // the 1.2s window keeps the modal open. offlineGuard.test.js counts
+        // those three sites — a fourth would be dead weight.
+        const confirmRestored = () => {
+            setStatus("restored");
+            timer.current = setTimeout(() => setOffline(false), 1200);
+        };
         const goOnline = () => {
             probe().then((ok) => {
-                if (ok) setOffline(false);
+                if (ok) confirmRestored();
                 else setStatus("still-offline");
             });
         };
@@ -112,8 +129,7 @@ export default function OfflineGuard() {
                 setStatus("still-offline");
                 return;
             }
-            setStatus("restored");
-            timer.current = setTimeout(() => setOffline(false), 1200);
+            confirmRestored();
         });
     };
 

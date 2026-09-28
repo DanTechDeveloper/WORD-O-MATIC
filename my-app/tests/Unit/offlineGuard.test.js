@@ -97,9 +97,20 @@ describe("OfflineGuard", () => {
         expect(src).toContain("setTimeout(() => setOffline(false), 1200)");
     });
 
-    test("the browser online event re-proves the server before dismissing", () => {
+    test("the browser online event re-proves the server, then celebrates", () => {
+        // The probe is the load-bearing part: the old check was
+        // `navigator.onLine`, which claimed "restored" on a link with no uplink.
+        // It used to end at a bare `setOffline(false)`, so an automatic
+        // reconnect showed the modal appear and vanish with no acknowledgement.
         expect(src).toContain("const goOnline = () => {");
-        expect(src).toContain("if (ok) setOffline(false);");
+        expect(src).toContain("if (ok) confirmRestored();");
+    });
+
+    test("RETRY and the online event share ONE celebration body", () => {
+        // Two near-copies is exactly how `restored` ended up on the button but
+        // not on the event. Declaration + both call sites.
+        expect(src).toContain("const confirmRestored = () => {");
+        expect(src.match(/confirmRestored\(\)/g)).toHaveLength(3);
     });
 
     test("the guard never SUBSCRIBES to the store", () => {

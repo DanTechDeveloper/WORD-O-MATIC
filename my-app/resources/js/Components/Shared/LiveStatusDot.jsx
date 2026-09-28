@@ -22,7 +22,14 @@ const STATES = {
         dot: "bg-error",
         text: "text-error",
         label: "Offline",
-        title: "Can't reach the server — tap RETRY when the connection is back",
+        // No RETRY here, deliberately. useLiveStats must never call
+        // markUnreachable on a poll failure (a background heartbeat must not
+        // lock app-wide connectivity), so on a polling page this dot is often
+        // the ONLY signal — and the modal it used to point at is deliberately
+        // not open. Telling a teacher to "tap RETRY" here sent them after a
+        // button that is not on the page. It self-heals instead: the next
+        // successful poll calls markReachable() and flips this back to Live.
+        title: "Can't reach the server — this view resumes on its own once the connection returns",
     },
     // NOT "Live". Past the report deadline, saveWordProgress takes the
     // $isPractice branch (StudentController.php:496-551): no GameSession, no
