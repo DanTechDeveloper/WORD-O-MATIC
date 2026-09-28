@@ -75,7 +75,17 @@ export function markUnreachable(why) {
 // ponytail: fail-CLOSED. A non-OK, a cross-origin redirect, an abort, or a
 // throw all mean "do not start a round" — a false negative costs the kid one
 // tap, a false positive would bank another 0/0 GameSession.
-export async function probe() {
+//
+// timeoutMs defaults to PROBE_TIMEOUT_MS, which is sized for a WARM server and
+// must stay short: it gates the student's mic tap, so every millisecond is a
+// child waiting to play. Callers that are NOT blocking a child — the
+// OfflineGuard recovery checks, where a modal is already open and a human is
+// already waiting — pass a longer budget via `timeoutMs`. On a Vercel
+// Container the first request after a link returns pays a cold boot that
+// routinely exceeds 2.5s, and the old fixed budget aborted it, so a
+// perfectly healthy server was reported unreachable and the "Connected!"
+// celebration never appeared.
+export async function probe(timeoutMs = PROBE_TIMEOUT_MS) {
     if (interfaceDown()) {
         markUnreachable("interface");
         return false;
@@ -84,7 +94,7 @@ export async function probe() {
     // AbortController + setTimeout, not AbortSignal.timeout(): that is Safari
     // 16.4+ and a school iPad is not a safe bet. 2500ms is 10-25x the expected
     // Aiven sfo RTT, so a merely slow link still passes.
-    const timer = setTimeout(() => controller.abort(), PROBE_TIMEOUT_MS);
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
         const res = await fetch("/up", { cache: "no-store", signal: controller.signal });
         const sameOrigin = typeof location === "undefined" || res.url.startsWith(location.origin);

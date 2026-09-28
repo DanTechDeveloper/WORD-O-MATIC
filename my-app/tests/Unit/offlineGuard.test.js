@@ -86,7 +86,7 @@ describe("OfflineGuard", () => {
     test("retry PROBES the server and only claims success on a 200", () => {
         // The old check was `if (!navigator.onLine)`, which said "restored" on a
         // link with no uplink — the exact lie this modal exists to stop.
-        expect(src).toContain("probe().then((ok) => {");
+        expect(src).toContain("probe(RECOVERY_PROBE_MS).then((ok) => {");
         expect(src).toContain("if (!ok) {");
         // Prose may still name it — only CODE is read here.
         const code = src
@@ -95,6 +95,21 @@ describe("OfflineGuard", () => {
             .join("\n");
         expect(code).not.toContain("navigator.onLine");
         expect(src).toContain("setTimeout(() => setOffline(false), 1200)");
+    });
+
+    test("recovery probes get a COLD-BOOT budget, the student's round-start does not", () => {
+        // 2500ms is sized for a warm server and gates a child's mic tap. The
+        // guard's two checks run with a modal already open, so they must be
+        // patient: a Vercel Container cold boot exceeds 2.5s, and at that budget
+        // the abort reported a HEALTHY server unreachable — which is why the
+        // "Connected!" popup never appeared. Locked by
+        // offlineGuardReconnect.test.jsx, which fails at the old budget.
+        expect(src).toContain("const RECOVERY_PROBE_MS = 8000;");
+        expect(src.match(/probe\(RECOVERY_PROBE_MS\)/g)).toHaveLength(2);
+        // The student path must keep the default, i.e. never pass a budget.
+        const hooks = fs.readFileSync("resources/js/Pages/Student/GameplayReadMode.jsx", "utf8");
+        expect(hooks).toContain("await probeConnection()");
+        expect(hooks).not.toContain("probeConnection(" + ",");
     });
 
     test("the browser online event re-proves the server, then celebrates", () => {

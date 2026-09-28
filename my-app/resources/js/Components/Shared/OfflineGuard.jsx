@@ -15,6 +15,17 @@ export default function OfflineGuard() {
     const [status, setStatus] = useState(null);
     const timer = useRef(null);
 
+    // ponytail: the recovery probes are NOT the round-start probe. That one
+    // gates a child's mic tap, so it must stay at 2500ms. These two run with a
+    // modal already open and a human already waiting, so patience is free — and
+    // it is required: the first request after a link returns pays a Vercel
+    // Container cold boot that routinely blows past 2.5s. At the old budget the
+    // abort fired, `probe()` reported the healthy server unreachable, and the
+    // "Connected!" celebration never appeared — the teacher was told "still
+    // offline" about a link that was already back. 8s covers a cold boot
+    // without ever gating a child.
+    const RECOVERY_PROBE_MS = 8000;
+
     useEffect(() => {
         // ponytail: one raise, two reasons. Every trigger does the same four
         // things, so they share a body instead of four near-copies drifting.
@@ -68,7 +79,7 @@ export default function OfflineGuard() {
             timer.current = setTimeout(() => setOffline(false), 1200);
         };
         const goOnline = () => {
-            probe().then((ok) => {
+            probe(RECOVERY_PROBE_MS).then((ok) => {
                 if (ok) confirmRestored();
                 else setStatus("still-offline");
             });
@@ -124,7 +135,7 @@ export default function OfflineGuard() {
     // Re-read the store, never reload — a reload remounts the page and would
     // reset the onboarding guide step and every teacher form field.
     const handleRetry = () => {
-        probe().then((ok) => {
+        probe(RECOVERY_PROBE_MS).then((ok) => {
             if (!ok) {
                 setStatus("still-offline");
                 return;
