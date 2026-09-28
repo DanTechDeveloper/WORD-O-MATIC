@@ -29,23 +29,23 @@ class StudentWordMastery extends Model
 
     // ── Class-wide hardest-module adapters (whole class, not one student) ──
     //
-    // The per-student scope of the same metric is the array adapter in
-    // ReportService::hardestLevelFrom(). Both are the SAME rule at two scopes —
-    // Level 3 can be one kid's worst and the class's easiest — so they cannot
-    // share a query, but they MUST agree on the answer for any given scope.
+    // The Excel export used to carry a per-student scope of this metric beside
+    // its Top Struggle column. It was cut (it re-ranked the words the "Words
+    // Needing Practice" sheet already lists one by one), and with it went the
+    // array adapter that fed it — so the class-wide card is now the only
+    // consumer of ProgressService::hardestFrom(), and the only scope that has
+    // to agree with it.
     //
     // So this adapter only SUMS. Every decision (zero guard, label format,
     // tiebreak, return shape) is delegated to ProgressService::hardestFrom(),
-    // the SSOT both adapters share. That `attempts` value is therefore not
-    // decoration: it is the SSOT's only ranking signal, and the array adapter
-    // in ReportService cannot pre-sort, so the ranking cannot live here.
+    // the SSOT. That `attempts` value is therefore not decoration: it is the
+    // SSOT's only ranking signal.
     //
     // status = 'training' — "where is the class STILL stuck", not "which module
     // was historically hardest". This matches the whole report vocabulary:
     // struggleRowsFrom / trainingAttemptsFrom / NEEDS_ATTENTION_ATTEMPTS and
-    // the email Training Zone are all training-only, so the Excel's Hardest
-    // columns sit consistently beside Top Struggle (also training-only) instead
-    // of quietly counting a different set of rows. A mastered row's counter is
+    // the email Training Zone are all training-only, so Top Struggle and the
+    // Hardest card count the same set of rows. A mastered row's counter is
     // frozen at "attempts needed to master" — real history, but a DIFFERENT
     // metric, and mixing the two in one row is what makes a column unreadable.
     //

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Head, Link, usePage } from "@inertiajs/react";
 import AvatarSpeechBubble from "@/Components/Student/AvatarSpeechBubble";
 import DashboardLayout from "../../Layouts/Student/DashboardLayout";
@@ -15,6 +16,7 @@ export default function TutorialPage({
     const bothDone = wordTutorialDone && speakTutorialDone;
     const wbLocked = false;
     const sqLocked = !wordTutorialDone;
+    const [guideDone, setGuideDone] = useState(false);
 
     const tutorialCards = [
         {
@@ -44,7 +46,7 @@ export default function TutorialPage({
     const introMessage = tutorialComplete
         ? "Tutorial complete! Replay anytime."
         : bothDone
-          ? "Both phases done — check your badge!"
+          ? "Both phases done. check your badge!"
           : !wordTutorialDone
             ? "Start with Word Blast. then Story Quest unlocks!"
             : "Word Blast done! Now try Story Quest to finish the tutorial!";
@@ -93,7 +95,7 @@ export default function TutorialPage({
                         </div>
                     )}
 
-                    {bodyUrl && (
+                    {bodyUrl && !guideDone && (
                         <AvatarSpeechBubble
                             emoji={
                                 bothDone
@@ -117,7 +119,7 @@ export default function TutorialPage({
                                     : "accent"
                             }
                             position="bottom-right"
-                            footerText={null}
+                            onClick={() => setGuideDone(true)}
                         />
                     )}
 

@@ -163,17 +163,49 @@ class WordModule extends Model
             ['title' => $data['title']],
         );
 
-        $module->words()->delete();
+        // ponytail: reuse rows by position, delete only what disappeared.
+        //
+        // This used to be words()->delete() then create() for all 10 — which
+        // meant EVERY save gave 10 fresh ids, and the student_word_mastery FK
+        // cascade wiped the class's record for that module every time. A save
+        // that changed NOTHING still destroyed it, and a mid-round student's
+        // updateWordMastery POST 422'd on the dead ids. Reusing the row when
+        // (position, word) is unchanged keeps ids stable, so mastery survives a
+        // no-op re-save and a one-word fix, and updateWordModule's "no force
+        // needed when nothing changed" escape hatch is actually true.
+        //
+        // ponytail: still no id stability when two words are SWAPPED — both
+        // positions change. Content hashing if that ever matters.
+        $existing = $module->words()->get()->keyBy('position');
+        $written = [];
 
         foreach ($data['words'] as $index => $wordData) {
-            $wordText = trim($wordData['word'] ?? '');
+            $wordText = strtoupper(trim($wordData['word'] ?? ''));
 
-            if ($wordText !== '') {
+            if ($wordText === '') {
+                continue;
+            }
+
+            $position = $index + 1;
+            $written[] = $position;
+            $row = $existing->get($position);
+
+            if ($row) {
+                if ($row->word !== $wordText) {
+                    $row->update(['word' => $wordText]);
+                }
+            } else {
                 $module->words()->create([
-                    'word' => strtoupper($wordText),
-                    'position' => $index + 1,
+                    'word' => $wordText,
+                    'position' => $position,
                 ]);
             }
         }
+
+        $existing->each(function ($row, $position) use ($written) {
+            if (! in_array($position, $written, true)) {
+                $row->delete();
+            }
+        });
     }
 }

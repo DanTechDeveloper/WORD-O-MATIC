@@ -21,8 +21,8 @@ import { normalizeText } from "@/lib/speechUtils";
 // One read of the WHOLE paragraph: no step, and no spotlight, is per-sentence
 // (`spotlight` is read only as `=== "mic"`, so the read steps declare none).
 const GUIDE_STEPS = [
-    { id: "read-it-all", title: "READ IT ALL", message: "Read straight through to the end — basahin nang diretso hanggang dulo!", emoji: "menu_book", color: "quest", action: "tap-continue" },
-    { id: "light-up", title: "WATCH IT LIGHT UP", message: "Words glow BLUE as you say them. GREEN locks in — RED moves on, so keep reading!", emoji: "auto_awesome", color: "quest", action: "tap-continue" },
+    { id: "read-it-all", title: "READ IT ALL", message: "Read straight through to the end!", emoji: "menu_book", color: "quest", action: "tap-continue" },
+    { id: "light-up", title: "WATCH IT LIGHT UP", message: "BLUE is the word you're on. GREEN means you said it right! RED means try that one again.", emoji: "auto_awesome", color: "quest", action: "tap-continue" },
     { id: "score-card", title: "SCORE CARD", message: "At the end you get a score card for the whole paragraph!", emoji: "celebration", color: "quest", action: "tap-continue" },
     { id: "tap-mic", title: "TAP TO PLAY!", message: "Tap the mic below when you're ready. 3-2-1 countdown, then go!", emoji: "mic", color: "quest", action: "tap-mic", spotlight: "mic" }
 ];
@@ -305,7 +305,6 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true, tut
                     color="quest"
                     position="center"
                     onClick={handleFinalTutorialContinue}
-                    footerText="Tap to continue →"
                     variant="mini"
                 />
             ) : (
@@ -336,7 +335,6 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true, tut
                             color="quest"
                             position="bottom-right"
                             variant="mini"
-                            footerText={null}
                             className={coachLeaving ? "opacity-0 transition-opacity duration-300" : ""}
                         />
                     )}
@@ -354,6 +352,7 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true, tut
                 isResume={isResume}
                 hasSpoken={hasSpoken}
                 previewWords={speechRecognitionWords}
+                showLegend={isTutorial}
             />
             <div className="flex-shrink-0 relative z-50">
                 <Microphone

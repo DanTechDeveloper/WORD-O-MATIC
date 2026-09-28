@@ -10,6 +10,9 @@ export default function WordInputModal({
     hasProgress = false,
     takenWords = {},
 }) {
+    // ponytail: has_progress = mastery OR progress (see TeacherController) —
+    // i.e. this module is LOCKED. A module with either is no longer editable;
+    // the save button is not disabled, it is not rendered.
     const { data, setData, put, processing, errors } = useForm({
         level: level || "",
         title: title || "",
@@ -73,15 +76,10 @@ export default function WordInputModal({
     const isComplete = normalized.every((w) => w !== "");
     const canSave = isComplete && problemCount === 0;
 
-    const handleSave = () => {
-        if (
-            hasProgress &&
-            !window.confirm(
-                "Editing this module will reset students' progress on its words. Continue?",
-            )
-        ) {
-            return;
-        }
+    // ponytail: no change-detection and no confirm. A locked module is simply
+    // not editable — anything else would be a warning the teacher can dismiss,
+    // and the damage (mastery/progress cascade) is not undoable.
+    const performSave = () => {
         put("/teacher/wordModules", {
             onSuccess: () => onClose(),
         });
@@ -111,11 +109,12 @@ export default function WordInputModal({
     if (!isOpen) return null;
 
     const inputClass = (index) =>
-        `w-full bg-slate-950 border-2 rounded-xl pl-12 pr-10 py-4 text-white font-bold focus:outline-none focus:border-lime-500 transition-all uppercase ${
+        `w-full bg-slate-950 border-2 rounded-xl pl-12 pr-10 py-4 text-white font-bold focus:outline-none focus:border-lime-500 transition-all uppercase read-only:opacity-60 ${
             rowError(index) ? "border-rose-500" : "border-slate-800"
         }`;
 
     return (
+        <>
         <div className="fixed inset-0 bg-background/80 flex items-center justify-center z-50 p-4">
             <div className="bg-slate-900 p-4 sm:p-6 md:p-10 rounded-[2.5rem] border-4 border-slate-800 shadow-[8px_8px_0_0_#020617] md:shadow-[12px_12px_0_0_#020617] w-full max-w-xl max-h-[90vh] flex flex-col">
                 <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0">
@@ -136,6 +135,18 @@ export default function WordInputModal({
                         </span>
                     </div>
                 </div>
+                {hasProgress && (
+                    <div className="mb-6 bg-rose-950/50 border-2 border-rose-500 rounded-xl px-4 py-3">
+                        <p className="text-rose-400 text-[10px] font-black uppercase tracking-widest mb-2">
+                            Locked — students have played this module
+                        </p>
+                        <p className="text-rose-200 text-xs font-bold leading-snug">
+                            Saving rewrites this module's words, which resets
+                            every student's mastery and progress on it. Its
+                            content can no longer be changed.
+                        </p>
+                    </div>
+                )}
                 {problemCount > 0 && (
                     <div className="mb-6 bg-rose-950/50 border-2 border-rose-500 rounded-xl px-4 py-3">
                         <p className="text-rose-400 text-[10px] font-black uppercase tracking-widest mb-2">
@@ -158,10 +169,11 @@ export default function WordInputModal({
                 <div className="mb-6">
                     <input
                         type="text"
-                        className="w-full bg-slate-950 border-2 border-slate-800 rounded-xl px-4 py-3 text-white font-bold focus:outline-none focus:border-lime-500 transition-all uppercase text-lg"
+                        className="w-full bg-slate-950 border-2 border-slate-800 rounded-xl px-4 py-3 text-white font-bold focus:outline-none focus:border-lime-500 transition-all uppercase text-lg read-only:opacity-60"
                         placeholder="Edit Module Title..."
                         value={data.title}
                         onChange={handleTitleChange}
+                        readOnly={hasProgress}
                     />
                     {errors.title && (
                         <p className="text-rose-500 text-[10px] font-black mt-1 uppercase">
@@ -184,6 +196,7 @@ export default function WordInputModal({
                                     onChange={(e) =>
                                         handleChange(index, e.target.value)
                                     }
+                                    readOnly={hasProgress}
                                 />
                                 {rowError(index) && (
                                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-rose-500 font-black text-sm">
@@ -203,7 +216,7 @@ export default function WordInputModal({
                             )}
                         </div>
                     ))}
-                    {showPaste ? (
+                    {!hasProgress && (showPaste ? (
                         <div className="space-y-2">
                             <textarea
                                 className="w-full bg-slate-950 border-2 border-slate-800 rounded-xl px-4 py-3 text-white font-bold focus:outline-none focus:border-lime-500 transition-all uppercase"
@@ -234,10 +247,10 @@ export default function WordInputModal({
                         >
                             Paste 10 words
                         </button>
-                    )}
+                    ))}
                 </div>
                 <div className="mt-6 md:mt-10 flex flex-col items-end gap-3">
-                    {!canSave && (
+                    {!hasProgress && !canSave && (
                         <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">
                             {problemCount > 0
                                 ? "Resolve duplicate words to save."
@@ -251,8 +264,9 @@ export default function WordInputModal({
                         >
                             Cancel
                         </button>
+                        {!hasProgress && (
                         <button
-                            onClick={handleSave}
+                            onClick={performSave}
                             disabled={processing || !canSave}
                             className={`w-full sm:w-auto px-6 md:px-8 py-3 md:py-4 bg-lime-400 text-slate-950 rounded-2xl border-4 border-slate-950 shadow-[4px_4px_0_0_#3f6212] md:shadow-[6px_6px_0_0_#3f6212] font-black uppercase italic text-xs tracking-tighter hover:translate-y-0.5 hover:shadow-none transition-all flex justify-center items-center gap-2 ${processing || !canSave ? "opacity-50" : ""}`}
                         >
@@ -261,9 +275,11 @@ export default function WordInputModal({
                             </span>
                             {processing ? "Saving..." : "Save Words"}
                         </button>
+                        )}
                     </div>
                 </div>
             </div>
         </div>
+        </>
     );
 }

@@ -135,6 +135,12 @@ class ReportController extends Controller
                 'paragraphTrainingWords' => $this->reportService->trainingSentenceGroupsFrom($sqCurriculum),
                 'wordAttempts' => $this->reportService->trainingAttemptsFrom($wbCurriculum),
                 'paragraphWordAttempts' => $this->reportService->trainingSentenceAttemptsFrom($sqCurriculum),
+                // Word-level verdicts. The two keys above stay untouched: the
+                // parent report shows the sentence chip (summed attempts) AND
+                // the words that produced it, and the per-word recovered
+                // history that a mastered sentence would otherwise hide.
+                'paragraphWordVerdicts' => $this->reportService->trainingSentenceWordAttemptsFrom($sqCurriculum),
+                'paragraphRecovered' => $this->reportService->recoveredSentenceWordsFrom($sqCurriculum),
                 'reported_at' => $deadlineTs->format('F j, Y \a\t g:i A'),
                 'teacher_email' => $request->user()->email ?? config('mail.from.address'),
                 'teacher_name' => $request->user()->name ?? config('mail.from.name'),
@@ -224,12 +230,6 @@ class ReportController extends Controller
                 'sqLevelLabel' => "Level {$speakLevel} - ".($paraTitles[$speakLevel] ?? ''),
                 'parent_email' => $user->student?->parent_email,
                 'report_sent_at' => $user->student?->report_sent_at,
-                // Per-student scope of the hardest-module metric. Structured here,
-                // formatted in the sheet — the label itself comes from
-                // ProgressService::hardestFrom(), the SSOT the class-wide
-                // Dashboard cards also use, so both surfaces agree.
-                'hardestWordModule' => $this->reportService->hardestLevelFrom($wordCurriculums[$user->id] ?? []),
-                'hardestStoryModule' => $this->reportService->hardestLevelFrom($paraCurriculums[$user->id] ?? [], 'sentence_stats'),
                 'struggleRows' => $rows,
                 'topStruggle' => $topStruggle,
             ];
@@ -246,11 +246,14 @@ class ReportController extends Controller
         );
     }
 
+    // Story Quest exports per WORD, not per sentence — a teacher reteaching a
+    // word needs the word, and the module (level) already answers "where", so
+    // the sheet carries no Sentence column.
     private function sentenceStruggleRows(string $mode, array $curriculum): array
     {
         return array_map(
             fn ($row) => ['mode' => $mode] + $row,
-            $this->reportService->sentenceStruggleRowsFrom($curriculum),
+            $this->reportService->sentenceWordStruggleRowsFrom($curriculum),
         );
     }
 }

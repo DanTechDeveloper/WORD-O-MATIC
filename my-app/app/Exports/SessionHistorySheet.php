@@ -32,7 +32,6 @@ class SessionHistorySheet implements FromCollection, WithColumnWidths, WithHeadi
             'Level',
             'Score',
             'Accuracy (%)',
-            'Streak',
         ];
     }
 
@@ -69,7 +68,6 @@ class SessionHistorySheet implements FromCollection, WithColumnWidths, WithHeadi
                 $levelLabel,
                 $session->score,
                 $session->accuracy,
-                $session->streak,
             ];
         })->filter()->values();
 
@@ -98,7 +96,6 @@ class SessionHistorySheet implements FromCollection, WithColumnWidths, WithHeadi
             'F' => 30,
             'G' => 10,
             'H' => 14,
-            'I' => 10,
         ];
     }
 }

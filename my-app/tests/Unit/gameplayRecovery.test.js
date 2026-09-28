@@ -7,7 +7,7 @@ import { useGameplayCore } from "@/hooks/Student/useGameplayCore";
 import { useStoryQuestEngine } from "@/hooks/Student/useStoryQuestEngine";
 import { markReachable, markUnreachable } from "@/utils/connection";
 import { armWordTimeout, armSentenceTimeout } from "@/lib/speechProcessors";
-import { writeResumeSession, readPendingSession } from "@/utils/resumeStorage";
+import { writeResumeSession, readResumeSession, readPendingSession } from "@/utils/resumeStorage";
 import fs from "fs";
 
 const read = (p) => fs.readFileSync(p, "utf8");
@@ -842,5 +842,69 @@ describe("Story Quest completion from a batch inside a non-final sentence", () =
         act(() => vi.advanceTimersByTime(1000));
 
         expect(soundsMock.playFeedbackSound).toHaveBeenCalledTimes(1);
+    });
+});
+
+// The resume-vs-reshuffle boundary. Word Blast's play order lives ONLY in the
+// resume record (GameplayReadMode resolveWordOrder reads `wordOrder` back), so
+// a record left behind after a round ends means the next play resumes the
+// PREVIOUS order — same first word, forever, with no error anywhere:
+// words_processed is only a count, so the server never sees the difference.
+// clearResume() guards three terminal paths; this pins the outcome, not the
+// call sites, so removing a redundant one (they overlap on purpose) is fine
+// while losing the guarantee is not.
+describe("a finished round leaves no resume record, so the next play reshuffles", () => {
+    const mount = () =>
+        renderHook(() =>
+            useGameplayCore({
+                words: WORDS,
+                totalWords: WORDS.length,
+                moduleId: 7,
+                saveEndpoint: "/student/saveWordProgress",
+                scope: "word",
+                resumeData: MID_ROUND,
+            }),
+        );
+
+    const mounted = () => readResumeSession(7, "word");
+
+    test("a mid-round mount writes the record (so the assertions below mean something)", () => {
+        mount();
+        expect(mounted()).not.toBeNull();
+        // The order travels with the index — this is the whole contract the
+        // page's resolveWordOrder restores from.
+        expect(mounted().wordOrder).toEqual([1, 2, 3, 4, 5]);
+        expect(mounted().currentWordIndex).toBe(3);
+    });
+
+    test("clock running out clears it", () => {
+        const { result } = mount();
+        act(() => result.current.handleTimeUp());
+        expect(mounted()).toBeNull();
+    });
+
+    test("a fatal ASR error clears it", () => {
+        const { result } = mount();
+        act(() => result.current.handleFatalError());
+        expect(mounted()).toBeNull();
+    });
+
+    test("reaching the last word (COMPLETED) clears it", () => {
+        // index 3 of 5 — two more words and the round completes. This path
+        // never goes through handleTimeUp, so it is the one a missing
+        // clearResume in the terminal-state effect would slip past.
+        const { result } = mount();
+        act(() => result.current.moveToNextWord(2));
+        expect(result.current.gameState).toBe("COMPLETED");
+        expect(mounted()).toBeNull();
+    });
+
+    test("a Story Quest record for the same module id stays invisible here", () => {
+        // moduleId 7 exists in BOTH tables at level 7 — the collision that
+        // scope exists to close. A para record must not read as word, or Word
+        // Blast would resume a paragraph position.
+        writeResumeSession(7, { scope: "para", currentWordIndex: 2, wordsSmashed: 2, timeLeft: 30 });
+        expect(readResumeSession(7, "word")).toBeNull();
+        expect(readResumeSession(7, "para")).not.toBeNull();
     });
 });

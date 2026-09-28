@@ -30,9 +30,16 @@ const SpeakModeMainContent = memo(function SpeakModeMainContent({
     isResume = false,
     hasSpoken = false,
     previewWords = null,
+    showLegend = false,
 }) {
     const activeWordRef = useRef(null);
     const activeCount = Math.max(1, highlightCount | 0 || 1);
+    // ponytail: verdicts always win; fresh mount stays neutral until speech
+    // (resume keeps its you-are-here marker, it is mid-round). Hoisted out of
+    // the map so the legend can gate on the same flag — the blue BORDER only
+    // exists once the frontier does, so a legend shown before it would promise
+    // a border the words are not drawing yet.
+    const showFrontier = hasSpoken || isResume;
 
     useEffect(() => {
         activeWordRef.current?.scrollIntoView({
@@ -74,17 +81,36 @@ const SpeakModeMainContent = memo(function SpeakModeMainContent({
                 <div className="flex-1 flex flex-col relative">
                     <div className="flex-1 flex items-start justify-center overflow-y-auto px-3 xs:px-4 sm:px-6 md:px-8 pt-12 sm:pt-15 pb-12 sm:pb-16">
                         <div className="relative w-full max-w-7xl my-auto">
-                            <div className="sticky top-2 z-30 flex items-center justify-center gap-2 sm:gap-4 mb-2 sm:mb-3 min-h-8 sm:min-h-10" />
+                            {/* ponytail: the color legend, in the slot that has
+                                been reserved and empty since 1c3a303. It persists
+                                for the whole tutorial round because the guide
+                                bubble is destroyed at guideDone — long before the
+                                first verdict paints a border. Chip classes are
+                                copied from the word map below, not approximated. */}
+                            <div className="sticky top-2 z-30 flex flex-wrap items-center justify-center gap-2 sm:gap-4 mb-2 sm:mb-3 min-h-8 sm:min-h-10">
+                                {showLegend && showFrontier && (
+                                    <>
+                                        {[
+                                            { c: "border-quest/80 text-quest", label: "your word" },
+                                            { c: "border-accent/80 text-accent", label: "nice!" },
+                                            { c: "border-rose-500 text-rose-400", label: "again" },
+                                        ].map((l) => (
+                                            <span
+                                                key={l.label}
+                                                className={`border-2 rounded-xl px-2 py-0.5 bg-slate-900/80 font-black uppercase tracking-wider text-[10px] sm:text-xs whitespace-nowrap ${l.c}`}
+                                            >
+                                                {l.label}
+                                            </span>
+                                        ))}
+                                    </>
+                                )}
+                            </div>
 
                             <div
                                 className={`font-headline-xl text-left leading-relaxed tracking-normal sm:tracking-tight select-none font-medium sm:font-semibold lg:font-bold text-3xl xs:text-4xl sm:text-5xl md:text-6xl lg:text-7xl flex flex-wrap gap-x-2 xs:gap-x-3 sm:gap-x-4 gap-y-4 sm:gap-y-6 md:gap-y-8`}
                             >
                                 {words.map((word, index) => {
                                     const verdict = verdicts[index];
-                                    // ponytail: branch order is the contract — verdicts always
-                                    // win; fresh mount stays neutral until speech (resume
-                                    // keeps its you-are-here marker, it is mid-round).
-                                    const showFrontier = hasSpoken || isResume;
                                     return (
                                         <span
                                             key={index}

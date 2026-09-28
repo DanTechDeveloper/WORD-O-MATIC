@@ -231,9 +231,19 @@ class StudentSeeder extends Seeder
             app(BadgeService::class)->checkAllEligibleBadges($user);
         }
 
-        // Perfect Level 10 demo students — 10/10 both modes, Recovered only (no stale training at 100%)
-        // Ensures StudentDetails shows LV10, 100% progress, and Recovered chips without 100%+training stale.
-        // Guard: ProgressService caps at 10 and throws beyond, so these are the max.
+        // Perfect demo students — 100% both modes, Recovered only (no stale training at 100%)
+        // Ensures StudentDetails shows the top level, 100% progress, and Recovered chips without
+        // 100%+training stale. Guard: ProgressService caps at 10 and throws beyond, so this is the max.
+        //
+        // ponytail: capped at 8, NOT 10. A module with any mastery OR progress row is
+        // LOCKED in the teacher editor, so playing all 10 levels here would lock
+        // every module on a seeded database and leave the editor with nothing
+        // editable to demo. The 100-student roster above already stops at 8
+        // ($completedLevels), so 8 is the natural ceiling: Levels 9-10 stay
+        // editable. Costs only the "LV10" label — the 100% + Recovered chips
+        // demo lives in the mastery rows, not in the level number. Do NOT raise
+        // this to 10 without re-checking the editor lock.
+        $perfectThrough = 8;
         $perfectStudents = [
             ['name' => 'Astra Perfect', 'student_id' => 'STU-101', 'section' => 'Sector 7-G', 'avatarChar' => 'ana', 'gender' => 'female'],
             ['name' => 'Nova Stellar', 'student_id' => 'STU-102', 'section' => 'Sector Alpha', 'avatarChar' => 'leo', 'gender' => 'male'],
@@ -247,8 +257,8 @@ class StudentSeeder extends Seeder
                 'role' => 'student',
             ]);
             $totalWordsSmashed = 0;
-            // Word Blast 10/10
-            for ($lvl = 1; $lvl <= 10; $lvl++) {
+            // Word Blast 100%
+            for ($lvl = 1; $lvl <= $perfectThrough; $lvl++) {
                 $module = $wordModules[$lvl];
                 $totalPoints = $module->total_points;
                 $smashed = $totalPoints; // 100%
@@ -274,8 +284,8 @@ class StudentSeeder extends Seeder
                 $totalWordsSmashed += $smashed;
                 $logSession($user, $module->id, 'word', 10, 100);
             }
-            // Story Quest 10/10
-            for ($lvl = 1; $lvl <= 10; $lvl++) {
+            // Story Quest 100%
+            for ($lvl = 1; $lvl <= $perfectThrough; $lvl++) {
                 $module = $paragraphModules[$lvl];
                 $totalScore = $module->total_score;
                 $smashed = $totalScore;
@@ -325,8 +335,13 @@ class StudentSeeder extends Seeder
                 'points' => $totalWordsSmashed,
                 'avatar' => "/images/avatars/{$p['avatarChar']}/head.png",
                 'gender' => $p['gender'],
-                'read_progress' => 10, 'speak_progress' => 10,
-                'read_level' => 10, 'speak_level' => 10, // capped at 10, not 11
+                // ponytail: these must track $perfectThrough, not a literal 10 —
+                // they are the denorm cache the dashboard and LevelService read,
+                // so a hardcoded 10 would claim 10 progress rows that were never
+                // written. Level is $perfectThrough + 1 (the NEXT one to play),
+                // mirroring the roster loop above.
+                'read_progress' => $perfectThrough, 'speak_progress' => $perfectThrough,
+                'read_level' => min(10, $perfectThrough + 1), 'speak_level' => min(10, $perfectThrough + 1),
                 'status' => 'onTrack', 'wordBlastAcc' => 100, 'storyQuestAcc' => 100,
                 'section' => $p['section'],
                 'parent_email' => "parent.".strtolower(str_replace(' ', '', $p['student_id']))."@email.com",

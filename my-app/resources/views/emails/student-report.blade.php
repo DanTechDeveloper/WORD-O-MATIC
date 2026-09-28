@@ -332,18 +332,24 @@
                                             </p>
 
                                             @php
-                                                $threshold = \App\Services\ReportService::NEEDS_ATTENTION_ATTEMPTS;
+                                                // One rule, three surfaces: ReportService::verdict()
+                                                // is also what the Excel Verdict column and
+                                                // StudentDetails.jsx read. Words here are
+                                                // training-only (recovered stay teacher-only),
+                                                // so mastery is always 'training'.
+                                                $reportService = \App\Services\ReportService::class;
 
                                                 $practicing = [];
                                                 $needing = [];
 
                                                 foreach ($words as $word) {
-                                                    $tries = $data['wordAttempts'][$word] ?? 0;
+                                                    $tries = (int) ($data['wordAttempts'][$word] ?? 0);
+                                                    $row = ['word' => $word, 'tries' => $tries];
 
-                                                    if ($tries >= $threshold) {
-                                                        $needing[] = [$word, $tries];
+                                                    if ($reportService::verdict('training', $tries) === $reportService::VERDICT_NEEDS_ATTENTION) {
+                                                        $needing[] = $row;
                                                     } else {
-                                                        $practicing[] = [$word, $tries];
+                                                        $practicing[] = $row;
                                                     }
                                                 }
                                             @endphp
@@ -358,15 +364,15 @@
 
                                                 <div style="margin:0 0 17px">
 
-                                                    @foreach ($practicing as [$word, $tries])
+                                                    @foreach ($practicing as $row)
 
                                                         <span style="display:inline-block;background:#1e293b;color:#e2e8f0;font-size:14px;font-weight:700;padding:8px 11px;border-radius:12px;border:1px solid #475569;margin:0 5px 7px 0">
 
-                                                            {{ $word }}<br>
+                                                            {{ $row['word'] }}<br>
 
                                                             <span style="color:#94a3b8;font-size:11px;font-weight:600">
-                                                                {{ $tries }}
-                                                                recorded attempt{{ $tries === 1 ? '' : 's' }}
+                                                                {{ $row['tries'] }}
+                                                                recorded attempt{{ $row['tries'] === 1 ? '' : 's' }}
                                                             </span>
 
                                                         </span>
@@ -387,14 +393,14 @@
 
                                                 <div style="margin:0 0 20px">
 
-                                                    @foreach ($needing as [$word, $tries])
+                                                    @foreach ($needing as $row)
 
                                                         <span style="display:inline-block;background:#451a03;color:#fbbf24;font-size:14px;font-weight:700;padding:8px 11px;border-radius:12px;border:1px solid #f59e0b;margin:0 5px 7px 0">
 
-                                                            {{ $word }}<br>
+                                                            {{ $row['word'] }}<br>
 
                                                             <span style="font-size:11px;font-weight:600">
-                                                                {{ $tries }} recorded attempts &middot; Not yet mastered
+                                                                {{ $row['tries'] }} recorded attempts &middot; Not yet mastered
                                                             </span>
 
                                                         </span>
@@ -445,7 +451,7 @@
                                         </p>
 
                                         <p style="color:#94a3b8;font-size:13px;line-height:1.65;margin:0 0 17px">
-                                            These sentences are still being learned. Attempts show summed word attempts for that sentence (recorded practice history, not a recommended number of repetitions).
+                                            Each sentence lists the words that held it back, with their own recorded attempts. Attempts show recorded practice history, not a recommended number of repetitions.
                                         </p>
 
                                         <div style="border-top:1px solid #334155;margin:0 0 18px"></div>
@@ -458,18 +464,32 @@
                                             </p>
 
                                             @php
-                                                $threshold = \App\Services\ReportService::NEEDS_ATTENTION_ATTEMPTS;
+                                                $reportService = \App\Services\ReportService::class;
 
                                                 $practicing = [];
                                                 $needing = [];
 
                                                 foreach ($sentences as $sentence) {
-                                                    $tries = $data['paragraphWordAttempts'][$sentence] ?? 0;
+                                                    $tries = (int) ($data['paragraphWordAttempts'][$sentence] ?? 0);
+                                                    $row = [
+                                                        'sentence' => $sentence,
+                                                        'tries' => $tries,
+                                                        // Per-word verdicts. Duplicate texts inside
+                                                        // the sentence are already merged, so "a" at
+                                                        // two positions is one row carrying the sum.
+                                                        'words' => $data['paragraphWordVerdicts'][$sentence] ?? [],
+                                                    ];
 
-                                                    if ($tries >= $threshold) {
-                                                        $needing[] = [$sentence, $tries];
+                                                    // The SENTENCE flag comes from its words, never
+                                                    // from the summed attempts: five words at one
+                                                    // miss each sums to 5 and would clear the
+                                                    // threshold while every word is fine.
+                                                    $sentenceVerdict = $reportService::sentenceVerdictFrom($row['words']);
+
+                                                    if ($sentenceVerdict === $reportService::VERDICT_NEEDS_ATTENTION) {
+                                                        $needing[] = $row;
                                                     } else {
-                                                        $practicing[] = [$sentence, $tries];
+                                                        $practicing[] = $row;
                                                     }
                                                 }
                                             @endphp
@@ -484,18 +504,37 @@
 
                                                 <div style="margin:0 0 17px">
 
-                                                    @foreach ($practicing as [$sentence, $tries])
+                                                    @foreach ($practicing as $row)
 
                                                         <span style="display:block;background:#1e293b;color:#e2e8f0;font-size:14px;font-weight:700;padding:10px 12px;border-radius:12px;border:1px solid #475569;margin:0 0 7px 0">
 
-                                                            {{ $sentence }}<br>
+                                                            {{ $row['sentence'] }}<br>
 
                                                             <span style="color:#94a3b8;font-size:11px;font-weight:600">
-                                                                {{ $tries }}
-                                                                recorded attempt{{ $tries === 1 ? '' : 's' }}
+                                                                @if ($sentenceVerdict === \App\Services\ReportService::VERDICT_NOT_ATTEMPTED)
+                                                                    Not attempted yet
+                                                                @else
+                                                                    {{ $row['tries'] }}
+                                                                    recorded attempt{{ $row['tries'] === 1 ? '' : 's' }}
+                                                                @endif
                                                             </span>
 
                                                         </span>
+
+                                                        @foreach ($row['words'] as $word)
+                                                            @if ($word['failed_attempts'] > 0)
+                                                                <span style="display:block;background:#0f172a;border-left:3px solid {{ $word['verdict'] === \App\Services\ReportService::VERDICT_RECOVERED ? '#34d399' : '#fb923c' }};color:#cbd5e1;font-size:12px;font-weight:700;padding:6px 10px;margin:-4px 0 4px 14px">
+                                                                    {{ $word['word'] }} &mdash;
+                                                                    <span style="color:#94a3b8;font-weight:600">
+                                                                        {{ $word['failed_attempts'] }} recorded attempt{{ $word['failed_attempts'] === 1 ? '' : 's' }}
+                                                                    </span>
+                                                                    &middot;
+                                                                    <span style="color:{{ $word['verdict'] === \App\Services\ReportService::VERDICT_RECOVERED ? '#34d399' : '#fbbf24' }}">
+                                                                        {{ \App\Services\ReportService::verdictLabel($word['verdict'], true) }}
+                                                                    </span>
+                                                                </span>
+                                                            @endif
+                                                        @endforeach
 
                                                     @endforeach
 
@@ -513,23 +552,103 @@
 
                                                 <div style="margin:0 0 20px">
 
-                                                    @foreach ($needing as [$sentence, $tries])
+                                                    @foreach ($needing as $row)
 
                                                         <span style="display:block;background:#451a03;color:#fbbf24;font-size:14px;font-weight:700;padding:10px 12px;border-radius:12px;border:1px solid #f59e0b;margin:0 0 7px 0">
 
-                                                            {{ $sentence }}<br>
+                                                            {{ $row['sentence'] }}<br>
 
                                                             <span style="font-size:11px;font-weight:600">
-                                                                {{ $tries }} recorded attempts &middot; Not yet mastered
+                                                                @if ($sentenceVerdict === \App\Services\ReportService::VERDICT_NOT_ATTEMPTED)
+                                                                    Not attempted yet
+                                                                @else
+                                                                    {{ $row['tries'] }} recorded attempts &middot; Not yet mastered
+                                                                @endif
                                                             </span>
 
                                                         </span>
+
+                                                        @foreach ($row['words'] as $word)
+                                                            @if ($word['failed_attempts'] > 0)
+                                                                <span style="display:block;background:#0f172a;border-left:3px solid {{ $word['verdict'] === \App\Services\ReportService::VERDICT_RECOVERED ? '#34d399' : '#ef4444' }};color:#cbd5e1;font-size:12px;font-weight:700;padding:6px 10px;margin:-4px 0 4px 14px">
+                                                                    {{ $word['word'] }} &mdash;
+                                                                    <span style="color:#94a3b8;font-weight:600">
+                                                                        {{ $word['failed_attempts'] }} recorded attempt{{ $word['failed_attempts'] === 1 ? '' : 's' }}
+                                                                    </span>
+                                                                    &middot;
+                                                                    <span style="color:{{ $word['verdict'] === \App\Services\ReportService::VERDICT_RECOVERED ? '#34d399' : '#fbbf24' }}">
+                                                                        {{ \App\Services\ReportService::verdictLabel($word['verdict'], true) }}
+                                                                    </span>
+                                                                </span>
+                                                            @endif
+                                                        @endforeach
 
                                                     @endforeach
 
                                                 </div>
 
                                             @endif
+
+                                        @endforeach
+
+                                    </td>
+                                </tr>
+
+                            </table>
+
+                        </td>
+                    </tr>
+
+                @endif
+
+
+                <!-- ================================= -->
+                <!-- STORY QUEST RECOVERED (mastered  -->
+                <!-- sentences that still have history)-->
+                <!-- ================================= -->
+
+                @if (!empty($data['paragraphRecovered']) && count($data['paragraphRecovered']) > 0)
+
+                    <tr>
+                        <td style="padding:22px 32px 0">
+
+                            <table cellpadding="0" cellspacing="0" border="0" style="width:100%;background:#111827;border:2px solid #334155;border-radius:16px">
+
+                                <tr>
+                                    <td style="padding:24px">
+
+                                        <p style="color:#34d399;font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:2px;margin:0 0 7px">
+                                            Recently Conquered
+                                        </p>
+
+                                        <h2 style="color:#ffffff;font-size:21px;font-weight:900;margin:0 0 13px">
+                                            Story Quest
+                                        </h2>
+
+                                        <p style="color:#94a3b8;font-size:13px;line-height:1.6;margin:0 0 17px">
+                                            These words were hard, and {{ $data['name'] }} got past them. They are no longer holding the sentence back.
+                                        </p>
+
+                                        <div style="border-top:1px solid #334155;margin:0 0 18px"></div>
+
+                                        @foreach ($data['paragraphRecovered'] as $recoveredSentence => $recoveredWords)
+
+                                            <p style="color:#64748b;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.8px;margin:0 0 10px">
+                                                {{ $recoveredSentence }}
+                                            </p>
+
+                                            <div style="margin:0 0 17px">
+                                                @foreach ($recoveredWords as $word)
+                                                    <span style="display:block;background:#0f172a;border-left:3px solid #34d399;color:#cbd5e1;font-size:12px;font-weight:700;padding:6px 10px;margin:0 0 4px 0">
+                                                        {{ $word['word'] }} &mdash;
+                                                        <span style="color:#94a3b8;font-weight:600">
+                                                            {{ $word['failed_attempts'] }} recorded attempt{{ $word['failed_attempts'] === 1 ? '' : 's' }} to conquer
+                                                        </span>
+                                                        &middot;
+                                                        <span style="color:#34d399">Recovered</span>
+                                                    </span>
+                                                @endforeach
+                                            </div>
 
                                         @endforeach
 

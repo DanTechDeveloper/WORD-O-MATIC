@@ -14,6 +14,30 @@ import { useMicrophonePermission } from "@/hooks/Student/useMicrophonePermission
 import { pauseBackgroundMusic, setMicLive } from "@/utils/sounds";
 import { probe as probeConnection, markUnreachable } from "@/utils/connection";
 import { normalizeText } from "@/lib/speechUtils";
+import { readResumeSession } from "@/utils/resumeStorage";
+
+// ponytail: Word Blast plays in a per-visit shuffle (docs/MODULES.md — word
+// modules are "randomized per gameplay"; paragraphs stay in authored order).
+// Pure + exported so a unit test can hold the restore-exact property, the same
+// trick TutorialGuide.jsx uses for nextStepIndex.
+export function resolveWordOrder(baseWords = [], savedOrder = null) {
+    const base = Array.isArray(baseWords) ? baseWords : [];
+    if (base.length === 0) return base;
+    // Restore by ID, not position: ids survive a teacher re-save, positions are
+    // never renumbered. String-keyed because Inertia has been known to hand
+    // back a numeric id as a string.
+    if (Array.isArray(savedOrder) && savedOrder.length === base.length) {
+        const byId = new Map(base.map((w) => [String(w.id), w]));
+        const restored = savedOrder.map((id) => byId.get(String(id)));
+        if (restored.every((w) => w != null)) return restored;
+    }
+    const shuffled = [...base];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+}
 
 const GUIDE_STEPS = [
     { id: "read-word", title: "READ THE WORD", message: "Say each word aloud into the mic. Read it right to BLAST it!", emoji: "campaign", color: "accent", action: "tap-continue", spotlight: "word" },
@@ -27,6 +51,18 @@ export default function GameplayReadMode({ module, tutorialComplete = true, tuto
     const { auth } = usePage().props;
     const isTutorial = !!module?.is_tutorial && !tutorialComplete;
     const isTutorialModule = !!module?.is_tutorial;
+    const moduleId = module?.id;
+
+    // ponytail: ONE order, TWO consumers. The engine below decides what the
+    // microphone listens for; ReadModeMainContent renders words[currentIndex]
+    // as the giant word. If they ever got different arrays the kid would be
+    // reading one word while the mic waited for another — so both read this.
+    // Not memoized: a Math.random() inside useMemo would reshuffle on any
+    // re-render that invalidated it. Lazy useState = once per mount, the same
+    // shape as the resume initializers in useGameplayCore.
+    const [wordOrder] = useState(() =>
+        resolveWordOrder(module?.words, readResumeSession(moduleId, "word")?.wordOrder),
+    );
 
     const {
         totalWords,
@@ -58,9 +94,9 @@ export default function GameplayReadMode({ module, tutorialComplete = true, tuto
         refillRoundClock,
         targetWordFalsy,
     } = useWordBlastEngine({
-        words: module?.words,
+        words: wordOrder,
         totalWords: module?.words?.length ?? 0,
-        moduleId: module?.id,
+        moduleId,
         deferPersist: isTutorial,
         onWordRecognized: (wordObj) => {
             if (wordObj && !isTutorialModule) {
@@ -278,7 +314,7 @@ export default function GameplayReadMode({ module, tutorialComplete = true, tuto
             <DeniedModal gameState={gameState} />
             <GameplayHeader {...headerProps} />
             <ReadModeMainContent
-                words={module?.words}
+                words={wordOrder}
                 currentIndex={Math.max(
                     0,
                     Math.min(currentWordIndex, totalWords - 1),
@@ -304,7 +340,6 @@ export default function GameplayReadMode({ module, tutorialComplete = true, tuto
                     color="accent"
                     position="center"
                     onClick={handleFinalTutorialContinue}
-                    footerText="Tap to continue →"
                     variant="mini"
                 />
             ) : (
@@ -329,7 +364,6 @@ export default function GameplayReadMode({ module, tutorialComplete = true, tuto
                             color="accent"
                             position="bottom-right"
                             variant="mini"
-                            footerText={null}
                         />
                     )}
                 </>
@@ -343,7 +377,6 @@ export default function GameplayReadMode({ module, tutorialComplete = true, tuto
                     color="accent"
                     position="bottom-right"
                     variant="mini"
-                    footerText={null}
                     className={coachLeaving ? "opacity-0 transition-opacity duration-300" : ""}
                 />
             )}

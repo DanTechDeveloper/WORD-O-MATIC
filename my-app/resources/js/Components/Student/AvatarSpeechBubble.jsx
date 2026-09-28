@@ -1,10 +1,19 @@
+import { useEffect } from "react";
+
+// ponytail: tap-anywhere is a document listener, never a fixed inset-0 layer —
+// a layer would swallow the page's own buttons and block scroll. Interactive
+// targets are skipped, so the mic / nav / level cards keep working. The prompt
+// showing IS the switch, so no new prop and no call-site churn. Ceiling: a
+// future div-with-onClick backdrop needs data-tap-anywhere-ignore.
+const TAP_ELSEWHERE =
+    "button, a, input, select, textarea, [role='button'], [role='link'], [data-tap-anywhere-ignore]";
+
 export default function AvatarSpeechBubble({
     emoji,
     title,
     message,
     bodyUrl,
     onClick,
-    footerText,
     position = "bottom",
     color = "primary",
     className = "",
@@ -36,6 +45,23 @@ export default function AvatarSpeechBubble({
 
     const isMini = variant === "mini";
     const isToast = variant === "toast";
+    // ponytail: onClick IS the switch, and it is the same condition that arms
+    // tap-anywhere below — so the prompt can never promise a tap that does
+    // nothing. It also subsumes the old footerText={null} opt-out: every coach
+    // bubble ("AWESOME!", "NICE TRY!") and every actionable guide step (target
+    // is the mic, not anywhere) already arrives with no onClick.
+    const promptVisible = !isToast && typeof onClick === "function";
+
+    useEffect(() => {
+        if (!promptVisible) return;
+        const onAnyTap = (e) => {
+            if (e.target?.closest?.(TAP_ELSEWHERE)) return;
+            onClick(e);
+        };
+        document.addEventListener("click", onAnyTap);
+        return () => document.removeEventListener("click", onAnyTap);
+    }, [promptVisible, onClick]);
+
     const positionClass =
         isToast
             ? "fixed z-50 top-3 sm:top-4 left-1/2 -translate-x-1/2 flex flex-row items-center gap-3 w-[92vw] sm:w-auto max-w-[92vw] sm:max-w-[360px]"
@@ -76,9 +102,19 @@ export default function AvatarSpeechBubble({
                 <p className={`${isMini ? "text-base sm:text-lg" : isToast ? "text-xs" : "text-lg sm:text-xl"} font-bold text-on-surface-variant ${isToast ? "mt-0 truncate" : "mt-2 leading-snug"}`}>
                     {message}
                 </p>
-                {footerText !== null && !isToast && (
-                    <p className={`text-xs font-black uppercase tracking-wider ${accent.text} mt-3`}>
-                        {footerText || "Tap here to continue"}
+                {/* ponytail: sized to the tightest box, not the prettiest. 15
+                    mono glyphs ≈ 0.6em each, plus the icon and gap, must clear
+                    min-w-[300px] − px-7 at the mobile max-w-[92vw] — one step
+                    bigger and the line overflows a 320px phone. */}
+                {promptVisible && (
+                    <p className={`mt-3 sm:mt-4 flex items-center justify-center gap-2 whitespace-nowrap leading-none font-mono font-black uppercase tracking-tight animate-pulse motion-reduce:animate-none ${accent.text} ${isMini ? "text-xl sm:text-2xl md:text-3xl" : "text-2xl sm:text-3xl md:text-4xl"}`}>
+                        <span
+                            className={`material-symbols-outlined ${isMini ? "text-lg sm:text-xl" : "text-xl sm:text-2xl"}`}
+                            aria-hidden="true"
+                        >
+                            touch_app
+                        </span>
+                        Tap to anywhere
                     </p>
                 )}
             </button>

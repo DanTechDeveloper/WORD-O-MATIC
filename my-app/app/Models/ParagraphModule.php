@@ -244,18 +244,45 @@ class ParagraphModule extends Model
             ],
         );
 
-        $module->words()->delete();
-
+        // ponytail: reuse by position — mirrors WordModule::saveWithWords, same
+        // reason. The old words()->delete() + recreate gave every paragraph_word
+        // a fresh id on every save, so the student_paragraph_mastery cascade
+        // wiped the class's record even for a save that changed nothing, and
+        // mid-round updateParagraphMastery POSTs 422'd on the dead ids.
+        //
+        // CASE-SENSITIVE compare, unlike Word Blast: content is stored verbatim
+        // (test_update_paragraph_module_preserves_case_as_entered locks this).
+        // Positions are never renumbered, which is what keeps
+        // buildLevels()'s `$wordStats[$w->position - 1]` slice aligned with
+        // sentencesFromContent() — renumbering would silently misreport every
+        // sentence's mastery in the teacher report.
         $contentWords = ! empty(trim($data['content'] ?? ''))
             ? preg_split('/\s+/', trim($data['content']), -1, PREG_SPLIT_NO_EMPTY)
             : [];
 
+        $existing = $module->words()->get()->keyBy('position');
+
         foreach ($contentWords as $pos => $word) {
-            ParagraphWord::create([
-                'paragraph_module_id' => $module->id,
-                'word' => $word,
-                'position' => $pos + 1,
-            ]);
+            $position = $pos + 1;
+            $row = $existing->get($position);
+
+            if ($row) {
+                if ($row->word !== $word) {
+                    $row->update(['word' => $word]);
+                }
+            } else {
+                $module->words()->create([
+                    'word' => $word,
+                    'position' => $position,
+                ]);
+            }
         }
+
+        $total = count($contentWords);
+        $existing->each(function ($row, $position) use ($total) {
+            if ($position > $total) {
+                $row->delete();
+            }
+        });
     }
 }

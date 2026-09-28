@@ -99,36 +99,41 @@ class CurriculumSeeder extends Seeder
             if ($level > 10) {
                 throw new \RuntimeException("Curriculum level {$level} exceeds maximum 10");
             }
-            $module = WordModule::updateOrCreate(
-                ['level' => $level],
-                ['title' => $titles[$level], 'is_tutorial' => false]
-            );
-            // idempotent: wipe and recreate words so re-seed without fresh doesn't duplicate levels
-            $module->words()->delete();
-            foreach ($wordsByModule[$level] as $position => $word) {
-                Word::create([
-                    'word_module_id' => $module->id,
-                    'word' => $word,
-                    'position' => $position + 1,
-                ]);
-            }
 
-            $paraModule = ParagraphModule::updateOrCreate(
-                ['level' => $level],
-                ['title' => $paraTitles[$level], 'content' => $paragraphsByLevel[$level], 'is_tutorial' => false]
-            );
-            $paraModule->words()->delete();
-            $contentWords = preg_split('/\s+/', trim($paragraphsByLevel[$level]), -1, PREG_SPLIT_NO_EMPTY);
-            foreach ($contentWords as $pos => $word) {
-                ParagraphWord::create([
-                    'paragraph_module_id' => $paraModule->id,
-                    'word' => $word,
-                    'position' => $pos + 1,
-                ]);
-            }
+            // ponytail: routes through the SAME save path the teacher UI uses.
+            // This seeder used to do words()->delete() then create() — the exact
+            // pattern saveWithWords was changed to stop doing, because the
+            // student_*_mastery FK cascade wiped the class's record on every
+            // re-seed. It was the last destructive writer left in the app.
+            //
+            // saveWithWords reuses the row at each position, so re-seeding is
+            // idempotent AND non-destructive: word ids stay stable, mastery
+            // survives, and a re-seed no longer renumbers a mid-round student's
+            // word ids. Side effect: words are stored uppercased, same as any
+            // teacher-saved module. Matching is unaffected — normalizeText()
+            // lowercases both sides before comparing.
+            WordModule::saveWithWords([
+                'level' => $level,
+                'title' => $titles[$level],
+                'words' => array_map(fn ($word) => ['word' => $word], $wordsByModule[$level]),
+            ]);
+
+            ParagraphModule::saveWithContent([
+                'level' => $level,
+                'title' => $paraTitles[$level],
+                'content' => $paragraphsByLevel[$level],
+            ]);
 
             // Tutorial rows seed once (firstOrCreate + wasRecentlyCreated) — a wording
             // change only applies on migrate:fresh --seed.
+            //
+            // ponytail: deliberately NOT routed through saveWithWords/
+            // saveWithContent. Those do updateOrCreate on `level` alone and do
+            // not carry `is_tutorial`, whose column default is FALSE — routing
+            // level 0 through them would create a non-tutorial row and
+            // WordModule::tutorial() would return null, breaking onboarding.
+            // The wasRecentlyCreated gate also means a re-seed never touches
+            // the tutorial words at all, so there is no cascade to avoid here.
             $tutorialWordModule = WordModule::firstOrCreate(
                 ['level' => 0],
                 ['title' => 'Tutorial', 'is_tutorial' => true],

@@ -6,8 +6,10 @@ use App\Models\Badges;
 use App\Models\GameSession;
 use App\Models\ParagraphModule;
 use App\Models\StudentParagraphMastery;
+use App\Models\StudentParagraphProgress;
 use App\Models\StudentProfile;
 use App\Models\StudentWordMastery;
+use App\Models\StudentWordProgress;
 use App\Models\User;
 use App\Models\WordModule;
 use App\Services\BadgeService;
@@ -530,14 +532,29 @@ class TeacherController extends Controller
             ? collect()
             : StudentWordMastery::whereIn('word_id', $allWordIds)->distinct()->pluck('word_id');
 
-        $transformedModules = $modules->map(function ($module) use ($progressWordIds) {
+        // ponytail: mastery is written PER WORD mid-round
+        // (GameplayReadMode's onWordRecognized/onMispronounce) and progress is
+        // written ONCE per finished round (useGameplayCore.persistProgress) —
+        // so neither table is a superset of the other and either one alone
+        // misses real data. A round where the recognizer matched nothing leaves
+        // a progress row and zero mastery rows; a half-read round the student
+        // abandoned leaves mastery rows and no progress row. A module with
+        // either is locked, so the lock has to key on the union. Two batched
+        // queries, not one per module. Cast to int: MySQL hands back strings.
+        $moduleIds = $modules->pluck('id')->map(fn ($id) => (int) $id);
+        $withProgress = $moduleIds->isEmpty()
+            ? collect()
+            : StudentWordProgress::whereIn('word_module_id', $moduleIds)->distinct()->pluck('word_module_id')->map(fn ($id) => (int) $id);
+
+        $transformedModules = $modules->map(function ($module) use ($progressWordIds, $withProgress) {
             return [
                 'id' => $module->id,
                 'level' => $module->level,
                 'title' => $module->title,
                 'total_points' => $module->total_points,
-                'has_progress' => $module->words->isNotEmpty()
-                    && $module->words->pluck('id')->intersect($progressWordIds)->isNotEmpty(),
+                'has_progress' => $withProgress->contains((int) $module->id)
+                    || ($module->words->isNotEmpty()
+                        && $module->words->pluck('id')->intersect($progressWordIds)->isNotEmpty()),
                 'words' => $module->words->map(function ($word) {
                     return [
                         'id' => $word->id,
@@ -610,6 +627,30 @@ class TeacherController extends Controller
             ]);
         }
 
+        // ponytail: the modals hide the Save button entirely once a module is
+        // locked, so this gate is the ENFORCEMENT, not a second warning — it
+        // also covers a raw PUT or a stale page. `force` is the deliberate
+        // escape hatch for a locked module and is NOT exposed by any UI: it
+        // exists so a module with student data is never destroyed by accident.
+        $existingModule = WordModule::where('level', $request->level)->first();
+        if ($existingModule && ! $request->boolean('force')) {
+            $existingWords = $existingModule->words()->get(['id', 'word']);
+            $unchanged = $existingModule->title === $request->title
+                && $existingWords->pluck('word')->map(fn ($w) => strtolower($w))->values()->all()
+                    === $normalized->values()->all();
+
+            $hasMastery = $existingWords->isNotEmpty() && DB::table('student_word_mastery')
+                ->whereIn('word_id', $existingWords->pluck('id'))
+                ->exists();
+
+            if (! $unchanged && $hasMastery) {
+                return redirect()->back()->with(
+                    'error',
+                    'Level '.$request->level.' is locked — students have already played it, so its words can no longer be changed.'
+                );
+            }
+        }
+
         WordModule::saveWithWords($request->all());
 
         return redirect()->back()->with('success', 'Word Blast module saved.');
@@ -617,10 +658,41 @@ class TeacherController extends Controller
 
     public function paragraphModules()
     {
-        $modules = ParagraphModule::all();
+        // with('words') is load-bearing twice: the has_progress exists-check below
+        // needs the ids, and it also kills the N+1 the `total_score` accessor
+        // caused on ParagraphModule::all() (it fell back to words()->count()).
+        $modules = ParagraphModule::with('words')->get();
+
+        // Same batched exists-check as wordModules() — one query for the whole
+        // page, not one per module. Story Quest needs this at least as much as
+        // Word Blast: saveWithContent() derives its word rows from the free-text
+        // content, so an edit moves totalPossible and orphans every
+        // paragraph_word_id a live round is still holding.
+        $allWordIds = $modules->flatMap(fn ($module) => $module->words->pluck('id'))->unique()->values();
+        $progressWordIds = $allWordIds->isEmpty()
+            ? collect()
+            : StudentParagraphMastery::whereIn('paragraph_word_id', $allWordIds)->distinct()->pluck('paragraph_word_id');
+
+        // Same union as wordModules() — see the note there for why mastery alone
+        // is not enough. Story Quest needs it at least as much: its word rows
+        // are derived from free text, so an edit also moves totalPossible and
+        // orphans every paragraph_word_id a live round is still holding.
+        $moduleIds = $modules->pluck('id')->map(fn ($id) => (int) $id);
+        $withProgress = $moduleIds->isEmpty()
+            ? collect()
+            : StudentParagraphProgress::whereIn('paragraph_module_id', $moduleIds)->distinct()->pluck('paragraph_module_id')->map(fn ($id) => (int) $id);
+
+        $transformedModules = $modules->map(fn ($module) => array_merge(
+            $module->toArray(),
+            [
+                'has_progress' => $withProgress->contains((int) $module->id)
+                    || ($module->words->isNotEmpty()
+                        && $module->words->pluck('id')->intersect($progressWordIds)->isNotEmpty()),
+            ],
+        ));
 
         return Inertia::render('Teacher/Paragraph', [
-            'modules' => $modules,
+            'modules' => $transformedModules,
         ]);
     }
 
@@ -638,6 +710,30 @@ class TeacherController extends Controller
             'title' => 'required|string|max:255',
             'content' => 'required|string',
         ]);
+
+        // Same `force` escape contract as updateWordModule — see the note there.
+        // The Save button is hidden outright for a locked module, so this is the
+        // enforcement. This one matters more: saveWithContent() DERIVES the word
+        // rows from the free-text content, so an edit also moves totalPossible
+        // and orphans every paragraph_word_id a live round is still holding.
+        $existingModule = ParagraphModule::where('level', $request->level)->first();
+        if ($existingModule && ! $request->boolean('force')) {
+            $existingWords = $existingModule->words()->get(['id', 'word']);
+            $derived = preg_split('/\s+/', trim($request->content), -1, PREG_SPLIT_NO_EMPTY);
+            $unchanged = $existingModule->title === $request->title
+                && $existingWords->pluck('word')->values()->all() === ($derived === false ? [] : $derived);
+
+            $hasMastery = $existingWords->isNotEmpty() && DB::table('student_paragraph_mastery')
+                ->whereIn('paragraph_word_id', $existingWords->pluck('id'))
+                ->exists();
+
+            if (! $unchanged && $hasMastery) {
+                return redirect()->back()->with(
+                    'error',
+                    'Level '.$request->level.' is locked — students have already played it, so its content can no longer be changed.'
+                );
+            }
+        }
 
         ParagraphModule::saveWithContent($request->all());
 

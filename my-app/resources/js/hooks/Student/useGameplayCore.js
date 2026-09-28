@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useMemo, useRef, useSyncExternalStore
 import { useCountdown } from "./useCountdown";
 import { router } from "@inertiajs/react";
 import { playSuccessSound, playFeedbackSound, playMispronounceFeedback } from "@/utils/sounds";
-import { readResumeSession, clearResumeSession, readPendingSession, writePendingSession, clearPendingSession } from "@/utils/resumeStorage";
+import { readResumeSession, writeResumeSession, clearResumeSession, readPendingSession, writePendingSession, clearPendingSession } from "@/utils/resumeStorage";
 import { normalizeText as normalizeWord } from "@/lib/speechUtils";
 import { clearAllTimers } from "@/lib/speechProcessors";
 import { subscribe as subscribeConnection, isReachable } from "@/utils/connection";
@@ -25,6 +25,10 @@ export function useGameplayCore({
     totalWords = 0,
     moduleId,
     saveEndpoint,
+    // ponytail: which game owns this round. NOT optional and NOT defaulted —
+    // WordModule and ParagraphModule share integer ids per level, so a
+    // resume record with no scope would be readable by both games.
+    scope,
     onWordRecognized,
     onMispronounce,
     resumeData,
@@ -33,7 +37,7 @@ export function useGameplayCore({
 }) {
     const resume = useMemo(() => {
         if (typeof window === "undefined") return null;
-        return resumeData ? resumeData : (moduleId ? readResumeSession(moduleId) : null);
+        return resumeData ? resumeData : (moduleId ? readResumeSession(moduleId, scope) : null);
     }, [resumeData, moduleId]);
 
     const [currentWordIndex, setCurrentWordIndex] = useState(() => resume?.currentWordIndex ?? 0);
@@ -121,12 +125,14 @@ export function useGameplayCore({
             clearPendingSession(moduleId);
             return;
         }
-        const pending = readPendingSession(moduleId);
+        const pending = readPendingSession(moduleId, scope);
         if (!pending) return;
         if (hasSaved.current) return;
         hasSaved.current = true;
         setIsSaving(true);
-        const { saveEndpoint: pendingEndpoint, createdAt: _ca, moduleId: _mid, ...pendingPayload } = pending;
+        // strip the storage-only fields so the replay POST is byte-identical to
+        // the original — scope is ours, the server has never seen it.
+        const { saveEndpoint: pendingEndpoint, createdAt: _ca, moduleId: _mid, scope: _sc, ...pendingPayload } = pending;
         // ponytail: saveEndpoint is client-controlled — whitelist to prevent tampered replay to arbitrary URL
         const ALLOWED = ["/student/saveWordProgress", "/student/saveParagraphProgress"];
         const endpoint = pendingEndpoint && ALLOWED.includes(pendingEndpoint) ? pendingEndpoint : saveEndpoint;
@@ -151,18 +157,29 @@ export function useGameplayCore({
         }
         // ponytail: clamp timeLeft 0-60 and stamp savedAt for wall-clock correction on resume (prevents 60s reset exploit)
         const tl = Math.max(0, Math.min(60, Math.floor(timeLeft)));
-        sessionStorage.setItem(
-            `wordomaticResume:${moduleId}`,
-            JSON.stringify({
-                moduleId,
-                currentWordIndex,
-                wordsSmashed,
-                currentStreak,
-                maxStreak,
-                timeLeft: tl,
-                savedAt: Date.now(),
-            })
-        );
+        // ponytail: wordOrder is the play order, so the index and the array it
+        // points into are written together — a reshuffle that re-ran on mount
+        // would land a restored index on a different word, and words_processed
+        // is only a COUNT, so the server would never notice. Ids, not positions,
+        // because a teacher re-save keeps ids (docs/MODULES.md). Written here
+        // (ACTIVE-gated) rather than on mount: a resume record existing at all
+        // makes this hook boot into "ACTIVE" (see gameState above), and
+        // ReadModeMainContent renders null unless isActive — so the first
+        // reshuffle window is invisible, while a mount-time write would
+        // auto-start the round and skip the mic permission prompt.
+        // Story Quest's own effect writes this same key afterwards and wins the
+        // write; it carries no wordOrder because paragraphs keep authored order.
+        writeResumeSession(moduleId, {
+            moduleId,
+            scope,
+            currentWordIndex,
+            wordsSmashed,
+            currentStreak,
+            maxStreak,
+            timeLeft: tl,
+            savedAt: Date.now(),
+            wordOrder: wordsRef.current.map((w) => w.id),
+        });
     }, [
         gameState,
         currentWordIndex,
@@ -271,6 +288,7 @@ export function useGameplayCore({
             // while finishRound is slow still has the payload to replay.
             // client_token makes the replay idempotent server-side (no duplicate row).
             writePendingSession(moduleId, {
+                scope,
                 saveEndpoint,
                 ...payload,
                 createdAt: Date.now(),

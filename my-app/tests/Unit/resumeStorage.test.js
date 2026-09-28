@@ -148,4 +148,49 @@ describe("resumeStorage — pending commit (F5 while finishRound slow)", () => {
         writePendingSession(13, { saveEndpoint: "/student/saveWordProgress", words_smashed: 1, words_processed: 1, streak: 0, createdAt: 1 });
         expect(readPendingSession(13).saveEndpoint).toBe("/student/saveWordProgress");
     });
+
+    // WordModule id 3 and ParagraphModule id 3 are the SAME integer —
+    // CurriculumSeeder alternates both inside one range(1,10) loop — so both
+    // games read and write `wordomaticResume:3`. `scope` is what tells the two
+    // records apart. Without it, a Story Quest round resumed as a Word Blast
+    // round: wrong index into 10 words, and a wordOrder of paragraph word ids.
+    describe("scope — word vs para never cross-read (ids collide per level)", () => {
+        test("a para record is invisible to Word Blast", () => {
+            writeResumeSession(3, { scope: "para", currentWordIndex: 2, wordsSmashed: 2, timeLeft: 40 });
+            expect(readResumeSession(3, "word")).toBeNull();
+        });
+
+        test("a word record is invisible to Story Quest", () => {
+            writeResumeSession(4, { scope: "word", currentWordIndex: 7, wordsSmashed: 7, timeLeft: 40 });
+            expect(readResumeSession(4, "para")).toBeNull();
+        });
+
+        test("each game still reads its OWN record", () => {
+            writeResumeSession(5, { scope: "word", currentWordIndex: 3, wordsSmashed: 3, timeLeft: 30 });
+            expect(readResumeSession(5, "word").currentWordIndex).toBe(3);
+            expect(readResumeSession(5, "para")).toBeNull();
+        });
+
+        test("a pre-deploy record with no scope still resumes in either game", () => {
+            // Nobody may lose a round to this deploy: a round is 60s, so an
+            // unscoped record can only predate the change.
+            writeResumeSession(6, { currentWordIndex: 4, wordsSmashed: 4, timeLeft: 25 });
+            expect(readResumeSession(6, "word").currentWordIndex).toBe(4);
+            expect(readResumeSession(6, "para").currentWordIndex).toBe(4);
+        });
+
+        test("no scope argument at all still reads (callers that omit it)", () => {
+            writeResumeSession(8, { scope: "word", currentWordIndex: 1, timeLeft: 60 });
+            expect(readResumeSession(8)).not.toBeNull();
+        });
+
+        test("pending commits are scoped too — no cross-game replay", () => {
+            // An unscoped pending replay would POST a paragraph payload to
+            // saveWordProgress via the whitelist.
+            writePendingSession(10, { scope: "word", saveEndpoint: "/student/saveWordProgress", words_smashed: 1, words_processed: 1, streak: 1, createdAt: 1 });
+            expect(readPendingSession(10, "para")).toBeNull();
+            expect(readPendingSession(10, "word")).not.toBeNull();
+        });
+    });
 });
+

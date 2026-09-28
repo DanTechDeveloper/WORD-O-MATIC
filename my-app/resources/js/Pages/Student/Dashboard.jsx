@@ -177,7 +177,7 @@ export default function Dashboard({
 
                 {showSkipConfirm && (
                     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
-                        <div className="absolute inset-0 bg-background/80" onClick={() => setShowSkipConfirm(false)} />
+                        <div className="absolute inset-0 bg-background/80" data-tap-anywhere-ignore onClick={() => setShowSkipConfirm(false)} />
                         <div className="relative bg-surface border-2 border-outline/20 rounded-2xl p-6 sm:p-8 max-w-md w-full shadow-[8px_8px_0_0_#4c1d95]">
                             <div className="flex items-center gap-3 mb-4">
                                 <span className="material-symbols-outlined text-3xl text-amber-400" style={{ fontVariationSettings: "'FILL' 1" }}>warning</span>

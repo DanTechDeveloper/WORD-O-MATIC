@@ -1,7 +1,17 @@
 import { Head } from "@inertiajs/react";
 import DashboardLayout from "@/Layouts/Teacher/DashboardLayout";
 import { Link, usePage } from "@inertiajs/react";
-import { attentionMeta, attemptsShown } from "@/utils/masteryLabels.js";
+import {
+    attentionMeta,
+    attemptsShown,
+    groupSentences,
+    mergeSentenceWords,
+    sentenceVerdict,
+    verdict,
+    VERDICT,
+    VERDICT_META,
+    VERDICT_STYLE,
+} from "@/utils/masteryLabels.js";
 import LiveStatusDot from "@/Components/Shared/LiveStatusDot";
 import { useLiveStats } from "@/hooks/Teacher/useLiveStats";
 import { getDeadlineInfo } from "@/hooks/Student/useDeadlineStatus";
@@ -43,23 +53,36 @@ function WordChip({ word, stat, threshold, className }) {
 
 function SentencePerformanceBlock({ stat, threshold }) {
     const words = stat.words || [];
-    const problems = words.filter((w) => Number(w.failed_attempts || 0) > 0);
+    // The drill list is MERGED (one row per distinct word, attempts summed) but
+    // the sentence text below is POSITIONAL — a sentence that says "a … a"
+    // must still show two chips, because that is what the child actually read.
+    const problems = mergeSentenceWords(words, threshold).filter((w) => w.failed_attempts > 0);
     const failedCount = Number(stat.failed_attempts || 0);
-    const isMastered = stat.mastery === "mastered";
-    const isTraining = stat.mastery === "training";
-    const attempts = isMastered ? failedCount + 1 : failedCount;
-    const sentenceCompleted = isMastered && failedCount > 0;
-    const sentenceNeedsAttention = isTraining && failedCount >= threshold;
-    const attemptLabel
-        = !isMastered && failedCount === 0
-            ? "Not attempted yet"
-            : `Attempts: ${attempts}`;
+
+    // G1: derived from the WORDS, never from failedCount. The old rule compared
+    // the summed total to a per-word threshold, so a 5-word sentence at one miss
+    // each was flagged while every word below it read "fine".
+    const sentenceVerdictValue = sentenceVerdict(words, threshold);
+    const meta = VERDICT_META[sentenceVerdictValue];
+
     return (
         <div className="px-3 py-2 sm:px-4 sm:py-3 bg-surface-container border-2 border-outline/20 rounded-xl text-xs sm:text-sm leading-relaxed block">
+            {/* Grouping by verdict scatters a module's sentences across groups,
+                so every block names its own module — otherwise the teacher sees
+                a bare sentence with no idea where it came from. */}
+            {stat.level && (
+                <div className="text-cyan-400 font-black uppercase text-[10px] sm:text-xs tracking-widest mb-2 flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 shrink-0"></div>
+                    {stat.level}
+                </div>
+            )}
             <p className="font-black text-white text-sm sm:text:base leading-loose">
                 {words.map((w, i) => {
-                    const failed = Number(w.failed_attempts || 0);
-                    if (failed === 0) {
+                    // Styling comes from the verdict, not from "did it fail?" —
+                    // a 4-try word and a 1-try word used to paint identically red,
+                    // so the count had to be read off the drill list below.
+                    const style = VERDICT_STYLE[verdict(w.mastery, w.failed_attempts, threshold)];
+                    if (!style) {
                         return (
                             <span key={i}>
                                 {w.word}
@@ -67,49 +90,42 @@ function SentencePerformanceBlock({ stat, threshold }) {
                             </span>
                         );
                     }
-                    const recovered = w.mastery === "mastered";
                     return (
                         <span key={i}>
-                            <span
-                                className={`px-1.5 py-0.5 rounded-md border-2 ${recovered ? "border-emerald-400/70 text-emerald-300 bg-emerald-400/10" : "border-red-500/70 text-red-300 bg-red-500/10"}`}
-                            >
-                                {w.word}
-                            </span>
+                            <span className={`px-1.5 py-0.5 rounded-md border-2 ${style.chip}`}>{w.word}</span>
                             {" "}
                         </span>
                     );
                 })}
             </p>
             <div className="mt-2 text-[10px] sm:text-xs uppercase tracking-widest text-on-surface-variant">
-                {attemptLabel}
-                {sentenceCompleted && (
-                    <span className="text-emerald-400 ml-1">· Recovered</span>
-                )}
-                {sentenceNeedsAttention && (
-                    <span className="text-red-500 ml-1">· Needs Attention</span>
-                )}
-                {isMastered && !sentenceCompleted && (
-                    <span className="text-emerald-400 ml-1">· Mastered</span>
-                )}
+                {/* The number is a sum of the words' RECORDED FAILURES, never
+                    tries and never a score. The 5s silence watchdog also
+                    increments it, so a word the child never attempted can carry
+                    a failure — which is also why it gets no +1: a sentence has
+                    no single winning try, and the child may not have tried at
+                    all. */}
+                {sentenceVerdictValue === VERDICT.NOT_ATTEMPTED
+                    ? "Not attempted yet"
+                    : `${failedCount} recorded failure${failedCount === 1 ? "" : "s"} across the sentence`}
+                {!meta.quiet && <span className={`${meta.cls} ml-1`}>· {meta.label}</span>}
             </div>
             {problems.length > 0 && (
                 <ul className="mt-2 space-y-1 text-[10px] sm:text-xs uppercase tracking-widest">
-                    {problems.map((w, i) => {
-                        const failed = Number(w.failed_attempts || 0);
-                        const recovered = w.mastery === "mastered";
-                        const attention = recovered
-                            ? null
-                            : attentionMeta({ mastery: w.mastery, failed_attempts: failed }, threshold);
+                    {problems.map((w) => {
+                        const wordMeta = VERDICT_META[w.verdict];
+                        // "N recorded failures", never "N tries". failed_attempts
+                        // is NOT a count of the child's pronunciation attempts —
+                        // the 5s silence watchdog fires onMispronounce too, so a
+                        // word the child never even tried (stalled, confused,
+                        // wandered off) still increments it. Claiming "took 4
+                        // tries" would assert four attempts that never happened.
                         return (
-                            <li key={`${i}-${w.word}`} className="flex items-center gap-1.5">
-                                <span className={`w-2 h-2 rounded-full shrink-0 ${recovered ? "bg-emerald-400 shadow-[0_0_6px_#34d399]" : "bg-red-500 shadow-[0_0_6px_#ef4444]"}`} />
+                            <li key={w.word} className="flex items-center gap-1.5">
+                                <span className={`w-2 h-2 rounded-full shrink-0 ${VERDICT_STYLE[w.verdict].dot}`} />
                                 <span className="font-black text-white">{w.word}</span>
-                                <span className="text-on-surface-variant">— {failed} Attempts</span>
-                                {recovered ? (
-                                    <span className="text-emerald-400">· Recovered</span>
-                                ) : attention ? (
-                                    <span className={attention.cls}>· {attention.label}</span>
-                                ) : null}
+                                <span className="text-on-surface-variant">— {w.failed_attempts} Attempt{w.failed_attempts === 1 ? "" : "s"}</span>
+                                {!wordMeta.quiet && <span className={wordMeta.cls}>· {wordMeta.label}</span>}
                             </li>
                         );
                     })}
@@ -142,10 +158,7 @@ export default function StudentDetail({ data }) {
     const src = live.data ? { ...data, ...live.data } : data;
     const _readCurriculum = src.readCurriculum || [];
     const _speakCurriculum = src.speakCurriculum || [];
-    const wbMasteredAll = _readCurriculum.flatMap((l) => aggregateZoneRows(l.word_stats).mastered);
-    const wbTrainingAll = _readCurriculum.flatMap((l) => aggregateZoneRows(l.word_stats).training);
     const sqSentencesAll = _speakCurriculum.flatMap((l) => l.sentence_stats || []);
-    const sqStruggling = sqSentencesAll.filter((s) => (s.words || []).some((w) => Number(w.failed_attempts || 0) > 0));
     const hasWbModules = _readCurriculum.length > 0;
     const hasSqModules = _speakCurriculum.length > 0;
 
@@ -315,6 +328,17 @@ export default function StudentDetail({ data }) {
         : "N/A";
     const wbProgress = calcOverallProgress(student.readCurriculum);
     const sqProgress = calcSentenceProgress(student.speakCurriculum);
+
+    // One rule, two shapes. Both group by the same verdict() in the same order;
+    // Word Blast omits the untouched bucket (100 potential words across 10 levels
+    // is scope, not signal — it renders as a count line instead) while Story
+    // Quest includes it (20 sentences, and the parent email already shows them).
+    const wbMasteredAll = _readCurriculum.flatMap((l) => aggregateZoneRows(l.word_stats).mastered);
+    const wbTrainingAll = _readCurriculum.flatMap((l) => aggregateZoneRows(l.word_stats).training);
+    // Grouped by verdict so the teacher opens on the words that need work. Every
+    // sentence renders exactly once, and each one names its own module because
+    // grouping by verdict scatters a module's sentences across groups.
+    const { groups: sqGroups, counts: sqCounts } = groupSentences(_speakCurriculum, attentionThreshold);
 
     const latestBadge = src.latestBadge;
     const badgeCard =
@@ -658,30 +682,58 @@ export default function StudentDetail({ data }) {
                         </h3>
                     </div>
                     {sqSentencesAll.length > 0 && (
-                        <p className="text-on-surface-variant font-black uppercase text-[10px] sm:text-xs tracking-widest">
-                            {sqSentencesAll.length} sentences total, {sqStruggling.length} need attention
-                        </p>
+                        <>
+                            {/* Counted by verdict, not by "had any slip ever" — the
+                                old `> 0` filter reported a strong student as needing
+                                attention on nearly every sentence. */}
+                            <p className="text-on-surface-variant font-black uppercase text-[10px] sm:text-xs tracking-widest">
+                                {sqSentencesAll.length} sentences total ·{" "}
+                                {sqCounts[VERDICT.NEEDS_ATTENTION]} need attention · {sqCounts[VERDICT.RECOVERED]} recovered ·{" "}
+                                {sqCounts[VERDICT.NOT_ATTEMPTED]} not attempted yet
+                            </p>
+                        </>
                     )}
                     <div className="bg-surface-container-lowest rounded-xl border-4 border-outline/20 p-4 sm:p-6 md:p-8 min-h-[400px] max-h-[600px] overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-surface-container-high [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-cyan-400">
-                        {sqSentencesAll.length === 0 ? (
+                        {!hasSqModules ? (
+                            /* G5: a level always yields at least one sentence
+                               (buildLevels has a fallback), so the old
+                               "All sentences mastered!" branch was unreachable.
+                               A fully-mastered student now sees the collapsed
+                               Mastered group instead of an empty state. */
                             <div className="flex flex-col items-center justify-center py-16 text-center">
                                 <span className="material-symbols-outlined text-4xl text-on-surface-variant/40 mb-3" aria-hidden="true">menu_book</span>
-                                <p className="text-on-surface-variant font-black uppercase text-xs tracking-widest">{!hasSqModules ? "No Story Quest modules yet" : "All sentences mastered!"}</p>
-                                <p className="text-on-surface-variant/60 text-xs font-semibold mt-1">{!hasSqModules ? "Create Level 1 in Story Quest to get started." : "Practice completed sentences to build mastery."}</p>
+                                <p className="text-on-surface-variant font-black uppercase text-xs tracking-widest">No Story Quest modules yet</p>
+                                <p className="text-on-surface-variant/60 text-xs font-semibold mt-1">Create Level 1 in Story Quest to get started.</p>
                             </div>
                         ) : (
-                            student.speakCurriculum.map((level, i) => {
-                                const rows = level.sentence_stats || [];
-                                if (rows.length === 0) return null;
+                            sqGroups.map((group) => {
+                                const meta = VERDICT_META[group.key];
+                                const dot = group.key === VERDICT.NEEDS_ATTENTION
+                                    ? "bg-red-500 shadow-[0_0_8px_#ef4444]"
+                                    : group.key === VERDICT.RECOVERED
+                                      ? "bg-emerald-400 shadow-[0_0_8px_#34d399]"
+                                      : "bg-surface-container-high";
                                 return (
-                                    <div key={i} className="mb-8 last:mb-0">
-                                        <div className="text-cyan-400 font-black uppercase text-xs tracking-widest mb-4 flex items-center gap-2">
-                                            <div className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_#22d3ee]"></div>
-                                            {level.level}
+                                    <div key={group.key} className="mb-6 last:mb-0">
+                                        <div
+                                            className={`font-black uppercase text-xs tracking-widest mb-3 flex items-center gap-2 ${meta.cls}`}
+                                        >
+                                            <div className={`w-2 h-2 rounded-full shrink-0 ${dot}`} />
+                                            {group.title} ({group.rows.length})
                                         </div>
+                                        {/* No group is collapsed. "Mastered" used to
+                                            collapse to a one-line summary, which hid
+                                            every sentence AND its module — and for a
+                                            brand-new student it claimed untouched
+                                            sentences were "conquered on the first
+                                            try". */}
                                         <div className="flex flex-col gap-3">
-                                            {rows.map((row) => (
-                                                <SentencePerformanceBlock key={`${i}-${row.sentence_index ?? row.sentence}`} stat={row} threshold={attentionThreshold} />
+                                            {group.rows.map((row) => (
+                                                <SentencePerformanceBlock
+                                                    key={`${row.level}-${row.sentence_index ?? row.sentence}`}
+                                                    stat={row}
+                                                    threshold={attentionThreshold}
+                                                />
                                             ))}
                                         </div>
                                     </div>

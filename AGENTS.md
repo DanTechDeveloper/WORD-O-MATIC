@@ -15,7 +15,7 @@ ASR truth: `hooks/Student/useDeepgramRecognition.js` → `lib/speechProcessors.j
 | `composer run test` | **PHP only** — `config:clear` + `php artisan test` |
 | `npm run test` | `vitest run` (JS only) — same as `npx vitest run` |
 | `php artisan test --filter=TestName` | Single PHP test |
-| `php artisan migrate:fresh --seed` | teacher `admin`/`password` + curriculum + badges + **100 students / 3 sectors**. `StudentSeeder` is **live** in `DatabaseSeeder` and is **MySQL-only** (`SET FOREIGN_KEY_CHECKS=0`) — `--seed` fails on SQLite |
+| `php artisan migrate:fresh --seed` | teacher `admin`/`password` + curriculum + badges + **100 students / 3 sectors**. `StudentSeeder` is **live** in `DatabaseSeeder` and is **MySQL-only** (`SET FOREIGN_KEY_CHECKS=0`) — `--seed` fails on SQLite. **Seeded = demo students have "played" Levels 1-8, so 1-8 are LOCKED in the teacher module editor and 9-10 stay editable** — the lock keys on mastery OR progress, and `StudentSeeder`'s 3 "perfect" students are capped at 8 (`$perfectThrough`) for exactly this reason; raising that back to 10 locks every module and leaves the editor with nothing to demo. For a fully clean editable curriculum, `migrate:fresh` **without** `--seed`. Note production never seeds: `composer run setup` is `migrate --force` only |
 | `npm run build` / `npm run dev` | Vite build / dev |
 | `vendor/bin/pint` | PSR-12 fix (not in CI) |
 

@@ -273,6 +273,16 @@ class StudentController extends Controller
             ->firstOrFail();
         $id = $module->id;
 
+        // ponytail: play order is NOT decided here. Word Blast shuffles on the
+        // client (GameplayReadMode resolveWordOrder) and persists the order in
+        // the resume record, because the client is what holds currentWordIndex
+        // — a server-side order would have to be stored to survive a re-request,
+        // and words_processed is only a count, so a mismatch is never caught.
+        // A hash(seed:id) order was tried here and removed: it is stable per
+        // student forever, which kills the "randomized per gameplay" doc
+        // promise. This endpoint stays order-blind; `position` still drives the
+        // teacher report's $wordStats[$w->position - 1] slice.
+
         // ponytail: past deadline = practice — Level Page stays open until GameResults, scored writes readonly (finishRound isPractice unlocks status only)
         // KEEP mid-game readonly (cutoff hit while playing still readonly), but don't block entry.
         // if (! $module->is_tutorial && $this->reportService->cutoff()) redirect removed.

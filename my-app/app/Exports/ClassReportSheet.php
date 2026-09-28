@@ -127,13 +127,15 @@ class ClassReportSheet implements FromCollection, WithCharts, WithColumnWidths, 
     public function charts()
     {
         $studentCount = max(count($this->students), 1);
-        $studentEndRow = $studentCount + 1;
         // Summary block sits below the roster: a spacer + header row push the
         // 5 category rows to Excel rows $studentCount+4 .. +8 (feeds the pie).
         $summaryStart = $studentCount + 4;
         $summaryEnd = $summaryStart + 4;
 
-        // 1. Pie Chart for Class Health Distribution (summary block below roster)
+        // Pie Chart for Class Health Distribution (summary block below roster).
+        // This is the only chart: the old per-student accuracy bar chart
+        // re-plotted columns B and C, which sit in the same tab 20 characters
+        // to the left of it.
         $categoriesPie = [
             new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_STRING, "'Class Summary'!\$E\$" . $summaryStart . ':$E$' . $summaryEnd, null, 5),
         ];
@@ -155,40 +157,9 @@ class ClassReportSheet implements FromCollection, WithCharts, WithColumnWidths, 
         $titlePie = new Title('Class Health Distribution');
 
         $pieChart = new Chart('health_pie_chart', $titlePie, $legendPie, $plotAreaPie);
-        $pieChart->setTopLeftCell('N2');
-        $pieChart->setBottomRightCell('V16');
+        $pieChart->setTopLeftCell('H2');
+        $pieChart->setBottomRightCell('P16');
 
-        // 2. Bar (Column) Chart for Student Accuracies (A2:A{N} vs D2:D{N} & E2:E{N})
-        $categoriesBar = [
-            new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_STRING, "'Class Summary'!\$A\$2:\$A\$".$studentEndRow, null, $studentCount),
-        ];
-        $labelsBar = [
-            new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_STRING, "'Class Summary'!\$B\$1", null, 1),
-            new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_STRING, "'Class Summary'!\$C\$1", null, 1),
-        ];
-        $valuesBar = [
-            new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_NUMBER, "'Class Summary'!\$B\$2:\$B\$".$studentEndRow, null, $studentCount),
-            new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_NUMBER, "'Class Summary'!\$C\$2:\$C\$".$studentEndRow, null, $studentCount),
-        ];
-
-        $seriesBar = new DataSeries(
-            DataSeries::TYPE_BARCHART,
-            DataSeries::GROUPING_STANDARD,
-            range(0, count($valuesBar) - 1),
-            $labelsBar,
-            $categoriesBar,
-            $valuesBar
-        );
-        $seriesBar->setPlotDirection(DataSeries::DIRECTION_COL);
-
-        $plotAreaBar = new PlotArea(null, [$seriesBar]);
-        $legendBar = new Legend(Legend::POSITION_TOPRIGHT, null, false);
-        $titleBar = new Title('Student Accuracy Comparison (%)');
-
-        $barChart = new Chart('accuracy_bar_chart', $titleBar, $legendBar, $plotAreaBar);
-        $barChart->setTopLeftCell('N18');
-        $barChart->setBottomRightCell('V35');
-
-        return [$pieChart, $barChart];
+        return [$pieChart];
     }
 }

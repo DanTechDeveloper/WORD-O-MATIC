@@ -30,7 +30,6 @@ export default function TutorialGuide({ steps = [], stepIndex = 0, color = "acce
     const step = steps[stepIndex];
     if (hidden || !bodyUrl || !step) return null;
     const actionable = isActionStep(step);
-    const isLast = stepIndex >= steps.length - 1;
     return (
         <>
             <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[60] flex gap-3">
@@ -50,7 +49,6 @@ export default function TutorialGuide({ steps = [], stepIndex = 0, color = "acce
                     color={color}
                     onClick={actionable ? undefined : onTap}
                     position="bottom-right"
-                    footerText={actionable ? "Now you try it! 👇" : isLast ? "Tap to finish!" : "Tap here to continue →"}
                     variant="mini"
                 />
             )}

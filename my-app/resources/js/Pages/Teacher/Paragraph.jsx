@@ -16,6 +16,7 @@ export default function Paragraph({ modules }) {
                 entries: moduleData?.content ? [moduleData.content] : [],
                 title: moduleData ? moduleData.title : `Module ${level}`,
                 totalScore: moduleData ? moduleData.total_score : 0,
+                hasProgress: moduleData ? moduleData.has_progress : false,
             };
         });
         return data;
@@ -42,13 +43,24 @@ export default function Paragraph({ modules }) {
         setIsModalOpen(false);
     };
 
-    const handleSaveEntries = (level, newEntries, newTitle, newPoints) => {
+    // The `force` param and payload field are a DEAD escape hatch kept for the
+    // server contract: the modal no longer offers any way to rewrite a module
+    // that already has student data, and TeacherController only accepts
+    // force=1 from a deliberate out-of-band request. Do not add UI for it.
+    const handleSaveEntries = (
+        level,
+        newEntries,
+        newTitle,
+        newPoints,
+        force = false,
+    ) => {
         router.put(
             "/teacher/paragraphModules",
             {
                 level: level,
                 title: newTitle,
                 content: newEntries[0] || "",
+                force: force,
             },
             {
                 onSuccess: () => closeModal(),
@@ -150,6 +162,7 @@ export default function Paragraph({ modules }) {
                     title={entriesByLevel[selectedLevel]?.title}
                     totalScore={entriesByLevel[selectedLevel]?.totalScore}
                     onSave={handleSaveEntries}
+                    hasProgress={entriesByLevel[selectedLevel]?.hasProgress}
                 />
             </DashboardLayout>
         </>

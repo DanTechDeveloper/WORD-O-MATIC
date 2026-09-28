@@ -36,7 +36,53 @@ Tutorial modules (`is_tutorial=true`, `level=0`) seeded via `CurriculumSeeder`. 
 - No cross-module reuse — a word already used in another level (incl. the tutorial module, level 0) fails: `"X" is already used in Level N.` The module being edited is excluded, so resaving its own words is allowed.
 - Words are stored uppercased (`WordModule::saveWithWords`).
 - `WordInputModal.jsx` offers a "Paste 10 words" bulk fill (split on spaces/commas; extras past the 10th are silently dropped) and live per-row duplicate detection before submit.
-- If the module has student progress (`has_progress` from `wordModules()`), saving asks for a `window.confirm` because saving deletes and recreates the module's words.
+- Saving is **non-destructive**: `WordModule::saveWithWords` reuses the row at
+  each `position` and deletes only positions that disappeared, so a word that did
+  not change keeps its `id`. `student_word_mastery` cascades off `words.id`, so
+  this is what stops an ordinary edit from wiping the class's mastery. It also
+  keeps a mid-round student's `updateWordMastery` POST resolving instead of 422ing
+  on dead ids. Two words that are *swapped* still renumber both.
+- **A module with student data is LOCKED — not editable at all.** The Save
+  button is *not rendered* (not disabled) and the inputs are `readOnly`; only
+  Cancel remains. Locked means `has_progress` is true, which is
+  **mastery OR progress** (see below) — deliberately not mastery alone, because
+  mastery is written **per word mid-round** while progress is written **once per
+  finished round**, so neither table is a superset of the other. A round where
+  the recognizer matched nothing leaves a progress row and zero mastery rows; a
+  half-read round the student abandoned leaves mastery rows and no progress row.
+- The lock is **permanent**. It is not lifted by clearing the report deadline.
+  There is **no UI unlock** by design — "reset and unlock" would delete the
+  students' records to fix a teacher's typo, which is not a fair trade.
+- `updateWordModule` / `updateParagraphModule` **enforce** the same rule
+  server-side, so a raw `PUT` or a stale page is refused with a flash `error`.
+  `force=1` on the request is the **only** escape and is intentionally not
+  exposed by any UI. An unchanged re-save does not need it. A **title-only** edit
+  does count as changed, because the save rewrites the word rows regardless.
+
+### The seeded-database state
+
+`migrate:fresh --seed` runs `CurriculumSeeder` + `StudentSeeder`, and the seeded
+demo students have real progress and mastery rows — so on a seeded database:
+
+| Levels | Editor |
+|---|---|
+| 1-8 | **Locked** (students have "played" them) |
+| 9-10 | **Editable** |
+
+`StudentSeeder` caps the 100-student roster at 8 levels (`$completedLevels`) and
+the 3 "perfect" students at 8 too (`$perfectThrough`, deliberately **not** 10) —
+otherwise every module would lock and the editor would have nothing to demo.
+**Do not raise either cap without re-checking the editor lock.** For a fully
+clean, fully editable curriculum, run `migrate:fresh` **without** `--seed` —
+production never seeds (`composer run setup` is `migrate --force` only).
+
+`CurriculumSeeder` writes Levels 1-10 through the same
+`WordModule::saveWithWords` / `ParagraphModule::saveWithContent` the teacher UI
+uses, so a re-seed is idempotent **and** non-destructive (word ids stay stable,
+mastery survives). The tutorial rows are the deliberate exception: they are
+gated on `wasRecentlyCreated` and are **not** routed through those helpers,
+because they do not carry `is_tutorial` (column default `false`) and would
+create a non-tutorial Level 0 that `WordModule::tutorial()` cannot find.
 
 ### Paragraph module edit rules
 
@@ -50,11 +96,21 @@ Tutorial modules (`is_tutorial=true`, `level=0`) seeded via `CurriculumSeeder`. 
   0` guard), so one would strand students at its level instead of completing
   (see CAVEATS.md BF13).
 - Words are split on whitespace and stored case-as-entered via
-  `ParagraphModule::saveWithContent` (deletes + recreates the module's words on
-  every save) — note this differs from Word Blast, which uppercases.
-- `ParagraphInputModal.jsx` disables Save while content or title is empty and
-  renders server validation errors in-modal (it never closes itself on a failed
-  save).
+  `ParagraphModule::saveWithContent` — note this differs from Word Blast, which
+  uppercases. The split is **non-destructive by position** like Word Blast, so
+  ids survive a light edit, and positions are never renumbered (that is what
+  keeps `buildLevels()`'s `$wordStats[$w->position - 1]` slice aligned with
+  `sentencesFromContent()`). **There is no word-dedup here** — a paragraph
+  legitimately repeats words, and `ReportService` says so explicitly.
+- `ParagraphInputModal.jsx` disables Save while content or title is empty, has
+  its own `saving` flag (it has no `useForm`, so a double-click would otherwise
+  fire two PUTs), and renders server validation errors in-modal (it never closes
+  itself on a failed save).- Same hard lock as Word Blast: `has_progress` (mastery **or** progress) hides
+  the Save button entirely and makes the inputs `readOnly`. Story Quest needs it
+  **more**: its word rows are derived from free text, so an edit also moves
+  `totalPossible` and orphans every `paragraph_word_id` a live round still
+  holds. Whitespace-only reformatting derives the same rows, so the server does
+  not treat it as a change.
 
 ## Student
 

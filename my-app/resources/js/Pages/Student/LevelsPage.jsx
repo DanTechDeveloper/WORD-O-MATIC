@@ -39,11 +39,15 @@ export default function LevelsPage({ modules, mode, tutorialComplete = true, tut
     const [resumeModules, setResumeModules] = useState([]);
     useEffect(() => {
         const out = [];
+        // scope: Word Blast and Story Quest share integer module ids per level,
+        // so without it this page would show a resume dot for a level the
+        // student never interrupted in THIS game.
+        const scope = isRead ? "word" : "para";
         modules?.forEach((m) => {
-            if (readResumeSession(m.id)) out.push(m.id);
+            if (readResumeSession(m.id, scope)) out.push(m.id);
         });
         setResumeModules(out);
-    }, [modules]);
+    }, [modules, isRead]);
 
     return (
             <DashboardLayout disableNav={isTutorial}>

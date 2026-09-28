@@ -65,7 +65,7 @@ export function useStoryQuestEngine({ saveEndpoint = "/student/saveParagraphProg
         if (typeof window === "undefined") return null;
         return rest.resumeData
             ? rest.resumeData
-            : (rest.moduleId ? readResumeSession(rest.moduleId) : null);
+            : (rest.moduleId ? readResumeSession(rest.moduleId, "para") : null);
     }, [rest.resumeData, rest.moduleId]);
 
     const sentenceScoresRef = useRef([]);
@@ -78,7 +78,11 @@ export function useStoryQuestEngine({ saveEndpoint = "/student/saveParagraphProg
         []
     );
 
-    const core = useGameplayCore({ ...rest, saveEndpoint, persistExtra });
+    // ponytail: scope "para" — see useWordBlastEngine. Paragraph ids collide
+    // with word ids per level, so without this a Story Quest record could be
+    // resumed by Word Blast (and its pending commit replayed to the wrong
+    // endpoint). Paragraphs are NEVER shuffled; this is identity, not order.
+    const core = useGameplayCore({ ...rest, saveEndpoint, persistExtra, scope: "para" });
 
     const [verdicts, setVerdicts] = useState(() => resume?.verdicts ?? {});
     const [sentenceScores, setSentenceScores] = useState(() => resume?.sentenceScores ?? []);
@@ -131,6 +135,7 @@ export function useStoryQuestEngine({ saveEndpoint = "/student/saveParagraphProg
         // ponytail: include savedAt so readResumeSession can correct drift; clamp timeLeft 0-60
         writeResumeSession(rest.moduleId, {
             moduleId: rest.moduleId,
+            scope: "para",
             currentWordIndex: core.currentWordIndex,
             wordsSmashed: core.wordsSmashed,
             currentStreak: 0,
