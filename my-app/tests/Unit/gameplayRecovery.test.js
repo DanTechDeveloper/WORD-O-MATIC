@@ -274,11 +274,13 @@ describe("page wiring", () => {
     test.each([
         ["GameplayReadMode", readMode],
         ["GameplaySpeakMode", speakMode],
-    ])("%s releases micLive when leaving ACTIVE", (_name, src) => {
+    ])("%s releases micLive when leaving the live-mic states", (_name, src) => {
         // sounds.js early-returns the /student click listener on micLive —
         // leaving it true after the round kills BGM and every SFX.
+        // COUNTDOWN is live-mic too: BGM pauses there (not ACTIVE) so the
+        // permission dialog doesn't collide with it.
         expect(src).toMatch(
-            /if \(gameState === "ACTIVE"\) \{[\s\S]*?\} else \{[\s\S]*?setMicLive\(false\);/,
+            /if \(gameState === "COUNTDOWN" \|\| gameState === "ACTIVE"\) \{[\s\S]*?\} else \{[\s\S]*?setMicLive\(false\);/,
         );
     });
 });

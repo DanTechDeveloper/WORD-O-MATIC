@@ -313,6 +313,9 @@ describe("useDeepgramRecognition — stale guards", () => {
         // step, so the recognizer must keep one continuous transcript: the
         // sentence-mode reset (resetKey) that used to wipe it at every period
         // is gone, and a whole-paragraph final still aligns and advances.
+        // The advance is grace-gated (800ms per-word, same as the word-mode
+        // Wrong gate) so a mic transient can't advance a stale tail — so step
+        // past the grace before the read, exactly as a real one would land.
         const { useHook } = await loadHook();
         stubBrowser();
         const props = {
@@ -325,10 +328,15 @@ describe("useDeepgramRecognition — stale guards", () => {
         await waitFor(() => expect(dg.conns.length).toBeGreaterThan(0));
         const conn = dg.conns[0];
 
+        vi.useFakeTimers();
+        act(() => {
+            vi.advanceTimersByTime(900);
+        });
         act(() => {
             conn.handlers.message(dgMsg("a robot holds a lemon", { isFinal: true, confidence: 0.95 }));
         });
         expect(props.onWordRecognized).toHaveBeenCalledWith(5);
+        vi.useRealTimers();
     });
 });
 
@@ -426,6 +434,43 @@ describe("useDeepgramRecognition — restart policy, token retry, error teardown
         expect(props.onRecognitionError).toHaveBeenCalledTimes(1);
         expect(props.onRecognitionError).toHaveBeenCalledWith("token_failed");
         expect(dg.conns.length).toBe(0);
+        vi.useRealTimers();
+    });
+
+    test("a new round gets the full token ladder, not the previous round's remainder", async () => {
+        // Round 1 spends 2 rungs and ENDS before a token ever succeeds, so the
+        // reset-on-success path never runs. Without a per-round reset the new
+        // round inherits tokenRetries=2 and starves: its 2nd failure trips
+        // token_failed immediately. Regression lock for the preload reset.
+        const { useHook } = await loadHook();
+        const stubs = stubBrowser();
+        stubs.fetchMock.mockRejectedValue(new Error("grant down"));
+        const props = baseProps();
+
+        vi.useFakeTimers();
+        const { rerender } = renderHook(({ preload }) => useHook({ ...props, preload }), {
+            initialProps: { preload: true },
+        });
+        await act(async () => {});
+        await act(async () => {
+            vi.advanceTimersByTime(1000);
+        });
+        await act(async () => {});
+        expect(stubs.fetchMock).toHaveBeenCalledTimes(2);
+        expect(props.onRecognitionError).not.toHaveBeenCalled();
+
+        // Round ends (preload off → stopAll cancels the pending rung), then a
+        // fresh round starts — the full-reset block runs.
+        rerender({ preload: false });
+        rerender({ preload: true });
+        await act(async () => {});
+        await act(async () => {
+            vi.advanceTimersByTime(1000);
+        });
+        await act(async () => {});
+        // Two more failures and still no token_failed: the ladder was refilled.
+        expect(stubs.fetchMock).toHaveBeenCalledTimes(4);
+        expect(props.onRecognitionError).not.toHaveBeenCalled();
         vi.useRealTimers();
     });
 
