@@ -354,6 +354,79 @@ describe("useLiveStats behaviour", () => {
         expect(result.current.status).toBe("offline");
     });
 
+    // The two lies this fixes, both reported off a real classroom laptop.
+    test("a boot with no internet starts RED, not on a default 'live'", async () => {
+        // The store initialises from interfaceDown(), so on a machine with no
+        // uplink at all it is ALREADY unreachable when the hook mounts. The
+        // initial state used to be a hardcoded "live" that no poll had earned,
+        // so a refresh with no internet showed a green "Live" for a full 10s
+        // interval while the numbers on screen were stale.
+        //
+        // `onLine` is a getter on Navigator.prototype, not an own property, and
+        // vi.restoreAllMocks() does NOT undo defineProperty — so restore by hand
+        // or every later test inherits a dead interface.
+        const original = Object.getOwnPropertyDescriptor(navigator, "onLine");
+        Object.defineProperty(navigator, "onLine", {
+            configurable: true,
+            get: () => false,
+        });
+        const { resetConnection } = await import("@/utils/connection");
+        resetConnection();
+
+        try {
+            expect(isReachable()).toBe(false);
+            const { result } = renderHook(() => useLiveStats());
+
+            // Red before a single request is even attempted.
+            expect(result.current.status).toBe("offline");
+            await tick();
+            expect(fetchMock).not.toHaveBeenCalled();
+            expect(result.current.status).toBe("offline");
+        } finally {
+            if (original) {
+                Object.defineProperty(navigator, "onLine", original);
+            } else {
+                delete navigator.onLine;
+            }
+            resetConnection();
+        }
+    });
+
+    test("a mid-session drop turns the dot red on the EVENT, not the next tick", async () => {
+        // The browser knows the instant the interface drops. The next tick can
+        // be a full 10s away and MAX_FAILURES = 2 needs two misses, so the dot
+        // used to stay green for ~20s while the teacher read frozen numbers.
+        fetchMock.mockResolvedValue(ok({ changed: true, watermark: "w1", totalStudents: 5 }));
+        const { result } = renderHook(() => useLiveStats());
+        await tick();
+        await waitFor(() => expect(result.current.status).toBe("live"));
+
+        const { markUnreachable } = await import("@/utils/connection");
+        act(() => markUnreachable("interface"));
+
+        // No tick, no timer advance — the store event is the whole signal.
+        expect(result.current.status).toBe("offline");
+    });
+
+    test("the store subscription is FAIL-DIRECTION only", async () => {
+        // connection.js's `online` handler calls markReachable() OPTIMISTICALLY
+        // on purpose so the ASR reconnect is not swallowed. If the hook treated
+        // "reachable" as proof of life it would paint a dead server green — the
+        // exact lie the dot exists to prevent. "live" must stay the poll's own
+        // verdict, earned by a real 200.
+        fetchMock.mockRejectedValue(new Error("offline"));
+        const { result } = renderHook(() => useLiveStats());
+        await tick();
+        await tick();
+        expect(result.current.status).toBe("offline");
+
+        const { markReachable } = await import("@/utils/connection");
+        act(() => markReachable());
+
+        // Still red: only the poll can restore the green.
+        expect(result.current.status).toBe("offline");
+    });
+
     test("a store that recovers resumes the poll", async () => {
         const conn = await import("@/utils/connection");
         conn.markUnreachable("server");

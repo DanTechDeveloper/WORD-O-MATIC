@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { isReachable, markReachable } from "@/utils/connection";
+import { isReachable, markReachable, subscribe } from "@/utils/connection";
 
 // ponytail: TEACHER-ONLY, and deliberately not shared with the student side.
 // 40 kids sharing devices is a different cost shape than one teacher watching a
@@ -43,7 +43,12 @@ export function useLiveStats({
     enabled = true,
 } = {}) {
     const [data, setData] = useState(null);
-    const [status, setStatus] = useState("live");
+    // The dot must never claim "Live — updating every 10 seconds" before
+    // anything has confirmed it. The store is the only thing that knows at
+    // mount, so start from ITS truth: a page served from browser cache with no
+    // uplink sat green for a full interval because the initial state was a
+    // hardcoded "live" no poll had earned.
+    const [status, setStatus] = useState(() => (isReachable() ? "live" : "offline"));
     const sinceRef = useRef(null);
     const failsRef = useRef(0);
     const nextAllowedRef = useRef(0);
@@ -154,6 +159,12 @@ export function useLiveStats({
         };
 
         const id = setInterval(tick, POLL_MS);
+        // Deliberately NOT ticking on mount: the first attempt is a fire-and-
+        // forget promise no caller can await, which made the first fetch
+        // non-deterministic in tests. The two cases a mount poll would have
+        // covered are already handled — an unreachable store short-circuits on
+        // Gate C and now starts the dot red via the state initializer, and a
+        // mid-session drop is caught by the subscription below.
         // Also poll on the way back IN, so a teacher returning to a stale tab
         // gets current data immediately instead of waiting out the interval.
         document.addEventListener("visibilitychange", tick);
@@ -163,6 +174,26 @@ export function useLiveStats({
             document.removeEventListener("visibilitychange", tick);
         };
     }, []);
+
+    // The browser knows the instant the interface drops; the next tick can be a
+    // full 10s away and MAX_FAILURES = 2 means the poll needs two misses before
+    // it admits anything, so a real drop left the dot green for ~20s. Subscribe
+    // so the event itself turns it red.
+    //
+    // FAIL DIRECTION ONLY, and that asymmetry is load-bearing: connection.js's
+    // `online` handler calls markReachable() OPTIMISTICALLY on purpose, so
+    // useDeepgramRecognition's ASR reconnect is not swallowed by
+    // startConnection's reachability bail. Treating "reachable" here as proof
+    // of life would paint a dead server green — the exact lie this dot exists
+    // to prevent. Only an unreachable store speaks here; "live" stays the
+    // poll's own verdict, earned by a real 200.
+    useEffect(
+        () =>
+            subscribe((s) => {
+                if (!s.reachable) setStatus("offline");
+            }),
+        [],
+    );
 
     return { data, status };
 }
