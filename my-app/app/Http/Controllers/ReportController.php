@@ -224,6 +224,12 @@ class ReportController extends Controller
                 'sqLevelLabel' => "Level {$speakLevel} - ".($paraTitles[$speakLevel] ?? ''),
                 'parent_email' => $user->student?->parent_email,
                 'report_sent_at' => $user->student?->report_sent_at,
+                // Per-student scope of the hardest-module metric. Structured here,
+                // formatted in the sheet — the label itself comes from
+                // ProgressService::hardestFrom(), the SSOT the class-wide
+                // Dashboard cards also use, so both surfaces agree.
+                'hardestWordModule' => $this->reportService->hardestLevelFrom($wordCurriculums[$user->id] ?? []),
+                'hardestStoryModule' => $this->reportService->hardestLevelFrom($paraCurriculums[$user->id] ?? [], 'sentence_stats'),
                 'struggleRows' => $rows,
                 'topStruggle' => $topStruggle,
             ];

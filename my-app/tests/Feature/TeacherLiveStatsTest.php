@@ -294,6 +294,27 @@ class TeacherLiveStatsTest extends TestCase
         $this->assertCount(2, $live['students']);
     }
 
+    public function test_live_stats_ships_the_hardest_module_cards(): void
+    {
+        // The Dashboard cards claim no hook/route change was needed: liveStats()
+        // is liveJson($request, dashboardStats()) and liveJson() spreads the
+        // payload, so the three keys ride along for free. This locks that — a
+        // hand-rolled second payload would silently freeze the cards at their
+        // server-render values and no other test would notice.
+        $this->makeStudent('Alpha');
+
+        $live = $this->actingAs($this->teacher)->getJson('/teacher/live-stats')->json();
+
+        $this->assertTrue($live['changed']);
+        // Present-and-null for a class with no recorded failures; the card
+        // renders N/A. What matters is the key existing on BOTH the page prop
+        // and the live payload, so the poll can overwrite it later.
+        $this->assertArrayHasKey('hardestWordModule', $live);
+        $this->assertArrayHasKey('hardestParagraphModule', $live);
+        $this->assertArrayHasKey('hardestWord', $live);
+        $this->assertNull($live['hardestWordModule']);
+    }
+
     /**
      * The `final` gate's justification, and the test Step 6 promised.
      *

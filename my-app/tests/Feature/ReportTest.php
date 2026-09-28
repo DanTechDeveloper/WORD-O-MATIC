@@ -930,6 +930,8 @@ class ReportTest extends TestCase
             'parent_email' => 'test@test.com',
             'report_sent_at' => null,
             'topStruggle' => 'WB: CAT ×4 · SQ: the ×3',
+            'hardestWordModule' => ['level' => 'Level 3: Phonics Fundamentals', 'level_num' => 3, 'attempts' => 9],
+            'hardestStoryModule' => ['level' => 'Level 2: Farm Animals', 'level_num' => 2, 'attempts' => 5],
         ];
 
         $sheet = new SkillsOverviewSheet([$student]);
@@ -943,6 +945,8 @@ class ReportTest extends TestCase
             'Story Quest',
             'Final Average',
             'Top Struggle',
+            'Hardest WB Module',
+            'Hardest SQ Module',
         ], $sheet->headings());
 
         $collection = $sheet->collection();
@@ -957,6 +961,143 @@ class ReportTest extends TestCase
         $this->assertEquals('90% (Level 2 - Farm Animals)', $row[5]);
         $this->assertEquals('88%', $row[6]);
         $this->assertEquals('WB: CAT ×4 · SQ: the ×3', $row[7]);
+        $this->assertEquals('Level 3: Phonics Fundamentals', $row[8]);
+        $this->assertEquals('Level 2: Farm Animals', $row[9]);
+    }
+
+    public function test_skills_overview_hardest_module_cells_are_blank_when_null(): void
+    {
+        // An empty cell reads as "nothing to report". A "hardest module: 0
+        // failures" cell would be a lie — the SOT returns null, never a zero.
+        $sheet = new SkillsOverviewSheet([[
+            'name' => 'Clean Kid',
+            'read_level' => 1,
+            'speak_level' => 1,
+            'wordBlastAcc' => 95,
+            'storyQuestAcc' => 95,
+            'hardestWordModule' => null,
+            'hardestStoryModule' => null,
+        ]]);
+
+        $row = $sheet->collection()->first();
+
+        $this->assertSame('', $row[8]);
+        $this->assertSame('', $row[9]);
+    }
+
+    public function test_hardest_level_from_sums_training_word_stats_only(): void
+    {
+        // The per-student adapter. Pure projection — no queries, no DB needed.
+        $curriculum = [
+            [
+                'level' => 'Level 1: Numbers',
+                'title' => 'Numbers',
+                'level_num' => 1,
+                'word_stats' => [
+                    ['word' => 'one', 'mastery' => 'training', 'failed_attempts' => 1],
+                    ['word' => 'two', 'mastery' => 'mastered', 'failed_attempts' => 9],
+                ],
+            ],
+            [
+                'level' => 'Level 2: Phonics',
+                'title' => 'Phonics',
+                'level_num' => 2,
+                'word_stats' => [
+                    // Mastered rows are EXCLUDED, even carrying 3 attempts: the
+                    // frozen counter is "attempts needed to master", a different
+                    // metric from "still struggling". Level 1's mastered 'two'
+                    // (9) must not count either — otherwise this would be 10 and
+                    // Level 1 would win on mastered history alone.
+                    ['word' => 'cat', 'mastery' => 'mastered', 'failed_attempts' => 3],
+                    ['word' => 'hat', 'mastery' => 'training', 'failed_attempts' => 4],
+                ],
+            ],
+        ];
+
+        $hardest = app(ReportService::class)->hardestLevelFrom($curriculum);
+
+        $this->assertSame('Level 2: Phonics', $hardest['level']);
+        $this->assertSame(2, $hardest['level_num']);
+        // The count is not returned. Level 2 winning IS the proof: its training
+        // sum is 4 ('hat' only — 'cat' is mastered and excluded, so 7 otherwise)
+        // against Level 1's 1.
+    }
+
+    public function test_hardest_level_from_ignores_levels_whose_words_are_all_mastered(): void
+    {
+        // A level can be fully conquered and still carry a big frozen total.
+        // It must not be reported as the place the student is stuck.
+        $curriculum = [
+            [
+                'level' => 'Level 1: Conquered',
+                'title' => 'Conquered',
+                'level_num' => 1,
+                'word_stats' => [
+                    ['word' => 'alpha', 'mastery' => 'mastered', 'failed_attempts' => 40],
+                    ['word' => 'beta', 'mastery' => 'mastered', 'failed_attempts' => 30],
+                ],
+            ],
+            [
+                'level' => 'Level 2: Current',
+                'title' => 'Current',
+                'level_num' => 2,
+                'word_stats' => [
+                    ['word' => 'gamma', 'mastery' => 'training', 'failed_attempts' => 2],
+                ],
+            ],
+        ];
+
+        $hardest = app(ReportService::class)->hardestLevelFrom($curriculum);
+
+        // Level 2 (sum 2) must win over Level 1 (sum 70, all mastered). The
+        // count is not returned, so the winner's identity is the assertion.
+        $this->assertSame('Level 2: Current', $hardest['level']);
+    }
+
+    public function test_hardest_level_from_reads_sentence_stats_for_story_quest(): void
+    {
+        // Two levels whose word_stats and sentence_stats rank DIFFERENTLY, so the
+        // WINNER is the proof of which key was read. One level per mode could
+        // never distinguish them — both keys would return the same level.
+        $curriculum = [
+            [
+                'level' => 'Level 1: Farm',
+                'title' => 'Farm',
+                'level_num' => 1,
+                'word_stats' => [
+                    ['word' => 'pig', 'mastery' => 'training', 'failed_attempts' => 50],
+                ],
+                'sentence_stats' => [
+                    ['sentence' => 'A pig sat.', 'mastery' => 'training', 'failed_attempts' => 2],
+                ],
+            ],
+            [
+                'level' => 'Level 2: Barn',
+                'title' => 'Barn',
+                'level_num' => 2,
+                'word_stats' => [
+                    ['word' => 'cow', 'mastery' => 'training', 'failed_attempts' => 3],
+                ],
+                'sentence_stats' => [
+                    ['sentence' => 'Two cows ran.', 'mastery' => 'training', 'failed_attempts' => 40],
+                ],
+            ],
+        ];
+
+        $service = app(ReportService::class);
+
+        // Word Blast default → word_stats → Farm (50) beats Barn (3).
+        $this->assertSame('Level 1: Farm', $service->hardestLevelFrom($curriculum)['level']);
+        // Story Quest → sentence_stats → Barn (40) beats Farm (2).
+        $this->assertSame('Level 2: Barn', $service->hardestLevelFrom($curriculum, 'sentence_stats')['level']);
+    }
+
+    public function test_hardest_level_from_is_null_for_an_unstarted_student(): void
+    {
+        $this->assertNull(app(ReportService::class)->hardestLevelFrom([]));
+        $this->assertNull(app(ReportService::class)->hardestLevelFrom([
+            ['level' => 'Level 1: Farm', 'title' => 'Farm', 'level_num' => 1, 'word_stats' => []],
+        ]));
     }
 
     public function test_skills_words_sheet_has_correct_headings(): void
@@ -1281,6 +1422,65 @@ class ReportTest extends TestCase
                 && $row['wbLevelLabel'] === 'Level 99 - '
                 && $row['sqLevelLabel'] === 'Level 98 - '
                 && $row['finalAverage'] === null;
+        });
+    }
+
+    public function test_export_populates_the_hardest_module_columns_end_to_end(): void
+    {
+        // The whole per-student chain, driven through the REAL export route:
+        // ReportService::hardestLevelFrom() -> ReportController::exportReports ->
+        // ReportsExport -> SkillsOverviewSheet. Everything else here only fed the
+        // sheet a hand-made array, so nothing proved the controller actually
+        // calls the adapter or that the label survives to the cell.
+        Setting::setValue('report_deadline', now()->subDay()->format('Y-m-d\TH:i'));
+
+        // A quiet Level 1 and a brutal Level 2 — Level 2 must win on the sum.
+        $quiet = WordModule::create(['level' => 1, 'title' => 'Quiet', 'is_tutorial' => false]);
+        $brutal = WordModule::create(['level' => 2, 'title' => 'Brutal', 'is_tutorial' => false]);
+        // A conquered level carrying MORE history than the brutal one — training
+        // only must keep it out, or the export would point at the wrong module.
+        $done = WordModule::create(['level' => 3, 'title' => 'Conquered', 'is_tutorial' => false]);
+
+        $seed = function ($module, $text, $position, $fails, $status) {
+            $word = Word::create(['word_module_id' => $module->id, 'word' => $text, 'position' => $position]);
+            $row = StudentWordMastery::create([
+                'user_id' => $this->student->id,
+                'word_id' => $word->id,
+                'status' => $status,
+                'failed_attempts' => $fails,
+            ]);
+            $row->created_at = now()->subDays(2);
+            $row->save();
+        };
+
+        $seed($quiet, 'CALM', 1, 1, 'training');
+        $seed($brutal, 'HARD', 1, 9, 'training');
+        $seed($done, 'EASY', 1, 40, 'mastered');
+
+        \Maatwebsite\Excel\Facades\Excel::fake();
+
+        $this->actingAs($this->teacher)
+            ->get(route('teacher.reports.export'))
+            ->assertSuccessful();
+
+        \Maatwebsite\Excel\Facades\Excel::assertDownloaded('class-report.xlsx', function (ReportsExport $export) {
+            $prop = new \ReflectionProperty(ReportsExport::class, 'students');
+            $row = collect($prop->getValue($export))->firstWhere('name', 'Test Student');
+
+            if ($row['hardestWordModule']['level'] !== 'Level 2: Brutal') {
+                return false;
+            }
+            // Label only — no attempt count, because Top Struggle (H) and the
+            // Words Needing Practice sheet already print per-word counts.
+            if ($row['hardestWordModule']['failed_attempts'] ?? null) {
+                return false;
+            }
+
+            $cell = (new SkillsOverviewSheet([$row]))->collection()->first();
+
+            return $cell[8] === 'Level 2: Brutal'
+                // No Story Quest rows at all -> empty cell, never a fake module.
+                && $cell[9] === '';
         });
     }
 }

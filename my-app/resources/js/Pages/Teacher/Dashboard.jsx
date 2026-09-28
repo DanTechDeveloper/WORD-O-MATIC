@@ -25,6 +25,9 @@ export default function Dashboard({
     chartCounts: serverChartCounts,
     topStudents: serverTopStudents = [],
     students: serverStudents = [],
+    hardestWordModule: serverHardestWordModule = null,
+    hardestParagraphModule: serverHardestParagraphModule = null,
+    hardestWord: serverHardestWord = null,
     auth,
 }) {
     // The one place a teacher page decides whether polling is even allowed:
@@ -48,6 +51,12 @@ export default function Dashboard({
     const chartCounts = data?.chartCounts ?? serverChartCounts;
     const topStudents = data?.topStudents ?? serverTopStudents;
     const students = data?.students ?? serverStudents;
+    // Same server-render-first-then-poll-overwrite shape as the values above.
+    // null (no recorded failures) is a real value here, not a missing prop, so
+    // these must NOT get a `?? {}` — the cards render N/A from null.
+    const hardestWordModule = data?.hardestWordModule ?? serverHardestWordModule;
+    const hardestParagraphModule = data?.hardestParagraphModule ?? serverHardestParagraphModule;
+    const hardestWord = data?.hardestWord ?? serverHardestWord;
 
     const [selectedSection, setSelectedSection] = useState("");
     const [nameFilter, setNameFilter] = useState("");
@@ -67,12 +76,43 @@ export default function Dashboard({
         { key: "wordBlast", label: "Word Blast", icon: "auto_stories", valueKey: "wordBlastAcc" },
         { key: "storyQuest", label: "Story Quest", icon: "record_voice_over", valueKey: "storyQuestAcc" },
     ];
+    // The `level` string is built server-side by ProgressService::hardestFrom(),
+    // the same SOT the Excel "Hardest WB/SQ Module" columns read — so a card can
+    // never disagree with the export about which module is hardest.
+    // No attempt count anywhere: the drill-down already names each struggling
+    // word with its count, so a card's whole job is WHICH module/word.
+    // The word card omits the level because updateWordModule() blocks
+    // cross-level word reuse — a word already implies its module.
+    const hardestModuleValue = (m) => m?.level ?? 'N/A';
+    const hardestWordValue = (w) => w?.word ?? 'N/A';
+
     const stats = [
         {
             label: "Total Students",
             value: totalStudents,
             icon: "group",
             color: "text-primary",
+        },
+        {
+            label: "Hardest Module (Word Blast)",
+            value: hardestModuleValue(hardestWordModule),
+            icon: "whatshot",
+            long: true,
+            color: "text-error",
+        },
+        {
+            label: "Hardest Module (Story Quest)",
+            value: hardestModuleValue(hardestParagraphModule),
+            icon: "whatshot",
+            long: true,
+            color: "text-error",
+        },
+        {
+            label: "Hardest Word (Word Blast)",
+            value: hardestWordValue(hardestWord),
+            icon: "crisis_alert",
+            long: true,
+            color: "text-error",
         },
         {
             label: "Total AVG Word Blast Score",
@@ -202,7 +242,8 @@ export default function Dashboard({
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-10">
+            {/* 8 cards — lg:grid-cols-4 renders them as exactly 2 rows x 4 columns */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 mb-10">
                 {stats.map((stat, index) => (
                     <div
                         key={index}
@@ -216,7 +257,12 @@ export default function Dashboard({
                         <h3 className="text-on-surface-variant text-[10px] sm:text-xs font-black uppercase tracking-widest mb-1">
                             {stat.label}
                         </h3>
-                        <p className="text-xl sm:text-2xl font-black text-on-surface tracking-tight whitespace-normal break-words [overflow-wrap:anywhere] leading-tight block" title={String(stat.value)}>
+                        <p
+                            className={`font-black text-on-surface tracking-tight truncate block ${
+                                stat.long ? "text-base sm:text-lg" : "text-xl sm:text-2xl"
+                            }`}
+                            title={String(stat.value)}
+                        >
                             {stat.value}
                         </p>
                     </div>

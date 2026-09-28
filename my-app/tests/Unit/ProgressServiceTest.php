@@ -74,4 +74,85 @@ class ProgressServiceTest extends TestCase
         $this->assertSame(80, ProgressService::finalAverage(79, 80, true, true));
         $this->assertSame(60, ProgressService::finalAverage(60, 60, true, true));
     }
+
+    // ── hardestFrom(): the SSOT behind BOTH hardest-module surfaces ──
+    // The per-student array adapter (ReportService) and the class-wide SQL
+    // adapter (StudentWordMastery) both feed this, so these cases pin the
+    // decisions neither adapter is allowed to make for itself.
+
+    public function test_hardest_picks_the_highest_summed_attempts(): void
+    {
+        $this->assertSame(
+            ['level' => 'Level 3: Phonics', 'level_num' => 3],
+            ProgressService::hardestFrom([
+                1 => ['title' => 'Numbers', 'attempts' => 4],
+                3 => ['title' => 'Phonics', 'attempts' => 12],
+                2 => ['title' => 'Colors', 'attempts' => 7],
+            ]),
+        );
+    }
+
+    public function test_hardest_is_null_when_every_level_summed_zero(): void
+    {
+        // The guard that stops "hardest module: 0 failures" from ever rendering.
+        $this->assertNull(ProgressService::hardestFrom([
+            1 => ['title' => 'Numbers', 'attempts' => 0],
+            2 => ['title' => 'Colors', 'attempts' => 0],
+        ]));
+    }
+
+    public function test_hardest_is_null_for_empty_input(): void
+    {
+        $this->assertNull(ProgressService::hardestFrom([]));
+    }
+
+    public function test_hardest_skips_zero_levels_but_still_answers(): void
+    {
+        // A class where one level is spot-on and another is brutal.
+        $this->assertSame(
+            ['level' => 'Level 5: Blends', 'level_num' => 5],
+            ProgressService::hardestFrom([
+                1 => ['title' => 'Numbers', 'attempts' => 0],
+                5 => ['title' => 'Blends', 'attempts' => 9],
+            ]),
+        );
+    }
+
+    public function test_hardest_tie_breaks_to_the_first_level(): void
+    {
+        // Deterministic: the same input must always give the same answer, or the
+        // Dashboard card and the Excel column could disagree run to run.
+        $this->assertSame(
+            ['level' => 'Level 1: Numbers', 'level_num' => 1],
+            ProgressService::hardestFrom([
+                1 => ['title' => 'Numbers', 'attempts' => 6],
+                2 => ['title' => 'Colors', 'attempts' => 6],
+            ]),
+        );
+    }
+
+    public function test_hardest_label_is_built_here_not_by_the_caller(): void
+    {
+        // Both adapters pass the title PARTS; the format lives in one place, so
+        // the SQL adapter can never CONCAT its own and disagree.
+        $this->assertSame(
+            'Level 7: Diphthongs',
+            ProgressService::hardestFrom([
+                7 => ['title' => 'Diphthongs', 'attempts' => 3],
+            ])['level'],
+        );
+    }
+
+    public function test_hardest_casts_string_sums_from_the_database(): void
+    {
+        // MySQL SUM() on an unsigned int can come back as a string; the Excel
+        // card would then print "12" and compare "9" > "12" lexically.
+        $this->assertSame(
+            ['level' => 'Level 2: Colors', 'level_num' => 2],
+            ProgressService::hardestFrom([
+                1 => ['title' => 'Numbers', 'attempts' => '9'],
+                2 => ['title' => 'Colors', 'attempts' => '12'],
+            ]),
+        );
+    }
 }

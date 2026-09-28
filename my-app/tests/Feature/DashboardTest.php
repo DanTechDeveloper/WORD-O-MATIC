@@ -2,8 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Models\ParagraphModule;
+use App\Models\ParagraphWord;
+use App\Models\StudentParagraphMastery;
 use App\Models\StudentProfile;
+use App\Models\StudentWordMastery;
 use App\Models\User;
+use App\Models\Word;
+use App\Models\WordModule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -257,5 +263,193 @@ class DashboardTest extends TestCase
                     && $bySection['Sector Epsilon']['status'] === 'Not Started';
             })
         );
+    }
+
+    // ── Hardest module / word cards (class-wide scope) ──
+
+    private function wordModule(int $level, string $title, bool $tutorial = false): WordModule
+    {
+        return WordModule::create([
+            'level' => $level,
+            'title' => $title,
+            'is_tutorial' => $tutorial,
+        ]);
+    }
+
+    private function word(WordModule $module, string $text, int $position = 1): Word
+    {
+        return Word::create([
+            'word_module_id' => $module->id,
+            'word' => $text,
+            'position' => $position,
+        ]);
+    }
+
+    private function recordFails(int $userId, Word $word, int $attempts, string $status = 'training'): void
+    {
+        StudentWordMastery::create([
+            'user_id' => $userId,
+            'word_id' => $word->id,
+            'status' => $status,
+            'failed_attempts' => $attempts,
+        ]);
+    }
+
+    public function test_dashboard_hardest_word_module_ranks_by_total_attempts(): void
+    {
+        $this->actingAs($this->teacher);
+
+        $alice = $this->makeStudent('Alice', ['wordBlastAcc' => 70, 'storyQuestAcc' => 60]);
+        $bob = $this->makeStudent('Bob', ['wordBlastAcc' => 70, 'storyQuestAcc' => 60]);
+
+        $easy = $this->wordModule(1, 'Easy');
+        $hard = $this->wordModule(2, 'Hard');
+
+        // One student's worst must not out-vote a module the whole class
+        // struggles with — the card is a class total, not a max.
+        $this->recordFails($alice->user_id, $this->word($easy, 'easyword'), 1);
+        $this->recordFails($alice->user_id, $this->word($hard, 'hardword'), 4);
+        $this->recordFails($bob->user_id, $this->word($hard, 'hardword'), 6);
+
+        $this->get(route('teacher.dashboard'))
+            ->assertInertia(fn ($page) => $page
+                ->where('hardestWordModule', fn ($m) => $m !== null
+                    // Level 2 (sum 10) beat Level 1 (sum 5) — asserting the
+                    // WINNER is what proves the ranking, since the count itself
+                    // is never returned (Top Struggle already prints per-word
+                    // counts, so the card is only WHICH module).
+                    && $m['level'] === 'Level 2: Hard'
+                    && $m['level_num'] === 2)
+            );
+    }
+
+    public function test_dashboard_hardest_modules_ignore_the_tutorial(): void
+    {
+        // The silent failure: the tutorial module's words collect failed_attempts
+        // like any other, so without is_tutorial = 0 this card reads "Level 0"
+        // forever — a plausible-looking wrong answer, not an obvious one.
+        $this->actingAs($this->teacher);
+
+        $alice = $this->makeStudent('Alice', ['wordBlastAcc' => 70, 'storyQuestAcc' => 60]);
+
+        $tutorial = $this->wordModule(0, 'Onboarding', tutorial: true);
+        $real = $this->wordModule(3, 'Real Module');
+
+        $this->recordFails($alice->user_id, $this->word($tutorial, 'apple'), 99);
+        $this->recordFails($alice->user_id, $this->word($real, 'elephant'), 2);
+
+        $this->get(route('teacher.dashboard'))
+            ->assertInertia(fn ($page) => $page
+                ->where('hardestWordModule', fn ($m) => $m !== null && $m['level'] === 'Level 3: Real Module')
+                ->where('hardestWord', fn ($w) => $w !== null
+                    && $w['word'] === 'elephant'
+                    && $w['level'] === 'Level 3: Real Module')
+            );
+    }
+
+    public function test_dashboard_hardest_word_module_is_null_when_all_attempts_are_zero(): void
+    {
+        // The zero guard, reached through SQL: a class that aced everything must
+        // render N/A, never a "hardest module" at zero failures.
+        $this->actingAs($this->teacher);
+
+        $alice = $this->makeStudent('Alice', ['wordBlastAcc' => 90, 'storyQuestAcc' => 90]);
+        $module = $this->wordModule(1, 'Spot On');
+        $this->recordFails($alice->user_id, $this->word($module, 'perfect'), 0, 'mastered');
+
+        $this->get(route('teacher.dashboard'))
+            ->assertInertia(fn ($page) => $page
+                ->where('hardestWordModule', null)
+                ->where('hardestWord', null)
+            );
+    }
+
+    public function test_dashboard_hardest_cards_are_null_for_an_empty_class(): void
+    {
+        $this->actingAs($this->teacher);
+        $this->makeStudent('Alice', ['wordBlastAcc' => 0, 'storyQuestAcc' => 0]);
+
+        $this->get(route('teacher.dashboard'))
+            ->assertInertia(fn ($page) => $page
+                ->where('hardestWordModule', null)
+                ->where('hardestParagraphModule', null)
+                ->where('hardestWord', null)
+            );
+    }
+
+    public function test_dashboard_hardest_word_module_ignores_mastered_history(): void
+    {
+        // The class-wide half of the training-only rule (the per-student half
+        // lives in ReportTest). A mastered row's counter is frozen at "attempts
+        // needed to master" — a DIFFERENT metric from "still stuck". If these
+        // counted, a conquered level would outrank the one the class is
+        // actually failing, and the card would point remediation at the wrong
+        // module. Level 1 also has to beat Level 2 on TRAINING rows alone.
+        $this->actingAs($this->teacher);
+
+        $alice = $this->makeStudent('Alice', ['wordBlastAcc' => 70, 'storyQuestAcc' => 60]);
+
+        $conquered = $this->wordModule(1, 'Conquered');
+        $current = $this->wordModule(2, 'Current');
+
+        // Conquering Level 1 was genuinely hard — 99 attempts, now frozen.
+        $this->recordFails($alice->user_id, $this->word($conquered, 'alpha'), 99, 'mastered');
+        $this->recordFails($alice->user_id, $this->word($current, 'beta'), 5);
+
+        $this->get(route('teacher.dashboard'))
+            ->assertInertia(fn ($page) => $page
+                ->where('hardestWordModule', fn ($m) => $m !== null
+                    && $m['level'] === 'Level 2: Current')
+                ->where('hardestWord', fn ($w) => $w !== null && $w['word'] === 'beta')
+            );
+    }
+
+    public function test_dashboard_hardest_cards_are_null_when_everything_is_mastered(): void
+    {
+        $this->actingAs($this->teacher);
+
+        $alice = $this->makeStudent('Alice', ['wordBlastAcc' => 95, 'storyQuestAcc' => 95]);
+        $module = $this->wordModule(1, 'All Mastered');
+        $this->recordFails($alice->user_id, $this->word($module, 'flawless'), 6, 'mastered');
+
+        // No training rows anywhere → null → N/A, not "Level 1 (6)".
+        $this->get(route('teacher.dashboard'))
+            ->assertInertia(fn ($page) => $page
+                ->where('hardestWordModule', null)
+                ->where('hardestWord', null)
+            );
+    }
+
+    public function test_dashboard_hardest_paragraph_module_ranks_by_total_attempts(): void
+    {
+        $this->actingAs($this->teacher);
+
+        $alice = $this->makeStudent('Alice', ['wordBlastAcc' => 60, 'storyQuestAcc' => 60]);
+
+        $easy = ParagraphModule::create(['level' => 1, 'title' => 'Sq Easy', 'content' => 'A cat sat.', 'is_tutorial' => false]);
+        $hard = ParagraphModule::create(['level' => 4, 'title' => 'Sq Hard', 'content' => 'Two dogs ran.', 'is_tutorial' => false]);
+
+        StudentParagraphMastery::create([
+            'user_id' => $alice->user_id,
+            'paragraph_word_id' => ParagraphWord::create([
+                'paragraph_module_id' => $hard->id, 'word' => 'dogs', 'position' => 1,
+            ])->id,
+            'status' => 'training',
+            'failed_attempts' => 8,
+        ]);
+        StudentParagraphMastery::create([
+            'user_id' => $alice->user_id,
+            'paragraph_word_id' => ParagraphWord::create([
+                'paragraph_module_id' => $easy->id, 'word' => 'cat', 'position' => 1,
+            ])->id,
+            'status' => 'training',
+            'failed_attempts' => 1,
+        ]);
+
+        $this->get(route('teacher.dashboard'))
+            ->assertInertia(fn ($page) => $page
+                ->where('hardestParagraphModule', fn ($m) => $m !== null
+                    && $m['level'] === 'Level 4: Sq Hard')
+            );
     }
 }

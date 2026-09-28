@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Badges;
 use App\Models\GameSession;
 use App\Models\ParagraphModule;
+use App\Models\StudentParagraphMastery;
 use App\Models\StudentProfile;
 use App\Models\StudentWordMastery;
 use App\Models\User;
@@ -400,6 +401,16 @@ class TeacherController extends Controller
             'sectionPerformance' => $sectionPerformance->toArray(),
             'students' => $students,
             'chartCounts' => $counts,
+            // Class-wide scope of the hardest-module metric. liveStats() reuses
+            // this method through liveJson()'s ...$payload spread, so the 10s
+            // poll ships these three keys for free — no hook or route change.
+            // No cutoff is applied here on purpose: this is a live pre-deadline
+            // view, and past the deadline the poll is already off
+            // (Dashboard.jsx deadlineClosed) because updateMastery() stops
+            // writing counters.
+            'hardestWordModule' => StudentWordMastery::hardestModule(),
+            'hardestParagraphModule' => StudentParagraphMastery::hardestModule(),
+            'hardestWord' => StudentWordMastery::hardestWord(),
             ];
         };
 

@@ -184,6 +184,8 @@ class ParagraphModule extends Model
 
             return [
                 'level' => "Level {$module->level}: {$module->title}",
+                // Additive — mirrors WordModule::buildLevels; see the note there.
+                'title' => $module->title,
                 'level_num' => $module->level,
                 'words_count' => $module->words->count(),
                 'mastered' => $module->words->filter(function ($word) use ($mastery) {

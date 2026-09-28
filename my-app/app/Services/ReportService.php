@@ -162,6 +162,46 @@ class ReportService
         return $rows;
     }
 
+    // Hardest level for ONE student — the per-student scope of the hardest-module
+    // metric. Pure projection of curriculumForUser() output, no queries, exactly
+    // like the struggle helpers above.
+    //
+    // TRAINING ONLY, matching struggleRowsFrom()/trainingAttemptsFrom() and the
+    // class-wide SQL adapter. The Excel puts this beside Top Struggle, which is
+    // also training-only, so the two must count the same rows or the row reads
+    // as nonsense. A mastered word is excluded: its counter is frozen at
+    // "attempts needed to master", a different metric from "still struggling".
+    //
+    // No tutorial handling needed: curriculumForUser() already filters
+    // is_tutorial via WordModule::modules(). The ranking itself is NOT decided
+    // here — ProgressService::hardestFrom() owns the zero guard, the label, the
+    // tiebreak, and the return shape, so this and the class-wide SQL adapter can
+    // never disagree. It is also the only caller that cannot pre-sort, which is
+    // why the ranking has to be in the SSOT at all.
+    //
+    // $statsKey: 'word_stats' (Word Blast) or 'sentence_stats' (Story Quest).
+    public function hardestLevelFrom(array $curriculum, string $statsKey = 'word_stats'): ?array
+    {
+        $byLevel = [];
+
+        foreach ($curriculum as $level) {
+            $attempts = 0;
+            foreach ($level[$statsKey] ?? [] as $stat) {
+                if (($stat['mastery'] ?? 'unseen') !== 'training') {
+                    continue;
+                }
+                $attempts += (int) ($stat['failed_attempts'] ?? 0);
+            }
+
+            $byLevel[$level['level_num'] ?? count($byLevel) + 1] = [
+                'title' => $level['title'] ?? '',
+                'attempts' => $attempts,
+            ];
+        }
+
+        return ProgressService::hardestFrom($byLevel);
+    }
+
     public function curriculumPercent(array $curriculum): int
     {
         $mastered = 0;

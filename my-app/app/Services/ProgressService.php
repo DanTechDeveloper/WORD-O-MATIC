@@ -236,7 +236,65 @@ class ProgressService
         return (int) round(($wordBlastAcc + $storyQuestAcc) / 2);
     }
 
+    // SOT for "which module/level is the hardest" — the ONE ranking rule behind
+    // both surfaces that show it: the per-student Excel column and the class-wide
+    // Dashboard card. Those two are the same rule at two scopes (one student vs
+    // the whole class), so they are separate queries but MUST agree.
+    //
+    // So callers only SUM and hand over [level_num => [title, attempts]];
+    // every decision that could drift lives here: the zero guard, the label
+    // format, the tiebreak, and the return shape. The array adapter
+    // (ReportService::hardestLevelFrom) and the SQL adapters
+    // (StudentWordMastery::hardestModule) / StudentParagraphMastery::hardestModule.
+    //
+    // 1. `attempts` is REQUIRED as input, not decoration. The SQL adapters
+    //    happen to pass one already-sorted row (ORDER BY … LIMIT 1), but the
+    //    array adapter passes EVERY level and cannot sort — the ranking has to
+    //    live here or the Excel column would always report the first module.
+    // 2. Zeros never win. A class or student with no current struggle sums to 0
+    //    on every level, and "hardest module: 0 failures" is a lie. Returns null,
+    //    which every consumer already renders as N/A / an empty cell.
+    // 3. The label is built HERE from the parts, so no adapter can CONCAT its own
+    //    and disagree on format.
+    // 4. Strict > on ties — first level wins, so the same input always yields the
+    //    same answer. Callers pass levels in level order.
+    // 5. The COUNT IS NOT RETURNED, deliberately. It ranks, then is discarded.
+    //    Every surface already prints the per-item attempts right beside this —
+    //    the Excel's "Top Struggle" (WB: CAT ×4) and the "Words Needing
+    //    Practice" sheet name each word and its count. Printing "Level 3:
+    //    Phonics (12)" next to those repeats the same information one level
+    //    up, so the answer is just WHICH module. The number stays an input,
+    //    where it does its job, and never reaches a payload.
+    //
+    // Reads nothing from the DB, like classify()/finalAverage() above — it is a
+    // pure derived-metric rule, not a progress write.
+    public static function hardestFrom(array $attemptsByLevel): ?array
+    {
+        $best = null;
+        // Local, not $best['attempts'] — the count is deliberately absent from
+        // the returned shape, so the tiebreak cannot read it back off there.
+        $bestAttempts = 0;
 
+        foreach ($attemptsByLevel as $levelNum => $entry) {
+            $attempts = (int) ($entry['attempts'] ?? 0);
+
+            if ($attempts <= 0) {
+                continue;
+            }
+
+            if ($best !== null && $attempts <= $bestAttempts) {
+                continue;
+            }
+
+            $bestAttempts = $attempts;
+            $best = [
+                'level' => "Level {$levelNum}: ".(string) ($entry['title'] ?? ''),
+                'level_num' => $levelNum,
+            ];
+        }
+
+        return $best;
+    }
 
     private function recalculateStatus(StudentProfile $student): void
     {

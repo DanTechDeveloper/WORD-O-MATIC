@@ -101,6 +101,10 @@ class WordModule extends Model
         return $modules->map(function ($module) use ($mastery) {
             return [
                 'level' => "Level {$module->level}: {$module->title}",
+                // Additive: lets ProgressService::hardestFrom() own the "Level N: T"
+                // label instead of each caller re-composing it (the class-wide SQL
+                // adapter must not CONCAT its own, or the two drift).
+                'title' => $module->title,
                 'level_num' => $module->level,
                 'words_count' => $module->words->count(),
                 'mastered' => $module->words->filter(function ($word) use ($mastery) {
