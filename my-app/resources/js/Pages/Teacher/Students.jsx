@@ -31,7 +31,15 @@ export default function Students({ data, sections, filters, existingStudentIds }
     // Word.jsx:8 / Paragraph.jsx:8.
     const deadlineClosed =
         getDeadlineInfo(usePage().props.auth?.deadline).phase === "closed";
-    const live = useLiveStats({ enabled: !deadlineClosed });
+    // ponytail: the endpoint is NOT optional. Without it the hook falls back to
+    // /teacher/live-stats, which returns dashboardStats() — no `data` key — so
+    // the guard below silently fell back to the server prop on every tick and the
+    // table never updated while the dot stayed green. The route existed and worked
+    // the whole time; nothing called it.
+    const live = useLiveStats({
+        endpoint: "/teacher/live-students",
+        enabled: !deadlineClosed,
+    });
 
     // The live payload is the SAME query the page rendered (the hook forwards
     // window.location.search), so the list stays filtered by whatever

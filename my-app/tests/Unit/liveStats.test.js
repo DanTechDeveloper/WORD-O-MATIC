@@ -170,6 +170,33 @@ describe("the five polling pages", () => {
         });
     }
 
+    // REGRESSION GUARD. Every page above asserted that it CALLS the hook, none
+    // asserted WHICH url. So Students.jsx could omit `endpoint` entirely, fall
+    // back to the hook's default (/teacher/live-stats → dashboardStats(), which
+    // has no `data` key), and its `live.data?.data ? … : data` guard would
+    // silently keep the server prop on every tick — the table never updated, the
+    // dot stayed green, and no test failed. /teacher/live-students was registered
+    // and correct the whole time; nothing called it.
+    //
+    // Dashboard is the one page that must NOT pass an endpoint: the default IS
+    // its route, so an override there would be the same bug wearing a disguise.
+    test("each page polls the endpoint its own route serves", () => {
+        const expected = {
+            Students: "/teacher/live-students",
+            StudentDetails: "/teacher/live-student/",
+            Leaderboards: "/teacher/live-leaderboards",
+            Badges: "/teacher/live-badges",
+        };
+
+        for (const [name, url] of Object.entries(expected)) {
+            expect(pages[name], `${name} must poll ${url}`).toContain(url);
+        }
+
+        // The default the hook falls back to, and the one page entitled to it.
+        expect(hook).toContain('endpoint = "/teacher/live-stats"');
+        expect(dashboard).not.toContain("endpoint:");
+    });
+
     test("Reports is excluded — and by the same gate, not a special case", () => {
         // isPastDeadline (Reports.jsx:37) IS phase === "closed", and the Notify
         // Parents workflow only unlocks after it. So the one gate already covers
