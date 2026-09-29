@@ -201,16 +201,20 @@ describe("masteryLabels", () => {
             },
         ];
 
-        test("returns 3 buckets — the three the count line names", () => {
-            // Practicing and Mastered are dropped on purpose: a new student's
-            // 20 unread sentences used to render behind two dead "(0)" headings,
-            // which made the panel read as empty. The count line only ever named
-            // these three, so the group list — not the summary — was the outlier.
+        test("returns all 5 buckets — every sentence belongs to one", () => {
+            // An earlier cut to three (needsAttention/recovered/notAttempted) was
+            // meant to stop a new student seeing dead "(0)" headings, but the
+            // VISIBILITY FILTER at the call site is what does that. Cutting the
+            // buckets dropped real content: a student whose sentences are
+            // uniformly mastered had every sentence bucketed nowhere, so whole
+            // levels rendered nothing. All five + drop-empty is the fix.
             const { groups } = groupSentences(curriculum);
             expect(groups.map((g) => g.key)).toEqual([
                 VERDICT.NEEDS_ATTENTION,
+                VERDICT.PRACTICING,
                 VERDICT.RECOVERED,
                 VERDICT.NOT_ATTEMPTED,
+                VERDICT.MASTERED,
             ]);
         });
 
@@ -218,40 +222,56 @@ describe("masteryLabels", () => {
             const { groups } = groupSentences(curriculum);
             const row = groups.find((g) => g.key === VERDICT.NOT_ATTEMPTED).rows[0];
             expect(row.sentence).toBe("Birds fly.");
-            expect(groups.find((g) => g.key === VERDICT.RECOVERED).rows).toHaveLength(1);
+            expect(groups.find((g) => g.key === VERDICT.MASTERED).rows).toHaveLength(0);
         });
 
-        test("a practising sentence is in NO group, and the count line still knows it", () => {
-            // REGRESSION LOCK. The bucket list is the whole mechanism: a future
-            // edit that re-adds PRACTICING or MASTERED would silently re-bury the
-            // unread sentences this change exists to surface, and the assertions
-            // above would still pass. counts is seeded from VERDICT rather than
-            // from the bucket list, so the number must stay readable.
-            const practice = [
+        test("a cleanly-read sentence is Mastered and yields no drill rows", () => {
+            // THE rule the JSX gates on: a mastered sentence is rendered but
+            // silent. MASTERED means every word was conquered and none ever hit
+            // the threshold, so there is no struggle to report — StudentDetails
+            // hides the attempts footer AND the per-word list for these.
+            const clean = [
                 {
-                    level: "Level 2: Barn",
+                    level: "Level 3: Barn",
                     sentence_stats: [
-                        { sentence: "Goats graze.", mastery: "training", words: [{ word: "goats", mastery: "training", failed_attempts: 1 }] },
-                        { sentence: "Crows caw.", mastery: "mastered", words: [{ word: "crows", mastery: "mastered", failed_attempts: 0 }] },
+                        { sentence: "Crows caw.", mastery: "mastered", words: [
+                            { word: "crows", mastery: "mastered", failed_attempts: 0 },
+                            { word: "caw.", mastery: "mastered", failed_attempts: 0 },
+                        ] },
                     ],
                 },
             ];
 
-            const { groups, counts } = groupSentences(practice);
-            expect(groups.flatMap((g) => g.rows)).toHaveLength(0);
-            expect(counts[VERDICT.PRACTICING]).toBe(1);
+            const { groups, counts } = groupSentences(clean);
+            const row = groups.find((g) => g.key === VERDICT.MASTERED).rows[0];
             expect(counts[VERDICT.MASTERED]).toBe(1);
+            // The filter StudentDetails applies — must come back empty.
+            expect(mergeSentenceWords(row.words, NEEDS_ATTENTION_ATTEMPTS).filter((w) => w.failed_attempts > 0)).toHaveLength(0);
+        });
+
+        test("a sentence conquered after a couple of flubs is Mastered, not Recovered", () => {
+            // Below the threshold is not a problem worth celebrating, so a word at
+            // 1-2 failures reads Mastered and the sentence renders silently. This
+            // is why MASTERED needs no numbers on screen.
+            expect(sentenceVerdict([{ mastery: "mastered", failed_attempts: 2 }])).toBe(VERDICT.MASTERED);
+            expect(sentenceVerdict([{ mastery: "mastered", failed_attempts: 3 }])).toBe(VERDICT.RECOVERED);
         });
 
         test("every sentence renders exactly once, and names its module", () => {
-            // All 3 fixture sentences land in a kept bucket: a 4-try training
-            // word is Needs Attention, a 4-try MASTERED word is Recovered
-            // (>= threshold, not > 0), and an untouched word is Not Attempted.
             const { groups, counts } = groupSentences(curriculum);
             expect(groups.flatMap((g) => g.rows)).toHaveLength(3);
             expect(counts[VERDICT.NEEDS_ATTENTION]).toBe(1);
             expect(counts[VERDICT.RECOVERED]).toBe(1);
             expect(groups[0].rows[0].level).toBe("Level 1: Farm");
+        });
+
+        test("the five counts partition the sentences on screen", () => {
+            // The count line promises this. If a bucket is ever cut again, the
+            // numbers stop summing to the total and this fails.
+            const { groups, counts } = groupSentences(curriculum);
+            const total = Object.values(VERDICT).reduce((n, k) => n + counts[k], 0);
+            expect(total).toBe(groups.flatMap((g) => g.rows).length + 0);
+            expect(groups).toHaveLength(Object.keys(VERDICT).length);
         });
     });
 
@@ -284,6 +304,23 @@ describe("masteryLabels", () => {
         test("the Word Blast chip keeps its own threshold gate", () => {
             // The two surfaces differ ON PURPOSE. Do not "unify" them.
             expect(details).toContain("attentionMeta(stat, threshold)");
+        });
+
+        test("a MASTERED sentence renders, but with no attempts and no drill list", () => {
+            // The sentence stays visible (module + text + chips) — hiding it made
+            // a top student's levels vanish, which is the bug this gates. What is
+            // suppressed is the NUMBER, not the sentence.
+            expect(details).toContain("showAttempts");
+            expect(details).toMatch(/showAttempts && problems\.length > 0/);
+            expect(details).toMatch(/sentenceVerdictValue !== VERDICT\.MASTERED/);
+        });
+
+        test("the count line names all five verdicts", () => {
+            // Five buckets render, so five numbers must partition the total. A
+            // line that names three leaves two rendered groups unlabelled.
+            for (const key of ["NEEDS_ATTENTION", "PRACTICING", "RECOVERED", "NOT_ATTEMPTED", "MASTERED"]) {
+                expect(details).toContain(`sqCounts[VERDICT.${key}]`);
+            }
         });
 
         test("no status dot on the drill list or the group heading", () => {

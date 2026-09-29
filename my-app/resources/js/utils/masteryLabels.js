@@ -146,18 +146,20 @@ export function mergeSentenceWords(words, threshold = NEEDS_ATTENTION_ATTEMPTS) 
 // the words. Word Blast does NOT group — it keeps the two Mastery / Training
 // columns and splits on the `mastery` column alone.
 
-// Only three, because those are the only three the count line names — and a
-// new student's 20 unread sentences were rendering behind two dead "(0)"
-// headings, which made the panel read as empty. Practicing and Mastered are
-// the ones dropped: a sentence with every word below the threshold has no
-// action behind it, and a conquered sentence is already reported by the
-// "N of M Sentences Mastered" line. `counts` still carries all five keys
-// (bucketize seeds it from VERDICT, not from this list), so nothing that
-// reads a count loses one.
+// All five, because every sentence belongs to one and none of them is dead
+// space: the panel drops EMPTY headings at the call site, which is what actually
+// fixed the new-student "empty panel" read. An earlier cut to three buckets
+// also removed a "Practising sentence is in NO group" lock — that lock was
+// guarding against the very regression it could not see: a seeded student whose
+// sentences are uniformly mastered had every sentence bucketed nowhere, so whole
+// levels rendered nothing at all. Five buckets + a visibility filter is the fix;
+// cutting buckets was never needed.
 const SENTENCE_BUCKETS = [
     VERDICT.NEEDS_ATTENTION,
+    VERDICT.PRACTICING,
     VERDICT.RECOVERED,
     VERDICT.NOT_ATTEMPTED,
+    VERDICT.MASTERED,
 ];
 
 function bucketize(keys, fill) {
@@ -171,19 +173,15 @@ function bucketize(keys, fill) {
     return { groups: keys.map((key) => ({ key, title: VERDICT_META[key].label, rows: rows[key] })), counts };
 }
 
-// Story Quest: each sentence names its own module — grouping by verdict
-// scatters a module's sentences across groups. A verdict outside
-// SENTENCE_BUCKETS is COUNTED but not bucketed: dropping the row is the
-// caller's display decision, and the count line above the panel still reports
-// it, so an un-guarded push here would throw on any Practicing or Mastered
-// sentence in the curriculum.
+// Story Quest: every sentence renders, and each names its own module — grouping
+// by verdict scatters a module's sentences across groups.
 export function groupSentences(curriculum, threshold = NEEDS_ATTENTION_ATTEMPTS) {
     return bucketize(SENTENCE_BUCKETS, (rows, counts) => {
         for (const level of curriculum || []) {
             for (const stat of level.sentence_stats || []) {
                 const key = sentenceVerdict(stat.words || [], threshold);
                 counts[key]++;
-                if (rows[key]) rows[key].push({ ...stat, level: level.level });
+                rows[key].push({ ...stat, level: level.level });
             }
         }
     });

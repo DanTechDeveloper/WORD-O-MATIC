@@ -65,6 +65,14 @@ function SentencePerformanceBlock({ stat, threshold }) {
     const sentenceVerdictValue = sentenceVerdict(words, threshold);
     const meta = VERDICT_META[sentenceVerdictValue];
 
+    // A mastered sentence is shown, but silent. MASTERED means every word was
+    // conquered and NONE of them ever reached the threshold — the recovered
+    // floor IS the threshold — so there is no struggle to report and the
+    // sentence is the unit, not the word. "Attempts: 1" on five clean words is
+    // noise, and the teacher is looking for something to drill, not a trophy.
+    // One rule, keyed on the verdict: mastered = sentence only.
+    const showAttempts = sentenceVerdictValue !== VERDICT.MASTERED;
+
     return (
         <div className="px-3 py-2 sm:px-4 sm:py-3 bg-surface-container border-2 border-outline/20 rounded-xl text-xs sm:text-sm leading-relaxed block">
             {/* Grouping by verdict scatters a module's sentences across groups,
@@ -98,19 +106,21 @@ function SentencePerformanceBlock({ stat, threshold }) {
                     );
                 })}
             </p>
-            <div className="mt-2 text-[10px] sm:text-xs uppercase tracking-widest text-on-surface-variant">
-                {/* The number is a sum of the words' RECORDED FAILURES, never
-                    tries and never a score. The 5s silence watchdog also
-                    increments it, so a word the child never attempted can carry
-                    a failure — which is also why it gets no +1: a sentence has
-                    no single winning try, and the child may not have tried at
-                    all. */}
-                {sentenceVerdictValue === VERDICT.NOT_ATTEMPTED
-                    ? "Not attempted yet"
-                    : `${failedCount} recorded failure${failedCount === 1 ? "" : "s"} across the sentence`}
-                {!meta.quiet && <span className={`${meta.cls} ml-1`}>· {meta.label}</span>}
-            </div>
-            {problems.length > 0 && (
+            {showAttempts && (
+                <div className="mt-2 text-[10px] sm:text-xs uppercase tracking-widest text-on-surface-variant">
+                    {/* The number is a sum of the words' RECORDED FAILURES, never
+                        tries and never a score. The 5s silence watchdog also
+                        increments it, so a word the child never attempted can carry
+                        a failure — which is also why it gets no +1: a sentence has
+                        no single winning try, and the child may not have tried at
+                        all. */}
+                    {sentenceVerdictValue === VERDICT.NOT_ATTEMPTED
+                        ? "Not attempted yet"
+                        : `${failedCount} recorded failure${failedCount === 1 ? "" : "s"} across the sentence`}
+                    {!meta.quiet && <span className={`${meta.cls} ml-1`}>· {meta.label}</span>}
+                </div>
+            )}
+            {showAttempts && problems.length > 0 && (
                 <ul className="mt-2 space-y-1 text-[10px] sm:text-xs uppercase tracking-widest">
                     {problems.map((w) => {
                         // ATTEMPT + STATUS on EVERY row. attentionMeta() is
@@ -339,10 +349,12 @@ export default function StudentDetail({ data }) {
     // Grouped by verdict so the teacher opens on the words that need work. Every
     // sentence renders exactly once, and each one names its own module because
     // grouping by verdict scatters a module's sentences across groups.
-    // A brand-new student's sentences are all NOT_ATTEMPTED, so this is the
-    // list that makes levels 1-10 readable — behind two empty headings it read
-    // as an empty panel. Filtered HERE, not in bucketize, which deliberately
-    // returns empty buckets so the count line and the tests can read them.
+    //
+    // Empty groups are dropped HERE, and that filter — not the bucket list — is
+    // what makes a brand-new student see their 20 unread sentences instead of
+    // three dead "(0)" headings and an empty-looking panel. A brand-new student
+    // is all NOT_ATTEMPTED, so exactly one group survives. bucketize keeps
+    // returning every bucket so the count line above can partition all five.
     const { groups: sqGroups, counts: sqCounts } = groupSentences(_speakCurriculum, attentionThreshold);
     const visibleSqGroups = sqGroups.filter((g) => g.rows.length > 0);
 
@@ -689,14 +701,18 @@ export default function StudentDetail({ data }) {
                     </div>
                     {sqSentencesAll.length > 0 && (
                         <>
-                            {/* "In curriculum", not "total": only three verdicts
-                                render, so a student with 16 mastered sentences has 20
-                                here and 4 on screen. Named as scope so the three
-                                counts beside it read as "of those", not "of 20". */}
+                            {/* All five verdicts, so the numbers PARTITION the total
+                                and can be checked by eye. A three-verdict line left
+                                two buckets unlabelled while the panel showed them
+                                below. Two lines so six numbers do not wrap into an
+                                unreadable smear on a phone. */}
                             <p className="text-on-surface-variant font-black uppercase text-[10px] sm:text-xs tracking-widest">
-                                {sqSentencesAll.length} sentences in curriculum ·{" "}
-                                {sqCounts[VERDICT.NEEDS_ATTENTION]} need attention · {sqCounts[VERDICT.RECOVERED]} recovered ·{" "}
-                                {sqCounts[VERDICT.NOT_ATTEMPTED]} not attempted yet
+                                {sqSentencesAll.length} sentences total ·{" "}
+                                {sqCounts[VERDICT.NEEDS_ATTENTION]} need attention · {sqCounts[VERDICT.PRACTICING]} practicing ·{" "}
+                                {sqCounts[VERDICT.RECOVERED]} recovered
+                                <br className="sm:hidden" />
+                                <span className="hidden sm:inline"> · </span>
+                                {sqCounts[VERDICT.NOT_ATTEMPTED]} not attempted yet · {sqCounts[VERDICT.MASTERED]} mastered
                             </p>
                         </>
                     )}
@@ -706,17 +722,6 @@ export default function StudentDetail({ data }) {
                                 <span className="material-symbols-outlined text-4xl text-on-surface-variant/40 mb-3" aria-hidden="true">menu_book</span>
                                 <p className="text-on-surface-variant font-black uppercase text-xs tracking-widest">No Story Quest modules yet</p>
                                 <p className="text-on-surface-variant/60 text-xs font-semibold mt-1">Create Level 1 in Story Quest to get started.</p>
-                            </div>
-                        ) : visibleSqGroups.length === 0 ? (
-                            /* The three buckets cover at most three verdicts, so a
-                               student whose every sentence is Practicing or
-                               Mastered leaves nothing to render. Without this the
-                               panel is a blank white box — which reads as broken,
-                               not as good news. */
-                            <div className="flex flex-col items-center justify-center py-16 text-center">
-                                <span className="material-symbols-outlined text-4xl text-accent/40 mb-3" aria-hidden="true">verified</span>
-                                <p className="text-on-surface-variant font-black uppercase text-xs tracking-widest">No sentences to review</p>
-                                <p className="text-on-surface-variant/60 text-xs font-semibold mt-1">Every sentence is mastered, and none still needs practice.</p>
                             </div>
                         ) : (
                             visibleSqGroups.map((group) => {
