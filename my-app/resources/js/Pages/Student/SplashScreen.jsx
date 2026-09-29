@@ -118,7 +118,13 @@ export default function SplashScreen() {
                 }}
             />
 
-            <h1 className="relative z-10 text-primary text-[clamp(2.25rem,11vw,6rem)] leading-[0.95] font-black italic uppercase tracking-[-0.04em] text-center text-balance">
+            {/* No spaces in "WORD-O-MATIC" — the only break opportunities are the
+                two hyphens, so it wrapped to WORD- / O-MATIC, and `text-balance`
+                then balanced those into two lines. whitespace-nowrap closes that;
+                the 9vw ceiling keeps the result inside px-6 down to a 320px phone
+                (28.8px × ~7.5em ≈ 216px against 272px available). Same fix as the
+                GameResults h1. */}
+            <h1 className="relative z-10 text-primary text-[clamp(1.5rem,9vw,6rem)] leading-[0.95] font-black italic uppercase tracking-[-0.04em] text-center whitespace-nowrap">
                 WORD-O-MATIC
             </h1>
 
