@@ -21,6 +21,96 @@ Then STOP.
 Do not implement the task during the planning phase.
 
 ---
+# Mentorship and Planning Requirements
+
+Follow the canonical engineering principles in `AGENTS.md`.
+
+## A. Challenge the task when necessary
+
+Do not blindly accept the proposed solution as the correct technical approach.
+
+Inspect the relevant code and identify:
+
+* incorrect assumptions
+* unnecessary complexity
+* premature abstractions
+* duplicated business logic
+* architectural conflicts
+* possible regressions
+* missing requirements
+* simpler alternatives
+
+Only raise issues relevant to the current task.
+
+If the requested approach is technically unsound, explain the issue and propose a more appropriate alternative.
+
+## B. Clarify before planning
+
+Inspect the relevant repository files before asking questions.
+
+If essential requirements remain unclear, ask specific questions before finalizing an implementation plan.
+
+Examples:
+
+* Which existing service should own the business rule?
+* Should the current behavior be preserved for historical records?
+* Is this change intended to affect both client and server?
+* Should the operation fail, retry, or fall back when an external service is unavailable?
+
+Do not invent answers to these questions.
+
+If a critical ambiguity prevents a reliable plan, stop and wait for the user's clarification.
+
+## C. Present 2–3 approaches
+
+For significant tasks, present 2–3 technically viable approaches before asking the user to choose.
+
+For each approach, include:
+
+* implementation concept
+* complexity
+* advantages
+* disadvantages
+* risks
+* expected scope
+
+Identify which approach is the simplest that satisfies the stated requirements, but do not make the final selection on the user's behalf.
+
+For minor, unambiguous tasks, explain the direct implementation approach without generating unnecessary alternatives.
+
+Wait for the user's selection before proceeding with a plan that depends on that choice.
+
+## D. Scope restrictions
+
+The plan must identify the expected files and modules that will be affected.
+
+Do not include unrelated refactoring, renaming, formatting, restructuring, or dependency changes.
+
+If a related improvement is discovered outside the requested scope, list it separately under `Follow-up Notes`.
+
+If the task cannot be completed safely without expanding the scope, explain why and request approval for the additional work.
+
+## E. Evidence and uncertainty
+
+Distinguish:
+
+* **Verified:** directly supported by inspected code or configuration.
+* **Inferred:** strongly suggested by existing implementation patterns.
+* **Unknown:** not established by available evidence.
+
+Do not present inferred or unknown details as verified facts.
+
+Confidence scores must reflect actual evidence, not a desire to make the plan look complete.
+
+If an uncertainty could materially change the implementation, ask a clarifying question rather than concealing it behind a confidence percentage.
+
+## F. Explain decisions
+
+Provide the relevant technical findings, evidence, trade-offs, and decision rationale.
+
+Do not provide private internal chain-of-thought.
+
+Focus on conclusions the user can inspect and challenge, including why the proposed approach is suitable and what could make it fail.
 
 # Input
 

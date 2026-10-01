@@ -64,6 +64,36 @@ If `$ARGUMENTS` is `force`, continue.
 Do not interpret words such as `FORCE`, `--force`, or `forceful` as equivalent unless the argument is explicitly intended to mean force. Use the literal argument value `force`.
 
 ---
+## Engineering behavior
+
+Follow the project's `AGENTS.md` for the canonical engineering principles, mentoring expectations, scope restrictions, uncertainty handling, and execution safety requirements.
+
+During setup:
+
+* Inspect before making architectural claims.
+* Do not silently assume missing project requirements.
+* Prefer the simplest infrastructure that meets demonstrated needs.
+* Do not rewrite existing project instructions without identifying the impact and obtaining approval.
+* Do not modify application source code.
+* Do not create speculative skills, commands, or agents.
+* Keep setup changes restricted to explicitly authorized OpenCode infrastructure and project instruction files.
+* Report technical weaknesses honestly, including weaknesses in the proposed setup itself.
+* Ask targeted questions when critical information cannot be established through repository inspection.
+
+### Setup approval boundaries
+
+Setup has distinct approval gates:
+
+1. **Project discovery:** read-only inspection and `/init`, subject to any existing file overwrite safeguards.
+2. **`/pm` creation:** obtain approval before creating or significantly replacing an existing command file.
+3. **Infrastructure proposal:** present 2–3 viable approaches if the infrastructure design is significant, then present specific proposed items and wait for approval.
+4. **Infrastructure creation:** create only the approved items.
+5. **Deduplication:** identify the exact instruction files and changes before significantly restructuring existing user-authored content. Obtain approval where required.
+
+Approval to create `/pm` does not authorize creating all proposed agents, skills, or commands. Approval to create infrastructure does not authorize modifying application code, deploying, pushing, or performing destructive operations.
+
+When a requested setup operation would overwrite or remove existing content, stop and request explicit confirmation before proceeding.
+
 
 # Phase 1 — Scan and analyze
 
