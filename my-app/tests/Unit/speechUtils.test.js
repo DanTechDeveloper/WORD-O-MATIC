@@ -216,7 +216,6 @@ describe("processSentenceModeResult (Story Quest — SSOT isWordMatch)", () => {
             current: {
                 hasMatched: false,
                 isMounted: true,
-                stoppedAt: 0,
                 mispronouncedSentence: false,
                 mispronouncedInWord: false,
                 transcript: "",
@@ -382,7 +381,6 @@ describe("processWordModeResult (Word Blast — strict exact-only)", () => {
             current: {
                 hasMatched: false,
                 isMounted: true,
-                stoppedAt: 0,
                 mispronouncedSentence: false,
                 mispronouncedInWord: false,
                 transcript: "",
@@ -612,4 +610,101 @@ describe("processWordModeResult (Word Blast — strict exact-only)", () => {
         processWordModeResult({ isFinal: true, confidence: 0.95, 0: { transcript: "cat" } }, "cat", stateRefs, timerRefs, timeoutRefs, propsRef);
         expect(propsRef.current.onWordRecognized).toHaveBeenCalledTimes(1);
     });
+});
+
+// ponytail: TAIL_WINDOW = 4 was a magic number with no test. Two cases above
+// ("in the recent tail" / "long ago") looked like coverage but only bracket the
+// window from 4 and 8 — so 4, 5, 6 and 7 ALL passed. The value itself was
+// unpinned: it could have been widened to 7 and every test in the repo would
+// still have been green. These rows sit on the boundary itself.
+//
+// There are TWO limits, not one, and the second was undocumented until these
+// rows failed:
+//
+//   1. TAIL_WINDOW = 4 — matchScope, and ONLY for a single-word target.
+//   2. refWordCount + 5 — the transcript memory cap, applied to every target
+//      before `full` is built. For a 2-word target that is 7 tokens, so a
+//      multi-word target is bounded too even though matchScope never fires.
+//
+// The window is reached only through the NO-lookahead branch (propsRef carries
+// no `lookahead`), which is what Story Quest has at the very end of a
+// paragraph — slice() past the last word joins to "". matchScope() is not
+// exported, so behaviour is asserted through processSentenceModeResult.
+describe("the single-word tail window is pinned at its boundary", () => {
+    const makeRefs = () => ({
+        stateRefs: {
+            current: {
+                hasMatched: false,
+                isMounted: true,
+                mispronouncedSentence: false,
+                mispronouncedInWord: false,
+                transcript: "",
+                interim: "",
+                lastSpeechAt: Date.now(),
+            },
+        },
+        timeoutRefs: { current: { graceEnd: 0, target: null } },
+        timerRefs: { current: { restart: null, sentence: null, word: null, settle: null } },
+        propsRef: {
+            current: {
+                isActive: true,
+                // no `lookahead` on purpose — this is the matchScope branch
+                onWordRecognized: vi.fn(),
+                onMispronounced: vi.fn(),
+                onProgress: vi.fn(),
+            },
+        },
+    });
+
+    // `full` is one authoritative final. Words = the token count; at = where the
+    // target sits. `expect` is "match" (green) or "stale" (red).
+    const CASES = [
+        // [label, full, target, words, at, expect]
+        ["under the window: 3 tokens, target first", "cat is big", "cat", 3, 0, "match"],
+        ["ON the boundary: 4 tokens, target first", "cat is big and", "cat", 4, 0, "match"],
+        // The row that was missing. 4 -> 7 was free; 4 -> 5 is now pinned.
+        ["one past the boundary: 5 tokens, target first", "cat is big and the", "cat", 5, 0, "stale"],
+        ["well past: 6 tokens, target first", "cat is big and the boy", "cat", 6, 0, "stale"],
+        // Proves the rule is "the LAST FOUR", not "exactly four tokens" — the
+        // same 5-token transcript matches when the target is at index 1.
+        ["5 tokens, target at index 1 — still the last four", "the cat is big and", "cat", 5, 1, "match"],
+        ["a long run with the target newest still matches", "one two three four five six seven eight nine cat", "cat", 10, 9, "match"],
+        // Both the stale and the fresh word are present: the tail, not the whole
+        // transcript, is what counts — and the newest wins.
+        ["a stale AND a fresh copy — the fresh one is in the tail", "cat one two three four five six seven cat", "cat", 9, 8, "match"],
+        // A multi-word target skips TAIL_WINDOW entirely — matchScope hands back
+        // `full` whole. But `full` is NOT unbounded: the transcript is trimmed to
+        // refWordCount + 5 first (a target-relative cap, not a fixed window), so
+        // for a 2-word target the real memory is 7 tokens. These three rows pin
+        // that second, quieter limit, including the slide: trimming keeps the
+        // LAST n tokens, so a target sitting at the head survives one extra
+        // token and is only gone on the next one.
+        ["multi-word target exactly at the targetWords+5 cap", "the cat sat and the boy ran", "cat sat", 7, 1, "match"],
+        ["one token over: the trim slides and keeps it at the head", "the cat sat and the boy ran the", "cat sat", 8, 1, "match"],
+        ["two tokens over: the target is pushed out of the memory", "the cat sat and the boy ran the girl", "cat sat", 9, 1, "stale"],
+        // normalizeText runs on the window, so punctuation inside it is fine.
+        ["punctuation inside the window does not break the match", "the cat is big.", "cat", 4, 1, "match"],
+    ];
+
+    for (const [name, full, target, words, at, expected] of CASES) {
+        test(`${name} — ${words} tokens, target @${at}`, () => {
+            expect(full.split(/\s+/).filter(Boolean)).toHaveLength(words);
+            const { stateRefs, timeoutRefs, timerRefs, propsRef } = makeRefs();
+            processSentenceModeResult(
+                { isFinal: true, 0: { transcript: full } },
+                target,
+                stateRefs,
+                timeoutRefs,
+                timerRefs,
+                propsRef,
+            );
+            if (expected === "match") {
+                expect(propsRef.current.onWordRecognized).toHaveBeenCalledTimes(1);
+                expect(propsRef.current.onMispronounced).not.toHaveBeenCalled();
+            } else {
+                expect(propsRef.current.onWordRecognized).not.toHaveBeenCalled();
+                expect(propsRef.current.onMispronounced).toHaveBeenCalledTimes(1);
+            }
+        });
+    }
 });

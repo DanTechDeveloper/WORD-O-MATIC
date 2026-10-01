@@ -10,7 +10,6 @@ const makeRefs = ({ isWordMode = true, targetWord = "pig", isActive = true, mute
         current: {
             hasMatched: false,
             isMounted: true,
-            stoppedAt: 0,
             mispronouncedSentence: false,
             mispronouncedInWord: false,
             transcript: "",

@@ -45,7 +45,6 @@ const makeRefs = () => {
         current: {
             hasMatched: false,
             isMounted: true,
-            stoppedAt: 0,
             mispronouncedSentence: false,
             mispronouncedInWord: false,
             transcript: "",

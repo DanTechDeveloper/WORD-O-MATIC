@@ -71,6 +71,30 @@ function buildFullSentence(transcript, interim) {
     return normalizeText(transcript + " " + interim);
 }
 
+// ponytail: the single-word tail window. Two reasons, and it is the smaller of
+// the two limits — the transcript is ALSO capped at refWordCount + 5 below, which
+// is what actually bounds a multi-word target (matchScope never fires for one).
+//
+//   A. Speech-shaped. A single-word prompt is "cat", and the span a child really
+//      uses to answer it is a connective or two around the word: "and then the
+//      cat" is 4 tokens. Past that the child is mid-sentence, not answering, so
+//      the word they said long ago stops counting.
+//   B. Measured, not derived. 4 is the number the live rounds ran with, not a
+//      figure derived from anything. It is the LIKELY best value, not a proven
+//      one, so treat it as a knob: `window.__asrStats = {}` buckets word.accept,
+//      word.instantWrong and word.timeout5s, and a class with long lead-ins
+//      ("okay so um the cat") will show as too many instantWrong on a correct
+//      word. Widen or narrow to 3/5 and compare those buckets before keeping a
+//      change.
+//
+// The window is also the ONLY thing still protecting a new target 500ms after a
+// switch: the A+B stale-tail guard in processWordModeResult only suppresses the
+// PREVIOUS target, and after it expires this is what stops a word from the old
+// round matching the new one.
+//
+// Pinned at the boundary by "the single-word tail window is pinned at its
+// boundary" (tests/Unit/speechUtils.test.js) — rows at 3/4/5/6 tokens, so 4
+// cannot drift to 7 unnoticed.
 const TAIL_WINDOW = 4;
 function matchScope(full, target) {
     const isSingleWord = target.split(/\s+/).filter(Boolean).length === 1;
@@ -305,7 +329,6 @@ export function processSentenceModeResult(
 
     armSentenceTimeout(stateRefs, timerRefs, propsRef);
 
-    stateRefs.current.stoppedAt = Date.now();
     if (rawLookahead) {
         const advanceCount = countConsecutiveMatches(full, rawLookahead);
         const fullMatch = advanceCount >= refWordCount;
@@ -476,8 +499,6 @@ export function processWordModeResult(
         bump("word.emptyDrop", result.confidence);
         return;
     }
-
-    stateRefs.current.stoppedAt = Date.now();
 
     if (stateRefs.current.hasMatched) return;
 

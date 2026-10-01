@@ -97,7 +97,6 @@ export function useDeepgramRecognition({
     const stateRefs = useRef({
         hasMatched: false,
         isMounted: false,
-        stoppedAt: 0,
         mispronouncedInWord: false,
         mispronouncedSentence: false,
         transcript: "",
@@ -564,10 +563,10 @@ export function useDeepgramRecognition({
                 // instead of reconnecting. The 'online' listener owns recovery;
                 // returning early also keeps restartCount unburned, so the
                 // ladder is still fully available for real server drops.
-        if (!isReachable()) return;
-        // isActive only: during COUNTDOWN the preload connect is expected, and
-        // flagging it would flash "Reconnecting..." at the start of every round.
-        if (propsRef.current.isActive) setReconnecting(true);
+                if (!isReachable()) return;
+                // isActive only: during COUNTDOWN the preload connect is expected, and
+                // flagging it would flash "Reconnecting..." at the start of every round.
+                if (propsRef.current.isActive) setReconnecting(true);
                 // ponytail: only QUICK deaths count — a conn that lived >=10s
                 // was healthy (transient blip), so the streak resets. Three
                 // quick deaths in a row means the server keeps dropping us;
@@ -656,7 +655,6 @@ export function useDeepgramRecognition({
             stateRefs.current.transcript = "";
             stateRefs.current.interim = "";
         }
-        stateRefs.current.stoppedAt = 0;
         stateRefs.current.lastSpeechAt = Date.now();
         // ponytail: A+B stale-tail guard — remember prev target so a late final
         // for the old word ("cat" tail after switch to "dog") doesn't instantly
@@ -702,7 +700,6 @@ export function useDeepgramRecognition({
                 stateRefs.current.mispronouncedSentence = false;
                 stateRefs.current.transcript = "";
                 stateRefs.current.interim = "";
-                stateRefs.current.stoppedAt = 0;
                 stateRefs.current.lastSpeechAt = Date.now();
                 timeoutRefs.current.target = null;
                 timeoutRefs.current.graceEnd = Date.now() + 500;
