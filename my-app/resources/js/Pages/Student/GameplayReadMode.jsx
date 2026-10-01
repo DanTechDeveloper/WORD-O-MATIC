@@ -368,11 +368,18 @@ export default function GameplayReadMode({ module, tutorialComplete = true, tuto
                     )}
                 </>
             )}
-            {coachActive && bodyUrl && (
+            {/* ponytail: isTutorialCompletePending gates this too, not just the
+                guide branch below. handleTimeUp clears the engine's
+                mispronounceTimer, so setIsMispronounced(false) never runs and
+                coachActive survives its own 1.5s timer — a mispronounce inside
+                that window used to mount DONE (center) and NICE TRY
+                (bottom-right) at once. Render guard, not a state reset: the
+                engine is shared with Story Quest and Speak. */}
+            {coachActive && !isTutorialCompletePending && bodyUrl && (
                 <AvatarSpeechBubble
                     emoji="sentiment_very_satisfied"
                     title="NICE TRY!"
-                    message="That's okay — you're doing great!"
+                    message="That's okay. you're doing great!"
                     bodyUrl={bodyUrl}
                     color="accent"
                     position="bottom-right"
