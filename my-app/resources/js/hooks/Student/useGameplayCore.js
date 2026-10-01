@@ -1,11 +1,32 @@
-import { useState, useCallback, useEffect, useMemo, useRef, useSyncExternalStore } from "react";
+import {
+    useState,
+    useCallback,
+    useEffect,
+    useMemo,
+    useRef,
+    useSyncExternalStore,
+} from "react";
 import { useCountdown } from "./useCountdown";
 import { router } from "@inertiajs/react";
-import { playSuccessSound, playFeedbackSound, playMispronounceFeedback } from "@/utils/sounds";
-import { readResumeSession, writeResumeSession, clearResumeSession, readPendingSession, writePendingSession, clearPendingSession } from "@/utils/resumeStorage";
+import {
+    playSuccessSound,
+    playFeedbackSound,
+    playMispronounceFeedback,
+} from "@/utils/sounds";
+import {
+    readResumeSession,
+    writeResumeSession,
+    clearResumeSession,
+    readPendingSession,
+    writePendingSession,
+    clearPendingSession,
+} from "@/utils/resumeStorage";
 import { normalizeText as normalizeWord } from "@/lib/speechUtils";
 import { clearAllTimers } from "@/lib/speechProcessors";
-import { subscribe as subscribeConnection, isReachable } from "@/utils/connection";
+import {
+    subscribe as subscribeConnection,
+    isReachable,
+} from "@/utils/connection";
 
 function getStreakFeedbackMessage(streak) {
     if (streak >= 6) return "Excellent!";
@@ -37,18 +58,30 @@ export function useGameplayCore({
 }) {
     const resume = useMemo(() => {
         if (typeof window === "undefined") return null;
-        return resumeData ? resumeData : (moduleId ? readResumeSession(moduleId, scope) : null);
+        return resumeData
+            ? resumeData
+            : moduleId
+              ? readResumeSession(moduleId, scope)
+              : null;
     }, [resumeData, moduleId]);
 
-    const [currentWordIndex, setCurrentWordIndex] = useState(() => resume?.currentWordIndex ?? 0);
-    const [wordsSmashed, setWordsSmashed] = useState(() => resume?.wordsSmashed ?? 0);
-    const [gameState, setGameState] = useState(() => resume ? "ACTIVE" : "IDLE");
+    const [currentWordIndex, setCurrentWordIndex] = useState(
+        () => resume?.currentWordIndex ?? 0,
+    );
+    const [wordsSmashed, setWordsSmashed] = useState(
+        () => resume?.wordsSmashed ?? 0,
+    );
+    const [gameState, setGameState] = useState(() =>
+        resume ? "ACTIVE" : "IDLE",
+    );
     const [isMispronounced, setIsMispronounced] = useState(false);
     const [isExploding, setIsExploding] = useState(false);
     const [showPointsFeedback, setShowPointsFeedback] = useState(false);
     const [pointsFeedbackValue, setPointsFeedbackValue] = useState(0);
     const [scoreEmphasize, setScoreEmphasize] = useState(false);
-    const [currentStreak, setCurrentStreak] = useState(() => resume?.currentStreak ?? 0);
+    const [currentStreak, setCurrentStreak] = useState(
+        () => resume?.currentStreak ?? 0,
+    );
     const [feedbackType, setFeedbackType] = useState(null);
     const [feedbackMessage, setFeedbackMessage] = useState("");
     const [streakShake, setStreakShake] = useState(null);
@@ -98,12 +131,23 @@ export function useGameplayCore({
         wordsRef.current = words;
         currentStreakRef.current = currentStreak;
         gameStateRef.current = gameState;
-    }, [onWordRecognized, onMispronounce, currentWordIndex, wordsSmashed, maxStreak, words, currentStreak, gameState]);
+    }, [
+        onWordRecognized,
+        onMispronounce,
+        currentWordIndex,
+        wordsSmashed,
+        maxStreak,
+        words,
+        currentStreak,
+        gameState,
+    ]);
 
     // ponytail: clamp resume indices after words load (initial totalWords may be 0)
     useEffect(() => {
         if (totalWords > 0) {
-            setCurrentWordIndex((prev) => (prev > totalWords ? totalWords : prev));
+            setCurrentWordIndex((prev) =>
+                prev > totalWords ? totalWords : prev,
+            );
             setWordsSmashed((prev) => (prev > totalWords ? totalWords : prev));
         }
     }, [totalWords]);
@@ -132,10 +176,22 @@ export function useGameplayCore({
         setIsSaving(true);
         // strip the storage-only fields so the replay POST is byte-identical to
         // the original — scope is ours, the server has never seen it.
-        const { saveEndpoint: pendingEndpoint, createdAt: _ca, moduleId: _mid, scope: _sc, ...pendingPayload } = pending;
+        const {
+            saveEndpoint: pendingEndpoint,
+            createdAt: _ca,
+            moduleId: _mid,
+            scope: _sc,
+            ...pendingPayload
+        } = pending;
         // ponytail: saveEndpoint is client-controlled — whitelist to prevent tampered replay to arbitrary URL
-        const ALLOWED = ["/student/saveWordProgress", "/student/saveParagraphProgress"];
-        const endpoint = pendingEndpoint && ALLOWED.includes(pendingEndpoint) ? pendingEndpoint : saveEndpoint;
+        const ALLOWED = [
+            "/student/saveWordProgress",
+            "/student/saveParagraphProgress",
+        ];
+        const endpoint =
+            pendingEndpoint && ALLOWED.includes(pendingEndpoint)
+                ? pendingEndpoint
+                : saveEndpoint;
         router.post(endpoint, pendingPayload, {
             preserveState: true,
             onSuccess: () => {
@@ -143,7 +199,8 @@ export function useGameplayCore({
                 clearResumeSession(moduleId);
             },
             onError: (errors) => {
-                const hasValidationErrors = errors && Object.keys(errors).length > 0;
+                const hasValidationErrors =
+                    errors && Object.keys(errors).length > 0;
                 if (hasValidationErrors) clearPendingSession(moduleId);
                 hasSaved.current = false;
             },
@@ -152,7 +209,11 @@ export function useGameplayCore({
     }, [moduleId, saveEndpoint, deferPersist]);
 
     useEffect(() => {
-        if (typeof window === "undefined" || !moduleId || gameState !== "ACTIVE") {
+        if (
+            typeof window === "undefined" ||
+            !moduleId ||
+            gameState !== "ACTIVE"
+        ) {
             return;
         }
         // ponytail: clamp timeLeft 0-60 and stamp savedAt for wall-clock correction on resume (prevents 60s reset exploit)
@@ -239,10 +300,13 @@ export function useGameplayCore({
         }
     }, [gameState, clearResume]);
 
-    const moveToNextWord = useCallback((step = 1) => {
-        const n = Math.max(1, step | 0 || 1);
-        setCurrentWordIndex((prev) => Math.min(prev + n, totalWords));
-    }, [totalWords]);
+    const moveToNextWord = useCallback(
+        (step = 1) => {
+            const n = Math.max(1, step | 0 || 1);
+            setCurrentWordIndex((prev) => Math.min(prev + n, totalWords));
+        },
+        [totalWords],
+    );
 
     // ponytail: additive SQ escape hatch — lets the Story Quest wrapper add
     // points without touching the per-word feedback machine. Word Blast
@@ -262,10 +326,11 @@ export function useGameplayCore({
             // ponytail: persistExtra rides along for mode-specific detail
             // (SQ sentence_scores); read via ref so inline arrows never churn
             // persistProgress identity (would reset the 60s timer effect).
-            const extra = typeof persistExtraRef.current === "function"
-                ? persistExtraRef.current()
-                : (persistExtraRef.current || {});
-            const clientToken = `${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
+            const extra =
+                typeof persistExtraRef.current === "function"
+                    ? persistExtraRef.current()
+                    : persistExtraRef.current || {};
+            const clientToken = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
             const payload = {
                 module_id: moduleId,
                 words_smashed: wordsSmashedRef.current,
@@ -281,7 +346,9 @@ export function useGameplayCore({
             if (deferPersist) {
                 // strip idempotency token for tutorial (read-only, no dedup needed)
                 const { client_token: _ct, ...payloadNoToken } = payload;
-                router.post(saveEndpoint, payloadNoToken, { preserveState: true });
+                router.post(saveEndpoint, payloadNoToken, {
+                    preserveState: true,
+                });
                 return;
             }
             // ponytail: durable commit — sync write before POST so an F5
@@ -303,7 +370,8 @@ export function useGameplayCore({
                 onError: (errors) => {
                     // ponytail: validation errors (e.g. words_processed > total)
                     // are not retryable — drop the pending so we don't loop.
-                    const hasValidationErrors = errors && Object.keys(errors).length > 0;
+                    const hasValidationErrors =
+                        errors && Object.keys(errors).length > 0;
                     if (hasValidationErrors) {
                         clearPendingSession(moduleId);
                     }
@@ -321,76 +389,95 @@ export function useGameplayCore({
     persistExtraRef.current = persistExtra;
 
     useEffect(() => {
-        if (gameState === "ACTIVE" && currentWordIndex >= totalWords && totalWords > 0) {
+        if (
+            gameState === "ACTIVE" &&
+            currentWordIndex >= totalWords &&
+            totalWords > 0
+        ) {
             if (!deferPersist) persistProgressRef.current();
             setGameState("COMPLETED");
         }
     }, [currentWordIndex, totalWords, gameState, deferPersist]);
 
-    const handleWordRecognized = useCallback((count = 1) => {
-        if (gameStateRef.current !== "ACTIVE") return;
-        if (wordRecognizedGuardRef.current) return;
-        wordRecognizedGuardRef.current = true;
+    const handleWordRecognized = useCallback(
+        (count = 1) => {
+            if (gameStateRef.current !== "ACTIVE") return;
+            if (wordRecognizedGuardRef.current) return;
+            wordRecognizedGuardRef.current = true;
 
-        if (mispronounceGuardRef.current) {
-            mispronounceGuardRef.current = false;
+            if (mispronounceGuardRef.current) {
+                mispronounceGuardRef.current = false;
+                clearTimeout(mispronounceTimerRef.current);
+                setIsMispronounced(false);
+            }
+
             clearTimeout(mispronounceTimerRef.current);
+            mispronounceGuardRef.current = false;
+
+            const wordObj = wordsRef.current[currentWordIndexRef.current];
+            if (!wordObj) {
+                wordRecognizedGuardRef.current = false;
+                return;
+            }
+            const remaining = totalWords - currentWordIndexRef.current;
+            const advance = Math.max(
+                1,
+                Math.min(count | 0 || 1, Math.max(remaining, 1)),
+            );
+
+            setIsExploding(true);
+            playSuccessSound();
+            for (let k = 0; k < advance; k++) {
+                const w = wordsRef.current[currentWordIndexRef.current + k];
+                if (w) onWordRecognizedRef.current?.(w);
+            }
+
+            const points = advance;
+            setWordsSmashed((prev) => prev + points);
+            currentStreakRef.current += 1;
+            setCurrentStreak(currentStreakRef.current);
+            setMaxStreak((m) => Math.max(m, currentStreakRef.current));
+            setPointsFeedbackValue(points);
+            setShowPointsFeedback(true);
+            pointsFeedbackTimerRef.current = setTimeout(
+                () => setShowPointsFeedback(false),
+                500,
+            );
+            setScoreEmphasize(true);
+            scoreEmphasizeTimerRef.current = setTimeout(
+                () => setScoreEmphasize(false),
+                500,
+            );
+
+            const streak = currentStreakRef.current;
+            const fbMsg = getStreakFeedbackMessage(streak);
+            setFeedbackMessage(fbMsg);
+            setFeedbackType("correct");
+            playFeedbackSound(fbMsg);
+            feedbackTimerRef.current = setTimeout(() => {
+                setFeedbackType(null);
+            }, 600);
+
+            if (streak >= 2) {
+                const intensity = getStreakShakeIntensity(streak);
+                setStreakShake(intensity);
+                streakShakeTimerRef.current = setTimeout(
+                    () => {
+                        setStreakShake(null);
+                    },
+                    intensity === "intense" ? 500 : 400,
+                );
+            }
+
             setIsMispronounced(false);
-        }
-
-        clearTimeout(mispronounceTimerRef.current);
-        mispronounceGuardRef.current = false;
-
-        const wordObj = wordsRef.current[currentWordIndexRef.current];
-        if (!wordObj) {
-            wordRecognizedGuardRef.current = false;
-            return;
-        }
-        const remaining = totalWords - currentWordIndexRef.current;
-        const advance = Math.max(1, Math.min(count | 0 || 1, Math.max(remaining, 1)));
-
-        setIsExploding(true);
-        playSuccessSound();
-        for (let k = 0; k < advance; k++) {
-            const w = wordsRef.current[currentWordIndexRef.current + k];
-            if (w) onWordRecognizedRef.current?.(w);
-        }
-
-        const points = advance;
-        setWordsSmashed((prev) => prev + points);
-        currentStreakRef.current += 1;
-        setCurrentStreak(currentStreakRef.current);
-        setMaxStreak((m) => Math.max(m, currentStreakRef.current));
-        setPointsFeedbackValue(points);
-        setShowPointsFeedback(true);
-        pointsFeedbackTimerRef.current = setTimeout(() => setShowPointsFeedback(false), 500);
-        setScoreEmphasize(true);
-        scoreEmphasizeTimerRef.current = setTimeout(() => setScoreEmphasize(false), 500);
-
-        const streak = currentStreakRef.current;
-        const fbMsg = getStreakFeedbackMessage(streak);
-        setFeedbackMessage(fbMsg);
-        setFeedbackType("correct");
-        playFeedbackSound(fbMsg);
-        feedbackTimerRef.current = setTimeout(() => {
-            setFeedbackType(null);
-        }, 600);
-
-        if (streak >= 2) {
-            const intensity = getStreakShakeIntensity(streak);
-            setStreakShake(intensity);
-            streakShakeTimerRef.current = setTimeout(() => {
-                setStreakShake(null);
-            }, intensity === "intense" ? 500 : 400);
-        }
-
-        setIsMispronounced(false);
-        wordRecognizedTimerRef.current = setTimeout(() => {
-            setIsExploding(false);
-            moveToNextWord(advance);
-            wordRecognizedGuardRef.current = false;
-        }, 500);
-    }, [moveToNextWord]);
+            wordRecognizedTimerRef.current = setTimeout(() => {
+                setIsExploding(false);
+                moveToNextWord(advance);
+                wordRecognizedGuardRef.current = false;
+            }, 500);
+        },
+        [moveToNextWord],
+    );
 
     const handleMispronounce = useCallback(() => {
         if (gameStateRef.current !== "ACTIVE") return;
@@ -408,7 +495,13 @@ export function useGameplayCore({
 
         currentStreakRef.current = 0;
         setCurrentStreak(0);
-        const mispMsgs = ["Keep Trying!", "Not Quite!", "Nope!", "Try Again", "Again!"];
+        const mispMsgs = [
+            "Keep Trying!",
+            "Not Quite!",
+            "Nope!",
+            "Try Again",
+            "Again!",
+        ];
         const mispMsg = mispMsgs[Math.floor(Math.random() * mispMsgs.length)];
         clearTimeout(feedbackTimerRef.current);
         setFeedbackMessage(mispMsg);
@@ -440,7 +533,7 @@ export function useGameplayCore({
         setIsExploding(false);
         if (!deferPersist) persistProgress();
         clearResume();
-        
+
         if (currentWordIndexRef.current >= totalWords) {
             setGameState("COMPLETED");
         } else {
@@ -477,7 +570,9 @@ export function useGameplayCore({
         return () => clearInterval(id);
     }, [gameState, handleTimeUp]);
 
-    const countdownValue = useCountdown(gameState, () => setGameState("ACTIVE"));
+    const countdownValue = useCountdown(gameState, () =>
+        setGameState("ACTIVE"),
+    );
 
     const startGame = useCallback(() => {
         // Fresh round: re-arm the one-shot save guard (fresh mounts start false;
