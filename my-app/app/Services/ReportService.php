@@ -91,15 +91,15 @@ class ReportService
         };
     }
 
-    // The +1 that is a MASTERED word's own winning try. Never a sentence: a
-    // sentence has no single winning try, and failed_attempts counts failure
-    // events (wrong reads AND 5s-silence watchdog timeouts), so it is not a
-    // count of the child's attempts. WordChip shows this; the drill list shows
-    // failed_attempts directly because that is what it is counting.
-    public static function attemptsShown(string $mastery, int $failed): int
-    {
-        return $mastery === 'mastered' ? $failed + 1 : $failed;
-    }
+    // There is deliberately NO "attempts" helper, and there was one until
+    // 2026-10-01. It returned `mastered ? failed + 1 : failed` and it was wrong
+    // twice over: failed_attempts is not a try count (the 5s-silence watchdog
+    // increments it on pure silence), and the +1 desynchronised the teacher page
+    // from this very email, which prints failed_attempts raw. A recovered word
+    // read "4 recorded attempts to conquer" here and "Attempts: 5" on the page.
+    //
+    // It was already dead — no blade called it. Locked by
+    // VerdictTest::test_neither_language_adds_arithmetic_to_the_displayed_attempt_number().
 
     // The sentence verdict, derived from its WORDS — never from the summed
     // failed_attempts. A 5-word sentence at one miss each sums to 5 and would
@@ -125,7 +125,11 @@ class ReportService
         // this branch the verdict falls straight through to MASTERED and a
         // brand-new student renders every untouched sentence as "conquered on
         // the first try".
-        if (in_array(self::VERDICT_NOT_ATTEMPTED, $verdicts, true)) {
+        //
+        // …and the same holds for NO words at all: in_array needs an element to
+        // find, so an empty word list missed every branch above and reported a
+        // conquest that never happened.
+        if ($verdicts === [] || in_array(self::VERDICT_NOT_ATTEMPTED, $verdicts, true)) {
             return self::VERDICT_NOT_ATTEMPTED;
         }
 

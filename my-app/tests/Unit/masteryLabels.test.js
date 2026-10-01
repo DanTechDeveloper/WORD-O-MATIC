@@ -1,5 +1,5 @@
 import fs from "fs";
-import { attentionMeta, attemptsShown, groupSentences, mergeSentenceWords, sentenceVerdict, verdict, VERDICT, VERDICT_META, VERDICT_STYLE, NEEDS_ATTENTION_ATTEMPTS } from "@/utils/masteryLabels.js";
+import { attentionMeta, groupSentences, mergeSentenceWords, sentenceVerdict, verdict, VERDICT, VERDICT_META, VERDICT_STYLE, NEEDS_ATTENTION_ATTEMPTS } from "@/utils/masteryLabels.js";
 
 const THRESHOLD = NEEDS_ATTENTION_ATTEMPTS;
 
@@ -104,6 +104,102 @@ describe("masteryLabels", () => {
                 ]),
             ).toBe(VERDICT.PRACTICING);
         });
+
+        // ── the whole rule, every branch ──
+        //
+        // The per-widget suites pin the buckets, the panel and the chips, but
+        // nothing pinned the RULE across its full input space — which is how a
+        // vacuous-truth hole (the zero-word case below) could sit under a comment
+        // claiming it was closed. Transcribed from ParagraphModule::buildLevels()
+        // so the JS twin and the server twin are compared row by row;
+        // VerdictTest.php runs the identical table.
+        const M = (word, mastery, failed_attempts) => ({ word, mastery, failed_attempts });
+
+        // ParagraphModule::buildLevels() line-for-line.
+        const serverSentenceMastery = (words) => {
+            const allMastered = words.length > 0 && words.every((s) => s.mastery === "mastered");
+            const hasTraining = words.some((s) => s.mastery === "training");
+            const hasUnseen = words.some((s) => s.mastery === "unseen");
+            return allMastered ? "mastered" : hasTraining || hasUnseen ? "training" : "unseen";
+        };
+
+        const MATRIX = [
+            ["clean mastered", [M("Crows", "mastered", 0), M("caw.", "mastered", 0)], VERDICT.MASTERED],
+            ["mastered, 1 recorded failure", [M("Crows", "mastered", 0), M("caw.", "mastered", 1)], VERDICT.MASTERED],
+            ["mastered, 2 recorded failures", [M("Crows", "mastered", 0), M("caw.", "mastered", 2)], VERDICT.MASTERED],
+            ["mastered, 3 recorded failures (boundary)", [M("Crows", "mastered", 0), M("caw.", "mastered", 3)], VERDICT.RECOVERED],
+            ["mastered, 7 recorded failures", [M("Crows", "mastered", 0), M("caw.", "mastered", 7)], VERDICT.RECOVERED],
+            ["training, 0", [M("Goats", "training", 0)], VERDICT.PRACTICING],
+            ["training, 2", [M("Goats", "training", 2)], VERDICT.PRACTICING],
+            ["training, 3 (boundary)", [M("Goats", "training", 3)], VERDICT.NEEDS_ATTENTION],
+            ["every word unseen", [M("Crab", "unseen", 0), M("paws.", "unseen", 0)], VERDICT.NOT_ATTEMPTED],
+            ["mastered + unseen", [M("Milo", "mastered", 0), M("frog.", "unseen", 0)], VERDICT.NOT_ATTEMPTED],
+            ["recovered word + hard word", [M("mail", "mastered", 4), M("goes.", "training", 9)], VERDICT.NEEDS_ATTENTION],
+            ["dup word, 2+2 (merge crosses, sentence does not)", [M("A", "mastered", 2), M("cat", "mastered", 0), M("a", "mastered", 2)], VERDICT.MASTERED],
+            ["dup word, 3+0 (merge crosses threshold)", [M("A", "mastered", 3), M("cat", "mastered", 0)], VERDICT.RECOVERED],
+            ["null failed_attempts", [M("A", "mastered", null)], VERDICT.MASTERED],
+            // No `undefined` in PHP — the real shape of "never set" is a MISSING
+            // key, which is what (int) ($w['failed_attempts'] ?? 0) defends.
+            ["missing failed_attempts key", [{ word: "A", mastery: "mastered" }], VERDICT.MASTERED],
+        ];
+
+        test.each(MATRIX)("%s", (_name, words, expected) => {
+            expect(sentenceVerdict(words)).toBe(expected);
+        });
+
+        // THE BUG. `verdicts.includes(NOT_ATTEMPTED)` is the guard that stops a
+        // never-attempted sentence falling through to MASTERED — but it needs AT
+        // LEAST ONE word to find. Zero words makes every includes() miss and the
+        // function returns MASTERED, so a sentence with nothing in it reports a
+        // conquest that never happened and renders SILENT (the JSX gates
+        // showAttempts on !== MASTERED). The comment above the NOT_ATTEMPTED
+        // branch claimed this case was handled; it was not.
+        //
+        // Not reachable from production data today — sentencesFromContent()
+        // filters empty splits and the legacy branch needs words->count() > 0 —
+        // so this is a hole in the RULE, not an observed teacher-facing bug.
+        test("a sentence with NO words is Not Attempted, never Mastered", () => {
+            expect(sentenceVerdict([])).toBe(VERDICT.NOT_ATTEMPTED);
+        });
+
+        test("a null / undefined word list is also Not Attempted", () => {
+            expect(sentenceVerdict(null)).toBe(VERDICT.NOT_ATTEMPTED);
+            expect(sentenceVerdict(undefined)).toBe(VERDICT.NOT_ATTEMPTED);
+        });
+
+        // The threshold is a SHARED prop (HandleInertiaRequests ->
+        // ReportService::NEEDS_ATTENTION_ATTEMPTS), so a teacher whose threshold
+        // moves must move the recovered floor with it.
+        test("a custom threshold moves the recovered floor with the attention floor", () => {
+            const three = [{ mastery: "mastered", failed_attempts: 3 }];
+            expect(sentenceVerdict(three, 3)).toBe(VERDICT.RECOVERED);
+            expect(sentenceVerdict(three, 5)).toBe(VERDICT.MASTERED);
+            expect(sentenceVerdict([{ mastery: "training", failed_attempts: 4 }], 5)).toBe(VERDICT.PRACTICING);
+        });
+
+        // The SENTENCE verdict and the DRILL ROW verdict judge different things:
+        // sentenceVerdict() reads the raw per-occurrence words, while
+        // mergeSentenceWords() folds duplicates into one row and sums their
+        // counters. So "A" at 2 failures in position 1 and "a" at 2 in position 5
+        // is a MASTERED sentence (no single occurrence ever hit 3) carrying a
+        // RECOVERED drill row (the merged word reached 4).
+        test("the sentence judges raw occurrences; the drill row judges the merge", () => {
+            const each = [M("A", "mastered", 2), M("cat", "mastered", 0), M("a", "mastered", 2)];
+
+            const rowA = mergeSentenceWords(each, NEEDS_ATTENTION_ATTEMPTS).find((w) => w.word === "A");
+            expect(rowA.failed_attempts).toBe(4);
+            expect(rowA.verdict).toBe(VERDICT.RECOVERED);
+            expect(sentenceVerdict(each)).toBe(VERDICT.MASTERED);
+
+            const atThreshold = [M("A", "mastered", 3), M("cat", "mastered", 0)];
+            expect(sentenceVerdict(atThreshold)).toBe(VERDICT.RECOVERED);
+        });
+
+        test("null and undefined failed_attempts never produce NaN", () => {
+            expect(sentenceVerdict([M("A", "training", null)])).toBe(VERDICT.PRACTICING);
+            expect(sentenceVerdict([M("A", "mastered", undefined)])).toBe(VERDICT.MASTERED);
+            expect(sentenceVerdict([M("A", "unseen", null)])).toBe(VERDICT.NOT_ATTEMPTED);
+        });
     });
 
     describe("mergeSentenceWords", () => {
@@ -147,20 +243,6 @@ describe("masteryLabels", () => {
         });
     });
 
-
-    describe("attemptsShown", () => {
-        test("training shows raw failed_attempts", () => {
-            expect(attemptsShown({ mastery: "training", failed_attempts: 3 })).toBe(3);
-        });
-
-        test("mastered adds the winning attempt (failed + 1)", () => {
-            expect(attemptsShown({ mastery: "mastered", failed_attempts: 4 })).toBe(5);
-        });
-
-        test("mastered on first try shows 1", () => {
-            expect(attemptsShown({ mastery: "mastered", failed_attempts: 0 })).toBe(1);
-        });
-    });
 
     describe("attentionMeta", () => {
         test("a clean mastered word gets no badge", () => {
@@ -225,6 +307,22 @@ describe("masteryLabels", () => {
             expect(groups.find((g) => g.key === VERDICT.MASTERED).rows).toHaveLength(0);
         });
 
+        test("an empty sentence is bucketed Not Attempted, not Mastered", () => {
+            // The bucket-level consequence of the zero-word hole: it landed in
+            // Mastered, and StudentDetails renders that group with
+            // showAttempts=false, so the row showed as a silently-conquered
+            // sentence rather than one the child never got to.
+            const { groups, counts } = groupSentences([
+                { level: "Level 1: Farm", sentence_stats: [{ sentence: "", mastery: "unseen", words: [] }] },
+            ]);
+            expect(counts[VERDICT.MASTERED]).toBe(0);
+            expect(groups.find((g) => g.key === VERDICT.NOT_ATTEMPTED).rows).toHaveLength(1);
+        });
+
+        test("mergeSentenceWords on an empty list is an empty list", () => {
+            expect(mergeSentenceWords([])).toEqual([]);
+        });
+
         test("a cleanly-read sentence is Mastered and yields no drill rows", () => {
             // THE rule the JSX gates on: a mastered sentence is rendered but
             // silent. MASTERED means every word was conquered and none ever hit
@@ -275,20 +373,87 @@ describe("masteryLabels", () => {
         });
     });
 
-    // REGRESSION GUARD. Story Quest's per-word row used to print raw
-    // failed_attempts as "N Attempts" and gate its label on a hand-rolled
-    // `!VERDICT_META[v].quiet`, so one word read two different attempt counts on
-    // the same page (Word Blast said 5, Story Quest said 4) from two
-    // implementations of one threshold. It must go through the Word Blast pair.
-    describe("StudentDetails per-word row uses the Word Blast SSOT", () => {
+    // The GROUP heading is about a SENTENCE; the inline `label` is about one WORD.
+    // They used to be the same string, and "Recovered" is right for a word and
+    // wrong for a sentence bucket.
+    //
+    // Why it matters: the recovered floor EQUALS the attention floor
+    // (verdict() above), so by construction a recovered sentence is one the child
+    // ALREADY conquered — the count is a frozen historical peak, not current
+    // work. Nothing can ever clear it: StudentController freezes failed_attempts
+    // the moment a word is mastered, so re-reading it cleanly 20 more times
+    // changes nothing. "Recovered" read as present tense invited exactly the
+    // wrong conclusion.
+    //
+    // The parent email has said this correctly all along — "Recently Conquered"
+    // for the section, "Recovered" for each word inside it. The page now matches.
+    // The per-word label is deliberately NOT renamed: a single word genuinely is
+    // recovered, and renaming it too would make a drill row read
+    // "mail Recorded: 4 · Recently Conquered", a sentence's claim about a word.
+    describe("group headings speak about sentences, labels about words", () => {
+        // Own fixture: a sibling describe's fixture is not in scope here, and a
+        // shared one would couple the two suites' shapes.
+        const { groups } = groupSentences([
+            {
+                level: "Level 1: Farm",
+                sentence_stats: [
+                    { sentence: "A pig sat.", mastery: "training", words: [{ word: "pig", mastery: "training", failed_attempts: 4 }] },
+                    { sentence: "Cats nap.", mastery: "mastered", words: [{ word: "cats", mastery: "mastered", failed_attempts: 4 }] },
+                    { sentence: "Birds fly.", mastery: "training", words: [{ word: "birds", mastery: "unseen", failed_attempts: 0 }] },
+                ],
+            },
+        ]);
+
+        const titleOf = (key) => groups.find((g) => g.key === key).title;
+
+        test("the recovered GROUP is past tense", () => {
+            expect(titleOf(VERDICT.RECOVERED)).toBe("Recently Conquered");
+        });
+
+        test("the recovered WORD label stays present tense", () => {
+            expect(VERDICT_META[VERDICT.RECOVERED].label).toBe("Recovered");
+        });
+
+        test.each([
+            [VERDICT.NEEDS_ATTENTION, "Needs Attention"],
+            [VERDICT.PRACTICING, "Practicing"],
+            [VERDICT.NOT_ATTEMPTED, "Not Yet Mastered"],
+            [VERDICT.MASTERED, "Mastered"],
+        ])("the other four group titles are untouched — %s", (key, expected) => {
+            expect(titleOf(key)).toBe(expected);
+        });
+
+        test("every group title still comes from VERDICT_META, never a literal", () => {
+            // A title typed into bucketize() instead of the SSOT is how the
+            // heading and the inline label drifted apart in the first place.
+            const source = fs.readFileSync("resources/js/utils/masteryLabels.js", "utf8");
+            expect(source).not.toMatch(/title:\s*["\']/);
+        });
+    });
+
+    // REGRESSION GUARD, BOTH DIRECTIONS. Story Quest's per-word row once printed
+    // raw failed_attempts as "N Attempts" while Word Blast printed an invented
+    // "+1 winning try", so one word read two numbers on the same page (Word Blast
+    // said 5, Story Quest said 4). Adding the +1 to Story Quest fixed THAT pair
+    // and broke a different one: the parent email and the Excel both print raw
+    // `failed_attempts`, so a recovered word read 4 in the email and 5 on the
+    // page. The bug was never the arithmetic — it was two conventions for one
+    // number. There is now ONE: raw, labelled "Recorded", no arithmetic anywhere.
+    describe("the per-word attempt number is raw, in the JSX and in the twin", () => {
         const details = codeOnly(
             fs.readFileSync("resources/js/Pages/Teacher/StudentDetails.jsx", "utf8"),
         );
 
-        test("counts through attemptsShown, never the raw failed_attempts", () => {
-            expect(details).toContain("attemptsShown(w)");
-            // The raw print is what made a mastered word under-count by one.
-            expect(details).not.toContain("{w.failed_attempts} Attempt");
+        test("the drill row prints failed_attempts, never an invented try", () => {
+            expect(details).not.toContain("attemptsShown");
+            // The +1 is what made a mastered word read 5 where the email read 4.
+            expect(details).not.toMatch(/failed_attempts\s*}\s*\+\s*1/);
+        });
+
+        test("the page says Recorded, so the number is not read as a try count", () => {
+            // "Attempts: 5" claims something about the child's pronunciation tries,
+            // and the 5s-silence watchdog puts non-tries in that counter.
+            expect(details).toContain("Recorded:");
         });
 
         test("every word gets a status, not just the ones past the threshold", () => {

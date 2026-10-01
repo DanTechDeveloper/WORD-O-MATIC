@@ -3,7 +3,6 @@ import DashboardLayout from "@/Layouts/Teacher/DashboardLayout";
 import { Link, usePage } from "@inertiajs/react";
 import {
     attentionMeta,
-    attemptsShown,
     groupSentences,
     mergeSentenceWords,
     sentenceVerdict,
@@ -31,20 +30,22 @@ function aggregateZoneRows(wordStats) {
 
 function WordChip({ word, stat, threshold, className }) {
     const attention = stat ? attentionMeta(stat, threshold) : null;
+    const recorded = Number(stat?.failed_attempts || 0);
 
     return (
         <span
             className={`px-3 py-1.5 sm:px-4 sm:py-2 bg-surface-container border-2 border-outline/20 font-black rounded-xl text-xs sm:text-sm transition-colors cursor-default ${className}`}
         >
             {word}
-            {attention ? (
+            {recorded > 0 && (
                 <span className="block mt-1 text-[10px] sm:text-xs uppercase tracking-widest text-on-surface-variant">
-                    Attempts: {attemptsShown(stat)},{" "}
-                    <span className={attention.cls}>{attention.label}</span>
-                </span>
-            ) : (
-                <span className="block mt-1 text-[10px] sm:text-xs uppercase tracking-widest text-on-surface-variant">
-                    Attempts: {attemptsShown(stat)}
+                    Recorded: {recorded}
+                    {attention && (
+                        <>
+                            ,{" "}
+                            <span className={attention.cls}>{attention.label}</span>
+                        </>
+                    )}
                 </span>
             )}
         </span>
@@ -108,15 +109,13 @@ function SentencePerformanceBlock({ stat, threshold }) {
             </p>
             {showAttempts && (
                 <div className="mt-2 text-[10px] sm:text-xs uppercase tracking-widest text-on-surface-variant">
-                    {/* The number is a sum of the words' RECORDED FAILURES, never
-                        tries and never a score. The 5s silence watchdog also
-                        increments it, so a word the child never attempted can carry
-                        a failure — which is also why it gets no +1: a sentence has
-                        no single winning try, and the child may not have tried at
-                        all. */}
+                    {/* The sum of the words' RECORDED FAILURES, never tries, and
+                        never a score — the same number the parent email prints
+                        for the same words. The 5s silence watchdog also
+                        increments it, so it cannot be read as attempts. */}
                     {sentenceVerdictValue === VERDICT.NOT_ATTEMPTED
                         ? "Not attempted yet"
-                        : `${failedCount} recorded failure${failedCount === 1 ? "" : "s"} across the sentence`}
+                        : `${failedCount} recorded attempt${failedCount === 1 ? "" : "s"} across the sentence`}
                     {!meta.quiet && <span className={`${meta.cls} ml-1`}>· {meta.label}</span>}
                 </div>
             )}
@@ -135,7 +134,7 @@ function SentencePerformanceBlock({ stat, threshold }) {
                         return (
                             <li key={w.word} className="flex items-center gap-1.5">
                                 <span className="font-black text-white">{w.word}</span>
-                                <span className="text-on-surface-variant">Attempts: {attemptsShown(w)}</span>
+                                <span className="text-on-surface-variant">Recorded: {w.failed_attempts}</span>
                                 <span className={wordMeta.cls}>· {wordMeta.label}</span>
                             </li>
                         );
@@ -272,7 +271,15 @@ export default function StudentDetail({ data }) {
         {
             name: "Story Quest",
             level: `LV ${src.student?.speak_level ?? 1}`,
-            sub: speakTotal > 0 ? `${speakMastered} of ${speakTotal} Sentences Mastered` : "No sentences yet",
+            // "Conquered", not "Mastered", and the difference is load-bearing.
+            // This number is `mastered_sentences` — every word mastered, history
+            // allowed — while the panel below splits the same sentences into
+            // Mastered and Recovered. Labelling both "Mastered" put two numbers
+            // with two meanings on one page: a 20/20 header over an
+            // "18 mastered · 2 recovered" count line. Word Blast keeps "Mastered"
+            // because its zones have no such split — a recovered word sits in
+            // the same Mastery Zone, badged, and the two counts cannot disagree.
+            sub: speakTotal > 0 ? `${speakMastered} of ${speakTotal} Sentences Conquered` : "No sentences yet",
             progress: calcSentenceProgress(student.speakCurriculum),
             color: "bg-cyan-400",
         },
@@ -598,6 +605,18 @@ export default function StudentDetail({ data }) {
                 <h2 className="text-base sm:text-lg md:text-xl font-black text-white uppercase italic tracking-tighter mb-6 flex items-center gap-2">
                     <span className="w-8 h-1 bg-accent"></span> Word Blast
                 </h2>
+                {/* THE LEGEND. A chip with no count is the BEST state in these two
+                    zones — every word reached, nothing ever recorded against it —
+                    and silence was reading as "no data" rather than "read clean".
+                    Stamping "Recorded: 0" on every clean word fixed the ambiguity
+                    and ruined the panel: a strong student's Mastery Zone is mostly
+                    zero-failure words, so it became a wall of identical noise.
+                    One line here teaches the convention once, which is the only
+                    place a teacher will actually read it. */}
+                <p className="text-on-surface-variant font-bold text-xs sm:text-sm mb-4 leading-relaxed max-w-3xl">
+                    A word with <span className="text-white font-black uppercase">no count</span> was read clean on the first reach. A number is{" "}
+                    <span className="text-white font-black uppercase">recorded failures</span>. wrong reads plus times the 5-second silence watchdog fired, so it is not a count of tries.
+                </p>
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 sm:gap-10">
                     <div className="space-y-4 sm:space-y-6">
                         <div className="flex items-center gap-3 sm:gap-4">
@@ -618,7 +637,6 @@ export default function StudentDetail({ data }) {
                             ) : (
                                 student.readCurriculum.map((level, i) => {
                                     const zone = aggregateZoneRows(level.word_stats);
-
                                     return (
                                         <div key={i} className="mb-8 last:mb-0">
                                             {zone.mastered.length > 0 && (
@@ -736,6 +754,19 @@ export default function StudentDetail({ data }) {
                                         >
                                             {group.title} ({group.rows.length})
                                         </div>
+                                        {/* The one hint in the panel, and it earns its
+                                            place: "Recently Conquered" is history, and
+                                            the number under it is a frozen peak that can
+                                            never clear (StudentController stops counting
+                                            the moment a word is mastered). A teacher who
+                                            reads the heading as "struggling now" would
+                                            reteach a sentence the child finished weeks
+                                            ago. The email has said this all along. */}
+                                        {group.hint && (
+                                            <p className="text-on-surface-variant text-[10px] sm:text-xs leading-relaxed mb-3">
+                                                {group.hint}
+                                            </p>
+                                        )}
                                         {/* No group is collapsed — a bare summary line
                                             hid every sentence AND its module. */}
                                         <div className="flex flex-col gap-3">

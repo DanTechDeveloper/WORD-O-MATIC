@@ -137,14 +137,14 @@ const occurrences = (needle, panel = sqPanel()) => {
     return n;
 };
 
-const GROUP_RE = /^(Needs Attention|Practicing|Recovered|Not Yet Mastered|Mastered) \((\d+)\)$/i;
+const GROUP_RE = /^(Needs Attention|Practicing|Recently Conquered|Recovered|Not Yet Mastered|Mastered) \((\d+)\)$/i;
 const groupHeadings = () =>
     within(sqPanel())
         .getAllByText(GROUP_RE)
         .map((el) => el.textContent.trim());
 
 const drillRows = () => within(sqPanel()).queryAllByRole("listitem");
-// gap-1.5 spaces the three spans visually, so textContent reads "AAttempts: 4".
+// gap-1.5 spaces the three spans visually, so textContent reads "ARecorded: 4".
 // Join the children so a failure message is legible.
 const rowText = (r) => Array.from(r.children).map(flat).join(" ");
 
@@ -170,8 +170,8 @@ describe("Story Quest — a mastered sentence is visible but silent", () => {
 
     test("but it claims no attempts, no per-word rows and no footer", () => {
         renderPage({ speakCurriculum: mastered([w("Milo", "mastered", 0), w("frog.", "mastered", 0)]) });
-        expect(panelText()).not.toMatch(/recorded failure/i);
-        expect(panelText()).not.toMatch(/Attempts:/i);
+        expect(panelText()).not.toMatch(/recorded attempt/i);
+        expect(panelText()).not.toMatch(/Recorded:/i);
         expect(drillRows()).toHaveLength(0);
     });
 
@@ -181,8 +181,8 @@ describe("Story Quest — a mastered sentence is visible but silent", () => {
         // with nothing to drill.
         renderPage({ speakCurriculum: [paraLevel(1, [s([w("Goats", "mastered", 2), w("graze.", "mastered", 1)])])] });
         expect(occurrences("Goats graze.")).toBe(1);
-        expect(panelText()).not.toMatch(/recorded failure/i);
-        expect(panelText()).not.toMatch(/Attempts:/i);
+        expect(panelText()).not.toMatch(/recorded attempt/i);
+        expect(panelText()).not.toMatch(/Recorded:/i);
     });
 
     test("a fully-mastered student still sees EVERY level and sentence", () => {
@@ -203,7 +203,7 @@ describe("Story Quest — a mastered sentence is visible but silent", () => {
             // tell which module a sentence came from.
             expect(occurrences(`Level ${i + 1}: Para ${i + 1}`)).toBe(2);
         }
-        expect(panelText()).not.toMatch(/Attempts:/i);
+        expect(panelText()).not.toMatch(/Recorded:/i);
     });
 });
 
@@ -223,10 +223,10 @@ describe("Story Quest — a sentence that needs work shows ATTEMPT + STATUS", ()
         // textContent keeps the authored case — `uppercase` is a CSS transform,
         // so these are NOT the strings a screen-reader user hears either.
         expect(drillRows().map(rowText)).toEqual([
-            "A Attempts: 4 · Needs Attention",
-            "brave Attempts: 1 · Practicing",
-            "crane Attempts: 2 · Practicing",
-            "lands. Attempts: 7 · Needs Attention",
+            "A Recorded: 4 · Needs Attention",
+            "brave Recorded: 1 · Practicing",
+            "crane Recorded: 2 · Practicing",
+            "lands. Recorded: 7 · Needs Attention",
         ]);
     });
 
@@ -239,17 +239,17 @@ describe("Story Quest — a sentence that needs work shows ATTEMPT + STATUS", ()
                 w("lands.", "training", 1),
             ])])],
         });
-        expect(rowText(drillRows()[1])).toMatch(/^mail Attempts: 5 · Recovered$/);
+        expect(rowText(drillRows()[1])).toMatch(/^mail Recorded: 4 · Recovered$/);
     });
 
-    test("the sentence footer sums recorded failures and never invents tries", () => {
+    test("the sentence footer sums recorded attempts and never invents tries", () => {
         renderPage({ speakCurriculum: struggling() });
-        expect(panelText()).toMatch(/14 recorded failures across the sentence/);
+        expect(panelText()).toMatch(/14 recorded attempts across the sentence/);
     });
 
     test("a single failure is pluralised correctly", () => {
         renderPage({ speakCurriculum: [paraLevel(1, [s([w("A", "training", 1), w("cat", "training", 0)])])] });
-        expect(panelText()).toMatch(/1 recorded failure across the sentence/);
+        expect(panelText()).toMatch(/1 recorded attempt across the sentence/);
     });
 
     test("one hard word flags the sentence; five easy words do not", () => {
@@ -277,7 +277,7 @@ describe("Story Quest — a sentence that needs work shows ATTEMPT + STATUS", ()
         });
         const rows = drillRows();
         expect(rows).toHaveLength(2); // A (3+2=5) and cat — and/dog had no failures
-        expect(rowText(rows[0])).toMatch(/^A Attempts: 5/);
+        expect(rowText(rows[0])).toMatch(/^A Recorded: 5/);
         // Two chips in the prose (one "A", one "a" — positional, the case is
         // what the child read) but ONE merged drill row keyed on the first
         // spelling. So "A" appears twice: its chip plus the merged row.
@@ -301,7 +301,7 @@ describe("Story Quest — grouping invariants", () => {
     test("five states produce five groups, each labelled with its own count", () => {
         renderPage({ speakCurriculum: mixed() });
         expect(groupHeadings().sort()).toEqual([
-            "Mastered (1)", "Needs Attention (1)", "Not Yet Mastered (1)", "Practicing (1)", "Recovered (1)",
+            "Mastered (1)", "Needs Attention (1)", "Not Yet Mastered (1)", "Practicing (1)", "Recently Conquered (1)",
         ]);
     });
 
@@ -353,14 +353,14 @@ describe("Word Blast — zones", () => {
         expect(wb).not.toMatch(/\bBAT\b/); // unseen belongs to neither zone
     });
 
-    test("a Recovered word shows failed+1", () => {
+    test("a Recovered word shows its raw recorded count", () => {
         renderPage({ readCurriculum: [wordLevel(1, [w("CAT", "mastered", 3)])] });
-        expect(flat(wbPanel())).toMatch(/ATTEMPTS: 4, Recovered/i);
+        expect(flat(wbPanel())).toMatch(/RECORDED: 3, Recovered/i);
     });
 
     test("a Needs Attention word shows its raw count", () => {
         renderPage({ readCurriculum: [wordLevel(1, [w("SUN", "training", 3)])] });
-        expect(flat(wbPanel())).toMatch(/ATTEMPTS: 3, Needs Attention/i);
+        expect(flat(wbPanel())).toMatch(/RECORDED: 3, Needs Attention/i);
     });
 
     test("a word below the threshold gets an attempt count and NO status badge", () => {
@@ -369,7 +369,7 @@ describe("Word Blast — zones", () => {
         // the Story Quest drill list, which labels every row.
         renderPage({ readCurriculum: [wordLevel(1, [w("SUN", "training", 2)])] });
         const wb = flat(wbPanel());
-        expect(wb).toMatch(/ATTEMPTS: 2/i);
+        expect(wb).toMatch(/RECORDED: 2/i);
         expect(wb).not.toMatch(/Needs Attention/);
         expect(wb).not.toMatch(/Recovered/);
     });
@@ -418,12 +418,29 @@ describe("empty and malformed payloads must not crash", () => {
         expect(() => renderPage({ speakCurriculum: [paraLevel(1, [s([])])] })).not.toThrow();
     });
 
+    // ↑ That test rendered s([]) and asserted nothing about the verdict. THE
+    // hole: sentenceVerdict([]) maps to an empty verdicts array, so no
+    // includes() branch fires and it falls through to MASTERED. A sentence with
+    // no words in it was therefore reported as "conquered on the first try" and
+    // — because the JSX gates showAttempts on !== MASTERED — rendered SILENT,
+    // with no attempts line and no drill list to hint that nothing happened.
+    test("a sentence with an empty words array is Not Yet Mastered, not silent Mastered", () => {
+        renderPage({ speakCurriculum: [paraLevel(1, [s([])])] });
+
+        expect(groupHeadings()).toEqual(["Not Yet Mastered (1)"]);
+        expect(panelText()).toMatch(/Not attempted yet/);
+        // The sentence still names its module, and no drill row is invented.
+        expect(occurrences("Level 1: Para 1")).toBe(1);
+        expect(drillRows()).toHaveLength(0);
+        expect(panelText()).not.toMatch(/Recorded:/i);
+    });
+
     test("null and undefined failed_attempts never render NaN", () => {
         // Number(null) === 0 but Number(undefined) === NaN, and NaN would render
-        // "Attempts: NaN" and make every comparison false.
+        // "Recorded: NaN" and make every comparison false. Both collapse to the
+        // same bare chip a real zero produces — see the Word Blast matrix.
         renderPage({ readCurriculum: [wordLevel(1, [w("CAT", "training", null), w("DOG", "mastered", undefined)])] });
         expect(document.body.textContent).not.toMatch(/NaN/);
-        expect(flat(wbPanel())).toMatch(/ATTEMPTS: 0/i);
     });
 
     test("a level with zero words does not divide by zero", () => {
@@ -500,5 +517,332 @@ describe("live poll", () => {
         renderPage();
         expect(screen.getByText("Streak Star")).toBeTruthy();
         expect(within(sqPanel()).getByText(/No Story Quest modules yet/i)).toBeTruthy();
+    });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// "Recovered" is right for a word and wrong for a sentence bucket.
+//
+// The recovered floor equals the attention floor, so a recovered sentence is one
+// the child ALREADY conquered, and StudentController freezes failed_attempts the
+// instant a word is mastered — re-reading it cleanly 20 more times changes
+// nothing. "Recovered" as a group heading read as present tense and invited the
+// exact wrong conclusion ("this needs work now"). The parent email has always
+// said it correctly: "Recently Conquered" for the section, "Recovered" for each
+// word inside.
+//
+// So the rename is SCOPED. Every assertion below pins a place that must NOT
+// change, because a global rename of VERDICT_META[RECOVERED].label would rewrite
+// the per-word drill row, the sentence footer and the Word Blast chip badge too.
+describe("Story Quest — the recovered GROUP is past tense, its words are not", () => {
+    const oneRecovered = () => [
+        paraLevel(1, [s([
+            w("The", "mastered", 0),
+            w("mail", "mastered", 4),
+            w("lands.", "mastered", 1),
+        ])]),
+    ];
+
+    test("the group heading says Recently Conquered", () => {
+        renderPage({ speakCurriculum: oneRecovered() });
+        expect(groupHeadings()).toEqual(["Recently Conquered (1)"]);
+    });
+
+    test("and carries a subtext saying it is history, not current work", () => {
+        renderPage({ speakCurriculum: oneRecovered() });
+        expect(panelText()).toMatch(/no longer holding/i);
+    });
+
+    test("the per-word drill row still says Recovered", () => {
+        renderPage({ speakCurriculum: oneRecovered() });
+        // The exact row text is the assertion. Checking the whole panel for
+        // /Recently Conquered/ would be wrong — the group heading legitimately
+        // says it now; only the ROW must not.
+        expect(drillRows().map(rowText)).toEqual([
+            "mail Recorded: 4 · Recovered",
+            "lands. Recorded: 1 · Mastered",
+        ]);
+    });
+
+    test("the sentence footer still says Recovered", () => {
+        renderPage({ speakCurriculum: oneRecovered() });
+        // \s* not " ": the separator is `ml-1`, a CSS margin, so textContent has
+        // no space before the middot.
+        expect(panelText()).toMatch(/5 recorded attempts across the sentence\s*· Recovered/);
+    });
+
+    test("the Word Blast chip badge still says Recovered", () => {
+        // attentionMeta is a WORD-level surface, so it keeps the word label.
+        renderPage({ readCurriculum: [wordLevel(1, [w("CAT", "mastered", 3)])] });
+        const chip = flat(wbPanel());
+        expect(chip).toMatch(/RECORDED: 3, Recovered/i);
+        expect(chip).not.toMatch(/Recently Conquered/i);
+    });
+
+    test("the other four group headings are untouched", () => {
+        renderPage({
+            speakCurriculum: [paraLevel(1, [
+                s([w("pig", "training", 4)], 0), // needsAttention
+                s([w("goats", "training", 1)], 1), // practicing
+                s([w("birds", "unseen", 0)], 2), // notAttempted
+                s([w("crows", "mastered", 0)], 3), // mastered
+            ])],
+        });
+        expect(groupHeadings().sort()).toEqual([
+            "Mastered (1)", "Needs Attention (1)", "Not Yet Mastered (1)", "Practicing (1)",
+        ]);
+        expect(panelText()).not.toMatch(/Recently/i);
+    });
+
+    test("the count line keeps the short form so it still reads as a tally", () => {
+        renderPage({ speakCurriculum: oneRecovered() });
+        // "2 recently conquered" is not a tally any teacher would write; the
+        // summary line stays "N recovered" and the heading carries the tense.
+        expect(panelText()).toMatch(/· 1 recovered/);
+    });
+});
+
+//
+// The parent email prints a word's `failed_attempts` raw and calls them
+// "recorded attempts". The teacher page used to print `failed_attempts + 1` for
+// every MASTERED word, so a recovered word read "4 recorded attempts to conquer"
+// in the email and "Attempts: 5" on the page — and the parent and the teacher
+// were quoting different numbers for the same word.
+//
+// The +1 was never real anyway: the 5s-silence watchdog increments
+// failed_attempts on pure silence, so a word the child stalled on and never
+// tried contributes a "failure" that was not a pronunciation attempt. Adding 1
+// to invent a winning try reports tries that never happened.
+//
+// Pinned as a full (mastery × failed) matrix because the divergence was never
+// about arithmetic being wrong — it was two conventions, and each was internally
+// consistent. The matrix is what makes the third convention impossible to add.
+describe("the attempt number is raw on every surface", () => {
+    const wbChip = (mastery, failed) => {
+        cleanup();
+        renderPage({ readCurriculum: [wordLevel(1, [w("CAT", mastery, failed)])] });
+        return flat(wbPanel());
+    };
+
+    // EVERY state a Word Blast word can be in, and exactly what it renders.
+    //
+    // The contested cell is mastered / 0. A bare chip is the right answer for it
+    // — "Recorded: 0" repeated across every clean word is a wall of noise that
+    // says nothing per chip — so the convention is taught ONCE by the legend
+    // below the zone headings rather than stamped on every chip. The legend is
+    // what removes the "was this word even recorded?" ambiguity that a bare chip
+    // leaves on its own.
+    describe("Word Blast — every state of a word, and what it renders", () => {
+        const chip = (mastery, failed_attempts) => {
+            cleanup();
+            renderPage({ readCurriculum: [wordLevel(1, [w("SWIM", mastery, failed_attempts)])] });
+            return flat(wbPanel());
+        };
+
+        // ── the boundary: post-tutorial, and words never reached ──
+        //
+        // The tutorial writes NO mastery rows — both gameplay modes gate the POST
+        // on `!isTutorialModule`, and the tutorial module owns its own `words`
+        // rows (CurriculumSeeder), so nothing carries over. A word therefore sits
+        // at `unseen` with no row, and unseen belongs to NEITHER zone.
+        test("a word never reached renders in neither zone", () => {
+            const panel = chip("unseen", 0);
+            expect(panel).not.toMatch(/SWIM/);
+            expect(panel).toMatch(/No words mastered yet/i);
+            expect(panel).toMatch(/No words in training/i);
+        });
+
+        test("a brand-new student sees both explanations and no chips", () => {
+            // The exact post-tutorial state: every word unseen.
+            renderPage({
+                readCurriculum: [wordLevel(1, [w("SWIM", "unseen", 0), w("HAT", "unseen", 0), w("BAT", "unseen", 0)])],
+            });
+            const panel = flat(wbPanel());
+            expect(panel).not.toMatch(/SWIM|HAT|BAT/);
+            expect(panel).toMatch(/No words mastered yet/i);
+            expect(panel).toMatch(/No words in training/i);
+        });
+
+        // ── the full (mastery x failed) matrix ──
+        test.each([
+            // clean → bare chip, no count, no badge
+            ["mastered", 0],
+            ["training", 0],
+        ])("%s / %d renders a BARE chip", (mastery, failed) => {
+            const panel = chip(mastery, failed);
+            expect(panel).toMatch(/SWIM/);
+            expect(panel).not.toMatch(/RECORDED:/i);
+            expect(panel).not.toMatch(/ATTEMPTS:/i);
+        });
+
+        test.each([
+            // below the floor → a count, no badge
+            ["mastered", 1], ["mastered", 2],
+            ["training", 1], ["training", 2],
+        ])("%s / %d shows the count and no status", (mastery, failed) => {
+            const panel = chip(mastery, failed);
+            expect(panel).toContain(`Recorded: ${failed}`);
+            expect(panel).not.toContain(`Recorded: ${failed + 1}`);
+            expect(panel).not.toMatch(/Needs Attention|Recovered/);
+        });
+
+        test.each([
+            ["mastered", 3, "Recovered"],
+            ["mastered", 4, "Recovered"],
+            ["mastered", 9, "Recovered"],
+            ["training", 3, "Needs Attention"],
+            ["training", 5, "Needs Attention"],
+            ["training", 9, "Needs Attention"],
+        ])("%s / %d shows the count and the %s badge", (mastery, failed, badge) => {
+            const panel = chip(mastery, failed);
+            expect(panel).toContain(`Recorded: ${failed}`);
+            expect(panel).toContain(badge);
+        });
+
+        test("null and undefined counters are CLEAN, not NaN and not a count", () => {
+            // Number(null) is 0 but Number(undefined) is NaN. NaN would render
+            // "Recorded: NaN" and make every comparison false; both must collapse
+            // to the same bare chip a real zero produces.
+            renderPage({ readCurriculum: [wordLevel(1, [w("CAT", "mastered", null), w("DOG", "training", undefined)])] });
+            const panel = flat(wbPanel());
+            expect(panel).not.toMatch(/NaN/);
+            expect(panel).not.toMatch(/RECORDED:/i);
+            expect(panel).toMatch(/CAT/);
+            expect(panel).toMatch(/DOG/);
+        });
+
+        // THE legend. Without it, a bare chip next to "HAT Recorded: 1" reads as
+        // "SWIM was never recorded" — which is the opposite of the truth, since
+        // mastery is only ever written by a real correct read
+        // (StudentController:330, sole caller onWordRecognized). One line teaches
+        // the convention; stamping it on every chip would not.
+        test("the legend states that a bare chip was read clean", () => {
+            renderPage({ readCurriculum: [wordLevel(1, [w("SWIM", "mastered", 0)])] });
+            const legend = flat(wbPanel());
+            expect(legend).toMatch(/no count/i);
+            expect(legend).toMatch(/read clean/i);
+            expect(legend).toMatch(/recorded failures/i);
+        });
+
+        test("the legend shows even when both zones are empty", () => {
+            // A brand-new student's only guidance should be the convention, not a
+            // bare "no words yet" — and the tutorial is exactly that student.
+            renderPage({ readCurriculum: [wordLevel(1, [])] });
+            expect(flat(wbPanel())).toMatch(/read clean/i);
+        });
+    });
+
+    // Story Quest drill row, one row per word with history.
+    test.each([
+        ["mastered", 3, 3], ["mastered", 4, 4], ["mastered", 7, 7],
+        ["training", 2, 2], ["training", 3, 3], ["training", 9, 9],
+    ])("Story Quest drill row — %s / %d prints %d, never more", (mastery, failed, expected) => {
+        cleanup();
+        renderPage({
+            speakCurriculum: [paraLevel(1, [s([
+                w("The", "mastered", 0),
+                w("cat", "training", 1),
+                w("hard", mastery, failed),
+            ])])],
+        });
+        const row = drillRows().find((r) => flat(r).startsWith("hard"));
+        expect(row).toBeTruthy();
+        expect(rowText(row)).toBe(`hard Recorded: ${expected} · ${rowText(row).split("· ")[1]}`);
+        expect(rowText(row)).not.toContain(`Recorded: ${failed + 1}`);
+    });
+
+    test("a first-try read prints no DRILL ROW — that list is a work list", () => {
+        // The Story Quest drill list is the one place 0 stays hidden, and the
+        // asymmetry is deliberate rather than an oversight: that list answers
+        // "which words held this sentence back", so a word that held nothing back
+        // correctly has no row. The Word Blast chip is a stat display, so it
+        // shows every value. Same number, two surfaces with two questions.
+        cleanup();
+        renderPage({ speakCurriculum: [paraLevel(1, [s([w("The", "training", 1), w("crab", "mastered", 0)])])] });
+        expect(drillRows()).toHaveLength(1);
+        expect(rowText(drillRows()[0])).toMatch(/^The Recorded: 1/);
+        expect(panelText()).not.toMatch(/crab Recorded/i);
+    });
+
+    test("a recovered word's footer and drill row agree with each other", () => {
+        // Footer sums the words' recorded failures; a drill row IS one word. With
+        // no +1 on either side the row can no longer exceed the sentence total it
+        // sits under — the confusion the two-unit split used to cause.
+        renderPage({
+            speakCurriculum: [paraLevel(1, [s([
+                w("The", "mastered", 0),
+                w("mail", "mastered", 4),
+                w("lands.", "mastered", 1),
+            ])])],
+        });
+        expect(panelText()).toMatch(/5 recorded attempts across the sentence/);
+        expect(drillRows().map(rowText)).toEqual([
+            "mail Recorded: 4 · Recovered",
+            "lands. Recorded: 1 · Mastered",
+        ]);
+        // 4 + 1 = 5, the footer. Every drill number is a term in the sentence sum.
+        expect(drillRows().reduce((n, r) => n + Number(flat(r).match(/Recorded: (\d+)/)[1]), 0)).toBe(5);
+    });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// THE D-B CHARACTERIZATION. Two different numbers that USED to share one word,
+// "Mastered", on one page — from two different rules:
+//
+//   header   "20 of 20 Sentences Conquered" + "100% Complete"
+//            ← mastered_sentences, the SERVER rule: every word mastered
+//   panel    "2 recovered · 18 mastered"
+//            ← sqCounts[MASTERED], the JS rule: conquered AND never struggled
+//
+// The delta is exactly the number of RECOVERED sentences. A teacher reading the
+// page top-down saw 20 "Mastered", then 18. Fixed by relabelling the header
+// (StudentDetails:275) — the two rules are both correct, they just answer
+// different questions, and the Wording was the bug. The invariant asserted here
+// is the one that must survive any future change: the header number equals the
+// panel's Mastered + Recovered, never the panel's Mastered alone.
+describe("Story Quest — the header counts conquered, the panel splits it", () => {
+    const withRecovered = () => {
+        const sentences = [];
+        for (let i = 0; i < 18; i++) {
+            sentences.push(s([w(`word${i}`, "mastered", 0), w(`goes${i}`, "mastered", 0)]));
+        }
+        sentences.push(s([w("mail", "mastered", 4), w("ships.", "mastered", 1)])); // recovered
+        sentences.push(s([w("crane", "mastered", 3), w("lands.", "mastered", 0)])); // recovered
+        return [paraLevel(1, sentences)];
+    };
+
+    test("the header counts the recovered sentences too, and says so", () => {
+        renderPage({ speakCurriculum: withRecovered() });
+        // mastered_sentences = 20 of 20, because every word in every sentence
+        // reached 'mastered' — the server's rule, feeding this line and the
+        // progress bar. "Conquered" is the honest label: history allowed.
+        expect(document.body.textContent).toMatch(/20 of 20 Sentences Conquered/);
+        expect(document.body.textContent).not.toMatch(/Sentences Mastered/);
+        expect(screen.getByText("100% Complete")).toBeTruthy();
+    });
+
+    test("the panel splits the same 20 into 18 mastered and 2 recovered", () => {
+        renderPage({ speakCurriculum: withRecovered() });
+        expect(groupHeadings().sort()).toEqual(["Mastered (18)", "Recently Conquered (2)"]);
+        expect(panelText()).toMatch(/20 sentences total · 0 need attention · 0 practicing · 2 recovered/);
+    });
+
+    test("the header equals Mastered + Recovered, never Mastered alone", () => {
+        renderPage({ speakCurriculum: withRecovered() });
+
+        const headerNumber = Number(flat(document.body).match(/(\d+) of \d+ Sentences Conquered/)[1]);
+        const panelNumber = Number(groupHeadings().find((h) => h.startsWith("Mastered")).match(/\((\d+)\)/)[1]);
+        const recovered = Number(groupHeadings().find((h) => h.startsWith("Recently")).match(/\((\d+)\)/)[1]);
+
+        expect(recovered).toBeGreaterThan(0);
+        expect(headerNumber).toBe(panelNumber + recovered);
+        // The regression this guards: header tracking the panel's Mastered count
+        // instead of the conquered total would silently hide recovered history.
+        expect(headerNumber).not.toBe(panelNumber);
+    });
+
+    test("Word Blast keeps 'Words Mastered' — its zones have no recovered split", () => {
+        renderPage({ readCurriculum: [wordLevel(1, [w("CAT", "mastered", 3)])] });
+        expect(document.body.textContent).toMatch(/1 of 1 Words Mastered/);
     });
 });

@@ -81,8 +81,10 @@ class NormalizeWordTest extends TestCase
 
         $this->assertSame(4, $merged[0]['failed_attempts']);
         $this->assertSame(ReportService::VERDICT_RECOVERED, $merged[0]['verdict']);
-        // WordChip shows the child's total tries, not the miss count.
-        $this->assertSame(5, ReportService::attemptsShown('mastered', 4), '4 failures + the winning try');
+        // The displayed number is the merged raw count, in every surface. Nothing
+        // adds a "winning try": the 5s-silence watchdog puts non-tries in this
+        // counter, and the parent email prints it raw. See
+        // VerdictTest::test_neither_language_adds_arithmetic_to_the_displayed_attempt_number().
     }
 
     public function test_excel_merges_duplicates_across_sentences_within_a_level(): void

@@ -101,7 +101,13 @@ export function sentenceVerdict(words, threshold = NEEDS_ATTENTION_ATTEMPTS) {
     // is what stops a brand-new student rendering every untouched sentence as
     // "Mastered — conquered on the first try", which is what happened when the
     // verdict fell straight through to MASTERED.
-    if (verdicts.includes(VERDICT.NOT_ATTEMPTED)) return VERDICT.NOT_ATTEMPTED;
+    //
+    // …and the same holds for NO words at all: includes() needs an element to
+    // find, so an empty word list missed every branch above and reported a
+    // conquest that never happened.
+    if (verdicts.length === 0 || verdicts.includes(VERDICT.NOT_ATTEMPTED)) {
+        return VERDICT.NOT_ATTEMPTED;
+    }
 
     return VERDICT.MASTERED;
 }
@@ -162,15 +168,55 @@ const SENTENCE_BUCKETS = [
     VERDICT.MASTERED,
 ];
 
+// The GROUP HEADING is a claim about a SENTENCE; VERDICT_META[].label is a claim
+// about a WORD. They were the same string, and "Recovered" is right for one and
+// wrong for the other.
+//
+// The recovered floor EQUALS the attention floor (see verdict() above), so a
+// recovered sentence is by construction one the child ALREADY conquered, and the
+// number under it is a frozen peak: StudentController stops incrementing
+// failed_attempts the moment a word is mastered, so re-reading it cleanly twenty
+// more times changes nothing and the bucket can never empty. "Recovered" as a
+// heading read as present tense and invited the opposite conclusion — that these
+// sentences need work now.
+//
+// The parent email has said it correctly all along: "Recently Conquered" for the
+// section, "Recovered" for each word inside it. The page now matches, and the
+// per-word label is deliberately left alone — a drill row reading
+// "mail Recorded: 4 · Recently Conquered" would be making a sentence's claim
+// about a single word.
+const GROUP_TITLES = {
+    [VERDICT.RECOVERED]: "Recently Conquered",
+};
+
+// Rendered once under the group heading, and only where the heading alone is
+// ambiguous. Same reason as the title: the number is history, and "history" is
+// the part a teacher needs to be told rather than infer.
+const GROUP_HINTS = {
+    [VERDICT.RECOVERED]:
+        "Hard words, already conquered. This is history, not current work — the student is no longer holding these sentences back.",
+};
+
 function bucketize(keys, fill) {
     const rows = Object.fromEntries(keys.map((k) => [k, []]));
     const counts = Object.fromEntries(Object.values(VERDICT).map((k) => [k, 0]));
 
     fill(rows, counts);
 
+
     // All buckets are returned, including empty ones, so a section can render a
     // stable column layout; the caller decides whether to show an empty group.
-    return { groups: keys.map((key) => ({ key, title: VERDICT_META[key].label, rows: rows[key] })), counts };
+    // Title and hint come from the maps above, never a literal at the call site —
+    // a literal there is how the heading and the inline label drifted apart.
+    return {
+        groups: keys.map((key) => ({
+            key,
+            title: GROUP_TITLES[key] ?? VERDICT_META[key].label,
+            hint: GROUP_HINTS[key],
+            rows: rows[key],
+        })),
+        counts,
+    };
 }
 
 // Story Quest: every sentence renders, and each names its own module — grouping
@@ -187,15 +233,25 @@ export function groupSentences(curriculum, threshold = NEEDS_ATTENTION_ATTEMPTS)
     });
 }
 
-// Mastered words count their final successful attempt; training words show
-// unsuccessful attempts so far (counter is frozen once mastered). This is why
-// the Mastery Zone says "Attempts: 4" for a word that took 4 tries, and why a
-// first-try word reads "Attempts: 1" — it is the +1 that is the word's own
-// winning try, not a failure. WordChip uses this; the drill list deliberately
-// does not (it shows failed_attempts directly).
-export function attemptsShown(stat) {
-    return stat.mastery === "mastered" ? Number(stat.failed_attempts || 0) + 1 : Number(stat.failed_attempts || 0);
-}
+// There is deliberately NO "attempts" helper, and there was one until 2026-10-01.
+//
+// It used to return `mastered ? failed + 1 : failed` — the "+1" being a mastered
+// word's own winning try. It was wrong twice over:
+//
+//   1. It is not a try count. The 5s-silence watchdog increments failed_attempts
+//      on pure silence, so a word the child stalled on and never attempted already
+//      carries a "failure" that was no pronunciation attempt. Adding 1 to that
+//      reports tries that never happened.
+//   2. It desynchronised the page from the parent email and the Excel, which both
+//      print failed_attempts raw. A recovered word read "4 recorded attempts to
+//      conquer" in the email and "Attempts: 5" on the teacher page — the parent
+//      and the teacher quoting different numbers for the same word.
+//
+// The tombstone is kept because the reasoning is easy to re-derive wrongly: the
+// Word Blast chip and the Story Quest drill row once disagreed (5 vs 4) and the
+// tempting fix is to add the +1 to Story Quest. That fixes one pair and breaks
+// the email. ONE number, ONE convention, no arithmetic. Locked by
+// VerdictTest::test_neither_language_adds_arithmetic_to_the_displayed_attempt_number().
 
 // Only surface the flag when it fires (>= threshold) — "Normal" is noise on a
 // chip. Resolution-cap rule: struggle flags expire once the word is mastered.

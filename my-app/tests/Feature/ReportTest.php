@@ -767,6 +767,86 @@ class ReportTest extends TestCase
         $this->assertStringContainsString('4 recorded attempts to conquer', $html);
     }
 
+    public function test_report_email_prints_recorded_failures_raw_never_a_winning_try(): void
+    {
+        // THE CROSS-SURFACE LOCK, email half.
+        //
+        // A word's number is `failed_attempts` — the recorded failure events, and
+        // nothing else. It is NOT attempts: the 5s-silence watchdog increments
+        // failed_attempts on pure silence, so a word the child stalled on and
+        // never tried carries a "failure" that was not a pronunciation attempt.
+        // Adding 1 to invent a "winning try" therefore reports tries that never
+        // happened, AND desynchronises the email from the teacher page, which
+        // used to print exactly that +1 for every mastered word.
+        //
+        // This half is GREEN as written — the blade was always right. It pins the
+        // email so the page can be brought into line without the parent side
+        // moving, and it fails loudly if anyone reintroduces the +1 here.
+        $html = (new StudentReportMail([
+            'name' => 'Test Student',
+            'section' => '7-G',
+            'wordBlastAcc' => 85,
+            'storyQuestAcc' => 90,
+            'read_level' => 1,
+            'speak_level' => 2,
+            'wordBlastProg' => 50,
+            'storyQuestProg' => 40,
+            'status' => 'in_progress',
+            'latestBadge' => [],
+            'trainingWords' => [],
+            // A TRAINING sentence that CONTAINS mastered words — the band the
+            // teacher page got wrong. The sentence total is deliberately 20 so it
+            // collides with no word count below.
+            'paragraphTrainingWords' => ['Level 1: Stories' => ['The cat is very big.']],
+            'wordAttempts' => [],
+            'paragraphWordAttempts' => ['The cat is very big.' => 20],
+            'paragraphWordVerdicts' => ['The cat is very big.' => [
+                ['word' => 'zerofail', 'mastery' => 'mastered', 'failed_attempts' => 0, 'verdict' => ReportService::VERDICT_MASTERED],
+                ['word' => 'one', 'mastery' => 'mastered', 'failed_attempts' => 1, 'verdict' => ReportService::VERDICT_MASTERED],
+                ['word' => 'two', 'mastery' => 'mastered', 'failed_attempts' => 2, 'verdict' => ReportService::VERDICT_MASTERED],
+                ['word' => 'cat', 'mastery' => 'training', 'failed_attempts' => 4, 'verdict' => ReportService::VERDICT_NEEDS_ATTENTION],
+            ]],
+            // Recovered, i.e. the band a teacher actually reteaches from.
+            'paragraphRecovered' => ['A bold fox jumps.' => [
+                ['word' => 'brave', 'mastery' => 'mastered', 'failed_attempts' => 4, 'verdict' => ReportService::VERDICT_RECOVERED],
+                ['word' => 'crane', 'mastery' => 'mastered', 'failed_attempts' => 6, 'verdict' => ReportService::VERDICT_RECOVERED],
+                ['word' => 'lands', 'mastery' => 'mastered', 'failed_attempts' => 9, 'verdict' => ReportService::VERDICT_RECOVERED],
+            ]],
+            'reported_at' => 'August 23, 2026 at 9:00 AM',
+        ]))->render();
+
+        $html = preg_replace('/\s+/', ' ', $html);
+
+        // Raw, exactly as stored. A 4-failure word reads 4, never 5.
+        $this->assertStringContainsString('4 recorded attempts to conquer', $html);
+        $this->assertStringContainsString('6 recorded attempts to conquer', $html);
+        $this->assertStringContainsString('9 recorded attempts to conquer', $html);
+        $this->assertStringContainsString('1 recorded attempt', $html);
+        $this->assertStringContainsString('2 recorded attempts', $html);
+        $this->assertStringContainsString('20 recorded attempts', $html);
+
+        // The +1 the teacher page used to invent is nowhere in the email. If a
+        // future change reintroduces it, the parent and the teacher will quote
+        // different numbers for the same word and this fails.
+        foreach ([5, 7, 10] as $invented) {
+            $this->assertStringNotContainsString(
+                "{$invented} recorded attempts to conquer",
+                $html,
+                "the email invented a winning try: printed {$invented} where failed_attempts says otherwise",
+            );
+        }
+
+        // A word with NO history gets no row at all — the rule the page's drill
+        // list and Word Blast chip now follow, so "Attempts: 1" for a first-try
+        // read can never appear on one surface while the other stays silent.
+        //
+        // Asserted by WORD, not by number: '0 recorded attempt' is a substring of
+        // '20 recorded attempts', so the numeric form passes vacuously. (The
+        // sibling test above has the same latent trap and only escapes it because
+        // its fixture happens to have no count ending in zero.)
+        $this->assertStringNotContainsString('zerofail', $html);
+    }
+
     public function test_report_email_renders_not_started_banner_without_training_sections(): void
     {
         $html = (new StudentReportMail([
