@@ -11,7 +11,7 @@ import { router } from "@inertiajs/react";
 import {
     playSuccessSound,
     playFeedbackSound,
-    playMispronounceFeedback,
+    playMispronounceSound,
 } from "@/utils/sounds";
 import {
     readResumeSession,
@@ -506,7 +506,7 @@ export function useGameplayCore({
         clearTimeout(feedbackTimerRef.current);
         setFeedbackMessage(mispMsg);
         setFeedbackType("mispronounce");
-        playMispronounceFeedback();
+        playMispronounceSound();
         playFeedbackSound(mispMsg);
         feedbackTimerRef.current = setTimeout(() => {
             setFeedbackType(null);

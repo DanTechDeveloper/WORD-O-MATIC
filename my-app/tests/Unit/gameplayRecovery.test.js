@@ -35,7 +35,7 @@ const routerMock = vi.hoisted(() => ({ post: vi.fn() }));
 const soundsMock = vi.hoisted(() => ({
     playSuccessSound: vi.fn(),
     playFeedbackSound: vi.fn(),
-    playMispronounceFeedback: vi.fn(),
+    playMispronounceSound: vi.fn(),
 }));
 vi.mock("@inertiajs/react", () => ({ router: routerMock }));
 vi.mock("@/utils/sounds", () => soundsMock);

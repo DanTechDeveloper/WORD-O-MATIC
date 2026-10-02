@@ -612,25 +612,29 @@ describe("processWordModeResult (Word Blast — strict exact-only)", () => {
     });
 });
 
-// ponytail: TAIL_WINDOW = 4 was a magic number with no test. Two cases above
-// ("in the recent tail" / "long ago") looked like coverage but only bracket the
-// window from 4 and 8 — so 4, 5, 6 and 7 ALL passed. The value itself was
-// unpinned: it could have been widened to 7 and every test in the repo would
-// still have been green. These rows sit on the boundary itself.
+// ponytail: the transcript memory cap — `refWordCount + 5` tokens, trimmed to
+// the LAST n before `full` is built (speechProcessors.js). This is the ONLY
+// bound on transcript length and it is applied to EVERY target, so it is the one
+// limit worth pinning.
 //
-// There are TWO limits, not one, and the second was undocumented until these
-// rows failed:
+// It replaced two limits, and the first was dead code. TAIL_WINDOW = 4 (via
+// matchScope) cut the match scope to the last 4 tokens for a single-word target,
+// but matchScope was only ever called from the NO-lookahead branch — and
+// `lookahead` is empty exactly when currentWordIndex is past the last word,
+// which is exactly when targetWord is normalizeText(undefined) = "". So
+// isSingleWord was never true there and the window never applied. Its own test
+// block asserted the unreachable state by hand-building a propsRef with no
+// `lookahead`, which is why it stayed green for so long. 4 was never derived
+// from anything either: it was the value the live rounds ran with.
 //
-//   1. TAIL_WINDOW = 4 — matchScope, and ONLY for a single-word target.
-//   2. refWordCount + 5 — the transcript memory cap, applied to every target
-//      before `full` is built. For a 2-word target that is 7 tokens, so a
-//      multi-word target is bounded too even though matchScope never fires.
+// What actually bounds a stale tail on a target switch is the 800ms graceEnd
+// gate in the lookahead branch, plus countConsecutiveMatches scanning backwards
+// on purpose so a read-ahead overshoot still advances. Do not reintroduce a
+// window here — it would break the overshoot.
 //
-// The window is reached only through the NO-lookahead branch (propsRef carries
-// no `lookahead`), which is what Story Quest has at the very end of a
-// paragraph — slice() past the last word joins to "". matchScope() is not
-// exported, so behaviour is asserted through processSentenceModeResult.
-describe("the single-word tail window is pinned at its boundary", () => {
+// Reachable through processSentenceModeResult with no `lookahead`; matchScope
+// was never exported, so behaviour is asserted through the processor.
+describe("the transcript memory cap is pinned at its boundary", () => {
     const makeRefs = () => ({
         stateRefs: {
             current: {
@@ -648,7 +652,9 @@ describe("the single-word tail window is pinned at its boundary", () => {
         propsRef: {
             current: {
                 isActive: true,
-                // no `lookahead` on purpose — this is the matchScope branch
+                // no `lookahead` on purpose — refWordCount then falls back to the
+                // target itself, so the cap is targetWordCount + 5 and these
+                // rows can pin it without the 6-word lookahead skewing it
                 onWordRecognized: vi.fn(),
                 onMispronounced: vi.fn(),
                 onProgress: vi.fn(),
@@ -658,32 +664,13 @@ describe("the single-word tail window is pinned at its boundary", () => {
 
     // `full` is one authoritative final. Words = the token count; at = where the
     // target sits. `expect` is "match" (green) or "stale" (red).
+    // 2-word target => cap 7. Trimming keeps the LAST n, so a target at the
+    // head survives one extra token and is gone on the next one.
     const CASES = [
         // [label, full, target, words, at, expect]
-        ["under the window: 3 tokens, target first", "cat is big", "cat", 3, 0, "match"],
-        ["ON the boundary: 4 tokens, target first", "cat is big and", "cat", 4, 0, "match"],
-        // The row that was missing. 4 -> 7 was free; 4 -> 5 is now pinned.
-        ["one past the boundary: 5 tokens, target first", "cat is big and the", "cat", 5, 0, "stale"],
-        ["well past: 6 tokens, target first", "cat is big and the boy", "cat", 6, 0, "stale"],
-        // Proves the rule is "the LAST FOUR", not "exactly four tokens" — the
-        // same 5-token transcript matches when the target is at index 1.
-        ["5 tokens, target at index 1 — still the last four", "the cat is big and", "cat", 5, 1, "match"],
-        ["a long run with the target newest still matches", "one two three four five six seven eight nine cat", "cat", 10, 9, "match"],
-        // Both the stale and the fresh word are present: the tail, not the whole
-        // transcript, is what counts — and the newest wins.
-        ["a stale AND a fresh copy — the fresh one is in the tail", "cat one two three four five six seven cat", "cat", 9, 8, "match"],
-        // A multi-word target skips TAIL_WINDOW entirely — matchScope hands back
-        // `full` whole. But `full` is NOT unbounded: the transcript is trimmed to
-        // refWordCount + 5 first (a target-relative cap, not a fixed window), so
-        // for a 2-word target the real memory is 7 tokens. These three rows pin
-        // that second, quieter limit, including the slide: trimming keeps the
-        // LAST n tokens, so a target sitting at the head survives one extra
-        // token and is only gone on the next one.
         ["multi-word target exactly at the targetWords+5 cap", "the cat sat and the boy ran", "cat sat", 7, 1, "match"],
         ["one token over: the trim slides and keeps it at the head", "the cat sat and the boy ran the", "cat sat", 8, 1, "match"],
         ["two tokens over: the target is pushed out of the memory", "the cat sat and the boy ran the girl", "cat sat", 9, 1, "stale"],
-        // normalizeText runs on the window, so punctuation inside it is fine.
-        ["punctuation inside the window does not break the match", "the cat is big.", "cat", 4, 1, "match"],
     ];
 
     for (const [name, full, target, words, at, expected] of CASES) {

@@ -102,7 +102,7 @@ function playAudio(path, volume = 1.0, { duck: shouldDuck = true } = {}) {
     try {
         const audio = new Audio(path)
         audio.volume = volume
-        audio.play()
+        audio.play().catch(() => {})
     } catch (e) {
         // ignore
     }
@@ -118,17 +118,6 @@ export function playBadgeUnlockSound() {
 
 export function playMispronounceSound() {
     playAudio("/Sound Effects/mispronounced.mp3")
-}
-
-export function playMispronounceFeedback() {
-    playMispronounceSound()
-    if ("vibrate" in navigator) {
-        try {
-            navigator.vibrate([200])
-        } catch {
-            // vibrate not supported or blocked
-        }
-    }
 }
 
 export function playFeedbackSound(message) {

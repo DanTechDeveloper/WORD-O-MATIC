@@ -71,38 +71,6 @@ function buildFullSentence(transcript, interim) {
     return normalizeText(transcript + " " + interim);
 }
 
-// ponytail: the single-word tail window. Two reasons, and it is the smaller of
-// the two limits — the transcript is ALSO capped at refWordCount + 5 below, which
-// is what actually bounds a multi-word target (matchScope never fires for one).
-//
-//   A. Speech-shaped. A single-word prompt is "cat", and the span a child really
-//      uses to answer it is a connective or two around the word: "and then the
-//      cat" is 4 tokens. Past that the child is mid-sentence, not answering, so
-//      the word they said long ago stops counting.
-//   B. Measured, not derived. 4 is the number the live rounds ran with, not a
-//      figure derived from anything. It is the LIKELY best value, not a proven
-//      one, so treat it as a knob: `window.__asrStats = {}` buckets word.accept,
-//      word.instantWrong and word.timeout5s, and a class with long lead-ins
-//      ("okay so um the cat") will show as too many instantWrong on a correct
-//      word. Widen or narrow to 3/5 and compare those buckets before keeping a
-//      change.
-//
-// The window is also the ONLY thing still protecting a new target 500ms after a
-// switch: the A+B stale-tail guard in processWordModeResult only suppresses the
-// PREVIOUS target, and after it expires this is what stops a word from the old
-// round matching the new one.
-//
-// Pinned at the boundary by "the single-word tail window is pinned at its
-// boundary" (tests/Unit/speechUtils.test.js) — rows at 3/4/5/6 tokens, so 4
-// cannot drift to 7 unnoticed.
-const TAIL_WINDOW = 4;
-function matchScope(full, target) {
-    const isSingleWord = target.split(/\s+/).filter(Boolean).length === 1;
-    if (!isSingleWord) return full;
-    const words = full.split(/\s+/).filter(Boolean);
-    return words.slice(-TAIL_WINDOW).join(" ");
-}
-
 // ponytail: strict-prefix check — full is a non-empty exact head of ref
 // ("the cat" vs "the cat sat"). A mid-sentence authoritative final (Deepgram
 // endpointing on a pause, not a wrong word) defers to the 5s watchdog
@@ -412,10 +380,16 @@ export function processSentenceModeResult(
         }
         return;
     }
-    const scope = matchScope(full, target);
+    // ponytail: `full` whole. This USED to be matchScope(), which cut the scope
+    // to the last 4 tokens for a single-word target — dead code, because this
+    // line is only reachable when `lookahead` is empty, and that happens exactly
+    // when currentWordIndex is past the last word, which is exactly when
+    // targetWord is normalizeText(undefined) = "". So isSingleWord was never
+    // true here. The transcript is still bounded, by the refWordCount + 5 trim
+    // above; that is the only limit, and it is applied to EVERY target.
     if (
         !stateRefs.current.hasMatched &&
-        isWordMatch(scope, target)
+        isWordMatch(full, target)
     ) {
         bump("sentence.advance");
         stateRefs.current.hasMatched = true;
@@ -464,7 +438,7 @@ export function processSentenceModeResult(
     // Authoritative mismatch → immediate verdict (Deepgram empty/low-conf or speechFinal)
     // FIX: low-confidence mismatch defers to the 5s watchdog (noise, not wrong).
     if (hasAuthoritative) {
-        if (!isWordMatch(scope, target)) {
+        if (!isWordMatch(full, target)) {
             if (confidence < 0.6) {
                 bump("sentence.lowConfDeferred");
                 return;
