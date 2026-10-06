@@ -304,8 +304,8 @@ class ReportService
     //
     // MERGE UNIT IS THE LEVEL, not the sentence — and that is forced by the
     // sheet, not chosen. The sheet has no Sentence column, so a row's identity
-    // is (level, word): merging per sentence emitted "A" twice for Level 5
-    // ("A tiger crosses the river. A robot holds a lemon." — one A in each
+    // is (level, word): merging per sentence emitted "A" twice for Level 1
+    // ("A frog can swim. Milo sees a crab." — one A in each
     // sentence) as two rows that looked identical because nothing on the sheet
     // could tell them apart. Per-LEVEL merging is right here; the email and the
     // teacher page deliberately keep the per-sentence unit, because both print

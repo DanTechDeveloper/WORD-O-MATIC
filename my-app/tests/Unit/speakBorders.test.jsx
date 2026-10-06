@@ -12,8 +12,8 @@
 // that lets BLUE win over GREEN is a lie told to a child and MUST.
 //
 // Zero mocks on purpose: the component imports only React.
-import { render, screen, cleanup } from "@testing-library/react";
-import { afterEach, beforeAll, describe, expect, test } from "vitest";
+import { render, screen, cleanup, act } from "@testing-library/react";
+import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
 import SpeakModeMainContent from "@/Components/Student/SpeakModeMainContent";
 
 beforeAll(() => {
@@ -423,5 +423,75 @@ describe("a bad props object is survivable", () => {
     test("verdicts default to empty when the prop is omitted entirely", () => {
         const c = render(<SpeakModeMainContent words={WORDS} gameState="ACTIVE" currentIndex={AT} hasSpoken />);
         expect(states(c)[AT]).toBe("frontier");
+    });
+});
+
+// ── 9. latency stall hint ────────────────────────────────────────────────
+describe("the latency stall hint", () => {
+    const stallText = () => screen.queryByText(/keep reading/i);
+
+    test("appears after 2s of frozen frontier during a live round", () => {
+        vi.useFakeTimers();
+        try {
+            render(<SpeakModeMainContent words={WORDS} gameState="ACTIVE" currentIndex={AT} hasSpoken />);
+            expect(stallText()).toBeNull();
+            act(() => vi.advanceTimersByTime(1999));
+            expect(stallText()).toBeNull();
+            act(() => vi.advanceTimersByTime(1));
+            expect(stallText()).not.toBeNull();
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    test("never appears before speech starts or outside ACTIVE", () => {
+        vi.useFakeTimers();
+        try {
+            cleanup();
+            render(<SpeakModeMainContent words={WORDS} gameState="ACTIVE" currentIndex={AT} />);
+            act(() => vi.advanceTimersByTime(3000));
+            expect(stallText()).toBeNull();
+            cleanup();
+            render(<SpeakModeMainContent words={WORDS} gameState="COUNTDOWN" countdownValue={2} hasSpoken />);
+            act(() => vi.advanceTimersByTime(3000));
+            expect(stallText()).toBeNull();
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    test("a frontier move resets the clock and hides the hint", () => {
+        vi.useFakeTimers();
+        try {
+            const c = render(<SpeakModeMainContent words={WORDS} gameState="ACTIVE" currentIndex={AT} hasSpoken />);
+            act(() => vi.advanceTimersByTime(2000));
+            expect(stallText()).not.toBeNull();
+            c.rerender(<SpeakModeMainContent words={WORDS} gameState="ACTIVE" currentIndex={AT + 1} hasSpoken />);
+            expect(stallText()).toBeNull();
+            act(() => vi.advanceTimersByTime(1999));
+            expect(stallText()).toBeNull();
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    test("sentenceBreak suppresses it — the celebration owns the screen", () => {
+        vi.useFakeTimers();
+        try {
+            render(
+                <SpeakModeMainContent
+                    words={WORDS}
+                    gameState="ACTIVE"
+                    currentIndex={AT}
+                    hasSpoken
+                    sentenceBreak
+                    sentenceFeedback={{ message: "That's OK!" }}
+                />,
+            );
+            act(() => vi.advanceTimersByTime(3000));
+            expect(stallText()).toBeNull();
+        } finally {
+            vi.useRealTimers();
+        }
     });
 });

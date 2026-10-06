@@ -1,4 +1,4 @@
-import { memo, useRef, useEffect } from "react";
+import { memo, useRef, useEffect, useState } from "react";
 
 // Story Quest paragraph view: karaoke-style live highlight (BLUE current +
 // quest glow following interim speech) with GREEN/RED verdicts locking on
@@ -18,10 +18,11 @@ function renderWordText(word) {
         </>
     );
 }
+const EMPTY_VERDICTS = {};
 const SpeakModeMainContent = memo(function SpeakModeMainContent({
     words,
     currentIndex,
-    verdicts = {},
+    verdicts = EMPTY_VERDICTS,
     sentenceFeedback = null,
     sentenceBreak = false,
     highlightCount = 1,
@@ -34,6 +35,17 @@ const SpeakModeMainContent = memo(function SpeakModeMainContent({
 }) {
     const activeWordRef = useRef(null);
     const activeCount = Math.max(1, highlightCount | 0 || 1);
+    // ponytail: latency guard — Deepgram lag freezes the BLUE frontier and the
+    // child pauses mid-word (5s watchdog then fails it). After 2s with no
+    // frontier/verdict movement, surface "keep reading" so they resume.
+    // Any prop change resets the timer; sentenceBreak has its own overlay.
+    const [stalled, setStalled] = useState(false);
+    useEffect(() => {
+        setStalled(false);
+        if (gameState !== "ACTIVE" || !hasSpoken || sentenceBreak) return;
+        const t = setTimeout(() => setStalled(true), 2000);
+        return () => clearTimeout(t);
+    }, [currentIndex, highlightCount, verdicts, gameState, hasSpoken, sentenceBreak]);
     // ponytail: verdicts always win; fresh mount stays neutral until speech
     // (resume keeps its you-are-here marker, it is mid-round). Hoisted out of
     // the map so the legend can gate on the same flag — the blue BORDER only
@@ -79,7 +91,7 @@ const SpeakModeMainContent = memo(function SpeakModeMainContent({
                 </div>
             ) : (
                 <div className="flex-1 flex flex-col relative">
-                    <div className="flex-1 flex items-start justify-center overflow-y-auto px-3 xs:px-4 sm:px-6 md:px-8 pt-12 sm:pt-15 pb-12 sm:pb-16">
+                    <div className="flex-1 flex items-start justify-center overflow-y-auto px-3 xs:px-4 sm:px-6 md:px-8 pt-12 sm:pt-15 pb-28 sm:pb-36">
                         <div className="relative w-full max-w-7xl my-auto">
                             {/* ponytail: the color legend, in the slot that has
                                 been reserved and empty since 1c3a303. It persists
@@ -87,7 +99,7 @@ const SpeakModeMainContent = memo(function SpeakModeMainContent({
                                 bubble is destroyed at guideDone — long before the
                                 first verdict paints a border. Chip classes are
                                 copied from the word map below, not approximated. */}
-                            <div className="sticky top-2 z-30 flex flex-wrap items-center justify-center gap-2 sm:gap-4 mb-2 sm:mb-3 min-h-8 sm:min-h-10">
+                            <div className="sticky top-2 z-30 flex flex-wrap items-center justify-center gap-2 sm:gap-4 mb-4 sm:mb-6 min-h-8 sm:min-h-10">
                                 {showLegend && showFrontier && (
                                     <>
                                         {[
@@ -103,6 +115,11 @@ const SpeakModeMainContent = memo(function SpeakModeMainContent({
                                             </span>
                                         ))}
                                     </>
+                                )}
+                                {stalled && (
+                                    <span className="border-2 border-quest/60 text-white rounded-xl px-4 py-2 bg-slate-900/90 font-bold tracking-normal text-base sm:text-lg whitespace-nowrap shadow-[0_0_16px_rgba(56,189,248,0.4)]">
+                                        Keep reading!
+                                    </span>
                                 )}
                             </div>
 

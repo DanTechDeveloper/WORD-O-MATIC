@@ -180,16 +180,16 @@ describe("isWordMatch — SSOT strict exact-only (Word Blast + Story Quest)", ()
 // isWordMatch signature unchanged.
 describe("WORD BLAST curriculum (seeded words) — regression guard (verdict-gated)", () => {
     const wordsByModule = [
-        ["frog", "crab", "drum", "swim", "snack", "slide", "stone", "bloom", "grape", "grill"],
-        ["dream", "cloud", "snail", "green", "shade", "train", "queen", "roast", "paint", "cloak"],
-        ["brush", "clock", "smile", "plant", "crash", "dress", "frost", "twist", "shark", "phone"],
-        ["splash", "street", "stripe", "crane", "flute", "skate", "brave", "brick", "spark", "blast"],
-        ["tiger", "river", "lemon", "pocket", "circus", "magnet", "violin", "planet", "robot", "camel"],
-        ["remake", "unlock", "rewrite", "unzip", "dislike", "distrust", "misplace", "misspell", "reopen", "recycle"],
-        ["thankful", "endless", "softly", "muddy", "wishful", "harmless", "neatly", "sleepy", "sticky", "kindly"],
-        ["airplane", "sailboat", "mailbox", "raincoat", "suitcase", "bookshelf", "campground", "dragonfly", "wheelchair", "keyboard"],
-        ["thunder", "journey", "whisper", "meadow", "clever", "spirit", "voyage", "village", "comet", "canyon"],
-        ["architecture", "temperature", "electricity", "expedition", "horizon", "fortress", "galaxy", "lagoon", "mosaic", "pyramid"],
+        ["lion", "frog", "fish", "bird", "duck", "goat", "wolf", "deer", "crab", "shark"],
+        ["kitten", "puppy", "calf", "pony", "pigeon", "turtle", "hamster", "monkey", "mouse", "hedgehog"],
+        ["moon", "storm", "rain", "snow", "wind", "cloud", "fire", "sunshine", "breeze", "frost"],
+        ["apple", "banana", "grape", "melon", "lemon", "plum", "corn", "milk", "rice", "cake"],
+        ["cheese", "mango", "honey", "walnut", "radish", "meat", "soup", "biscuit", "salt", "bean"],
+        ["desk", "chair", "table", "door", "window", "shelf", "lamp", "paper", "shoe", "shirt"],
+        ["jacket", "plate", "spoon", "fork", "knife", "blanket", "crayon", "backpack", "helmet", "bottle"],
+        ["bike", "canoe", "raft", "truck", "taxi", "tractor", "wagon", "scooter", "ladder", "basket"],
+        ["stop", "jump", "walk", "stand", "look", "sing", "open", "close", "push", "pull"],
+        ["drop", "pick", "swim", "climb", "trace", "travel", "dash", "kneel", "sketch", "leap"],
     ];
     test("every WORD BLAST word matches itself (d=0)", () => {
         for (const level of wordsByModule) for (const w of level) expect(isWordMatch(w, w)).toBe(true);

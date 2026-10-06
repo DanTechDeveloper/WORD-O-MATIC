@@ -631,6 +631,19 @@ describe("round start is blocked while offline", () => {
         expect([...order].sort((a, b) => a - b)).toEqual(order);
     });
 
+    test("the mic LABEL renders that chain — not a second, shorter one", () => {
+        // The chain above was computed into `prompt` and then never rendered:
+        // the label recomputed live > disabled > default on its own, dropping
+        // offline and reconnecting. So on a dead link the aura dimmed while the
+        // prompt still said "Speak to Smash!" — the exact lie the aura fix
+        // (useDeepgramRecognition `reconnecting`) exists to prevent.
+        expect(mic).toContain("{prompt}");
+        // No second ternary chain in the label span.
+        const label = mic.slice(mic.indexOf("whitespace-nowrap\">"), mic.indexOf("</span>", mic.indexOf("whitespace-nowrap\">")));
+        expect(label).not.toContain("Speak to Smash!");
+        expect(label).not.toContain("Get Ready!");
+    });
+
     test("a mic that cannot hear must not pulse like a live one", () => {
         // live drives the aura, the fast spin and the graphic_eq icon. Offline
         // and reconnecting both fall to the idle branch.

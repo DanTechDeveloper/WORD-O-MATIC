@@ -12,6 +12,14 @@ import {
 // and must be REPLACED in the seeder (never shipped, never runtime-filtered — filtering
 // would break the 10-words-per-level invariant, teacher edit rules, and report denominators).
 //
+// ponytail: chapters are keyed 0-10 here exactly as CurriculumSeeder::paragraphsByLevel()
+// is — key 0 IS the Story Quest tutorial chapter, so there is no separate tutorialSentence
+// to keep in sync. parity with the seeder is MANUAL: nothing asserts these two literals
+// equal CurriculumSeeder::wordsByModule()/paragraphsByLevel(). It drifted before —
+// tutorialWords sat here as apple/banana/puppy/kitten/hamster while the seeder had already
+// moved on, and the suite stayed green because it only tests its own copy. Resync both
+// literals together on every reseed.
+//
 // Pasado (every word): P1 exact isFinal -> recognized; P2 high-conf interim exact ->
 // recognized; P4 uppercase exact -> recognized.
 // Bagsak (any word): B1 wrong-first-letter authoritative -> mispronounced, never
@@ -21,34 +29,34 @@ import {
 // final -> mispronounced.
 
 const wordsByModule = {
-    1: ["frog", "crab", "drum", "swim", "snack", "slide", "stone", "bloom", "grape", "grill"],
-    2: ["dream", "cloud", "snail", "green", "shade", "train", "queen", "roast", "paint", "cloak"],
-    3: ["brush", "clock", "smile", "plant", "crash", "dress", "frost", "twist", "shark", "phone"],
-    4: ["splash", "street", "stripe", "crane", "flute", "skate", "brave", "brick", "spark", "blast"],
-    5: ["tiger", "river", "lemon", "pocket", "circus", "magnet", "violin", "planet", "robot", "camel"],
-    6: ["remake", "unlock", "rewrite", "unzip", "dislike", "distrust", "misplace", "misspell", "reopen", "recycle"],
-    7: ["thankful", "endless", "softly", "muddy", "wishful", "harmless", "neatly", "sleepy", "sticky", "kindly"],
-    8: ["airplane", "sailboat", "mailbox", "raincoat", "suitcase", "bookshelf", "campground", "dragonfly", "wheelchair", "keyboard"],
-    9: ["thunder", "journey", "whisper", "meadow", "clever", "spirit", "voyage", "village", "comet", "canyon"],
-    10: ["architecture", "temperature", "electricity", "expedition", "horizon", "fortress", "galaxy", "lagoon", "mosaic", "pyramid"],
+    1: ["lion", "frog", "fish", "bird", "duck", "goat", "wolf", "deer", "crab", "shark"],
+    2: ["kitten", "puppy", "calf", "pony", "pigeon", "turtle", "hamster", "monkey", "mouse", "hedgehog"],
+    3: ["moon", "storm", "rain", "snow", "wind", "cloud", "fire", "sunshine", "breeze", "frost"],
+    4: ["apple", "banana", "grape", "melon", "lemon", "plum", "corn", "milk", "rice", "cake"],
+    5: ["cheese", "mango", "honey", "walnut", "radish", "meat", "soup", "biscuit", "salt", "bean"],
+    6: ["desk", "chair", "table", "door", "window", "shelf", "lamp", "paper", "shoe", "shirt"],
+    7: ["jacket", "plate", "spoon", "fork", "knife", "blanket", "crayon", "backpack", "helmet", "bottle"],
+    8: ["bike", "canoe", "raft", "truck", "taxi", "tractor", "wagon", "scooter", "ladder", "basket"],
+    9: ["stop", "jump", "walk", "stand", "look", "sing", "open", "close", "push", "pull"],
+    10: ["drop", "pick", "swim", "climb", "trace", "travel", "dash", "kneel", "sketch", "leap"],
 };
-const tutorialWords = ["apple", "banana", "puppy", "kitten", "hamster"];
+const tutorialWords = ["start", "next", "skip", "play", "help"];
 const sentencesByLevel = {
-    1: "Milo sees a frog. A crab can swim.",
-    2: "A green cloud floats. The queen sees a train.",
-    3: "The clock ticks. Milo holds a brush.",
-    4: "A brave crane lands. Milo finds a brick.",
-    5: "A tiger crosses the river. A robot holds a lemon.",
-    6: "Milo will recycle paper. He can reopen it.",
-    7: "Milo walks softly. He feels thankful.",
-    8: "A sailboat crosses the lake. Milo finds a mailbox.",
-    9: "They hear low thunder. Milo finds a village.",
-    10: "The fortress stands tall. Milo joins the expedition.",
+    0: "The game can start. Now we play.",
+    1: "Water drips down. Frog feels cold.",
+    2: "Stream flows fast. Puppy runs wide.",
+    3: "Canoe glides soft. Wind blows hard.",
+    4: "Fish swims deep. Melon rolls down.",
+    5: "Rope pulls tight. Bean arrives safe.",
+    6: "Gold shines bright. Lamp holds treasure.",
+    7: "Key turns smooth. Knife slides apart.",
+    8: "Hand takes prize. Basket fills up.",
+    9: "Child can walk. Road looks clear.",
+    10: "Camp fire burns. We drop the gear.",
 };
-const tutorialSentence = "A puppy naps. A hamster runs.";
 
 const allWordBlast = [...Object.values(wordsByModule).flat(), ...tutorialWords];
-const allSentences = [...Object.values(sentencesByLevel), tutorialSentence];
+const allSentences = Object.values(sentencesByLevel);
 
 const makeWordRefs = () => {
     const stateRefs = {
@@ -167,6 +175,45 @@ describe("Story Quest verdict gate — processSentenceModeResult per seeded sent
             }
         });
     }
+});
+
+// ponytail: the determiner rule is an ASR decision, not a style one, so it gets a
+// gate. isWordMatch's filler skip (speechUtils.js:101-102) discards an EXTRA token
+// on the SPOKEN side — a determiner in the TARGET is a required slot, not a filler.
+// These chapters are read aloud as one whole sentence, so a leading "the" the child
+// skips loses the entire score. Determiner-free targets accept BOTH readings.
+describe("no leading determiner in a chapter sentence", () => {
+    test("no real chapter (levels 1-10) opens with the/a/an", () => {
+        const offenders = [];
+        for (const level of Object.keys(sentencesByLevel)) {
+            if (level === "0") continue; // frozen tutorial — see the test below
+            for (const part of sentencesByLevel[level].split(/(?<=[.!?])\s+/)) {
+                if (/^(the|a|an)\b/i.test(part.trim())) {
+                    offenders.push(`L${level}: "${part.trim()}"`);
+                }
+            }
+        }
+        // Bagsak dito = alisin ang determiner sa seeder, HINDI palawayin ang matcher.
+        expect(offenders).toEqual([]);
+    });
+
+    test("KNOWN GAP: key 0 (tutorial) still leads with a determiner, and is frozen", () => {
+        // Asserted, not ignored. CurriculumSeeder seeds level 0 through
+        // firstOrCreate + wasRecentlyCreated, so its text can never change on a
+        // re-seed — editing it in the seeder is a no-op until migrate:fresh. It is
+        // the same ASR exposure the rule above removes, on the one chapter every
+        // child reads first. Recorded here so it cannot be forgotten silently.
+        expect(sentencesByLevel[0]).toBe("The game can start. Now we play.");
+        expect(isWordMatch("game can start", sentencesByLevel[0].split(". ")[0])).toBe(false);
+    });
+
+    test("why the rule holds: a determiner-free target accepts a spoken determiner", () => {
+        // The reverse is NOT true — this is the whole point. A child who drops the
+        // article against a target that has one fails the ENTIRE sentence.
+        expect(isWordMatch("frog feels cold", "the frog feels cold")).toBe(false);
+        expect(isWordMatch("the frog feels cold", "frog feels cold")).toBe(true);
+        expect(isWordMatch("the the frog feels cold", "frog feels cold")).toBe(true);
+    });
 });
 
 describe("Tutorial transcript lesson — locked (strict)", () => {

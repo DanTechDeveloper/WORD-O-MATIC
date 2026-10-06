@@ -258,15 +258,27 @@ export default function GameplayReadMode({ module, tutorialComplete = true, tuto
     const [coachActive, setCoachActive] = useState(false);
     const [coachLeaving, setCoachLeaving] = useState(false);
     const [cheerActive, setCheerActive] = useState(false);
+    const [coachHint, setCoachHint] = useState("");
+    // ponytail: monotonic, NOT the hint — 3 random hints repeat 1/3 of the
+    // time and React bails out of an identical setState, so a key off coachHint
+    // would leave a repeat mispronounce with zero visual delta.
+    const [coachSeq, setCoachSeq] = useState(0);
+
+    const HINTS = useMemo(
+        () => ["Try to come closer to the mic!", "Try louder!", "That's okay, you're doing great!"].map((h) => `HINT: ${h}`),
+        [],
+    );
 
     useEffect(() => {
         if (isMispronounced) {
             setCoachLeaving(false);
+            setCoachHint(HINTS[Math.floor(Math.random() * HINTS.length)]);
+            setCoachSeq((n) => n + 1);
             setCoachActive(true);
             const t = setTimeout(() => setCoachActive(false), isTutorial ? 1500 : 1200);
             return () => clearTimeout(t);
         }
-    }, [isMispronounced, isTutorial]);
+    }, [isMispronounced, isTutorial, HINTS]);
 
     useEffect(() => {
         if (feedbackType === "correct" && coachActive) {
@@ -377,13 +389,15 @@ export default function GameplayReadMode({ module, tutorialComplete = true, tuto
                 engine is shared with Story Quest and Speak. */}
             {coachActive && !isTutorialCompletePending && bodyUrl && (
                 <AvatarSpeechBubble
+                    key={coachSeq}
                     emoji="sentiment_very_satisfied"
                     title="NICE TRY!"
-                    message="That's okay. you're doing great!"
+                    message={coachHint}
                     bodyUrl={bodyUrl}
                     color="accent"
                     position="bottom-right"
                     variant="mini"
+                    pulseMessage
                     className={coachLeaving ? "opacity-0 transition-opacity duration-300" : ""}
                 />
             )}

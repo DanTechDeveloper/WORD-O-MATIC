@@ -251,19 +251,34 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true, tut
 
     const [coachActive, setCoachActive] = useState(false);
     const [coachLeaving, setCoachLeaving] = useState(false);
+    const [coachHint, setCoachHint] = useState("");
+    // ponytail: monotonic, NOT the hint — 3 random hints repeat 1/3 of the
+    // time and React bails out of an identical setState, so a key off coachHint
+    // would leave a repeat mispronounce with zero visual delta.
+    const [coachSeq, setCoachSeq] = useState(0);
 
-    // ponytail: per-word cheer is tutorial-only — in real rounds RED advances
-    // immediately, so a bubble per mispronounce would spam mid-sentence and
-    // violate no-per-word-feedback. Real-round encouragement lives in the
-    // sentence-completion bubble below.
+    // hint rolls per trigger via Math.random
+    const HINTS = useMemo(
+        () => ["Try to come closer to the mic!", "Try louder!", "That's okay, you're doing great!"].map((h) => `HINT: ${h}`),
+        [],
+    );
+
+    // ponytail: fires on every isMispronounced rising edge — the same shape as
+    // GameplayReadMode. The ref latch this replaced was written for the
+    // per-sentence-break design d3a540a removed: its only consumer depended on
+    // [sentenceBreak, gameState, HINTS], and a ref has no dep, so nothing ever
+    // re-ran it. sentenceBreak now flips true only at the END of the paragraph,
+    // where that effect's own guard bails — so the bubble never appeared
+    // outside the tutorial at all.
     useEffect(() => {
-        if (isTutorial && isMispronounced) {
-            setCoachLeaving(false);
-            setCoachActive(true);
-            const t = setTimeout(() => setCoachActive(false), isTutorial ? 1500 : 1200);
-            return () => clearTimeout(t);
-        }
-    }, [isMispronounced, isTutorial]);
+        if (!isMispronounced) return;
+        setCoachLeaving(false);
+        setCoachHint(HINTS[Math.floor(Math.random() * HINTS.length)]);
+        setCoachSeq((n) => n + 1);
+        setCoachActive(true);
+        const t = setTimeout(() => setCoachActive(false), 1800);
+        return () => clearTimeout(t);
+    }, [isMispronounced, HINTS]);
 
     useEffect(() => {
         if (feedbackType === "correct" && coachActive) {
@@ -328,13 +343,15 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true, tut
                     />
                     {coachActive && bodyUrl && (
                         <AvatarSpeechBubble
+                            key={coachSeq}
                             emoji="sentiment_very_satisfied"
                             title="NICE TRY!"
-                            message="That's okay. you're doing great!"
+                            message={coachHint}
                             bodyUrl={bodyUrl}
                             color="quest"
                             position="bottom-right"
                             variant="mini"
+                            pulseMessage
                             className={coachLeaving ? "opacity-0 transition-opacity duration-300" : ""}
                         />
                     )}

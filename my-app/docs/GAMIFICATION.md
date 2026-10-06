@@ -142,7 +142,7 @@ Semantics:
   - `mastered` + ≥3 → **Recovered** (was difficult, overcome — history only)
   - else → no flag rendered (Normal is the absence of a flag, not a label)
 - Surfaced in the Word Analysis tables on `Teacher/StudentDetails.jsx`: Word Blast via `word_stats` (`aggregateZoneRows` now direct, no dedup — 10 unique words/level, YAGNI), Story Quest via `sentence_stats`, now **per word**: the verdict comes from each word's own `status`/`failed_attempts`, the sentence `failed_attempts` sum is display-only, and duplicate texts inside a sentence are merged. Unseen words still show at 0 at sentence level only. Email ↔ StudentDetails parity locked by `ReportTest::test_email_payload_matches_student_details_view_data` (now sentence-aware for Story Quest).
-- Story Quest no longer merges duplicate word texts — sentences are unique (`A puppy naps. A hamster runs.` vs `Milo sees a frog. A crab can swim.`); the old per-word dedup (`aggregateWordStats` `normalizeWord` `BF25`) was Word Blast legacy and has been removed (now direct `word_stats` iteration).
+- Story Quest no longer merges duplicate word texts — sentences are unique (`The game will start. Now we play.` vs `A frog can swim. Milo sees a crab.`); the old per-word dedup (`aggregateWordStats` `normalizeWord` `BF25`) was Word Blast legacy and has been removed (now direct `word_stats` iteration).
 - Also surfaced in parent emails: the Training Zones group training words/sentences into
   **Still Practicing** (< threshold) and **Needs More Practice** (≥ threshold,
   amber, "Not yet mastered") with `N recorded attempt(s)` (Story Quest `N=sum(word)` ) metas — counts framed

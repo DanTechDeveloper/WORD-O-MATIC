@@ -19,7 +19,7 @@
 
 | Property | Value |
 |---|---|
-| Type | Speaking with short sentences (2 per level, 3-5 words each, 81 total words) |
+| Type | Speaking with short sentences (2 per level, 3-5 words each, 61 total words) |
 | Timer | 60 seconds per session |
 | Presentation | Sentence-based, fixed word order |
 | Scoring | SSOT `isWordMatch` (`speechUtils.js`): strict exact-only after normalize, sentence-aware (ordered two-pointer + exact split-stitch + filler skip). Both Word Blast and Story Quest use the same function. Any non-exact transcript surfaces as Wrong — scoring is objective, no close-enough. |
@@ -43,9 +43,9 @@
 ## Tutorial
 
 Dedicated tutorial modules (`is_tutorial=true`, `level=0`) seeded in `CurriculumSeeder`:
-- **Word Blast tutorial**: 5 words (apple, banana, puppy, kitten, hamster) — no timer
+- **Word Blast tutorial**: 5 words (start, next, skip, play, help) — no timer
 
-- **Story Quest tutorial**: "A puppy naps. A hamster runs." — no timer
+- **Story Quest tutorial**: "The game will start. Now we play." — no timer
 Tutorial plays bypass GameSession, mastery, points, leaderboard, and gameplay badge tracking.
 Progress is saved but does not affect accuracy/status calculations on `students` table.
 Onboarding shows GameResults once, on the completing tutorial finish (Word Blast finish
@@ -63,13 +63,18 @@ CONTINUE through every step — before the play action becomes available. Enforc
   already gated on `guideDone`).
 
 ### Mistake coach (cheer-only)
-During tutorial gameplay, a mispronunciation shows a reusable `AvatarSpeechBubble` that
-**cheers only** — no correction and no retry loop. `GameplayReadMode.jsx` /
-`GameplaySpeakMode.jsx` hold a `coachActive` / `coachLeaving` state driven by the engine's
-`isMispronounced` / `feedbackType`: the bubble appears on each mistake, **stays** through
-repeated mistakes, and fades (300ms opacity transition) only when the word is hit correct.
-Rendered `bottom-left`, no `onClick`. The engine, speech hook, and `MainContent` components
-are untouched — the bubble is pure reuse. Non-tutorial sessions never render it.
+A mispronunciation shows a reusable `AvatarSpeechBubble` that **cheers only** — no correction
+and no retry loop, in tutorial and real rounds alike. `GameplayReadMode.jsx` /
+`GameplaySpeakMode.jsx` hold `coachActive` / `coachLeaving` / `coachHint` / `coachSeq` driven
+by the engine's `isMispronounced` / `feedbackType`. **Every** mispronunciation re-fires: the
+effect's dep array is `[isMispronounced, ...]`, and `key={coachSeq}` remounts the bubble so
+`animate-fade-in` replays — `setCoachActive(true)` on an already-true value is a React bail-out,
+so without a changing key a repeat mistake repaints nothing. `coachSeq` is monotonic precisely
+because the 3 `coachHint` strings repeat ~1/3 of the time. The bubble then fades (300ms opacity
+transition) on a correct hit — except in Word Blast, where the mispronounce pulse ends before
+the hide timer, so it persists until the next correct word. Rendered `bottom-right`, no
+`onClick`. The engine, speech hook, and `MainContent` components are untouched — the bubble is
+pure reuse. Locked by `tests/Unit/coachBubbleRetrigger.test.js`.
 
 ### Completion congrats
 After both modes are done, the "Tutorial Complete" badge flashes on the Dashboard

@@ -73,10 +73,14 @@ class CurriculumStrictTest extends TestCase
     public function test_chapters_split_into_two_short_sentences(): void
     {
         $paragraphs = CurriculumSeeder::paragraphsByLevel();
-        $this->assertCount(10, $paragraphs);
 
-        $texts = [...$paragraphs, CurriculumSeeder::tutorialContent()];
-        foreach ($texts as $text) {
+        // ponytail: chapters are keyed 0-10 and key 0 IS the Story Quest tutorial
+        // chapter. It used to live in a second provider (tutorialContent()), which
+        // meant the tutorial text had two homes and the shape rules below had to
+        // be applied to it by hand. One array, one loop, no second source.
+        $this->assertSame(range(0, 10), array_keys($paragraphs), 'chapters must be keyed 0-10 contiguous, where 0 is the Story Quest tutorial');
+
+        foreach ($paragraphs as $text) {
             $parts = preg_split('/(?<=[.!?])\s+/', trim($text));
             $this->assertCount(2, $parts, "bagsak chapter: \"{$text}\" — must be exactly \"Sentence. Sentence.\"");
             foreach ($parts as $sentence) {
@@ -92,17 +96,17 @@ class CurriculumStrictTest extends TestCase
         $paragraphs = CurriculumSeeder::paragraphsByLevel();
         $wordsByModule = CurriculumSeeder::wordsByModule();
 
-        foreach ($paragraphs as $level => $text) {
-            $vocab = preg_split('/[\s.]+/', strtolower(trim($text)), -1, PREG_SPLIT_NO_EMPTY);
+        foreach (range(1, 10) as $level) {
+            $vocab = preg_split('/[\s.]+/', strtolower(trim($paragraphs[$level])), -1, PREG_SPLIT_NO_EMPTY);
             $echoes = array_intersect($wordsByModule[$level], $vocab);
 
             $this->assertNotEmpty($echoes, "bagsak chapter {$level}: no exact level-word echo");
         }
 
-        $tutVocab = preg_split('/[\s.]+/', strtolower(trim(CurriculumSeeder::tutorialContent())), -1, PREG_SPLIT_NO_EMPTY);
+        $tutVocab = preg_split('/[\s.]+/', strtolower(trim($paragraphs[0])), -1, PREG_SPLIT_NO_EMPTY);
         $this->assertNotEmpty(
             array_intersect(CurriculumSeeder::tutorialWords(), $tutVocab),
-            'bagsak tutorial sentence: no exact tutorial-word echo'
+            'bagsak tutorial chapter (key 0): no exact tutorial-word echo'
         );
     }
 }

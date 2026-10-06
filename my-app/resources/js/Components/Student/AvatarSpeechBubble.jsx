@@ -18,6 +18,7 @@ export default function AvatarSpeechBubble({
     color = "primary",
     className = "",
     variant = "full",
+    pulseMessage = false,
 }) {
     const accentMap = {
         primary: {
@@ -99,7 +100,7 @@ export default function AvatarSpeechBubble({
                     <span className={`material-symbols-outlined ${isMini ? "text-2xl sm:text-3xl" : isToast ? "text-lg" : "text-4xl"}`} aria-hidden="true">{emoji}</span>
                     {title}
                 </p>
-                <p className={`${isMini ? "text-base sm:text-lg" : isToast ? "text-xs" : "text-lg sm:text-xl"} font-bold text-on-surface-variant ${isToast ? "mt-0 truncate" : "mt-2 leading-snug"}`}>
+                <p className={`${isMini ? "text-base sm:text-lg" : isToast ? "text-xs" : "text-lg sm:text-xl"} font-bold text-on-surface-variant ${isToast ? "mt-0 truncate" : "mt-2 leading-snug"}${pulseMessage ? " animate-pulse" : ""}`}>
                     {message}
                 </p>
                 {/* ponytail: sized to the tightest box, not the prettiest. 15
