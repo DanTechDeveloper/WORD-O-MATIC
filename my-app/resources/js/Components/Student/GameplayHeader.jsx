@@ -39,7 +39,7 @@ const GameplayHeader = memo(function GameplayHeader({
                 </div>
 
                 {/* Progress 1/10 */}
-                <div className="bg-on-background/10 backdrop-blur-sm px-3 py-1 rounded-full border-2 border-on-background/20 shadow-md">
+                <div className={`bg-on-background/10 backdrop-blur-sm px-3 py-1 rounded-full border-2 shadow-md ${streakShake === "intense" ? "border-red-400/70 animate-streak-shake-intense" : streakShake === "medium" ? "border-amber-400/70 animate-streak-shake-medium" : streakShake ? "border-quest/60 animate-streak-shake-subtle" : "border-on-background/20"}`}>
                     <span className={`font-black tracking-widest text-[10px] italic uppercase ${mode === "read" ? "text-accent" : "text-quest"}`}>
                         {progressText}
                     </span>
@@ -64,7 +64,7 @@ const GameplayHeader = memo(function GameplayHeader({
             {/* ───── Desktop layout ───── */}
             <div className="hidden md:flex mt-3 sm:mt-4 md:mt-6 w-full max-w-7xl mx-auto flex-wrap items-center justify-between gap-3 sm:gap-4 md:gap-6 mb-6 sm:mb-8 md:mb-12 px-2 sm:px-0">
                 <div className="flex items-center gap-3 sm:gap-4 md:gap-6">
-                    <div className={`flex items-center gap-2 sm:gap-3 md:gap-4 bg-on-background/5 backdrop-blur-md p-2 sm:p-3 md:p-4 rounded-2xl border-2 border-on-background/10 shadow-2xl${spot("score")}`}>
+                    <div className={`flex items-center gap-2 sm:gap-3 md:gap-4 bg-on-background/5 backdrop-blur-md p-2 sm:p-3 md:p-4 rounded-2xl border-2 shadow-2xl${spot("score")} ${streakShake === "intense" ? "border-red-400/70 shadow-[0_0_25px_rgba(239,68,68,0.5)] animate-streak-shake-intense" : streakShake === "medium" ? "border-amber-400/70 shadow-[0_0_20px_rgba(251,191,36,0.45)] animate-streak-shake-medium" : streakShake ? "border-quest/60 shadow-[0_0_15px_rgba(56,189,248,0.4)] animate-streak-shake-subtle" : "border-on-background/10"}`}>
                         <div className="bg-primary p-1 sm:p-2 rounded-xl flex items-center justify-center shadow-[0_0_15px_rgba(var(--primary-rgb),0.5)]">
                             <span className="material-symbols-outlined text-on-primary text-2xl sm:text-3xl">
                                 sword_rose
@@ -78,10 +78,16 @@ const GameplayHeader = memo(function GameplayHeader({
                                 <span
                                     className={`${
                                         scoreEmphasize ? "animate-score-pulse" : ""
-                                    } ${streakShake ? "animate-streak-number-shake" : ""}`}
+                                    } ${streakShake ? `animate-streak-shake-${streakShake}` : ""}`}
                                 >
                                     {wordsSmashed.toLocaleString()}
                                 </span>
+                                {streakShake && (
+                                    <span className={`ml-2 inline-flex items-center gap-1 text-xs sm:text-sm font-black uppercase italic tracking-widest ${streakShake === "intense" ? "text-red-400" : streakShake === "medium" ? "text-amber-400" : "text-quest"}`}>
+                                        <span className="material-symbols-outlined text-base sm:text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>local_fire_department</span>
+                                        {streakShake === "intense" ? "ON FIRE!" : streakShake === "medium" ? "STREAK!" : "WARM!"}
+                                    </span>
+                                )}
                             </p>
                             {showPointsFeedback && pointsFeedbackValue > 0 && (
                                 <div

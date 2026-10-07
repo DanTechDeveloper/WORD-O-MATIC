@@ -4,6 +4,7 @@ import BadgeUnlockFlow from "@/Components/Student/BadgeUnlockFlow";
 import NextBadge from "@/Components/Student/NextBadge";
 import StatTile from "@/Components/Student/StatTile";
 import DeadlineBanner from "@/Components/DeadlineBanner";
+import ArcadeBackground from "@/Components/Shared/ArcadeBackground";
 import { getDeadlineInfo } from "@/hooks/Student/useDeadlineStatus";
 
 const CONFETTI = [
@@ -69,12 +70,12 @@ export default function GameResults({
             })[0] ?? null;
 
     const renderResults = () => (
-        <div className="bg-background text-on-background font-body-md">
+        <div className="bg-background text-on-background font-body-md relative isolate overflow-hidden">
+            <ArcadeBackground />
             <Head title="Game Results — Word-O-Matic">
                 <meta name="description" content="Your game results on Word-O-Matic." />
             </Head>
-            <div className="relative min-h-screen flex flex-col items-center justify-center px-4 xs:px-5 sm:px-6 py-8 sm:py-12">
-                <div className="absolute top-1/2 left-1/4 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-primary/10 blur-[80px] rounded-full -z-10" aria-hidden="true" />
+            <div className="relative h-screen flex flex-col items-center justify-center px-4 xs:px-5 sm:px-6 py-8 sm:py-12">
 
                 {isCelebrating && (
                     <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
@@ -231,7 +232,8 @@ export default function GameResults({
 
     if (newBadges.length > 0 && !badgeFlowDone && !isPracticeMode) {
         return (
-            <div className="bg-background text-on-background font-body-md">
+            <div className="bg-background text-on-background font-body-md relative isolate overflow-hidden">
+                <ArcadeBackground />
                 <BadgeUnlockFlow
                     badges={newBadges}
                     onDone={() => setBadgeFlowDone(true)}

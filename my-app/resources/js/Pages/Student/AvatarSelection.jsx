@@ -1,5 +1,6 @@
 import { router } from "@inertiajs/react";
 import { useState } from "react";
+import ArcadeBackground from "@/Components/Shared/ArcadeBackground";
 
 const AVATARS = [
     { id: "juan", name: "Juan", url: "/images/avatars/juan/head.png", alt: "Champion Juan robot avatar" },
@@ -36,6 +37,7 @@ export default function AvatarSelection() {
 
     return (
         <div className="fixed inset-0 z-40 bg-background flex flex-col items-center justify-center p-6">
+            <ArcadeBackground />
                 {isUpdating && (
                     <div className="absolute inset-0 z-50 bg-background/90 flex items-center justify-center">
                         <div className="flex flex-col items-center gap-4">

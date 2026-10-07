@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useGameplayCore } from "./useGameplayCore";
-import { playFeedbackSound } from "@/utils/sounds";
+import { playFeedbackSound, playSuccessSound } from "@/utils/sounds";
 import { readResumeSession, writeResumeSession } from "@/utils/resumeStorage";
 
 // Story Quest engine — one continuous read of the whole paragraph. Word level
@@ -90,6 +90,12 @@ export function useStoryQuestEngine({ saveEndpoint = "/student/saveParagraphProg
     const [sentenceBreak, setSentenceBreak] = useState(false);
     const [isWrong, setIsWrong] = useState(false);
     const [justScored, setJustScored] = useState(false);
+    // ponytail: mirror of Word Blast's streak feel for the straight-through
+    // read — counts consecutive correct words, reset on a wrong verdict.
+    const [streakCount, setStreakCount] = useState(0);
+    const [streakShake, setStreakShake] = useState(null);
+    const streakShakeTimerRef = useRef(null);
+    const streakRef = useRef(0);
 
     const verdictsRef = useRef(verdicts);
     const gameStateRef = useRef(core.gameState);
@@ -115,6 +121,28 @@ export function useStoryQuestEngine({ saveEndpoint = "/student/saveParagraphProg
         previewTimerRef.current = null;
         completionGuardRef.current = false;
         setSentenceBreak(false);
+    }, []);
+
+    // ponytail: consecutive-correct drive the header shake; one blast sound
+    // per verdict batch (not per word) keeps the straight-through read alive.
+    const bumpStreak = useCallback((correctN) => {
+        streakRef.current += correctN;
+        setStreakCount(streakRef.current);
+        if (streakRef.current >= 2) {
+            const intensity =
+                streakRef.current >= 8 ? "intense" : streakRef.current >= 5 ? "medium" : "subtle";
+            setStreakShake(intensity);
+            clearTimeout(streakShakeTimerRef.current);
+            streakShakeTimerRef.current = setTimeout(
+                () => setStreakShake(null),
+                intensity === "intense" ? 500 : 400,
+            );
+        }
+    }, []);
+    const resetStreak = useCallback(() => {
+        streakRef.current = 0;
+        setStreakCount(0);
+        setStreakShake(null);
     }, []);
 
     useEffect(() => {
@@ -183,6 +211,16 @@ export function useStoryQuestEngine({ saveEndpoint = "/student/saveParagraphProg
     const completeSentence = useCallback(() => {
         if (completionGuardRef.current) return;
         completionGuardRef.current = true;
+        // ponytail: hold the final streak chip through the 1000ms silent
+        // verdict preview + celebration modal — otherwise the header clears
+        // it 400ms after the last correct word and a one-breath perfect read
+        // shows no streak at all.
+        clearTimeout(streakShakeTimerRef.current);
+        if (streakRef.current >= 2) {
+            setStreakShake(
+                streakRef.current >= 8 ? "intense" : streakRef.current >= 5 ? "medium" : "subtle",
+            );
+        }
 
         // ponytail: end-of-round bucketing, scoring only (see rangesFromWords).
         // Counted from the finished verdicts so sentence_scores stays intact
@@ -249,6 +287,8 @@ export function useStoryQuestEngine({ saveEndpoint = "/student/saveParagraphProg
         verdictsRef.current = { ...verdictsRef.current, ...marked };
         setVerdicts(verdictsRef.current);
         core.addScore(n);
+        bumpStreak(n);
+        playSuccessSound();
 
         // ponytail: straight-through — only the final word completes the
         // round; mid-sentence ends just advance.
@@ -265,6 +305,7 @@ export function useStoryQuestEngine({ saveEndpoint = "/student/saveParagraphProg
         core.addScore,
         core.moveToNextWord,
         rest.words,
+        bumpStreak,
     ]);
 
     // ponytail: batch verdicts from sentence alignment (GREEN/RED/…GREEN in
@@ -303,8 +344,15 @@ export function useStoryQuestEngine({ saveEndpoint = "/student/saveParagraphProg
         });
         verdictsRef.current = { ...verdictsRef.current, ...marked };
         setVerdicts(verdictsRef.current);
-        if (correct > 0) core.addScore(correct);
-        if (wrong > 0) pulseWrong();
+        if (correct > 0) {
+            core.addScore(correct);
+            bumpStreak(correct);
+            playSuccessSound();
+        }
+        if (wrong > 0) {
+            pulseWrong();
+            resetStreak();
+        }
 
         // ponytail: straight-through — only the final word completes the
         // round; mid-sentence ends just advance.
@@ -317,6 +365,8 @@ export function useStoryQuestEngine({ saveEndpoint = "/student/saveParagraphProg
         sentenceBreak,
         completeSentence,
         pulseWrong,
+        bumpStreak,
+        resetStreak,
         core.currentWordIndex,
         core.totalWords,
         core.addScore,
@@ -337,6 +387,7 @@ export function useStoryQuestEngine({ saveEndpoint = "/student/saveParagraphProg
         setVerdicts((prev) => ({ ...prev, [idx]: "wrong" }));
         verdictsRef.current = { ...verdictsRef.current, [idx]: "wrong" };
         pulseWrong();
+        resetStreak();
 
         // ponytail: straight-through — only the final word completes the
         // round; mid-sentence ends just advance.
@@ -349,6 +400,7 @@ export function useStoryQuestEngine({ saveEndpoint = "/student/saveParagraphProg
         sentenceBreak,
         completeSentence,
         pulseWrong,
+        resetStreak,
         core.currentWordIndex,
         core.totalWords,
         core.moveToNextWord,
@@ -383,8 +435,8 @@ export function useStoryQuestEngine({ saveEndpoint = "/student/saveParagraphProg
     return {
         ...core,
         // Neutralized: SQ has no per-word feedback machine.
-        currentStreak: 0,
-        maxStreak: 0,
+        currentStreak: streakCount,
+        maxStreak: core.maxStreak,
         isMispronounced: isWrong,
         isExploding: false,
         showPointsFeedback: false,
@@ -392,7 +444,7 @@ export function useStoryQuestEngine({ saveEndpoint = "/student/saveParagraphProg
         scoreEmphasize: justScored,
         feedbackType: sentenceFeedback ? "correct" : null,
         feedbackMessage: sentenceFeedback?.message ?? "",
-        streakShake: null,
+        streakShake,
         handleTimeUp,
         handleFatalError,
         handleWordRecognized,

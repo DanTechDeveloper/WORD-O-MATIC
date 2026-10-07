@@ -1,4 +1,5 @@
 import { Head, useForm } from "@inertiajs/react";
+import ArcadeBackground from "@/Components/Shared/ArcadeBackground";
 
 const focusRing =
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary-container focus-visible:ring-offset-2 focus-visible:ring-offset-background";
@@ -21,32 +22,8 @@ export default function Homepage() {
             <Head title="Word-O-Matic - Learn Through Play" />
 
             {/* HERO = FULL-SCREEN LOGIN — distill: solid indigo void, subtle scanlines only, no dotgrid/orb/shape drift per DESIGN.md §6 */}
-            <section className="relative min-h-screen flex items-center justify-center pt-14 pb-20 px-4">
-                <div className="absolute inset-0 pointer-events-none z-0" aria-hidden="true">
-                    <style>
-                        {`
-                            .home-scanlines {
-                                background: repeating-linear-gradient(
-                                    0deg,
-                                    transparent,
-                                    transparent 3px,
-                                    rgba(0,0,0,0.04) 3px,
-                                    rgba(0,0,0,0.04) 4px
-                                );
-                            }
-                            @media (prefers-reduced-motion: reduce) {
-                                .home-scanlines { opacity: 0.6 !important; }
-                            }
-                        `}
-                    </style>
-                    <div className="home-scanlines absolute inset-0 opacity-40" />
-                </div>
-                <div
-                    className="absolute inset-0 z-[1] pointer-events-none"
-                    style={{
-                        background: "radial-gradient(circle at center, rgba(12,12,31,0.4) 0%, transparent 65%)",
-                    }}
-                />
+            <section className="relative isolate min-h-screen flex items-center justify-center pt-14 pb-20 px-4">
+                <ArcadeBackground />
 
                 {/* Content — centered login */}
                 <div className="relative z-10 w-full max-w-lg mx-auto text-center">

@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import useDeadlineStatus from "@/hooks/Student/useDeadlineStatus";
 import { playBadgeUnlockSound, playClickSound, pauseBackgroundMusic, startBackgroundMusic, setBgmSilenced } from "@/utils/sounds";
+import ArcadeBackground from "@/Components/Shared/ArcadeBackground";
 
 export default function BadgeUnlockModal({
     badge,
@@ -36,6 +37,7 @@ export default function BadgeUnlockModal({
             aria-modal="true"
             aria-label={`${badge.name} unlocked`}
         >
+            <ArcadeBackground />
             <style>{`
                 @keyframes badge-pop {
                     0% { transform: scale(0.4) rotate(-8deg); opacity: 0; }
@@ -61,7 +63,7 @@ export default function BadgeUnlockModal({
                 }}
             />
 
-            <div className="relative z-10 flex flex-col items-center text-center px-4 xs:px-5 sm:px-6 max-w-[92vw] sm:max-w-2xl mx-auto animate-fade-in max-h-[90vh] overflow-y-auto">
+            <div className="relative z-10 flex flex-col items-center text-center px-4 xs:px-5 sm:px-6 max-w-[92vw] sm:max-w-2xl mx-auto animate-fade-in max-h-[90vh] overflow-hidden">
                 {total > 1 && (
                     <div className="relative z-10 mb-6 sm:mb-12 flex flex-col items-center gap-2">
                         <span className="text-accent font-black text-base sm:text-xl uppercase tracking-[0.12em] flex items-center justify-center gap-2">

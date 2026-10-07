@@ -100,7 +100,7 @@ const Microphone = memo(function Microphone({ isListening, disabled, offline, re
                     <span className="text-on-background font-black italic tracking-widest uppercase text-sm sm:text-base md:text-lg whitespace-nowrap">
                         {prompt}
                     </span>
-                    <span className="text-xl sm:text-2xl">🎤</span>
+                    <span className="material-symbols-outlined text-on-background text-xl sm:text-2xl" aria-hidden="true">mic</span>
                 </div>
             </div>
         </>

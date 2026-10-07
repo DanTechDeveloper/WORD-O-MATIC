@@ -1,5 +1,6 @@
 import { Link, usePage } from "@inertiajs/react";
 import StudentProfile from "../../Components/Student/StudentProfile";
+import ArcadeBackground from "../../Components/Shared/ArcadeBackground";
 
 function BottomNav({ disableNav }) {
     const { url } = usePage();
@@ -52,7 +53,8 @@ function BottomNav({ disableNav }) {
 
 export default function DashboardLayout({ children, disableNav }) {
     return (
-        <div className="bg-background text-on-background font-body-md min-h-screen relative">
+        <div className="bg-background text-on-background font-body-md min-h-screen relative isolate">
+            <ArcadeBackground />
             <div className="fixed inset-0 pointer-events-none opacity-[0.02]"
                 style={{
                     backgroundImage: `radial-gradient(circle, rgba(209,188,255,0.4) 1px, transparent 1px)`,

@@ -1,92 +1,7 @@
 import { router } from "@inertiajs/react";
 import { useEffect, useRef, useState } from "react";
 import { startBackgroundMusic } from "@/utils/sounds";
-
-const BG_WORDS = ["BLAST", "READ", "SPEAK", "QUEST", "LEARN", "HERO", "STAR", "LEVEL", "PLAY", "WIN"];
-const BG_COLORS = ["#d1bcff", "#7000ff", "#ff3bc0"];
-const BG_LEFT = ["20%", "80%", "50%"];
-
-// ponytail: OG FallingWordBg shard restored (b2ce0af) — one word falls then shards explode, bounded 1/3s
-function FallingWordBg() {
-    const [index, setIndex] = useState(0);
-    const [exploding, setExploding] = useState(false);
-
-    useEffect(() => {
-        const explodeAt = setTimeout(() => setExploding(true), 2200);
-        const nextAt = setTimeout(() => {
-            setExploding(false);
-            setIndex((i) => (i + 1) % BG_WORDS.length);
-        }, 3000);
-        return () => {
-            clearTimeout(explodeAt);
-            clearTimeout(nextAt);
-        };
-    }, [index]);
-
-    const word = BG_WORDS[index];
-    const color = BG_COLORS[index % BG_COLORS.length];
-    const left = BG_LEFT[index % BG_LEFT.length];
-
-    return (
-        <div className="absolute inset-0 overflow-hidden pointer-events-none z-0" aria-hidden="true">
-            <style>
-                {`
-                    @keyframes splash-fall {
-                        0% { top: -10%; opacity: 0; }
-                        15% { opacity: 0.5; }
-                        100% { top: 75%; opacity: 0.5; }
-                    }
-                    @keyframes splash-shard {
-                        0% { transform: translate(0,0) rotate(0deg) scale(1); opacity: 0.5; }
-                        100% { transform: translate(var(--sx),var(--sy)) rotate(var(--sr)) scale(2); opacity: 0; }
-                    }
-                    @media (prefers-reduced-motion: reduce) {
-                        .splash-word, .splash-shard { animation: none !important; opacity: 0.4 !important; }
-                    }
-                `}
-            </style>
-            <div
-                key={index}
-                className="splash-word absolute -translate-x-1/2 font-black uppercase tracking-tight text-4xl md:text-6xl whitespace-nowrap"
-                style={{
-                    left,
-                    top: "-10%",
-                    color,
-                    fontFamily: '"Lexend Variable", "Lexend", sans-serif',
-                    textShadow: `0 0 12px ${color}66`,
-                    animation: "splash-fall 2.2s ease-in forwards",
-                }}
-            >
-                {word.split("").map((char, i) => {
-                    const angle = (i / Math.max(word.length, 1)) * 360;
-                    const dist = 60 + (i % 3) * 30;
-                    const sx = Math.cos((angle * Math.PI) / 180) * dist;
-                    const sy = Math.sin((angle * Math.PI) / 180) * dist - 40;
-                    const sr = (i % 2 === 0 ? 1 : -1) * (20 + (i % 5) * 15);
-                    return (
-                        <span
-                            key={i}
-                            className="inline-block"
-                            style={
-                                exploding
-                                    ? {
-                                          animation: "splash-shard 0.6s ease-out forwards",
-                                          animationDelay: `${i * 30}ms`,
-                                          "--sx": `${sx}px`,
-                                          "--sy": `${sy}px`,
-                                          "--sr": `${sr}deg`,
-                                      }
-                                    : undefined
-                            }
-                        >
-                            {char}
-                        </span>
-                    );
-                })}
-            </div>
-        </div>
-    );
-}
+import ArcadeBackground from "@/Components/Shared/ArcadeBackground";
 
 export default function SplashScreen() {
     const [starting, setStarting] = useState(false);
@@ -108,15 +23,7 @@ export default function SplashScreen() {
 
     return (
         <div className="fixed inset-0 z-50 bg-background flex flex-col items-center justify-center gap-10 select-none overflow-hidden px-6">
-            <FallingWordBg />
-
-            <div
-                className="absolute inset-0 z-[1] pointer-events-none"
-                style={{
-                    background:
-                        "radial-gradient(circle at center, rgba(17,17,37,0.7) 0%, rgba(17,17,37,0.3) 30%, transparent 50%)",
-                }}
-            />
+            <ArcadeBackground />
 
             {/* No spaces in "WORD-O-MATIC" — the only break opportunities are the
                 two hyphens, so it wrapped to WORD- / O-MATIC, and `text-balance`

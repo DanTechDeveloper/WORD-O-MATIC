@@ -11,6 +11,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { useStoryQuestEngine } from "@/hooks/Student/useStoryQuestEngine";
 import { useDeepgramRecognition } from "@/hooks/Student/useDeepgramRecognition";
+import ArcadeBackground from "@/Components/Shared/ArcadeBackground";
 import { useMicrophonePermission } from "@/hooks/Student/useMicrophonePermission";
 import { pauseBackgroundMusic, setMicLive } from "@/utils/sounds";
 import { probe as probeConnection, markUnreachable } from "@/utils/connection";
@@ -44,6 +45,9 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true, tut
         isMispronounced,
         scoreEmphasize,
         feedbackType,
+        showPointsFeedback,
+        pointsFeedbackValue,
+        streakShake,
         countdownValue,
         targetWord,
         timeLeft,
@@ -299,16 +303,17 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true, tut
         totalWords: totalWords,
         onTimeUp: handleTimeUp,
         scoreEmphasize,
-        showPointsFeedback: false,
-        pointsFeedbackValue: 0,
-        streakShake: null,
+        showPointsFeedback,
+        pointsFeedbackValue,
+        streakShake,
         timeLeft,
         mode: "speak",
         spotlight: null,
     };
 
     return (
-        <div className="bg-background text-on-background font-body-md h-screen flex flex-col overflow-x-hidden">
+        <div className="bg-background text-on-background font-body-md h-screen flex flex-col overflow-hidden relative isolate">
+            <ArcadeBackground />
             <DeniedModal gameState={gameState} />
             <GameplayHeader {...headerProps} />
             {isTutorialCompletePending && bodyUrl ? (

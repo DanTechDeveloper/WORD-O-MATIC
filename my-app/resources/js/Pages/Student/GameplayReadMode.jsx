@@ -10,6 +10,7 @@ import { usePage } from "@inertiajs/react";
 import axios from "axios";
 import { useWordBlastEngine } from "@/hooks/Student/useWordBlastEngine";
 import { useDeepgramRecognition } from "@/hooks/Student/useDeepgramRecognition";
+import ArcadeBackground from "@/Components/Shared/ArcadeBackground";
 import { useMicrophonePermission } from "@/hooks/Student/useMicrophonePermission";
 import { pauseBackgroundMusic, setMicLive } from "@/utils/sounds";
 import { probe as probeConnection, markUnreachable } from "@/utils/connection";
@@ -322,7 +323,8 @@ export default function GameplayReadMode({ module, tutorialComplete = true, tuto
     };
 
     return (
-        <div className="bg-background text-on-background font-body-md h-screen flex flex-col overflow-x-hidden">
+        <div className="bg-background text-on-background font-body-md h-screen flex flex-col overflow-hidden relative isolate">
+            <ArcadeBackground />
             <DeniedModal gameState={gameState} />
             <GameplayHeader {...headerProps} />
             <ReadModeMainContent
