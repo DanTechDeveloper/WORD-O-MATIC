@@ -323,7 +323,7 @@ export default function GameplayReadMode({ module, tutorialComplete = true, tuto
     };
 
     return (
-        <div className="bg-background text-on-background font-body-md h-screen flex flex-col overflow-hidden relative isolate">
+        <div className="bg-background text-on-background font-body-md h-dvh flex flex-col overflow-hidden relative isolate">
             <ArcadeBackground />
             <DeniedModal gameState={gameState} />
             <GameplayHeader {...headerProps} />
