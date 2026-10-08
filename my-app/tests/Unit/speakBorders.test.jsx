@@ -204,88 +204,14 @@ describe("highlightCount is coerced, never trusted", () => {
     }
 });
 
-// ── 4. showFrontier gates the BLUE, and the legend with it ───────────────
+// ── 4. showFrontier gates the BLUE ───────────────────────────────────────
 describe("the BLUE border only exists once the frontier does", () => {
     test("no speech and no resume: the frontier pulses, borderless", () => {
         expect(stateOf(chips(live({}))[AT])).toBe("pulsing");
     });
-
-    test("the legend stays hidden until the frontier it describes is on screen", () => {
-        // A legend promising a border the words are not drawing yet is a lie the
-        // child reads first — so it is gated on the same flag as the border.
-        for (const props of [{}, { isResume: true }]) {
-            cleanup();
-            render(<SpeakModeMainContent {...{ words: WORDS, currentIndex: AT, gameState: "ACTIVE", showLegend: true }} {...props} />);
-            if (props.isResume) expect(screen.getByText("your word")).toBeTruthy();
-            else expect(screen.queryByText("your word")).toBeNull();
-        }
-    });
-
-    test("the legend appears with the frontier, and is a tutorial-only thing", () => {
-        cleanup();
-        render(<SpeakModeMainContent words={WORDS} currentIndex={AT} gameState="ACTIVE" showLegend hasSpoken />);
-        expect(screen.getByText("your word")).toBeTruthy();
-        cleanup();
-        // showLegend off = a real round, where the legend is noise.
-        render(<SpeakModeMainContent words={WORDS} currentIndex={AT} gameState="ACTIVE" hasSpoken />);
-        expect(screen.queryByText("your word")).toBeNull();
-    });
 });
 
-// ── 5. the legend and the chips cannot drift apart ───────────────────────
-describe("the legend is a copy of the chips, not a hand-written twin", () => {
-    // The words paint a border and the legend prints the key. If a hue is
-    // changed in one place and not the other, the key quietly starts lying
-    // about what the colours mean — which is worse than having no key.
-    // The hues are the contract. Padding, rounding, sizing, weight and the glow
-    // shadow are free to differ, so only these tokens are compared — a
-    // `border-quest/80` -> `border-quest/70` redesign must not fail this file.
-    // NOTE the optional `-<step>` and `/<alpha>` tails: the frontier wears
-    // `border-quest/80` and the trail `border-quest/40`. A filter that only knew
-    // the bare hue would drop BOTH from the chip and from the legend and make
-    // this test pass by comparing nothing.
-    const HUES =
-        /^border-2$|^border-(?:quest|accent|rose)(?:-[0-9]+)?(?:\/[0-9]+)?$|^(?:text-quest|text-accent|text-rose-400)$/;
-    const tokens = (el) =>
-        new Set(
-            (el.className.match(/border-[a-z0-9-]+(?:\/[0-9]+)?|text-[a-z0-9-]+/g) || []).filter((t) =>
-                HUES.test(t),
-            ),
-        );
-
-    const legendChip = (label) => screen.getByText(label).closest("span");
-
-    test("legend hues equal the chip hues they name", () => {
-        const c = render(
-            <SpeakModeMainContent
-                words={WORDS}
-                currentIndex={AT}
-                gameState="ACTIVE"
-                showLegend
-                hasSpoken
-                verdicts={{ 0: "correct", 1: "wrong" }}
-                highlightCount={2}
-            />,
-        );
-        const [chipCorrect, chipWrong, chipFrontier, chipTrail] = chips(c);
-
-        for (const [label, chip] of [
-            ["your word", chipFrontier],
-            ["nice!", chipCorrect],
-            ["again", chipWrong],
-        ]) {
-            expect([...tokens(chip)].sort()).toEqual([...tokens(legendChip(label))].sort());
-        }
-
-        // The trail's faded blue is deliberately absent from the legend — it is a
-        // live effect, not a verdict. Assert it so nobody "fixes" it into one.
-        expect([...tokens(chipTrail)].sort()).not.toEqual(
-            [...tokens(legendChip("your word"))].sort(),
-        );
-    });
-});
-
-// ── 6. the end-of-round overlay never erases the verdicts ─────────────────
+// ── 5. the end-of-round overlay never erases the verdicts ────────────────
 describe("the celebration covers the paragraph without deleting the record", () => {
     test("the message renders only while the break is open AND there is one", () => {
         const base = {
@@ -328,7 +254,7 @@ describe("the celebration covers the paragraph without deleting the record", () 
     });
 });
 
-// ── 7. renderWordText: the punctuation is display-only ────────────────────
+// ── 6. renderWordText: the punctuation is display-only ────────────────────
 describe("sentence-final punctuation renders dim, outside the chip's colour", () => {
     const chipOf = (word) => {
         const c = render(
@@ -386,7 +312,7 @@ describe("sentence-final punctuation renders dim, outside the chip's colour", ()
     });
 });
 
-// ── 8. degenerate props must not take the round down ─────────────────────
+// ── 7. degenerate props must not take the round down ─────────────────────
 describe("a bad props object is survivable", () => {
     test("no words at all is an empty map, not a crash", () => {
         const c = render(<SpeakModeMainContent words={[]} gameState="ACTIVE" currentIndex={0} hasSpoken />);
@@ -426,7 +352,7 @@ describe("a bad props object is survivable", () => {
     });
 });
 
-// ── 9. latency stall hint ────────────────────────────────────────────────
+// ── 8. latency stall hint ────────────────────────────────────────────────
 describe("the latency stall hint", () => {
     const stallText = () => screen.queryByText(/keep reading/i);
 

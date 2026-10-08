@@ -31,7 +31,6 @@ const SpeakModeMainContent = memo(function SpeakModeMainContent({
     isResume = false,
     hasSpoken = false,
     previewWords = null,
-    showLegend = false,
 }) {
     const activeWordRef = useRef(null);
     const activeCount = Math.max(1, highlightCount | 0 || 1);
@@ -47,10 +46,8 @@ const SpeakModeMainContent = memo(function SpeakModeMainContent({
         return () => clearTimeout(t);
     }, [currentIndex, highlightCount, verdicts, gameState, hasSpoken, sentenceBreak]);
     // ponytail: verdicts always win; fresh mount stays neutral until speech
-    // (resume keeps its you-are-here marker, it is mid-round). Hoisted out of
-    // the map so the legend can gate on the same flag — the blue BORDER only
-    // exists once the frontier does, so a legend shown before it would promise
-    // a border the words are not drawing yet.
+    // (resume keeps its you-are-here marker, it is mid-round). The blue BORDER
+    // only exists once the frontier does.
     const showFrontier = hasSpoken || isResume;
 
     useEffect(() => {
@@ -93,31 +90,13 @@ const SpeakModeMainContent = memo(function SpeakModeMainContent({
                 <div className="flex-1 flex flex-col relative">
                     <div className="flex-1 flex items-start justify-center overflow-y-auto px-3 xs:px-4 sm:px-6 md:px-8 pt-12 sm:pt-15 pb-28 sm:pb-36">
                         <div className="relative w-full max-w-7xl my-auto">
-                            {/* ponytail: the color legend, in the slot that has
-                                been reserved and empty since 1c3a303. It persists
-                                for the whole tutorial round because the guide
-                                bubble is destroyed at guideDone — long before the
-                                first verdict paints a border. Chip classes are
-                                copied from the word map below, not approximated. */}
+                            {/* ponytail: sticky slot for the stall nudge — the
+                                min-h reserve keeps the paragraph from jumping
+                                when the nudge appears. */}
                             <div className="sticky top-2 z-30 flex flex-wrap items-center justify-center gap-2 sm:gap-4 mb-4 sm:mb-6 min-h-8 sm:min-h-10">
-                                {showLegend && showFrontier && (
-                                    <>
-                                        {[
-                                            { c: "border-quest/80 text-quest", label: "your word" },
-                                            { c: "border-accent/80 text-accent", label: "nice!" },
-                                            { c: "border-rose-500 text-rose-400", label: "again" },
-                                        ].map((l) => (
-                                            <span
-                                                key={l.label}
-                                                className={`border-2 rounded-xl px-2 py-0.5 bg-slate-900/80 font-black uppercase tracking-wider text-[10px] sm:text-xs whitespace-nowrap ${l.c}`}
-                                            >
-                                                {l.label}
-                                            </span>
-                                        ))}
-                                    </>
-                                )}
                                 {stalled && (
-                                    <span className="border-2 border-quest/60 text-white rounded-xl px-4 py-2 bg-slate-900/90 font-bold tracking-normal text-base sm:text-lg whitespace-nowrap shadow-[0_0_16px_rgba(56,189,248,0.4)]">
+                                    <span className="inline-flex items-center gap-2 border-2 border-quest/70 rounded-2xl px-4 py-1.5 sm:px-5 sm:py-2 bg-slate-900/90 font-black uppercase italic tracking-tight text-quest text-base sm:text-xl whitespace-nowrap shadow-[0_0_20px_rgba(56,189,248,0.45)] animate-pulse">
+                                        <span className="material-symbols-outlined text-lg sm:text-2xl" style={{ fontVariationSettings: "'FILL' 1" }} aria-hidden="true">menu_book</span>
                                         Keep reading!
                                     </span>
                                 )}

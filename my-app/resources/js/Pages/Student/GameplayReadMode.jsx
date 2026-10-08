@@ -62,7 +62,7 @@ export default function GameplayReadMode({ module, tutorialComplete = true, tuto
     // re-render that invalidated it. Lazy useState = once per mount, the same
     // shape as the resume initializers in useGameplayCore.
     const [wordOrder] = useState(() =>
-        resolveWordOrder(module?.words, readResumeSession(moduleId, "word")?.wordOrder),
+        resolveWordOrder(module?.words, isTutorial ? null : readResumeSession(moduleId, "word")?.wordOrder),
     );
 
     const {

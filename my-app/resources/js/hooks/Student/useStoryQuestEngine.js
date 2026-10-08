@@ -62,11 +62,12 @@ function tierMessage(scoreRatio) {
 
 export function useStoryQuestEngine({ saveEndpoint = "/student/saveParagraphProgress", ...rest }) {
     const resume = useMemo(() => {
-        if (typeof window === "undefined") return null;
+        // ponytail: tutorial (deferPersist) never resumes — mirrors the core gate.
+        if (typeof window === "undefined" || rest.deferPersist) return null;
         return rest.resumeData
             ? rest.resumeData
             : (rest.moduleId ? readResumeSession(rest.moduleId, "para") : null);
-    }, [rest.resumeData, rest.moduleId]);
+    }, [rest.resumeData, rest.moduleId, rest.deferPersist]);
 
     const sentenceScoresRef = useRef([]);
     // ponytail: stable getter identity — an inline arrow would churn
@@ -157,10 +158,10 @@ export function useStoryQuestEngine({ saveEndpoint = "/student/saveParagraphProg
     // Resume payload = core shape + SQ detail (superset of the same key;
     // this effect runs after core's, so it wins the write).
     useEffect(() => {
-        if (typeof window === "undefined" || !rest.moduleId || core.gameState !== "ACTIVE") {
+        if (typeof window === "undefined" || !rest.moduleId || rest.deferPersist || core.gameState !== "ACTIVE") {
             return;
         }
-        // ponytail: include savedAt so readResumeSession can correct drift; clamp timeLeft 0-60
+        // ponytail: clamp timeLeft 0-60; savedAt rides along for backward compat but is no longer read (clock pauses while away)
         writeResumeSession(rest.moduleId, {
             moduleId: rest.moduleId,
             scope: "para",

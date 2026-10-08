@@ -24,11 +24,12 @@
    A record with no scope is accepted by either game: it can only be a
    pre-deploy record, and a round is 60s.
 
-   Security:
-   - timeLeft is UX-only, never trusted server-side; clamped 0-60 and
-     corrected by wall-clock elapsed since savedAt (prevents 60s reset exploit
-     and tab-sleep drift).
-   - saveEndpoint is client-controlled; replay whitelists allowed endpoints only.
+    Security:
+    - timeLeft is UX-only, never trusted server-side; clamped 0-60 on read.
+      The clock pauses while away (no wall-clock drain): ACTIVE time is still
+      capped at 60s of live play, and no reset path exists because every tick
+      rewrites the current timeLeft.
+    - saveEndpoint is client-controlled; replay whitelists allowed endpoints only.
 */
 
 const KEY_PREFIX = "wordomaticResume:";
@@ -45,14 +46,14 @@ export function readResumeSession(moduleId, scope = null) {
         const s = JSON.parse(sessionStorage.getItem(resumeKey(moduleId)));
         if (s?.moduleId === String(moduleId) || s?.moduleId === moduleId) {
             if (scope && s.scope && s.scope !== scope) return null;
-            // ponytail: harden timeLeft — clamp 0-60 and subtract wall-clock elapsed since savedAt
+            // ponytail: clamp only — the clock PAUSES while the student is
+            // away (Back/LevelsPage) and resumes where it left off. An older
+            // wall-clock drain was removed: it could never prevent a 60s reset
+            // (every tick writes the current timeLeft, so no reset path exists)
+            // and it turned CONTINUE-after-a-minute into an instant GAMEOVER.
+            // savedAt is still written by the writers but no longer read here.
             if (typeof s.timeLeft === "number") {
-                let tl = Math.max(0, Math.min(60, Math.floor(s.timeLeft)));
-                if (typeof s.savedAt === "number" && s.savedAt > 0) {
-                    const elapsed = Math.floor((Date.now() - s.savedAt) / 1000);
-                    tl = Math.max(0, tl - Math.max(0, elapsed));
-                }
-                s.timeLeft = tl;
+                s.timeLeft = Math.max(0, Math.min(60, Math.floor(s.timeLeft)));
             }
             return s;
         }

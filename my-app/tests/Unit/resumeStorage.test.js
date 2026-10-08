@@ -59,18 +59,19 @@ describe("resumeStorage — mid-round resume", () => {
         expect(readResumeSession(21).timeLeft).toBe(0);
     });
 
-    test("timeLeft is corrected by elapsed since savedAt (prevents 60s reset exploit + tab-sleep drift)", () => {
+    test("timeLeft pauses while away — savedAt age is ignored on read", () => {
+        // The clock resumes where it was left: a Back/LevelsPage detour must
+        // not burn the round, and CONTINUE-after-a-minute must not be an
+        // instant GAMEOVER. ACTIVE time stays capped at 60s of live play.
         const now = Date.now();
         writeResumeSession(30, { currentWordIndex: 2, wordsSmashed: 2, currentStreak: 0, maxStreak: 0, timeLeft: 50, savedAt: now - 10000 });
-        const s = readResumeSession(30);
-        // 10s elapsed → 40
-        expect(s.timeLeft).toBe(40);
-        // tampered 60 with old savedAt still subtracts
-        writeResumeSession(31, { currentWordIndex: 0, wordsSmashed: 0, currentStreak: 0, maxStreak: 0, timeLeft: 60, savedAt: now - 30000 });
-        expect(readResumeSession(31).timeLeft).toBe(30);
-        // expired → 0 not negative
-        writeResumeSession(32, { currentWordIndex: 0, wordsSmashed: 0, currentStreak: 0, maxStreak: 0, timeLeft: 5, savedAt: now - 10000 });
-        expect(readResumeSession(32).timeLeft).toBe(0);
+        expect(readResumeSession(30).timeLeft).toBe(50);
+        // even an hour-old record resumes with its full remaining clock
+        writeResumeSession(31, { currentWordIndex: 0, wordsSmashed: 0, currentStreak: 0, maxStreak: 0, timeLeft: 5, savedAt: now - 3600000 });
+        expect(readResumeSession(31).timeLeft).toBe(5);
+        // clamp still wins over any stored nonsense
+        writeResumeSession(32, { currentWordIndex: 0, wordsSmashed: 0, currentStreak: 0, maxStreak: 0, timeLeft: 999, savedAt: now });
+        expect(readResumeSession(32).timeLeft).toBe(60);
     });
 });
 

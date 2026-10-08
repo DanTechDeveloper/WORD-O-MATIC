@@ -57,13 +57,15 @@ export function useGameplayCore({
     deferPersist = false,
 }) {
     const resume = useMemo(() => {
-        if (typeof window === "undefined") return null;
+        // ponytail: tutorial (deferPersist) never resumes — an F5 restarts the
+        // round AND replays the coach guide (guideDone inits on isResume).
+        if (typeof window === "undefined" || deferPersist) return null;
         return resumeData
             ? resumeData
             : moduleId
               ? readResumeSession(moduleId, scope)
               : null;
-    }, [resumeData, moduleId]);
+    }, [resumeData, moduleId, deferPersist]);
 
     const [currentWordIndex, setCurrentWordIndex] = useState(
         () => resume?.currentWordIndex ?? 0,
@@ -165,8 +167,10 @@ export function useGameplayCore({
         if (typeof window === "undefined" || !moduleId) return;
         if (deferPersist) {
             // ponytail: if an old pending somehow exists for a tutorial module,
-            // clear it — tutorial is read-only, no replay.
+            // clear it — tutorial is read-only, no replay. Same for a stale
+            // resume record written before tutorial resume was removed.
             clearPendingSession(moduleId);
+            clearResumeSession(moduleId);
             return;
         }
         const pending = readPendingSession(moduleId, scope);
@@ -212,11 +216,14 @@ export function useGameplayCore({
         if (
             typeof window === "undefined" ||
             !moduleId ||
+            deferPersist ||
             gameState !== "ACTIVE"
         ) {
             return;
         }
-        // ponytail: clamp timeLeft 0-60 and stamp savedAt for wall-clock correction on resume (prevents 60s reset exploit)
+        // ponytail: clamp timeLeft 0-60; savedAt is kept in the payload for
+        // backward compat with old readers but is no longer used to drain the
+        // clock — resume pauses and continues where it left off.
         const tl = Math.max(0, Math.min(60, Math.floor(timeLeft)));
         // ponytail: wordOrder is the play order, so the index and the array it
         // points into are written together — a reshuffle that re-ran on mount

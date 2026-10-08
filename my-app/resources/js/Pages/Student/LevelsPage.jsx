@@ -44,6 +44,9 @@ export default function LevelsPage({ modules, mode, tutorialComplete = true, tut
         // student never interrupted in THIS game.
         const scope = isRead ? "word" : "para";
         modules?.forEach((m) => {
+            // ponytail: tutorial never resumes (deferPersist gates both engines) —
+            // a stale pre-gate record must not light up CONTINUE on the card.
+            if (m.is_tutorial) return;
             if (readResumeSession(m.id, scope)) out.push(m.id);
         });
         setResumeModules(out);

@@ -225,6 +225,49 @@ describe("handleFatalError — durability before anything else", () => {
         expect(readPendingSession(7)).toBeNull();
         expect(routerMock.post).not.toHaveBeenCalled();
     });
+
+    test("tutorial rounds never resume and write no resume session (deferPersist)", () => {
+        // A stale record from before the gate (or a same-id real round) must
+        // not resurrect a tutorial round: F5 in a tutorial = word 1, full clock,
+        // guide replays (guideDone inits on isResume in the pages).
+        writeResumeSession(7, MID_ROUND);
+        const { result } = renderHook(() =>
+            useGameplayCore({
+                words: WORDS,
+                totalWords: WORDS.length,
+                moduleId: 7,
+                saveEndpoint: "/student/saveWordProgress",
+                deferPersist: true,
+            }),
+        );
+
+        expect(result.current.gameState).toBe("IDLE");
+        expect(result.current.currentWordIndex).toBe(0);
+        expect(result.current.isResume).toBe(false);
+        // The mount-time deferPersist branch wiped the stale record...
+        expect(sessionStorage.getItem("wordomaticResume:7")).toBeNull();
+
+        // ...and even an ACTIVE tutorial round writes nothing back.
+        act(() => result.current.setGameState("ACTIVE"));
+        expect(sessionStorage.getItem("wordomaticResume:7")).toBeNull();
+    });
+
+    test("story quest tutorial writes no resume session either", () => {
+        writeResumeSession(7, MID_ROUND);
+        const { result } = renderHook(() =>
+            useStoryQuestEngine({
+                words: WORDS,
+                totalWords: WORDS.length,
+                moduleId: 7,
+                saveEndpoint: "/student/saveParagraphProgress",
+                deferPersist: true,
+            }),
+        );
+
+        expect(result.current.gameState).toBe("IDLE");
+        act(() => result.current.setGameState("ACTIVE"));
+        expect(sessionStorage.getItem("wordomaticResume:7")).toBeNull();
+    });
 });
 
 // ponytail: the hook test above can't reach the page files — these lock the
