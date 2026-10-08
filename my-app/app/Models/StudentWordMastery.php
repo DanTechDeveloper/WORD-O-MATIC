@@ -43,9 +43,9 @@ class StudentWordMastery extends Model
     //
     // status = 'training' — "where is the class STILL stuck", not "which module
     // was historically hardest". This matches the whole report vocabulary:
-    // struggleRowsFrom / trainingAttemptsFrom / NEEDS_ATTENTION_ATTEMPTS and
-    // the email Training Zone are all training-only, so Top Struggle and the
-    // Hardest card count the same set of rows. A mastered row's counter is
+    // trainingAttemptsFrom / NEEDS_ATTENTION_ATTEMPTS and
+    // the email Training Zone are all training-only, so the export's
+    // hardest-module/word columns count the same set of rows. A mastered row's counter is
     // frozen at "attempts needed to master" — real history, but a DIFFERENT
     // metric, and mixing the two in one row is what makes a column unreadable.
     //

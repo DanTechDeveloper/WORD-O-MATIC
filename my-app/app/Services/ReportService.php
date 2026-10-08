@@ -30,16 +30,6 @@ class ReportService
         return $deadline ? Carbon::parse($deadline, config('app.timezone')) : null;
     }
 
-    public function trainingWordsFor(array $studentIds): array
-    {
-        $cutoff = $this->cutoff();
-
-        return [
-            WordModule::trainingWordsForUsers($studentIds, $cutoff),
-            ParagraphModule::trainingWordsForUsers($studentIds, $cutoff),
-        ];
-    }
-
     // ponytail: Word Blast dedup removed — WordModule has 10 unique words/level
     // and cross-level reuse blocked by TeacherController::updateWordModule,
     // so duplicate merge is YAGNI. Story Quest is sentence-based (no word dedup).
@@ -54,9 +44,13 @@ class ReportService
     // history at all — never a fake 0, same guard as hardestFrom().
 
     public const VERDICT_NOT_ATTEMPTED = 'notAttempted';
+
     public const VERDICT_NEEDS_ATTENTION = 'needsAttention';
+
     public const VERDICT_PRACTICING = 'practicing';
+
     public const VERDICT_RECOVERED = 'recovered';
+
     public const VERDICT_MASTERED = 'mastered';
 
     public static function verdict(string $mastery, int $failed, int $threshold = self::NEEDS_ATTENTION_ATTEMPTS): string
@@ -189,9 +183,14 @@ class ReportService
     public static function sentencesFromContent(?string $content): array
     {
         $content = trim((string) $content);
-        if ($content === '') return [];
+        if ($content === '') {
+            return [];
+        }
         $parts = preg_split('/(?<=[.!?])\s+/u', $content, -1, PREG_SPLIT_NO_EMPTY);
-        if (! $parts || count($parts) === 0) return [$content];
+        if (! $parts || count($parts) === 0) {
+            return [$content];
+        }
+
         return array_values(array_filter(array_map('trim', $parts), fn ($s) => $s !== ''));
     }
 
@@ -206,6 +205,7 @@ class ReportService
                         $sentences[] = $stat['sentence'];
                     }
                 }
+
                 return [$level['level'] => $sentences];
             })
             ->filter(fn ($s) => $s !== [])
@@ -223,25 +223,8 @@ class ReportService
                 }
             }
         }
-        return $attempts;
-    }
 
-    // Flat rows for Excel: one row per training sentence.
-    public function sentenceStruggleRowsFrom(array $curriculum): array
-    {
-        $rows = [];
-        foreach ($curriculum as $level) {
-            foreach ($level['sentence_stats'] ?? [] as $stat) {
-                if (($stat['mastery'] ?? 'unseen') !== 'training') continue;
-                $rows[] = [
-                    'level' => $level['level'],
-                    'word' => $stat['sentence'],
-                    'sentence' => $stat['sentence'],
-                    'attempts' => (int) ($stat['failed_attempts'] ?? 0),
-                ];
-            }
-        }
-        return $rows;
+        return $attempts;
     }
 
     // [sentence => [[word, mastery, failed_attempts, verdict], ...]] — the
@@ -293,70 +276,112 @@ class ReportService
         return $rows;
     }
 
-    // Flat drill-down for the Excel: one row per word that carries history,
-    // each with its own verdict. Replaces the sentence-level rows on the export
-    // path — a teacher reteaching a word needs the word.
-    //
-    // Walks EVERY sentence, not just training ones, because a word conquered
-    // inside a now-mastered sentence is exactly the history worth seeing: its
-    // counter froze at the peak it reached while still failing
-    // (StudentController only increments while status != 'mastered').
-    //
-    // MERGE UNIT IS THE LEVEL, not the sentence — and that is forced by the
-    // sheet, not chosen. The sheet has no Sentence column, so a row's identity
-    // is (level, word): merging per sentence emitted "A" twice for Level 1
-    // ("A frog can swim. Milo sees a crab." — one A in each
-    // sentence) as two rows that looked identical because nothing on the sheet
-    // could tell them apart. Per-LEVEL merging is right here; the email and the
-    // teacher page deliberately keep the per-sentence unit, because both print
-    // the sentence immediately above the words.
-    public function sentenceWordStruggleRowsFrom(array $curriculum, int $threshold = self::NEEDS_ATTENTION_ATTEMPTS): array
+    // Hardest module = level (module) with the most recorded failures. Only
+    // 'training' rows count — the same "where is the class STILL stuck" scope
+    // the Dashboard cards use (StudentWordMastery/StudentParagraphMastery
+    // hardestModule() normally SQL for this; here we project the same filter
+    // out of the curriculum arrays). Decision rule (zero guard, label format,
+    // tiebreak) is delegated to ProgressService::hardestFrom, the SSOT.
+    public function hardestModuleFrom(array $curriculum): ?array
     {
-        $rows = [];
+        $attemptsByLevel = [];
+        foreach ($curriculum as $level) {
+            $attempts = 0;
+            foreach ($level['word_stats'] ?? [] as $w) {
+                if (($w['mastery'] ?? '') === 'training') {
+                    $attempts += (int) ($w['failed_attempts'] ?? 0);
+                }
+            }
+            foreach ($level['sentence_stats'] ?? [] as $s) {
+                if (($s['mastery'] ?? '') === 'training') {
+                    $attempts += (int) ($s['failed_attempts'] ?? 0);
+                }
+            }
+            $attemptsByLevel[$level['level_num'] ?? 0] = ['title' => $level['title'] ?? '', 'attempts' => $attempts];
+        }
 
+        return ProgressService::hardestFrom($attemptsByLevel);
+    }
+
+    // Hardest word: one word with the most recorded failures, training rows
+    // only — same row set as StudentWordMastery::hardestWord() for Word Blast.
+    // Story Quest merges each sentence's words (mergeSentenceWords, worst
+    // mastery wins) the same way ParagraphModule does at sentence level. The
+    // count is summed per level, so a word that appears in two sentences of
+    // one level ranks once, with its total — the identity the old Excel sheet
+    // used. Zero current struggle -> null ('—' in the export).
+    public function hardestWordFrom(array $curriculum, string $mode): ?array
+    {
+        $best = null;
+        $bestAttempts = 0;
         foreach ($curriculum as $level) {
             $byWord = [];
-
-            foreach ($level['sentence_stats'] ?? [] as $stat) {
-                foreach (self::mergeSentenceWords($stat['words'] ?? [], $threshold) as $word) {
-                    $key = self::normalizeWord($word['word']);
+            if ($mode === 'wb') {
+                foreach ($level['word_stats'] ?? [] as $w) {
+                    if (($w['mastery'] ?? '') !== 'training') {
+                        continue;
+                    }
+                    $key = self::normalizeWord($w['word'] ?? '');
                     if ($key === '') {
                         continue;
                     }
-
-                    if (! isset($byWord[$key])) {
-                        $byWord[$key] = $word;
-
+                    $byWord[$key]['word'] = $w['word'];
+                    $byWord[$key]['attempts'] = ($byWord[$key]['attempts'] ?? 0) + (int) ($w['failed_attempts'] ?? 0);
+                }
+            } else {
+                foreach ($level['sentence_stats'] ?? [] as $stat) {
+                    if (($stat['mastery'] ?? '') !== 'training') {
                         continue;
                     }
-
-                    $byWord[$key]['failed_attempts'] += $word['failed_attempts'];
-                    // Worst mastery wins, same as within one sentence.
-                    if ($word['mastery'] !== 'mastered') {
-                        $byWord[$key]['mastery'] = $word['mastery'];
+                    foreach (self::mergeSentenceWords($stat['words'] ?? []) as $w) {
+                        if ($w['mastery'] !== 'training') {
+                            continue;
+                        }
+                        $key = self::normalizeWord($w['word']);
+                        if ($key === '') {
+                            continue;
+                        }
+                        $byWord[$key]['word'] = $w['word'];
+                        $byWord[$key]['attempts'] = ($byWord[$key]['attempts'] ?? 0) + $w['failed_attempts'];
                     }
                 }
             }
-
-            foreach ($byWord as $word) {
-                // Untouched and clean-mastered words say nothing. Everything
-                // else keeps its peak count: still failing (needsAttention /
-                // practicing) or conquered after struggling (recovered).
-                $verdict = self::verdict($word['mastery'], $word['failed_attempts'], $threshold);
-                if ($verdict === self::VERDICT_NOT_ATTEMPTED || $verdict === self::VERDICT_MASTERED) {
-                    continue;
+            foreach ($byWord as $row) {
+                if ($row['attempts'] > 0 && $row['attempts'] > $bestAttempts) {
+                    $bestAttempts = $row['attempts'];
+                    $best = ['level' => $level['level'] ?? '—', 'word' => $row['word'], 'attempts' => $row['attempts']];
                 }
-
-                $rows[] = [
-                    'level' => $level['level'],
-                    'word' => $word['word'],
-                    'attempts' => (int) $word['failed_attempts'],
-                    'verdict' => $verdict,
-                ];
             }
         }
 
-        return $rows;
+        return $best;
+    }
+
+    // The Excel export's per-student rows. Lives here, not in the controller:
+    // the shaping is pure projection over curriculum arrays (the same arrays
+    // the email path consumes), so it is unit-testable without HTTP.
+    public function exportStudents(array $students, array $wordCurriculums, array $paraCurriculums): array
+    {
+        return collect($students)->map(function ($user) use ($wordCurriculums, $paraCurriculums) {
+            $wb = $wordCurriculums[$user->id] ?? [];
+            $sq = $paraCurriculums[$user->id] ?? [];
+            $hardestWbModule = $this->hardestModuleFrom($wb);
+            $hardestWbWord = $this->hardestWordFrom($wb, 'wb');
+            $hardestSqModule = $this->hardestModuleFrom($sq);
+            $hardestSqWord = $this->hardestWordFrom($sq, 'sq');
+
+            return [
+                'name' => $user->name,
+                'student_id' => $user->student_id,
+                'section' => $user->student?->section ?? '',
+                'status' => $user->student?->status ?? 'notStarted',
+                'hardestWbModule' => $hardestWbModule['level'] ?? 'N/A',
+                'hardestWbWord' => $hardestWbWord['word'] ?? 'N/A',
+                'hardestSqModule' => $hardestSqModule['level'] ?? 'N/A',
+                'hardestSqWord' => $hardestSqWord['word'] ?? 'N/A',
+                'hardestSqAttempts' => $hardestSqWord['attempts'] ?? 0,
+            ];
+        })->all();
     }
 
     public function sentenceCurriculumPercent(array $curriculum): int
@@ -367,6 +392,7 @@ class ReportService
             $mastered += $level['mastered_sentences'] ?? collect($level['sentence_stats'] ?? [])->where('mastery', 'mastered')->count();
             $total += $level['total_sentences'] ?? count($level['sentences'] ?? []) ?: count($level['sentence_stats'] ?? []);
         }
+
         return $total ? (int) round(($mastered / $total) * 100) : 0;
     }
 
@@ -380,6 +406,7 @@ class ReportService
                     ->filter(fn ($s) => ($s['mastery'] ?? '') === 'training')
                     ->pluck('word')
                     ->all();
+
                 return [$level['level'] => $words];
             })
             ->filter(fn ($words) => $words !== [])
@@ -397,41 +424,8 @@ class ReportService
                 }
             }
         }
+
         return $attempts;
-    }
-
-    // Flat drill-down rows for the Excel export: one entry per word carrying
-    // history — still training, OR conquered after struggling. A recovered word
-    // is mastered, but its counter froze at the peak it reached while failing,
-    // and that peak is the history a reteach is planned from. Each row carries
-    // its own verdict so the sheet's Verdict column needs no re-derivation.
-    public function struggleRowsFrom(array $curriculum, int $threshold = self::NEEDS_ATTENTION_ATTEMPTS): array
-    {
-        $rows = [];
-        foreach ($curriculum as $level) {
-            foreach ($level['word_stats'] ?? [] as $stat) {
-                $mastery = $stat['mastery'] ?? 'unseen';
-                if ($mastery === 'unseen') {
-                    continue;
-                }
-
-                $attempts = (int) ($stat['failed_attempts'] ?? 0);
-                $verdict = self::verdict($mastery, $attempts, $threshold);
-
-                // Untouched and clean-mastered words say nothing.
-                if ($verdict === self::VERDICT_NOT_ATTEMPTED || $verdict === self::VERDICT_MASTERED) {
-                    continue;
-                }
-
-                $rows[] = [
-                    'level' => $level['level'],
-                    'word' => $stat['word'],
-                    'attempts' => $attempts,
-                    'verdict' => $verdict,
-                ];
-            }
-        }
-        return $rows;
     }
 
     public function curriculumPercent(array $curriculum): int

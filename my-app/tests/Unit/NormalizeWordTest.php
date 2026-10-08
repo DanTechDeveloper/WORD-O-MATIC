@@ -86,38 +86,4 @@ class NormalizeWordTest extends TestCase
         // counter, and the parent email prints it raw. See
         // VerdictTest::test_neither_language_adds_arithmetic_to_the_displayed_attempt_number().
     }
-
-    public function test_excel_merges_duplicates_across_sentences_within_a_level(): void
-    {
-        // Level 5 verbatim: "A tiger crosses the river. A robot holds a lemon."
-        // "A" appears in BOTH sentences (and twice in the second). The Excel has
-        // no Sentence column, so a row's identity is (level, word) — merging per
-        // SENTENCE emitted two rows that looked identical on the sheet. The
-        // email and the teacher page keep the per-sentence unit on purpose,
-        // because both print the sentence directly above the words.
-        $curriculum = [[
-            'level' => 'Level 5: Chapter 5',
-            'sentence_stats' => [
-                ['sentence' => 'A tiger crosses the river.', 'mastery' => 'training', 'words' => [
-                    ['word' => 'A', 'mastery' => 'training', 'failed_attempts' => 2],
-                    ['word' => 'tiger', 'mastery' => 'mastered', 'failed_attempts' => 0],
-                    ['word' => 'river', 'mastery' => 'mastered', 'failed_attempts' => 0],
-                ]],
-                ['sentence' => 'A robot holds a lemon.', 'mastery' => 'training', 'words' => [
-                    ['word' => 'A', 'mastery' => 'training', 'failed_attempts' => 3],
-                    ['word' => 'a', 'mastery' => 'training', 'failed_attempts' => 1],
-                    ['word' => 'lemon', 'mastery' => 'mastered', 'failed_attempts' => 0],
-                ]],
-            ],
-        ]];
-
-        $rows = (new ReportService)->sentenceWordStruggleRowsFrom($curriculum);
-
-        $this->assertCount(1, $rows, 'one row per (level, word) — never two identical-looking rows');
-        $this->assertSame('Level 5: Chapter 5', $rows[0]['level']);
-        $this->assertSame('A', $rows[0]['word']);
-        $this->assertSame(6, $rows[0]['attempts'], '2 + 3 + 1 across both sentences');
-        $this->assertSame(ReportService::VERDICT_NEEDS_ATTENTION, $rows[0]['verdict']);
-        $this->assertArrayNotHasKey('sentence', $rows[0], 'a single sentence cannot describe a word that spans two');
-    }
 }

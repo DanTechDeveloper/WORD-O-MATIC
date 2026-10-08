@@ -2,11 +2,10 @@
 
 namespace Tests\Feature;
 
-use App\Exports\ClassReportSheet;
 use App\Exports\ReportsExport;
 use App\Exports\SessionHistorySheet;
-use App\Exports\SkillsOverviewSheet;
-use App\Exports\SkillsWordsSheet;
+use App\Exports\SquHardestWordSheet;
+use App\Exports\StruggleSummarySheet;
 use App\Mail\StudentReportMail;
 use App\Models\GameSession;
 use App\Models\ParagraphModule;
@@ -22,7 +21,6 @@ use App\Services\ReportService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Inertia\Testing\AssertableInertia as Assert;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use Tests\TestCase;
 
 class ReportTest extends TestCase
@@ -621,28 +619,6 @@ class ReportTest extends TestCase
             'Only the words that actually took work — a first-try fox is not reported.',
         );
 
-        // Per-word export rows: one row per WORD (not per sentence), and BOTH
-        // categories the teacher needs — still failing AND conquered after
-        // struggling. 'run' was recovered inside a still-training sentence;
-        // 'fox' was recovered inside a now-mastered one, which is exactly what
-        // the old training-only filter erased.
-        $rows = (new ReportService)->sentenceWordStruggleRowsFrom($speakCur);
-        $this->assertSame(['dog', 'run', 'fox'], array_column($rows, 'word'));
-        $this->assertSame(
-            [
-                'dog' => ReportService::VERDICT_NEEDS_ATTENTION,
-                'run' => ReportService::VERDICT_RECOVERED,
-                'fox' => ReportService::VERDICT_RECOVERED,
-            ],
-            array_column($rows, 'verdict', 'word'),
-        );
-        $this->assertSame(7, $rows[0]['attempts'], 'the peak it reached while still failing');
-        $this->assertStringContainsString('First Sentences', $rows[0]['level']);
-        $this->assertStringContainsString('Second Sentences', $rows[2]['level'], 'a mastered sentence still contributes its history');
-        // No `sentence` key: the sheet has no Sentence column, and one sentence
-        // cannot describe a word that appears in two of them.
-        $this->assertArrayNotHasKey('sentence', $rows[0]);
-
         // Progress % parity: Word Blast word-based, Story Quest sentence-based.
         $jsWordProgress = fn (array $curriculum) => collect($curriculum)->sum('words_count') > 0
             ? (int) round(collect($curriculum)->sum(fn ($level) => count($level['mastered']))
@@ -1095,251 +1071,66 @@ class ReportTest extends TestCase
         $response->assertSessionHas('error');
     }
 
-    public function test_export_contains_four_sheets(): void
+    public function test_export_contains_three_sheets(): void
     {
         $sheets = (new ReportsExport([]))->sheets();
 
-        $this->assertCount(4, $sheets);
-        $this->assertArrayHasKey('Class Summary', $sheets);
-        $this->assertArrayHasKey('Student Progress Summary', $sheets);
-        $this->assertArrayHasKey('Words Needing Practice', $sheets);
+        $this->assertCount(3, $sheets);
+        $this->assertArrayHasKey('Struggle Summary', $sheets);
         $this->assertArrayHasKey('Session History', $sheets);
+        $this->assertArrayHasKey('Hardest Words - Story Quest', $sheets);
     }
 
-    public function test_skills_overview_sheet_has_correct_headings(): void
+
+    public function test_struggle_summary_sheet_has_correct_headings(): void
     {
-        $student = [
-            'id' => 1,
+        $sheet = new StruggleSummarySheet([[
             'name' => 'Test Student',
             'student_id' => 'S7-001',
             'section' => 'Section A',
-            'status' => 'onTrack',
-            'wordBlastAcc' => 85,
-            'storyQuestAcc' => 90,
-            'read_level' => 3,
-            'speak_level' => 2,
-            'wbLevelLabel' => 'Level 3 - Phonics Fundamentals',
-            'sqLevelLabel' => 'Level 2 - Farm Animals',
-            'parent_email' => 'test@test.com',
-            'report_sent_at' => null,
-            'topStruggle' => 'WB: CAT ×4 · SQ: the ×3',
-        ];
+            'hardestWbModule' => 'Level 4: Orchard Basket',
+            'hardestWbWord' => 'biscuit',
+        ]]);
 
-        $sheet = new SkillsOverviewSheet([$student]);
-
-        // 7 columns, deliberately: Final Average and the two Hardest Module
-        // columns were cut because they duplicate the accuracy columns beside
-        // them and the Words Needing Practice sheet respectively.
         $this->assertEquals([
             'Student Name',
             'Student ID',
             'Section',
-            'Final Status',
-            'Word Blast',
-            'Story Quest',
-            'Top Struggle',
+            'Hardest Module (Word Blast)',
+            'Hardest Word (Word Blast)',
         ], $sheet->headings());
 
-        $collection = $sheet->collection();
-        $row = $collection->first();
-
-        $this->assertNotNull($row);
-        $this->assertCount(7, $row);
+        $row = $sheet->collection()->first();
         $this->assertEquals('Test Student', $row[0]);
         $this->assertEquals('S7-001', $row[1]);
         $this->assertEquals('Section A', $row[2]);
-        $this->assertEquals('onTrack', $row[3]);
-        $this->assertEquals('85% (Level 3 - Phonics Fundamentals)', $row[4]);
-        $this->assertEquals('90% (Level 2 - Farm Animals)', $row[5]);
-        $this->assertEquals('WB: CAT ×4 · SQ: the ×3', $row[6]);
+        $this->assertEquals('Level 4: Orchard Basket', $row[3]);
+        $this->assertEquals('biscuit', $row[4]);
     }
 
-    public function test_skills_overview_top_struggle_is_blank_when_no_training_rows(): void
+    public function test_squ_hardest_word_sheet_has_correct_headings(): void
     {
-        // An empty cell reads as "nothing to report", never a fake word or 0.
-        $sheet = new SkillsOverviewSheet([[
-            'name' => 'Clean Kid',
-            'read_level' => 1,
-            'speak_level' => 1,
-            'wordBlastAcc' => 95,
-            'storyQuestAcc' => 95,
+        $sheet = new SquHardestWordSheet([[
+            'name' => 'Test Student',
+            'hardestSqModule' => 'Level 2: Pet Pals',
+            'hardestSqWord' => 'hedgehog',
+            'hardestSqAttempts' => 6,
         ]]);
+
+        $this->assertEquals([
+            'Student Name',
+            'Hardest Module (Story Quest)',
+            'Hardest Word (Story Quest)',
+            'Recorded Attempts',
+        ], $sheet->headings());
 
         $row = $sheet->collection()->first();
-
-        $this->assertSame('', $row[6]);
+        $this->assertEquals('Test Student', $row[0]);
+        $this->assertEquals('Level 2: Pet Pals', $row[1]);
+        $this->assertEquals('hedgehog', $row[2]);
+        $this->assertEquals(6, $row[3]);
     }
 
-    public function test_skills_words_sheet_has_correct_headings(): void
-    {
-        $student = [
-            'name' => 'Test Student',
-            'student_id' => 'S7-002',
-            'section' => 'Section B',
-            'struggleRows' => [
-                ['mode' => 'Word Blast', 'level' => 'Level 3: Around Town', 'word' => 'bird', 'attempts' => 4, 'verdict' => ReportService::VERDICT_NEEDS_ATTENTION],
-                ['mode' => 'Word Blast', 'level' => 'Level 3: Around Town', 'word' => 'zoo', 'attempts' => 1, 'verdict' => ReportService::VERDICT_PRACTICING],
-                ['mode' => 'Story Quest', 'level' => 'Level 1: Stories', 'word' => 'big', 'attempts' => 3, 'verdict' => ReportService::VERDICT_NEEDS_ATTENTION],
-            ],
-        ];
-
-        $sheet = new SkillsWordsSheet([$student]);
-
-        // 6 columns. No Sentence column: the module (Level) already answers
-        // "where", and a sentence repeated once per word down the page is the
-        // redundancy the 2026-09-28 trim removed.
-        $this->assertEquals([
-            'Student Name',
-            'Mode',
-            'Level',
-            'Word',
-            'Verdict',
-            'Attempts',
-        ], $sheet->headings());
-
-        $collection = $sheet->collection();
-
-        // 'zoo' (1 attempt) is filtered out: the sheet is named "Words Needing
-        // Practice" and sub-threshold rows are not one. 3 is the shared
-        // threshold, so the third row is the boundary case and stays.
-        $this->assertCount(2, $collection);
-        $this->assertCount(6, $collection[0]);
-        $this->assertEquals('Test Student', $collection[0][0]);
-        $this->assertEquals('Word Blast', $collection[0][1]);
-        $this->assertEquals('Level 3: Around Town', $collection[0][2]);
-        $this->assertEquals('bird', $collection[0][3]);
-        $this->assertEquals('Needs Attention', $collection[0][4]);
-        $this->assertEquals(4, $collection[0][5]);
-        $this->assertEquals('big', $collection[1][3]);
-
-        // No per-row red band: every surviving row is at/over the threshold, so
-        // a highlight per row would flag the whole sheet and discriminate
-        // nothing. The Verdict column carries the distinction instead.
-        $styles = $sheet->styles(new Worksheet);
-        $this->assertSame([1], array_keys($styles));
-    }
-
-    public function test_skills_words_sheet_is_empty_when_nothing_needs_practice(): void
-    {
-        $sheet = new SkillsWordsSheet([[
-            'name' => 'Clean Kid',
-            'struggleRows' => [
-                ['mode' => 'Word Blast', 'level' => 'Level 1: Farm', 'word' => 'cow', 'attempts' => 0],
-                ['mode' => 'Word Blast', 'level' => 'Level 1: Farm', 'word' => 'pig', 'attempts' => 2],
-            ],
-        ]]);
-
-        $this->assertCount(0, $sheet->collection());
-    }
-
-    public function test_class_report_sheet_has_correct_headings(): void
-    {
-        $student = [
-            'id' => 1,
-            'name' => 'Test Student',
-            'section' => 'Section A',
-            'status' => 'onTrack',
-            'wordBlastAcc' => 85,
-            'storyQuestAcc' => 90,
-            'read_level' => 3,
-            'speak_level' => 2,
-            'parent_email' => 'test@test.com',
-            'report_sent_at' => null,
-        ];
-
-        $sheet = new ClassReportSheet([$student]);
-
-        $this->assertEquals([
-            'Student Name',
-            'Word Blast Accuracy (%)',
-            'Story Quest Accuracy (%)',
-            'Final Average (%)',
-            'Status Category',
-            'Count',
-        ], $sheet->headings());
-    }
-
-    public function test_class_report_sheet_collection_formats_data_correctly(): void
-    {
-        $student = [
-            'id' => 1,
-            'name' => 'Test Student',
-            'section' => 'Section A',
-            'status' => 'onTrack',
-            'wordBlastAcc' => 85,
-            'storyQuestAcc' => 90,
-            'read_level' => 3,
-            'speak_level' => 2,
-            'parent_email' => 'test@test.com',
-            'report_sent_at' => null,
-        ];
-
-        $sheet = new ClassReportSheet([$student]);
-        $collection = $sheet->collection();
-
-        $this->assertCount(8, $collection);
-
-        $studentRow = $collection[0];
-        $this->assertEquals('Test Student', $studentRow[0]);
-        $this->assertEquals(85, $studentRow[1]);
-        $this->assertEquals(90, $studentRow[2]);
-        $this->assertEquals(88, $studentRow[3]);
-        $this->assertEquals('On Track', $studentRow[4]);
-        $this->assertEquals('', $studentRow[5]);
-
-        $onTrackSummary = $collection->first(fn ($row) => $row[4] === 'On Track' && is_numeric($row[5]));
-        $this->assertEquals(1, $onTrackSummary[5]);
-        $notStartedSummary = $collection->first(fn ($row) => $row[4] === 'Not Started' && is_numeric($row[5]));
-        $this->assertEquals(0, $notStartedSummary[5]);
-    }
-
-    public function test_class_report_sheet_maps_support_status_to_needs_support_count(): void
-    {
-        $sheet = new ClassReportSheet([
-            ['name' => 'A', 'status' => 'support'],
-            ['name' => 'B', 'status' => 'onTrack'],
-        ]);
-        $collection = $sheet->collection();
-
-        // Counts live in the summary block (rows with a numeric Count column),
-        // not in the per-student roster rows.
-        $summary = $collection->filter(fn ($row) => is_numeric($row[5]) && $row[5] !== '');
-        $needsSupport = $summary->first(fn ($row) => $row[4] === 'Needs Support');
-        $onTrack = $summary->first(fn ($row) => $row[4] === 'On Track');
-
-        $this->assertEquals(1, $needsSupport[5]);
-        $this->assertEquals(1, $onTrack[5]);
-    }
-
-    public function test_class_report_sheet_includes_charts(): void
-    {
-        $sheet = new ClassReportSheet([]);
-        $charts = $sheet->charts();
-
-        // One chart only. The per-student accuracy bar chart was removed: it
-        // re-plotted columns B and C, which sit in the same tab.
-        $this->assertCount(1, $charts);
-
-        $pieChart = $charts[0];
-        $this->assertEquals('health_pie_chart', $pieChart->getName());
-        $this->assertEquals('Class Health Distribution', $pieChart->getTitle()->getCaption());
-    }
-
-    public function test_class_report_pie_still_targets_the_summary_block(): void
-    {
-        // The pie reads hand-built cell refs, and the roster length decides
-        // where the summary block lands. No chart test covers that math, so lock
-        // the refs directly: 3 students -> roster rows 2..4, spacer 5, header 6,
-        // so the 5 category rows are 7..11.
-        $students = array_map(fn ($i) => ['name' => 'S'.$i, 'status' => 'onTrack'], [1, 2, 3]);
-
-        $series = (new ClassReportSheet($students))->charts()[0]
-            ->getPlotArea()->getPlotGroupByIndex(0);
-
-        $values = $series->getPlotValues();
-        $this->assertCount(1, $values);
-        $this->assertStringContainsString('$F$7:$F$11', (string) $values[0]->getDataSource());
-    }
 
     public function test_session_history_sheet_has_correct_headings(): void
     {
@@ -1484,18 +1275,10 @@ class ReportTest extends TestCase
             ->assertHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     }
 
-    public function test_export_skills_overview_row_formats_top_struggle_labels_and_null_average(): void
+    public function test_export_row_carries_hardest_module_and_word(): void
     {
         Setting::setValue('report_deadline', now()->subDay()->format('Y-m-d\TH:i'));
 
-        // Unknown levels (no titles) + one zero accuracy → null finalAverage.
-        $this->student->student->update([
-            'read_level' => 99,
-            'speak_level' => 98,
-            'storyQuestAcc' => 0,
-        ]);
-
-        // Three training words — only the top two by attempts reach Top Struggle, desc.
         $module = WordModule::create(['level' => 1, 'title' => 'Level 1']);
         foreach ([['CAT', 5], ['BIRD', 4], ['ZOO', 1]] as $i => [$text, $fails]) {
             $word = Word::create(['word_module_id' => $module->id, 'word' => $text, 'position' => $i + 1]);
@@ -1521,10 +1304,11 @@ class ReportTest extends TestCase
             $prop = new \ReflectionProperty(ReportsExport::class, 'students');
             $row = collect($prop->getValue($export))->firstWhere('name', 'Test Student');
 
-            return $row['topStruggle'] === 'WB: CAT ×5 · WB: BIRD ×4'
-                && $row['wbLevelLabel'] === 'Level 99 - '
-                && $row['sqLevelLabel'] === 'Level 98 - '
-                && $row['finalAverage'] === null;
+            return $row['hardestWbWord'] === 'CAT'
+                && $row['hardestWbModule'] === 'Level 1: Level 1'
+                && $row['hardestSqModule'] === 'N/A'
+                && $row['hardestSqWord'] === 'N/A'
+                && $row['hardestSqAttempts'] === 0;
         });
     }
 }

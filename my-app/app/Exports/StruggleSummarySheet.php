@@ -9,7 +9,7 @@ use Maatwebsite\Excel\Concerns\WithStyles;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class SkillsOverviewSheet implements FromCollection, WithColumnWidths, WithHeadings, WithStyles
+class StruggleSummarySheet implements FromCollection, WithColumnWidths, WithHeadings, WithStyles
 {
     protected array $students;
 
@@ -24,31 +24,19 @@ class SkillsOverviewSheet implements FromCollection, WithColumnWidths, WithHeadi
             'Student Name',
             'Student ID',
             'Section',
-            'Final Status',
-            'Word Blast',
-            'Story Quest',
-            'Top Struggle',
+            'Hardest Module (Word Blast)',
+            'Hardest Word (Word Blast)',
         ];
     }
 
     public function collection()
     {
-        // Label only, no attempt count: "Top Struggle" (column G) and the
-        // "Words Needing Practice" sheet already name each struggling word with
-        // its count, so repeating the total one level up is noise.
-        //
-        // Final Average and the two Hardest Module columns are NOT here either:
-        // the average is the arithmetic of the two accuracy columns beside it
-        // (and already a column on Class Summary), and hardest-module re-ranks
-        // the same training words the drill-down sheet lists one by one.
         return collect($this->students)->map(fn ($s) => [
             $s['name'] ?? '',
             $s['student_id'] ?? '',
             $s['section'] ?? '',
-            $s['status'] ?? 'notStarted',
-            ($s['wordBlastAcc'] ?? 0).'% ('.($s['wbLevelLabel'] ?? "Level {$s['read_level']}").')',
-            ($s['storyQuestAcc'] ?? 0).'% ('.($s['sqLevelLabel'] ?? "Level {$s['speak_level']}").')',
-            $s['topStruggle'] ?? '',
+            $s['hardestWbModule'] ?? 'N/A',
+            $s['hardestWbWord'] ?? 'N/A',
         ]);
     }
 
@@ -69,12 +57,8 @@ class SkillsOverviewSheet implements FromCollection, WithColumnWidths, WithHeadi
             'A' => 25,
             'B' => 15,
             'C' => 15,
-            'D' => 18,
-            // E/F stay wide: the accuracy and level live in one cell, e.g.
-            // "85% (Level 3 - Phonics Fundamentals)".
-            'E' => 42,
-            'F' => 42,
-            'G' => 30,
+            'D' => 32,
+            'E' => 28,
         ];
     }
 }

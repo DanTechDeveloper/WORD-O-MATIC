@@ -6,6 +6,7 @@ use App\Exports\ReportsExport;
 use App\Mail\StudentReportMail;
 use App\Models\ParagraphModule;
 use App\Models\Setting;
+use App\Models\StudentProfile;
 use App\Models\User;
 use App\Models\WordModule;
 use App\Services\ReportService;
@@ -61,7 +62,7 @@ class ReportController extends Controller
         if (empty($request->deadline)) {
             Setting::where('key', 'report_deadline')->delete();
             // ponytail: CLEAR = new period — un-stale Already Sent so Juan returns to selectable list
-            \App\Models\StudentProfile::query()->update(['report_sent_at' => null]);
+            StudentProfile::query()->update(['report_sent_at' => null]);
 
             return redirect()->back()->with('deadline_cleared', true);
         }
@@ -192,68 +193,13 @@ class ReportController extends Controller
 
         $cutoff = $this->reportService->cutoff();
 
-        $wordTitles = WordModule::where('is_tutorial', false)->pluck('title', 'level');
-        $paraTitles = ParagraphModule::where('is_tutorial', false)->pluck('title', 'level');
-
         // ponytail: batched 2 queries vs 200 (100×2) — was 60s timeout on sfo 70ms
         $userIds = $students->pluck('id')->all();
         $wordCurriculums = WordModule::curriculumForUsers($userIds, $cutoff);
         $paraCurriculums = ParagraphModule::curriculumForUsers($userIds, $cutoff);
 
-        $formattedStudents = $students->map(function ($user) use ($wordCurriculums, $paraCurriculums, $wordTitles, $paraTitles) {
-            $readLevel = $user->student?->read_level ?? 1;
-            $speakLevel = $user->student?->speak_level ?? 1;
-
-            $rows = array_merge(
-                $this->struggleRows('Word Blast', $wordCurriculums[$user->id] ?? []),
-                $this->sentenceStruggleRows('Story Quest', $paraCurriculums[$user->id] ?? []),
-            );
-
-            usort($rows, fn ($a, $b) => $b['attempts'] <=> $a['attempts']);
-
-            $topStruggle = implode(' · ', array_map(
-                fn ($row) => ($row['mode'] === 'Word Blast' ? 'WB' : 'SQ').': '.$row['word'].' ×'.$row['attempts'],
-                array_slice($rows, 0, 2),
-            ));
-
-            return [
-                'name' => $user->name,
-                'student_id' => $user->student_id,
-                'section' => $user->student?->section ?? '',
-                'status' => $user->student?->status ?? 'notStarted',
-                'wordBlastAcc' => $user->student?->wordBlastAcc ?? 0,
-                'storyQuestAcc' => $user->student?->storyQuestAcc ?? 0,
-                'finalAverage' => $user->student?->finalAverage,
-                'read_level' => $readLevel,
-                'speak_level' => $speakLevel,
-                'wbLevelLabel' => "Level {$readLevel} - ".($wordTitles[$readLevel] ?? ''),
-                'sqLevelLabel' => "Level {$speakLevel} - ".($paraTitles[$speakLevel] ?? ''),
-                'parent_email' => $user->student?->parent_email,
-                'report_sent_at' => $user->student?->report_sent_at,
-                'struggleRows' => $rows,
-                'topStruggle' => $topStruggle,
-            ];
-        })->toArray();
+        $formattedStudents = $this->reportService->exportStudents($students->all(), $wordCurriculums, $paraCurriculums);
 
         return Excel::download(new ReportsExport($formattedStudents), 'class-report.xlsx');
-    }
-
-    private function struggleRows(string $mode, array $curriculum): array
-    {
-        return array_map(
-            fn ($row) => ['mode' => $mode] + $row,
-            $this->reportService->struggleRowsFrom($curriculum),
-        );
-    }
-
-    // Story Quest exports per WORD, not per sentence — a teacher reteaching a
-    // word needs the word, and the module (level) already answers "where", so
-    // the sheet carries no Sentence column.
-    private function sentenceStruggleRows(string $mode, array $curriculum): array
-    {
-        return array_map(
-            fn ($row) => ['mode' => $mode] + $row,
-            $this->reportService->sentenceWordStruggleRowsFrom($curriculum),
-        );
     }
 }

@@ -93,19 +93,15 @@ class ReportStatusConsistencyTest extends TestCase
         $profile = $this->playedBothZero();
         $student = $profile->user;
 
-        // Mirror ReportController::exportReports() formatter (line 200-215).
-        $formatted = [
-            'name' => $student->name,
-            'student_id' => $student->student_id,
-            'section' => $profile->section ?? '',
-            'status' => $profile->status, // stored column, line 204
-            'wordBlastAcc' => $profile->wordBlastAcc ?? 0,
-            'storyQuestAcc' => $profile->storyQuestAcc ?? 0,
-            'read_level' => $profile->read_level ?? 1,
-            'speak_level' => $profile->speak_level ?? 1,
-        ];
+        // Mirror ReportController::exportReports() -> ReportService::exportStudents()
+        // (the real seam, not a hand-copied array).
+        $formatted = app(\App\Services\ReportService::class)->exportStudents(
+            [$student],
+            WordModule::curriculumForUsers([$student->id]),
+            ParagraphModule::curriculumForUsers([$student->id]),
+        )[0];
 
-        // SkillsOverviewSheet / ClassReportSheet read $s['status'] (no recompute),
+        // The Struggle Summary sheet reads $s['status'] (no recompute),
         // so the export inherits the corrected stored status.
         $this->assertSame('in_progress', $formatted['status']);
     }
