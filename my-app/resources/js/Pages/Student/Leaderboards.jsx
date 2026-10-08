@@ -84,7 +84,7 @@ export default function Leaderboards({ leaderboard, totalStudents }) {
                                         isCurrentUser
                                             ? "bg-accent/10 border-accent/50"
                                             : "bg-surface-container border-outline/20"
-                                    } ${isTop3 ? "" : "opacity-40"}`}
+                                    } ${isTop3 ? "" : "opacity-75"}`}
                                 >
                                     <div className="flex items-center gap-4 sm:gap-8 min-w-0">
                                         <span className="w-10 sm:w-14 flex items-center justify-center shrink-0">
