@@ -181,12 +181,21 @@ export function useStoryQuestEngine({ saveEndpoint = "/student/saveParagraphProg
             scope: "para",
             currentWordIndex: core.currentWordIndex,
             wordsSmashed: core.wordsSmashed,
+            // DELIBERATELY 0, and deliberately not symmetric with Word Blast.
+            //
+            // Word Blast round-trips both values (`resume?.currentStreak ?? 0`)
+            // because core owns that streak and needs it to resume the header
+            // chip mid-round. SQ owns its streak in streakRef/maxStreakRef, which
+            // are useRef — they cannot be seeded from a resume record the way
+            // useState can, and core reads neither for SQ.
+            //
+            // Only maxStreak matters: it is the value the story_streak badge
+            // consumes (via persistExtra), so the peak survives an F5 and the
+            // badge under-reports nothing. Restoring the running streak would
+            // buy a header chip that resumes mid-shake — cosmetic, and it would
+            // require re-seeding two refs, for nothing the badge reads.
+            // Reintroduce only if the mid-round chip is worth the coupling.
             currentStreak: 0,
-            // ponytail: SQ's own peak, NOT core.maxStreak. core's is 0 for the
-            // whole round (SQ never calls core.handleWordRecognized), so
-            // resuming restored 0 and a mid-round F5 discarded the peak — the
-            // badge would under-report. currentStreak stays 0: it is
-            // mid-round-reset state core does not read.
             maxStreak: maxStreakRef.current,
             timeLeft: Math.max(0, Math.min(60, Math.floor(core.timeLeft))),
             savedAt: Date.now(),
@@ -235,10 +244,16 @@ export function useStoryQuestEngine({ saveEndpoint = "/student/saveParagraphProg
         // verdict preview + celebration modal — otherwise the header clears
         // it 400ms after the last correct word and a one-breath perfect read
         // shows no streak at all.
+        //
+        // PEAK, not current streak. A round that ran an 8-streak then missed
+        // its last word resets streakRef to 0, so reading it here showed "WARM!"
+        // for the one round the kid actually earned Story Legend on. Reads the
+        // same value the badge consumes (maxStreakRef), so the header and the
+        // badge can never disagree about what happened.
         clearTimeout(streakShakeTimerRef.current);
-        if (streakRef.current >= 2) {
+        if (maxStreakRef.current >= 2) {
             setStreakShake(
-                streakRef.current >= 8 ? "intense" : streakRef.current >= 5 ? "medium" : "subtle",
+                maxStreakRef.current >= 8 ? "intense" : maxStreakRef.current >= 5 ? "medium" : "subtle",
             );
         }
 

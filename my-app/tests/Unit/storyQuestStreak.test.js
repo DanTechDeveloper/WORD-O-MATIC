@@ -38,6 +38,21 @@ describe("Story Quest streak reaches the server", () => {
         );
     });
 
+    test("the final shake hold reads the peak, not the running streak", () => {
+        // The bug this locks: completeSentence() held the end-of-round chip off
+        // `streakRef.current`. A round that ran an 8-streak and then missed its
+        // last word resets streakRef to 0, so the header showed "WARM!" for the
+        // exact round that earned Story Legend. The chip must read the same
+        // value the badge consumes or the two disagree about the round.
+        const idx = SRC.indexOf("const completeSentence = useCallback");
+        const body = SRC.slice(idx, SRC.indexOf("// ponytail: end-of-round bucketing", idx));
+        expect(body).toContain("maxStreakRef.current >= 2");
+        expect(body).toContain("maxStreakRef.current >= 8");
+        expect(body).not.toMatch(/if \(streakRef\.current >= 2\)/);
+        // No threshold in the final hold may read the running streak.
+        expect(body).not.toMatch(/streakRef\.current >= [258]/);
+    });
+
     test("resetStreak must NOT clear the peak", () => {
         // This is the subtle one. streakRef resets on a wrong verdict; if
         // maxStreakRef reset with it, a kid who ran an 8-streak and then missed
