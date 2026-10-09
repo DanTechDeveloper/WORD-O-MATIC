@@ -964,3 +964,86 @@ describe("a finished round leaves no resume record, so the next play reshuffles"
         expect(readResumeSession(7, "para")).not.toBeNull();
     });
 });
+
+// ponytail: mic-denied was a ONE-WAY door. gameState latched at "DENIED" and
+// nothing ever moved it back, while DeniedModal had no dismiss control at all —
+// so a kid who unblocked the mic sat behind a permanent modal. Worse, the
+// overlay only renders at IDLE and the mic click only fires at IDLE, so
+// recovering the MODAL alone would have left the game just as stuck.
+//
+// These are source greps because the bug is the ABSENCE of a state transition,
+// which no DOM assertion can catch: an effect that never runs renders exactly
+// like an effect that runs correctly.
+describe("mic-denied recovery", () => {
+    const permissionHook = read("resources/js/hooks/Student/useMicrophonePermission.js");
+    const deniedModal = read("resources/js/Components/Student/DeniedModal.jsx");
+
+    test.each([
+        ["GameplayReadMode", readMode],
+        ["GameplaySpeakMode", speakMode],
+    ])("%s recovers the game when permission comes back", (_name, src) => {
+        // The reverse edge, gated on BOTH granted and DENIED.
+        const recovery = src.indexOf('if (permissionState === "granted" && gameState === "DENIED")');
+        expect(recovery).toBeGreaterThan(-1);
+        // refillRoundClock, NOT a bare setGameState("IDLE") — it keeps word
+        // position and Story Quest verdicts so the kid resumes rather than
+        // losing the round they already played.
+        const body = src.slice(recovery, src.indexOf("}, [permissionState", recovery));
+        expect(body).toContain("refillRoundClock();");
+        expect(body).not.toContain('setGameState("IDLE")');
+    });
+
+    test.each([
+        ["GameplayReadMode", readMode],
+        ["GameplaySpeakMode", speakMode],
+    ])("%s waits for permissionState before touching gameState", (_name, src) => {
+        // The DENIED branch returns early, so a granted mount can never fall
+        // through into the recovery.
+        expect(src).toMatch(
+            /if \(permissionState === "denied"\) \{\s*setGameState\("DENIED"\);\s*return;\s*\}/
+        );
+    });
+
+    test.each([
+        ["GameplayReadMode", readMode],
+        ["GameplaySpeakMode", speakMode],
+    ])("%s routes the mid-round ASR denial through markDenied", (_name, src) => {
+        // onPermissionDenied fires from getUserMedia INSIDE useDeepgramRecognition
+        // and never touches the Permissions API, so without this it set DENIED
+        // while permissionState still read "prompt" — and the recovery above
+        // could never see it. This is the case a K-5 kid actually hits.
+        const at = src.indexOf("markDenied();");
+        expect(at).toBeGreaterThan(-1);
+        const window = src.slice(at - 200, at + 120);
+        expect(window).toContain('setGameState("DENIED")');
+    });
+
+    test.each([
+        ["GameplayReadMode", readMode],
+        ["GameplaySpeakMode", speakMode],
+    ])("%s takes markDenied off the hook and gives the modal a retry", (_name, src) => {
+        expect(src).toContain(
+            "const { permissionState, requestPermission, markDenied } = useMicrophonePermission();"
+        );
+        expect(src).toContain("onRetry={requestPermission}");
+    });
+
+    test("the hook exposes markDenied and keeps sole ownership of the state", () => {
+        expect(permissionHook).toContain(
+            "return { permissionState, requestPermission, markDenied };"
+        );
+        expect(permissionHook).toContain("const markDenied = useCallback");
+    });
+
+    test("the modal offers a manual escape hatch and stays state-gated", () => {
+        // Permissions.onchange does NOT fire everywhere — iOS Safari mic access
+        // is a Settings.app journey and never re-prompts. Without this button
+        // those kids had no way out at all.
+        expect(deniedModal).toContain("onRetry");
+        expect(deniedModal).toContain("Try Again");
+        // Recovery is state-driven (gameState returns to IDLE), so the gate must
+        // stay DENIED. Relaxing it to a render-time check would re-latch.
+        expect(deniedModal).toContain('{gameState === "DENIED" && (');
+        expect(deniedModal).not.toContain('gameState === "DENIED" && permissionState');
+    });
+});

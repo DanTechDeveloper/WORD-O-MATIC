@@ -406,7 +406,7 @@ While this document is the vision, `tailwind.config.js` still carries the older 
 | 11 | Sticky mobile CTA | Deferred `// ponytail` PLAY full width in reach, sticky covers game | Keep header `fixed top-0` `DashboardLayout.jsx:86` no extra bar | `Layouts/Teacher/DashboardLayout.jsx:86` | header sticky on scroll |
 | 12 | Loading states | Keep calm `animate-pulse` no shimmer | Keep table skeleton rows | `Components/Shared/Skeleton.jsx` | skeleton on nav |
 | 13 | Form error states | Keep gentle `Homepage.jsx:168` `aria-invalid` | Keep inline `AddStudentModal` `EditStudentModal` | `Components/Teacher/*` | word plus border |
-| 14 | Thank-you page | Deferred kid reward is `BadgeUnlockFlow` not page | Keep yes `oo` after `POST /teacher/reports/send-emails` | `Pages/Teacher/Thanks.jsx` + `ReportController` | `/teacher/reports/thank-you` shows counts |
+| 14 | Thank-you page | Deferred kid reward is `BadgeUnlockModal` not page | Keep yes `oo` after `POST /teacher/reports/send-emails` | `Pages/Teacher/Thanks.jsx` + `ReportController` | `/teacher/reports/thank-you` shows counts |
 | 15 | Privacy policy page | Deferred teacher legal covers | Keep `GET /privacy` | `Pages/Legal/Privacy.jsx` | `/privacy` public |
 | 16 | Terms page | Deferred same | Keep `GET /terms` | `Pages/Legal/Terms.jsx` | `/terms` public |
 | 17 | Cookie banner | Deferred none on student `// ponytail: session only` | Deferred `// ponytail: add only if analytics enabled` since none | `Components/Shared/CookieBanner.jsx` env gated | no banner until analytics |

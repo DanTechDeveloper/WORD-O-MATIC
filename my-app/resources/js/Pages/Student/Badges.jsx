@@ -24,6 +24,12 @@ const BADGE_UI_CONFIG = {
     "on-fire": { statusLabel: "STREAK", colors: PALETTE.error },
     "blazing-streak": { statusLabel: "STREAK", colors: PALETTE.tertiary },
     "unstoppable": { statusLabel: "STREAK", colors: PALETTE.primary },
+    // Story Quest's own streak ladder (metric story_streak, mode paragraph).
+    // Same label + palette tiers as the Word Blast trio above so the two read
+    // as one visual family; they never mix because mode sections are separate.
+    "story-streak": { statusLabel: "STREAK", colors: PALETTE.error },
+    "story-streaker": { statusLabel: "STREAK", colors: PALETTE.tertiary },
+    "story-legend": { statusLabel: "STREAK", colors: PALETTE.primary },
     "clear-speaker": { statusLabel: "EXPERT", colors: PALETTE.secondary },
     "perfect-round": { statusLabel: "PERFECT", colors: PALETTE.quest },
     "tutorial-complete": { statusLabel: "COMPLETED", colors: PALETTE.accent },
@@ -144,11 +150,11 @@ export default function Badges({ badges, tutorialSkipped = false, wordTutorialDo
                 <div className="mb-6 bg-amber-500/15 border-2 border-amber-400/40 rounded-2xl px-5 py-4 flex items-start gap-3">
                     <span className="material-symbols-outlined text-amber-400 text-2xl shrink-0 mt-0.5" style={{ fontVariationSettings: "'FILL' 1" }}>info</span>
                     <div className="flex-1">
-                        <p className="text-amber-300 font-black uppercase text-sm">Tutorial skipped — badge locked</p>
+                        <p className="text-amber-300 font-black uppercase text-sm">Tutorial skipped  (badge locked)</p>
                         <p className="text-on-surface-variant text-sm mt-1">
                             You skipped the tutorial, so <span className="font-bold text-on-surface">Tutorial Complete</span> is not claimable yet. Complete both phases to earn it.
-                            {wordTutorialDone && !speakTutorialDone && " Word Blast done — finish Story Quest!"}
-                            {!wordTutorialDone && " Start with Word Blast — then Story Quest unlocks."}
+                            {wordTutorialDone && !speakTutorialDone && " Word Blast done finish Story Quest!"}
+                            {!wordTutorialDone && " Start with Word Blast then Story Quest unlocks."}
                         </p>
                         <Link href="/student/tutorial" data-sfx="major" className="inline-flex items-center gap-2 mt-3 rounded-xl px-4 py-2 font-black text-xs uppercase tracking-wider bg-amber-400 text-background hover:brightness-110 transition-all">
                             <span className="material-symbols-outlined text-base">school</span>

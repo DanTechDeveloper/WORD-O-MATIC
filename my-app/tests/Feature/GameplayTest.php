@@ -1059,7 +1059,11 @@ class GameplayTest extends TestCase
         return $module;
     }
 
-    public function test_paragraph_round_forces_streak_to_zero(): void
+    // INVERTED (was test_paragraph_round_forces_streak_to_zero): SQ has a real
+    // streak again (useStoryQuestEngine maxStreakRef → persistExtra), so forcing
+    // paragraph to 0 threw the round's peak away. The CLAMP is what must never
+    // trust the client — and it still applies to paragraph, per assert below.
+    public function test_paragraph_round_records_streak_but_clamps_it(): void
     {
         Setting::where('key', 'report_deadline')->delete();
         $para = $this->makeParagraphModule();
@@ -1073,12 +1077,40 @@ class GameplayTest extends TestCase
             ])
             ->assertRedirect();
 
+        // 999 is clamped to words_smashed + 1 — the client is never trusted,
+        // but the value is no longer overwritten to 0.
         $this->assertDatabaseHas('game_sessions', [
             'user_id' => $this->student->id,
             'module_id' => $para->id,
             'module_type' => 'paragraph',
             'score' => 4,
-            'streak' => 0,
+            'streak' => 5,
+        ]);
+    }
+
+    public function test_paragraph_round_keeps_a_real_streak(): void
+    {
+        Setting::where('key', 'report_deadline')->delete();
+        // 10 words: the module default is 5, and words_processed may not exceed
+        // the module's word count — 6/7 against a 5-word module is rejected
+        // before a session is ever logged.
+        $para = $this->makeParagraphModule(10);
+
+        $this->actingAs($this->student)
+            ->post(route('student.saveParagraphProgress'), [
+                'module_id' => $para->id,
+                'words_smashed' => 6,
+                'words_processed' => 7,
+                'streak' => 4,
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('game_sessions', [
+            'user_id' => $this->student->id,
+            'module_id' => $para->id,
+            'module_type' => 'paragraph',
+            'score' => 6,
+            'streak' => 4,
         ]);
     }
 

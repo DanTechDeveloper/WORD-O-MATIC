@@ -117,7 +117,7 @@ export default function GameplayReadMode({ module, tutorialComplete = true, tuto
         },
     });
 
-    const { permissionState, requestPermission } = useMicrophonePermission();
+    const { permissionState, requestPermission, markDenied } = useMicrophonePermission();
 
     const [guideStep, setGuideStep] = useState(0);
     const [guideDone, setGuideDone] = useState(() => !isTutorial || isResume);
@@ -139,8 +139,23 @@ export default function GameplayReadMode({ module, tutorialComplete = true, tuto
     useEffect(() => {
         if (permissionState === "denied") {
             setGameState("DENIED");
+            return;
         }
-    }, [permissionState, setGameState]);
+        // ponytail: the REVERSE edge. Without it, gameState latched at DENIED
+        // forever: TapToStartOverlay only renders at IDLE and handleMicrophoneClick
+        // only acts at IDLE, so the kid was stuck behind a modal with no dismiss —
+        // even after unblocking the mic. Permissions.onchange fires when they do,
+        // so permissionState flips to "granted" with nobody reading it.
+        //
+        // refillRoundClock, NOT setGameState("IDLE"): it is the existing
+        // abort-mid-round primitive (same one token_failed uses) and it keeps
+        // word position + Story Quest verdicts, so a kid blocked at word 7/10
+        // resumes at word 7/10 instead of losing the round. Guarded on DENIED so
+        // a mount where permission is already granted can't touch gameState.
+        if (permissionState === "granted" && gameState === "DENIED") {
+            refillRoundClock();
+        }
+    }, [permissionState, gameState, setGameState, refillRoundClock]);
 
     const handleMicrophoneClick = useCallback(async () => {
         // ponytail: refuse to START a round the server cannot serve. Without
@@ -231,7 +246,14 @@ export default function GameplayReadMode({ module, tutorialComplete = true, tuto
             // No-op in main entry (guideDone already true).
             completeGuideEvent("say-word");
         },
-        onPermissionDenied: () => setGameState("DENIED"),
+        onPermissionDenied: () => {
+            // ponytail: both DENIED sources must agree, or the recovery edge above
+            // only sees one. This one fires mid-round from getUserMedia and never
+            // touches the Permissions API, so permissionState still read "prompt".
+            // setGameState stays explicit so the modal appears on this render.
+            markDenied();
+            setGameState("DENIED");
+        },
         onMispronounced: handleMispronounce,
         // ponytail: token_failed is the ASR saying the uplink is dead — the
         // socket never opened, so the round has no score to bank. refillRoundClock
@@ -325,7 +347,7 @@ export default function GameplayReadMode({ module, tutorialComplete = true, tuto
     return (
         <div className="bg-background text-on-background font-body-md h-dvh flex flex-col overflow-hidden relative isolate">
             <ArcadeBackground />
-            <DeniedModal gameState={gameState} />
+            <DeniedModal gameState={gameState} onRetry={requestPermission} />
             <GameplayHeader {...headerProps} />
             <ReadModeMainContent
                 words={wordOrder}

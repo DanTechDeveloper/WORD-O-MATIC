@@ -30,7 +30,7 @@ Tutorial play (`is_tutorial=true` modules) is isolated from real game tracking:
 - No `GameSession` logged
 - No leaderboard impact
 - Only "Tutorial Complete" badge can be earned (not gameplay badges)
-- On completion the badge flashes via `BadgeUnlockFlow`; dismissing it shows a congratulations `AvatarSpeechBubble` on the Dashboard (gated by the `tutorial-complete` flash badge)
+- On completion the badge flashes via `BadgeUnlockModal`; dismissing it shows a congratulations `AvatarSpeechBubble` on the Dashboard (gated by the `tutorial-complete` flash badge)
 
 ## Badges
 
@@ -66,12 +66,25 @@ badges earned while a student was logged out still count. Props passed from `Tea
 | On Fire | `on-fire` | word | Streak | `streak` | 3 | Get 3 correct in a row (Word Blast sessions only) |
 | Blazing Streak | `blazing-streak` | word | Streak | `streak` | 5 | Get 5 correct in a row (Word Blast sessions only) |
 | Unstoppable | `unstoppable` | word | Streak | `streak` | 7 | Get 7 correct in a row (Word Blast sessions only) |
+| Story Streak | `story-streak` | paragraph | Streak | `story_streak` | 3 | Get 3 correct words in a row while reading a story |
+| Story Streaker | `story-streaker` | paragraph | Streak | `story_streak` | 5 | Get 5 correct words in a row while reading a story |
+| Story Legend | `story-legend` | paragraph | Streak | `story_streak` | 8 | Get 8 correct words in a row while reading a story |
 | Clear Speaker | `clear-speaker` | shared | Accuracy | `accuracy` | 80 | Get 80% accuracy in a single game (either mode) |
 | Perfect Round | `perfect-round` | shared | Accuracy | `accuracy` | 100 | Get 100% accuracy in a single game (either mode) |
 | Tutorial Complete | `tutorial-complete` | shared | Onboarding | `action` | — | Finish both tutorial modes |
 | Profile Pioneer | `profile-pioneer` | shared | Onboarding | `action` | — | Set your profile avatar |
 
-Mode lives in the `badges.mode` column (seed truth; `Badges.jsx` sections group by it). Streak badges read Word Blast sessions only (Story Quest logs `streak=0`). During tutorial the Badges page shows only the two onboarding badges (server-side filter; award-side was already isolated).
+Mode lives in the `badges.mode` column (seed truth; `Badges.jsx` sections group by it). During tutorial the Badges page shows only the two onboarding badges (server-side filter; award-side was already isolated).
+
+**The two streak ladders are separate metrics, not one shared one.** `streak` reads `module_type=word` sessions, `story_streak` reads `module_type=paragraph` — both via `BadgeService::bestSessionMetric($user, $column, $type)`. The isolation is the SQL `where()`, **not** a zeroed value: a 9-streak in Story Quest cannot award `Unstoppable`, and a 9-streak in Word Blast cannot award `Story Legend`, no matter how long either streak runs. Both ladders are simultaneously true.
+
+**Do not reintroduce the forced-zero.** `StudentController::finishRound` used to write `streak = 0` for every paragraph round on the belief that Story Quest had no streak mechanic. It has one (`useStoryQuestEngine` `maxStreakRef`, which the header chip and shake tiers have driven for a while), so the zero silently discarded each round's peak. The clamp `min($request->streak, $wordsSmashed + 1)` now applies to **both** modes — the client is still never trusted.
+
+Both ladder thresholds mirror the client's own shake tiers where they overlap (word: 3/5/7 vs `>=2`/`>=5`; story: 3/5/8 vs `>=2`/`>=5`/`>=8`), so a badge lands where the kid already *felt* the streak. Re-tune the story tiers only alongside those tiers in `useStoryQuestEngine` — a badge threshold with no matching client signal is a kid chasing a number they never saw.
+
+**Never bind SQ's peak to core's streak.** `useStoryQuestEngine` returns `maxStreak: core.maxStreak` deliberately, even though its own `maxStreakRef` holds the real number — core's ref is Word Blast's, and core restores it on resume. SQ's peak travels via `persistExtra` (which spreads after core's `streak:` key) instead. Binding the returned `maxStreak` to SQ's ref is the one edit that would silently merge the two meters; `tests/Unit/storyQuestStreak.test.js` locks it. Tutorial exclusion and the `is_deadline_hit` filter are inherited from `bestSessionMetric`, so neither ladder can be earned from onboarding or a post-deadline round.
+
+The results page's **Next badge** card is scoped to the mode just played: `getBadgeProgress()` ships `mode` verbatim, and `GameResults.jsx` keeps only `word`/`shared` after a Word Blast round, `paragraph`/`shared` after a Story Quest round — so a Word Blast round never points at Story Explorer. `shared` (points, accuracy) is either-mode by catalog design. Action badges (`threshold = null`, `tutorial-complete`/`profile-pioneer`) are excluded — they have no progress bar to draw. **Filter on the client, not in `getBadgeProgress()`**: that payload also feeds the burst modal's `newBadges` (GameResults.jsx:60), and `checkGameplayBadges()` awards cross-mode badges — server-filtering would silently drop a just-earned badge out of the celebration grid. No matching badge = no card, which is the honest outcome.
 
 ### Module Completion Metrics
 

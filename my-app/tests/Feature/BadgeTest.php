@@ -769,6 +769,7 @@ class BadgeTest extends TestCase
             $this->assertArrayHasKey('slug', $entry);
             $this->assertArrayHasKey('icon', $entry);
             $this->assertArrayHasKey('metric', $entry);
+            $this->assertArrayHasKey('mode', $entry);
             $this->assertArrayHasKey('threshold', $entry);
             $this->assertArrayHasKey('current_value', $entry);
             $this->assertArrayHasKey('is_earned', $entry);
@@ -782,6 +783,38 @@ class BadgeTest extends TestCase
 
         $streakEntry = collect($progress)->firstWhere('metric', 'streak');
         $this->assertEquals(4, $streakEntry['current_value']);
+    }
+
+    // The results page filters its "next badge" card by mode, so the payload
+    // must carry badges.mode verbatim. Without this the card points a Word Blast
+    // round at Story Explorer — the exact confusion it is supposed to prevent.
+    public function test_get_badge_progress_carries_mode_per_badge(): void
+    {
+        $module = $this->makeWordModule(1, 10);
+        [$user] = $this->makeStudent('Mode Carrier');
+
+        foreach ([['halfway-hero', 'word', 'word_completion'], ['story-explorer', 'paragraph', 'paragraph_completion']] as [$slug, $mode, $metric]) {
+            Badges::create([
+                'name' => $slug, 'slug' => $slug, 'description' => 'd',
+                'metric' => $metric, 'mode' => $mode, 'threshold_score' => 50, 'icon' => 'x',
+            ]);
+        }
+        // No `mode` passed — the column default must carry the value through.
+        Badges::create([
+            'name' => 'Shared One', 'slug' => 'shared-one', 'description' => 'd',
+            'metric' => 'total_points', 'threshold_score' => 50, 'icon' => 'x',
+        ]);
+
+        $session = GameSession::create([
+            'user_id' => $user->id, 'module_id' => $module->id, 'module_type' => 'word',
+            'score' => 4, 'accuracy' => 90, 'streak' => 4, 'is_deadline_hit' => false,
+        ]);
+
+        $progress = collect((new BadgeService)->getBadgeProgress($user, $session));
+
+        $this->assertSame('word', $progress->firstWhere('slug', 'halfway-hero')['mode']);
+        $this->assertSame('paragraph', $progress->firstWhere('slug', 'story-explorer')['mode']);
+        $this->assertSame('shared', $progress->firstWhere('slug', 'shared-one')['mode']);
     }
 
     public function test_get_badge_progress_is_earned_flag(): void
@@ -904,10 +937,11 @@ class BadgeTest extends TestCase
         }
     }
 
-    public function test_paragraph_sessions_never_feed_streak_badges(): void
+    public function test_paragraph_sessions_never_feed_word_streak_badges(): void
     {
-        // Story Quest has no streak mechanic — even a historical paragraph
-        // session carrying a streak must not award streak badges.
+        // SQ now HAS a streak, but a paragraph session must NEVER award the
+        // Word Blast streak ladder — `streak` is scoped to module_type=word by
+        // SQL, not by a zeroed value. This is the isolation guard.
         $this->seedBadges();
         $this->seedGameplayBadges();
         $wordModule = $this->makeWordModule(1, 10);
@@ -936,6 +970,99 @@ class BadgeTest extends TestCase
         (new BadgeService)->checkGameplayBadges($user, $wordSession->id, 30.0);
 
         $this->assertTrue($this->hasBadge($user, 'on-fire'));
+    }
+
+    public function test_streak_metrics_stay_scoped_per_mode(): void
+    {
+        // The other half of the isolation guard: a long WORD streak must never
+        // award a STORY badge. Both directions can be true at once because
+        // `streak` reads module_type=word and `story_streak` reads paragraph.
+        $this->seed(\Database\Seeders\BadgesSeeder::class);
+        $wordModule = $this->makeWordModule(1, 10);
+        $paraModule = ParagraphModule::create([
+            'level' => 1, 'title' => 'Para', 'content' => 'The cat naps.', 'is_tutorial' => false,
+        ]);
+        [$user] = $this->makeStudent('Mode Isolation');
+
+        $wordSession = GameSession::create([
+            'user_id' => $user->id, 'module_id' => $wordModule->id, 'module_type' => 'word',
+            'score' => 10, 'accuracy' => 100, 'streak' => 9, 'is_deadline_hit' => false,
+        ]);
+
+        (new BadgeService)->checkGameplayBadges($user, $wordSession->id, 100.0);
+
+        // streak 9 clears every Word Blast tier...
+        $this->assertTrue($this->hasBadge($user, 'unstoppable'));
+        // ...and touches NO Story Quest tier, despite beating all three thresholds.
+        $this->assertFalse($this->hasBadge($user, 'story-legend'));
+        $this->assertFalse($this->hasBadge($user, 'story-streaker'));
+        $this->assertFalse($this->hasBadge($user, 'story-streak'));
+    }
+
+    public function test_paragraph_session_awards_story_streak_badges(): void
+    {
+        // The payoff test: a real SQ round claims the Story Quest ladder.
+        $this->seed(\Database\Seeders\BadgesSeeder::class);
+        $paraModule = ParagraphModule::create([
+            'level' => 1, 'title' => 'Para', 'content' => 'The cat naps the dog.', 'is_tutorial' => false,
+        ]);
+        [$user] = $this->makeStudent('SQ Claims');
+
+        $session = GameSession::create([
+            'user_id' => $user->id, 'module_id' => $paraModule->id, 'module_type' => 'paragraph',
+            'score' => 6, 'accuracy' => 100, 'streak' => 5, 'is_deadline_hit' => false,
+        ]);
+
+        (new BadgeService)->checkGameplayBadges($user, $session->id, 100.0);
+
+        // Cumulative ladder: 5 clears the 3 and 5 tiers, not the 8.
+        $this->assertTrue($this->hasBadge($user, 'story-streak'));
+        $this->assertTrue($this->hasBadge($user, 'story-streaker'));
+        $this->assertFalse($this->hasBadge($user, 'story-legend'));
+        // Word Blast ladder untouched.
+        $this->assertFalse($this->hasBadge($user, 'on-fire'));
+    }
+
+    public function test_story_streak_ignores_deadline_hit_sessions(): void
+    {
+        // Streak/ON FIRE must not leak from onboarding — same guard as the word
+        // metric, inherited from bestSessionMetric's tutorial + deadline filters.
+        $this->seed(\Database\Seeders\BadgesSeeder::class);
+        $paraModule = ParagraphModule::create([
+            'level' => 1, 'title' => 'Para', 'content' => 'The cat naps the dog.', 'is_tutorial' => false,
+        ]);
+        [$user] = $this->makeStudent('SQ Deadline');
+
+        GameSession::create([
+            'user_id' => $user->id, 'module_id' => $paraModule->id, 'module_type' => 'paragraph',
+            'score' => 10, 'accuracy' => 100, 'streak' => 9, 'is_deadline_hit' => true,
+        ]);
+
+        (new BadgeService)->checkAllEligibleBadges($user);
+
+        $this->assertFalse($this->hasBadge($user, 'story-legend'));
+    }
+
+    public function test_story_streak_excludes_tutorial_sessions(): void
+    {
+        // Tutorial isolation: a tutorial paragraph round must never feed the
+        // Story Quest ladder.
+        $this->seed(\Database\Seeders\BadgesSeeder::class);
+        $tutParaId = ParagraphModule::tutorialId();
+        $paraModule = ParagraphModule::create([
+            'level' => 0, 'title' => 'Tut', 'content' => 'The cat naps the dog.', 'is_tutorial' => true,
+        ]);
+        [$user] = $this->makeStudent('SQ Tutorial Streak');
+
+        GameSession::create([
+            'user_id' => $user->id, 'module_id' => $tutParaId ?? $paraModule->id, 'module_type' => 'paragraph',
+            'score' => 10, 'accuracy' => 100, 'streak' => 9, 'is_deadline_hit' => false,
+        ]);
+
+        (new BadgeService)->checkAllEligibleBadges($user);
+
+        $this->assertFalse($this->hasBadge($user, 'story-legend'));
+        $this->assertFalse($this->hasBadge($user, 'story-streaker'));
     }
 
     public function test_seeder_assigns_mode_per_badge(): void

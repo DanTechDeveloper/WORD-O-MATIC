@@ -31,7 +31,13 @@ class BadgeService
     // round can't inflate badge progress — even if the deadline is later cleared
     // (doc: CAVEATS BF7/BF10). The flag is baked in at log time, so this is sticky.
     // ponytail: tutorial sessions excluded — streak/ON FIRE must not leak from onboarding (BadgesSeeder 19-21)
-    private function bestSessionMetric(User $user, string $column): int
+    //
+    // $type scopes the metric to ONE mode. `streak` reads word sessions and
+    // `story_streak` reads paragraph sessions — two separate meters, both true at
+    // once. The isolation is the SQL where(), NOT a zeroed value: a Word Blast
+    // round cannot move a Story Quest badge no matter how long its streak runs
+    // (BadgeTest::test_streak_metrics_stay_scoped_per_mode locks both directions).
+    private function bestSessionMetric(User $user, string $column, string $type = 'word'): int
     {
         $tutIds = array_filter([
             WordModule::tutorialId(),
@@ -41,9 +47,7 @@ class BadgeService
         return (int) GameSession::where('user_id', $user->id)
             ->where('is_deadline_hit', false)
             ->when($tutIds, fn ($q) => $q->whereNotIn('module_id', $tutIds))
-            // ponytail: Story Quest has no streak — streak badges read
-            // Word Blast sessions only (also fixes historical SQ sessions).
-            ->when($column === 'streak', fn ($q) => $q->where('module_type', 'word'))
+            ->where('module_type', $type)
             ->max($column) ?? 0;
     }
 
@@ -146,13 +150,14 @@ class BadgeService
 
         $badgesToCheck = $this->allBadges()
             ->whereNotIn('id', $earnedBadgeIds)
-            ->whereIn('metric', ['total_points', 'streak', 'accuracy', 'paragraph_completion', 'word_completion', 'best_sentence'])
+            ->whereIn('metric', ['total_points', 'streak', 'story_streak', 'accuracy', 'paragraph_completion', 'word_completion', 'best_sentence'])
             ->groupBy('metric');
 
         foreach ($badgesToCheck as $metric => $group) {
             $currentValue = match ($metric) {
                 'total_points' => $student->points,
                 'streak' => $this->bestSessionMetric($user, 'streak'),
+                'story_streak' => $this->bestSessionMetric($user, 'streak', 'paragraph'),
                 'accuracy' => max((float) $student->wordBlastAcc, (float) $student->storyQuestAcc),
                 'paragraph_completion' => $this->calculateModuleCompletion($user, 'paragraph'),
                 'word_completion' => $this->calculateModuleCompletion($user, 'word'),
@@ -195,7 +200,7 @@ class BadgeService
 
         $badgesToCheck = $this->allBadges()
             ->whereNotIn('id', $earnedBadgeIds)
-            ->whereIn('metric', ['total_points', 'streak', 'accuracy', 'paragraph_completion', 'word_completion', 'best_sentence']);
+            ->whereIn('metric', ['total_points', 'streak', 'story_streak', 'accuracy', 'paragraph_completion', 'word_completion', 'best_sentence']);
 
         if ($badgesToCheck->isEmpty()) {
             return [];
@@ -208,6 +213,7 @@ class BadgeService
             $currentValue = match ($metric) {
                 'total_points' => $student->points,
                 'streak' => $this->bestSessionMetric($user, 'streak'),
+                'story_streak' => $this->bestSessionMetric($user, 'streak', 'paragraph'),
                 'accuracy' => $accuracy,
                 'paragraph_completion' => $this->calculateModuleCompletion($user, 'paragraph'),
                 'word_completion' => $this->calculateModuleCompletion($user, 'word'),
@@ -238,7 +244,7 @@ class BadgeService
         $student = $user->student;
         $earnedBadgeIds = $user->badges()->pluck('badges.id')->toArray();
 
-        $badges = Badges::whereIn('metric', ['total_points', 'streak', 'accuracy', 'paragraph_completion', 'word_completion', 'best_sentence', 'action'])->get();
+        $badges = Badges::whereIn('metric', ['total_points', 'streak', 'story_streak', 'accuracy', 'paragraph_completion', 'word_completion', 'best_sentence', 'action'])->get();
 
         // ponytail: compute once per metric, not per badge — was re-running
         // the full curriculum build / session scan for every badge sharing
@@ -248,6 +254,7 @@ class BadgeService
             $values[$metric] = match ($metric) {
                 'total_points' => $student ? $student->points : 0,
                 'streak' => $this->bestSessionMetric($user, 'streak'),
+                'story_streak' => $this->bestSessionMetric($user, 'streak', 'paragraph'),
                 'accuracy' => (int) round((float) $session->accuracy),
                 'paragraph_completion' => $this->calculateModuleCompletion($user, 'paragraph'),
                 'word_completion' => $this->calculateModuleCompletion($user, 'word'),
@@ -268,6 +275,10 @@ class BadgeService
                 'slug' => $badge->slug,
                 'icon' => $badge->icon,
                 'metric' => $badge->metric,
+                // ponytail: the results page needs mode to pick a next badge that
+                // is claimable from the round just played (word vs paragraph).
+                // Same column Badges.jsx groups by — never re-derived from metric.
+                'mode' => $badge->mode,
                 'threshold' => $badge->threshold_score,
                 'current_value' => $currentValue,
                 'is_earned' => in_array($badge->id, $earnedBadgeIds),

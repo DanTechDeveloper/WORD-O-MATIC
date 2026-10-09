@@ -18,6 +18,15 @@ export function useMicrophonePermission() {
         }
     }, []);
 
+    // ponytail: the ASR hook hits NotAllowedError MID-ROUND
+    // (useDeepgramRecognition.js:388,403) without ever touching the Permissions
+    // API, so that path set gameState DENIED while permissionState still read
+    // "prompt". Two DENIED sources, two states — the recovery edge in the
+    // gameplay pages could only see one. This makes both write the same value.
+    const markDenied = useCallback(() => {
+        setPermissionState("denied");
+    }, []);
+
     useEffect(() => {
         const queryPermission = async () => {
             if (navigator.permissions && navigator.permissions.query) {
@@ -39,5 +48,5 @@ export function useMicrophonePermission() {
         queryPermission();
     }, []);
 
-    return { permissionState, requestPermission };
+    return { permissionState, requestPermission, markDenied };
 }

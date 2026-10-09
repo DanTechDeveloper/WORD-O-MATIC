@@ -174,7 +174,10 @@ class StudentController extends Controller
 
                 $badge->current_value = match ($badge->metric) {
                     'total_points' => $student ? $student->points : 0,
+                    // ponytail: streak ladders stay per-mode — `streak` is word-only,
+                    // `story_streak` is paragraph-only, mirroring BadgeService.
                     'streak' => (clone $sessionQuery)->where('module_type', 'word')->max('streak') ?? 0,
+                    'story_streak' => (clone $sessionQuery)->where('module_type', 'paragraph')->max('streak') ?? 0,
                     'accuracy' => $student ? max((float) $student->wordBlastAcc, (float) $student->storyQuestAcc) : 0,
                     'paragraph_completion' => $this->badgeService->calculateModuleCompletion($user, 'paragraph'),
                     'word_completion' => $this->badgeService->calculateModuleCompletion($user, 'word'),
@@ -493,9 +496,14 @@ class StudentController extends Controller
         }
 
         $wordsSmashed = min($request->words_smashed, $totalPossible);
-        // ponytail: Story Quest has no streak mechanic — server forces 0
-        // (never trust the client), so SQ sessions can't feed streak badges.
-        $streak = $type === 'paragraph' ? 0 : min($request->streak ?? 0, $wordsSmashed + 1);
+        // ponytail: the forced-0 for paragraph is GONE — SQ has a real streak
+        // again (useStoryQuestEngine maxStreakRef → persistExtra), so clamping
+        // to 0 here silently discarded the round's peak. The clamp stays for
+        // both modes (never trust the client; a streak can't exceed the words
+        // smashed). Word Blast streak badges stay word-only by SQL, not by
+        // zeroing: BadgeService::bestSessionMetric scopes `streak` to
+        // module_type=word and `story_streak` to paragraph.
+        $streak = min($request->streak ?? 0, $wordsSmashed + 1);
         $accuracy = $totalPossible > 0
             ? (int) round(min(($wordsSmashed / $totalPossible) * 100, 100))
             : 0;

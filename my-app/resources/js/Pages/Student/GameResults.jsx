@@ -1,6 +1,6 @@
 import { Head, Link, usePage } from "@inertiajs/react";
 import { useState } from "react";
-import BadgeUnlockFlow from "@/Components/Student/BadgeUnlockFlow";
+import BadgeUnlockModal from "@/Components/Student/BadgeUnlockModal";
 import NextBadge from "@/Components/Student/NextBadge";
 import StatTile from "@/Components/Student/StatTile";
 import DeadlineBanner from "@/Components/DeadlineBanner";
@@ -60,9 +60,20 @@ export default function GameResults({
     const newBadges = badgeProgress?.filter((b) => newBadgeSlugs.includes(b.slug)) ?? [];
     const [badgeFlowDone, setBadgeFlowDone] = useState(false);
 
+    // ponytail: the next badge must be claimable from the mode just played —
+    // badges.mode (word | paragraph | shared) is the seed SOT, so a Word Blast
+    // round never points at Story Explorer and vice versa. `shared` stays
+    // (points + accuracy are either-mode); threshold != null drops the action
+    // badges, which have no progress bar to draw. No match = no card, which
+    // GameResults already guards — that is the honest outcome.
     const nextBadge =
         badgeProgress
             ?.filter((b) => !b.is_earned)
+            .filter(
+                (b) =>
+                    b.threshold != null &&
+                    (b.mode === session.module_type || b.mode === "shared"),
+            )
             .sort((a, b) => {
                 const ap = a.threshold > 0 ? a.current_value / a.threshold : 0;
                 const bp = b.threshold > 0 ? b.current_value / b.threshold : 0;
@@ -234,9 +245,10 @@ export default function GameResults({
         return (
             <div className="bg-background text-on-background font-body-md relative isolate overflow-hidden">
                 <ArcadeBackground />
-                <BadgeUnlockFlow
+                <BadgeUnlockModal
                     badges={newBadges}
-                    onDone={() => setBadgeFlowDone(true)}
+                    show
+                    onContinue={() => setBadgeFlowDone(true)}
                 />
             </div>
         );
@@ -244,3 +256,4 @@ export default function GameResults({
 
     return renderResults();
 }
+    

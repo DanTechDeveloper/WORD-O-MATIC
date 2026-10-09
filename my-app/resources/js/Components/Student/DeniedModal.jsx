@@ -1,8 +1,13 @@
-export default function DeniedModal({ gameState }) {
+export default function DeniedModal({ gameState, onRetry }) {
     return (
         <>
             {gameState === "DENIED" && (
-                <div className="fixed inset-0 z-[110] flex items-center justify-center bg-background/80 p-6">
+                <div
+                    className="fixed inset-0 z-[110] flex items-center justify-center bg-background/80 p-6"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label="Microphone blocked"
+                >
                     {/* Dynamic Background Aura */}
                     <div className="absolute w-96 h-96 bg-gradient-to-tr from-primary via-fuchsia-500 to-lime-400 blur-[120px] opacity-30 animate-pulse"></div>
 
@@ -26,6 +31,33 @@ export default function DeniedModal({ gameState }) {
                                 <span className="text-lime-400">offline</span>.
                                 Please authorize system access to continue
                                 word-smashing mission!
+                            </p>
+
+                            {/* ponytail: manual escape hatch. Permissions.onchange does
+                                NOT fire everywhere (iOS Safari mic access is a
+                                Settings.app journey and never re-prompts; older Firefox
+                                is the same). Without this button those kids had no way
+                                out of the modal at all — the automatic recovery edge in
+                                the gameplay pages never gets a chance to run.
+
+                                Granted → permissionState flips → the page's effect calls
+                                refillRoundClock and unmounts this. Still denied →
+                                nothing changes, so a retry costs a kid nothing.
+                                Copy is second-person, same register as the copy above. */}
+                            <button
+                                type="button"
+                                onClick={() => onRetry?.()}
+                                data-sfx="major"
+                                autoFocus
+                                className="tactile-button mx-auto flex items-center justify-center gap-2 bg-accent text-surface-container-lowest font-black px-8 py-4 rounded-xl border-2 border-surface-container-lowest text-lg uppercase tracking-[0.12em] hover:bg-accent-hover"
+                            >
+                                <span className="material-symbols-outlined text-2xl" aria-hidden="true">
+                                    mic
+                                </span>
+                                Try Again
+                            </button>
+                            <p className="text-white/50 text-xs font-bold uppercase tracking-wider mt-4">
+                                Already allowed it? Reload the page.
                             </p>
                         </div>
                     </div>

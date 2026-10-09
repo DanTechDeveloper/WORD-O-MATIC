@@ -134,7 +134,7 @@ Legend: Keep = ships now. Deferred = `// ponytail` add when condition met.
 | 11 | Sticky mobile CTA | Deferred — PLAY already full width in thumb reach, sticky would cover game `// ponytail` | Keep — header `fixed top-0` `DashboardLayout.jsx:86` is sticky, no extra bottom bar | `Layouts/Teacher/DashboardLayout.jsx:86` | Header stays on scroll |
 | 12 | Loading states | Keep — calm `animate-pulse` no shimmer | Keep — table skeleton rows | `Components/Shared/Skeleton.jsx` | Skeleton on nav |
 | 13 | Form error states | Keep — gentle `Homepage.jsx:168` `border-error aria-invalid` | Keep — inline `border-error text-error` `AddStudentModal` `EditStudentModal` | `Components/Teacher/*` | Error shows word plus border |
-| 14 | Thank-you page | Deferred — kid reward is `BadgeUnlockFlow` plus surge not page | Keep — yes `oo` after `POST /teacher/reports/send-emails` | `Pages/Teacher/Thanks.jsx` + `ReportController` redirect | `/teacher/reports/thank-you` shows counts |
+| 14 | Thank-you page | Deferred — kid reward is `BadgeUnlockModal` plus surge not page | Keep — yes `oo` after `POST /teacher/reports/send-emails` | `Pages/Teacher/Thanks.jsx` + `ReportController` redirect | `/teacher/reports/thank-you` shows counts |
 | 15 | Privacy policy page | Deferred — teacher legal covers, teacher footer link | Keep — `GET /privacy` | `Pages/Legal/Privacy.jsx` | `/privacy` public |
 | 16 | Terms page | Deferred — same | Keep — `GET /terms` | `Pages/Legal/Terms.jsx` | `/terms` public |
 | 17 | Cookie banner | Deferred — none on student `// ponytail: session only` | Deferred — session only `// ponytail: add banner only if analytics enabled` since none now | `Components/Shared/CookieBanner.jsx` env gated | No banner until analytics |

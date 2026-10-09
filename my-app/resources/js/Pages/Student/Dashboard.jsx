@@ -1,7 +1,7 @@
 import { Head, Link, usePage, router } from "@inertiajs/react";
 import { useState } from "react";
 import AvatarSpeechBubble from "@/Components/Student/AvatarSpeechBubble";
-import BadgeUnlockFlow from "@/Components/Student/BadgeUnlockFlow";
+import BadgeUnlockModal from "@/Components/Student/BadgeUnlockModal";
 import ProgressBar from "@/Components/Student/ProgressBar";
 import DeadlineBanner from "@/Components/DeadlineBanner";
 import DashboardLayout from "../../Layouts/Student/DashboardLayout";
@@ -113,10 +113,10 @@ export default function Dashboard({
                 <meta name="description" content="Pick your game — Word Blast or Story Quest — on Word-O-Matic." />
             </Head>
             {newBadges.length > 0 && !badgeFlowDone && (
-                <BadgeUnlockFlow
+                <BadgeUnlockModal
                     badges={newBadges}
-                    markNewBadge={false}
-                    onDone={() => {
+                    show
+                    onContinue={() => {
                         setBadgeFlowDone(true);
                     }}
                 />
@@ -203,7 +203,7 @@ export default function Dashboard({
                                     }}
                                     className="flex-1 rounded-xl px-5 py-3 font-black text-sm uppercase tracking-wider bg-amber-400 text-background hover:brightness-110 transition-all"
                                 >
-                                    Skip — I understand
+                                    Skip I understand
                                 </button>
                             </div>
                         </div>

@@ -92,7 +92,7 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true, tut
         },
     });
 
-    const { permissionState, requestPermission } = useMicrophonePermission();
+    const { permissionState, requestPermission, markDenied } = useMicrophonePermission();
 
     const [guideStep, setGuideStep] = useState(0);
     // ponytail: SQ tour gates on speakTutorialDone ONLY — finishing Word Blast
@@ -125,12 +125,25 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true, tut
     useEffect(() => {
         if (permissionState === "denied") {
             setGameState("DENIED");
+            return;
         }
-    }, [permissionState, setGameState]);
+        // ponytail: the REVERSE edge — same as GameplayReadMode.jsx. Without it
+        // gameState latched at DENIED forever (overlay and mic click are both
+        // IDLE-only), so the modal had no way out even after re-granting.
+        // refillRoundClock keeps word position + verdicts, so the kid resumes
+        // rather than losing the round. Guarded on DENIED so an already-granted
+        // mount cannot touch gameState.
+        if (permissionState === "granted" && gameState === "DENIED") {
+            refillRoundClock();
+        }
+    }, [permissionState, gameState, setGameState, refillRoundClock]);
 
     const handlePermissionDenied = useCallback(() => {
+        // ponytail: mid-round NotAllowedError path — sync the hook's own state so
+        // it matches gameState and the recovery edge above can see it.
+        markDenied();
         setGameState("DENIED");
-    }, [setGameState]);
+    }, [setGameState, markDenied]);
 
     const handleMicrophoneClick = useCallback(async () => {
         // ponytail: refuse to START a round the server cannot serve. Without
@@ -317,7 +330,7 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true, tut
     return (
         <div className="bg-background text-on-background font-body-md h-dvh flex flex-col overflow-hidden relative isolate">
             <ArcadeBackground />
-            <DeniedModal gameState={gameState} />
+            <DeniedModal gameState={gameState} onRetry={requestPermission} />
             <GameplayHeader {...headerProps} />
             {isTutorialCompletePending && bodyUrl ? (
                 <AvatarSpeechBubble

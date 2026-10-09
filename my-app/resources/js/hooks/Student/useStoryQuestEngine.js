@@ -75,7 +75,14 @@ export function useStoryQuestEngine({ saveEndpoint = "/student/saveParagraphProg
     // live ref instead, so the final sentence is included even when core's
     // COMPLETED effect persists before this commit's effects run.
     const persistExtra = useCallback(
-        () => ({ sentence_scores: sentenceScoresRef.current }),
+        () => ({
+            sentence_scores: sentenceScoresRef.current,
+            // ponytail: overrides core's `streak: maxStreakRef.current` because
+            // `...extra` spreads AFTER it (useGameplayCore.js:345-347). Safe
+            // precisely because it does NOT touch core's ref — a ref is stable,
+            // so the [] deps below stay correct.
+            streak: maxStreakRef.current,
+        }),
         []
     );
 
@@ -97,6 +104,12 @@ export function useStoryQuestEngine({ saveEndpoint = "/student/saveParagraphProg
     const [streakShake, setStreakShake] = useState(null);
     const streakShakeTimerRef = useRef(null);
     const streakRef = useRef(0);
+    // ponytail: peak streak for the round — the story_streak badge metric.
+    // SEVERE separation from core: Word Blast's streak lives in core's
+    // maxStreakRef, SQ's here. Never merge these two (locked by
+    // storyQuestStreak.test.js) or one mode's streak would feed the other's
+    // badges. resetStreak must NOT clear it — that is the whole point of peak.
+    const maxStreakRef = useRef(0);
 
     const verdictsRef = useRef(verdicts);
     const gameStateRef = useRef(core.gameState);
@@ -128,6 +141,7 @@ export function useStoryQuestEngine({ saveEndpoint = "/student/saveParagraphProg
     // per verdict batch (not per word) keeps the straight-through read alive.
     const bumpStreak = useCallback((correctN) => {
         streakRef.current += correctN;
+        maxStreakRef.current = Math.max(maxStreakRef.current, streakRef.current);
         setStreakCount(streakRef.current);
         if (streakRef.current >= 2) {
             const intensity =
@@ -168,7 +182,12 @@ export function useStoryQuestEngine({ saveEndpoint = "/student/saveParagraphProg
             currentWordIndex: core.currentWordIndex,
             wordsSmashed: core.wordsSmashed,
             currentStreak: 0,
-            maxStreak: core.maxStreak,
+            // ponytail: SQ's own peak, NOT core.maxStreak. core's is 0 for the
+            // whole round (SQ never calls core.handleWordRecognized), so
+            // resuming restored 0 and a mid-round F5 discarded the peak — the
+            // badge would under-report. currentStreak stays 0: it is
+            // mid-round-reset state core does not read.
+            maxStreak: maxStreakRef.current,
             timeLeft: Math.max(0, Math.min(60, Math.floor(core.timeLeft))),
             savedAt: Date.now(),
             verdicts,
@@ -437,6 +456,11 @@ export function useStoryQuestEngine({ saveEndpoint = "/student/saveParagraphProg
         ...core,
         // Neutralized: SQ has no per-word feedback machine.
         currentStreak: streakCount,
+        // ponytail: DELIBERATELY core.maxStreak, NOT streakRef/maxStreakRef.
+        // Word Blast's streak is core's ref; binding SQ's here would let a
+        // Story Quest round feed Word Blast streak badges (and vice versa on
+        // resume, via the line above). SQ's own peak travels via persistExtra
+        // instead. Do not "fix" this — locked by storyQuestStreak.test.js.
         maxStreak: core.maxStreak,
         isMispronounced: isWrong,
         isExploding: false,

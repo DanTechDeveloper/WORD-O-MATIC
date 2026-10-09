@@ -22,6 +22,13 @@ class BadgesSeeder extends Seeder
             ['name' => 'On Fire', 'slug' => 'on-fire', 'description' => 'Nice! Got 3 correct in a row.', 'metric' => 'streak', 'mode' => 'word', 'threshold_score' => 3, 'icon' => 'local_fire_department'],
             ['name' => 'Blazing Streak', 'slug' => 'blazing-streak', 'description' => 'On a roll! Got 5 correct in a row.', 'metric' => 'streak', 'mode' => 'word', 'threshold_score' => 5, 'icon' => 'whatshot'],
             ['name' => 'Unstoppable', 'slug' => 'unstoppable', 'description' => 'Incredible! Got 7 correct in a row.', 'metric' => 'streak', 'mode' => 'word', 'threshold_score' => 7, 'icon' => 'bolt'],
+            // ponytail: story_streak is a SEPARATE metric from streak, not a shared
+            // one — its own where(module_type=paragraph). Thresholds 3/5/8 mirror the
+            // client's own shake tiers (useStoryQuestEngine >=2 subtle, >=5 medium,
+            // >=8 intense), so the badge lands where the kid already FELT the streak.
+            ['name' => 'Story Streak', 'slug' => 'story-streak', 'description' => 'Nice! Got 3 correct words in a row while reading a story.', 'metric' => 'story_streak', 'mode' => 'paragraph', 'threshold_score' => 3, 'icon' => 'local_fire_department'],
+            ['name' => 'Story Streaker', 'slug' => 'story-streaker', 'description' => 'On a roll! Got 5 correct words in a row while reading a story.', 'metric' => 'story_streak', 'mode' => 'paragraph', 'threshold_score' => 5, 'icon' => 'whatshot'],
+            ['name' => 'Story Legend', 'slug' => 'story-legend', 'description' => 'Incredible! Got 8 correct words in a row while reading a story.', 'metric' => 'story_streak', 'mode' => 'paragraph', 'threshold_score' => 8, 'icon' => 'bolt'],
             ['name' => 'Clear Speaker', 'slug' => 'clear-speaker', 'description' => 'Earned by achieving 80% accuracy in a single game.', 'metric' => 'accuracy', 'mode' => 'shared', 'threshold_score' => 80, 'icon' => 'mic'],
             ['name' => 'Perfect Round', 'slug' => 'perfect-round', 'description' => 'Flawless! Got 100% accuracy in a single game.', 'metric' => 'accuracy', 'mode' => 'shared', 'threshold_score' => 100, 'icon' => 'workspace_premium'],
             ['name' => 'Tutorial Complete', 'slug' => 'tutorial-complete', 'description' => 'Welcome aboard! Awarded for successfully completing the introductory guide.', 'metric' => 'action', 'mode' => 'shared', 'threshold_score' => null, 'icon' => 'rocket_launch'],
