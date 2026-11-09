@@ -3,6 +3,8 @@ import { renderHook, act, waitFor } from "@testing-library/react";
 import { DeepgramClient } from "@deepgram/sdk";
 import { useDeepgramRecognition } from "@/hooks/Student/useDeepgramRecognition.js";
 
+vi.mock("@inertiajs/react", () => ({ router: { on: vi.fn() } }));
+
 // ponytail: hook wiring tests — the hook itself is unmountable in node for
 // real (live mic/WebSocket/token), so every external boundary is mocked and
 // only the hook's OWN logic is under test: lifecycle cleanup, ref guards,

@@ -10,6 +10,7 @@ import {
     routeRecognitionMessage,
 } from "@/lib/speechProcessors";
 import { isReachable } from "@/utils/connection";
+import { isSfxPlaying, isBgmPlaying } from "@/utils/sounds";
 
 const MODEL = "nova-3";
 const LANGUAGE = "en-US";
@@ -456,6 +457,9 @@ export function useDeepgramRecognition({
 
                 const pushPcm = (float32) => {
                     if (propsRef.current?.muted) return;
+                    // ponytail: drop PCM while any SFX/BGM plays so playback never
+                    // reaches the ASR stream (echo protection, esp. headset mics).
+                    if (isSfxPlaying() || isBgmPlaying()) return;
                     if (!stateRefs.current.isMounted) return;
                     // ponytail: COUNTDOWN = preload-only (isActive false) — drop
                     // PCM frames until ACTIVE. Sending during preload burns ASR

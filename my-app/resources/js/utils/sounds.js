@@ -7,6 +7,19 @@ let restoreTimer = null
 let micLive = false
 let bgmSilenced = false
 
+// ponytail: track in-flight SFX so the mic can drop PCM while they play
+// (echo protection — see useDeepgramRecognition pushPcm). Per-element Set
+// so overlapping SFX can't desync a counter.
+const activeSfx = new Set()
+
+export function isSfxPlaying() {
+    return activeSfx.size > 0
+}
+
+export function isBgmPlaying() {
+    return !!bgm && !bgm.paused
+}
+
 export function setMicLive(on) {
     micLive = on
 }
@@ -102,7 +115,13 @@ function playAudio(path, volume = 1.0, { duck: shouldDuck = true } = {}) {
     try {
         const audio = new Audio(path)
         audio.volume = volume
-        audio.play().catch(() => {})
+        activeSfx.add(audio)
+        const cleanup = () => activeSfx.delete(audio)
+        audio.addEventListener("ended", cleanup, { once: true })
+        audio.addEventListener("error", cleanup, { once: true })
+        // safety: some browsers never fire 'ended' on aborted playback
+        setTimeout(cleanup, 2000)
+        audio.play().catch(cleanup)
     } catch (e) {
         // ignore
     }
