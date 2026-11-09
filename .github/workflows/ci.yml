@@ -5,7 +5,7 @@ on:
     branches: ["main", "master"]
   pull_request:
     branches: ["main", "master"]
-  workflow_dispatch: # manual runs: enables gated Aiven sfo migration — GO A
+  workflow_dispatch: # manual runs: enables gated TiDB fresh-seed migration (wipes data)
 
 defaults:
   run:
@@ -102,8 +102,22 @@ jobs:
           php artisan migrate:fresh --force
           php artisan test --filter=IndexesExistTest
 
-      # STEP 2: Manual-only — Aiven sfo (was Railway paused) — ponytail: GO A migrate:fresh --seed, 15-25s sfo
-      - name: Run Live Production Migration on Aiven
+      # STEP 2a: Auto on push — apply pending migrations only (idempotent, no data loss)
+      - name: Run Live Production Migration on TiDB (auto)
+        if: github.event_name == 'push'
+        env:
+          DB_CONNECTION: mysql
+          DB_HOST: ${{ secrets.AIVEN_DB_HOST }}
+          DB_PORT: ${{ secrets.AIVEN_DB_PORT }}
+          DB_DATABASE: ${{ secrets.AIVEN_DB_DATABASE }}
+          DB_USERNAME: ${{ secrets.AIVEN_DB_USERNAME }}
+          DB_PASSWORD: ${{ secrets.AIVEN_DB_PASSWORD }}
+          MYSQL_ATTR_SSL_CA: isrgrootx1.pem
+        run: |
+          php artisan migrate --force
+
+      # STEP 2b: Manual-only — fresh demo seed (wipes data, use with care)
+      - name: Run Live Production Migration on TiDB (fresh seed)
         if: github.event_name == 'workflow_dispatch'
         env:
           DB_CONNECTION: mysql
@@ -112,6 +126,6 @@ jobs:
           DB_DATABASE: ${{ secrets.AIVEN_DB_DATABASE }}
           DB_USERNAME: ${{ secrets.AIVEN_DB_USERNAME }}
           DB_PASSWORD: ${{ secrets.AIVEN_DB_PASSWORD }}
-          MYSQL_ATTR_SSL_CA: /app/isrgrootx1.pem
+          MYSQL_ATTR_SSL_CA: isrgrootx1.pem
         run: |
           php artisan migrate:fresh --seed --force
