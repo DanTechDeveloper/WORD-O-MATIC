@@ -27,7 +27,11 @@ export const NOISE_GATE = {
     closeFraction: 0.5, // close when peak <= openThreshold*closeFraction
     riseK: 0.005, // floor rise per rejected frame (babble adapt ~0.5s)
     fallK: 0.05, // floor fall per frame (fast toward quiet)
-    hangover: 12,
+    // ponytail: time-based target (~96ms), frame-rate independent. Previously
+    // a frame COUNT (12) tuned for 8ms frames, which collapsed to 32ms in the
+    // default denoise (RNNoise) path (2.67ms frames) and closed the gate
+    // mid stop-consonant closure ("cot" for "cat").
+    hangoverMs: 96,
 };
 
 // ponytail: reused zero buffer — every gated frame previously allocated a fresh
@@ -41,6 +45,13 @@ export function applyNoiseGate(frame, state) {
         if (a > level) level = a;
     }
     if (state.floor == null) state.floor = NOISE_GATE.floorInit;
+    // ponytail: frame-rate independent hangover. 16k frames: frame.length/16000*1000 ms.
+    const frameMs =
+        frame.length > 0 ? (frame.length / 16000) * 1000 : 8;
+    const hangoverFrames = Math.max(
+        1,
+        Math.ceil(NOISE_GATE.hangoverMs / frameMs),
+    );
     // ponytail: floor tracks REJECTED background only — frozen while open so
     // the holder's own voice never drags its own bar upward mid-utterance.
     if (!state.isOpen) {
@@ -57,19 +68,21 @@ export function applyNoiseGate(frame, state) {
     const closeAt = openAt * NOISE_GATE.closeFraction;
     if (state.isOpen) {
         if (level <= closeAt) {
-            // ponytail: hangover (~100ms of 8ms frames) — a word-boundary dip
-            // no longer snaps the gate shut and zeroes the next speech frames.
-            state.hold = (state.hold ?? NOISE_GATE.hangover) - 1;
+            // ponytail: hangover (~96ms, frame-rate independent) — a
+            // word-boundary dip no longer snaps the gate shut and zeroes the
+            // next speech frames. Frame count scales with frame duration so
+            // the default (RNNoise) path keeps ~96ms instead of 32ms.
+            state.hold = (state.hold ?? hangoverFrames) - 1;
             if (state.hold <= 0) {
                 state.isOpen = false;
                 state.hold = 0;
             }
         } else {
-            state.hold = NOISE_GATE.hangover;
+            state.hold = hangoverFrames;
         }
     } else if (level >= openAt) {
         state.isOpen = true;
-        state.hold = NOISE_GATE.hangover;
+        state.hold = hangoverFrames;
     }
     if (state.isOpen) return frame;
     // ponytail: one shared zero buffer per block size; cold path only on resize

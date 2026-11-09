@@ -14,8 +14,6 @@
   },
   "plugin": [
     "opencode-history-search",
-    "opencode-web-fetch",
-    "opencode-notifier",
     "opencode-wakatime",
     "@dietrichgebert/ponytail"
   ],

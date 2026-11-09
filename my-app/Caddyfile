@@ -18,6 +18,10 @@
     header @assets Cache-Control "public, max-age=31536000, immutable"
     @sfx path "/Sound Effects/*"
     header @sfx Cache-Control "public, max-age=31536000, immutable"
+    @rnnoise path /rnnoise/*
+    header @rnnoise Cache-Control "public, max-age=31536000, immutable"
+    @pcm path /pcm-processor.js
+    header @pcm Cache-Control "public, max-age=31536000, immutable"
 
     php_server {
         try_files {path} index.php

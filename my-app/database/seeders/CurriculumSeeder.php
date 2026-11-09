@@ -33,6 +33,8 @@ class CurriculumSeeder extends Seeder
             // unfixable false verdict under strict: star->storm (the tutorial says "start"),
             // wall->shelf, bread->biscuit (vs read), book->paper (vs look), boat->canoe (vs
             // goat/coat), coat->jacket, ship->raft (vs the tutorial's "skip").
+            // 2026-10-20: canoe->suitcase (banked L8 alternate; "suit case" stitches in Word
+            // Blast mode, and no seeded word is within Levenshtein 3 of it).
             1 => ['lion', 'frog', 'fish', 'bird', 'duck', 'goat', 'wolf', 'deer', 'crab', 'shark'],
             2 => ['kitten', 'puppy', 'calf', 'pony', 'pigeon', 'turtle', 'hamster', 'monkey', 'mouse', 'hedgehog'],
             3 => ['moon', 'storm', 'rain', 'snow', 'wind', 'cloud', 'fire', 'sunshine', 'breeze', 'frost'],
@@ -40,7 +42,7 @@ class CurriculumSeeder extends Seeder
             5 => ['cheese', 'mango', 'honey', 'walnut', 'radish', 'meat', 'soup', 'biscuit', 'salt', 'bean'],
             6 => ['desk', 'chair', 'table', 'door', 'window', 'shelf', 'lamp', 'paper', 'shoe', 'shirt'],
             7 => ['jacket', 'plate', 'spoon', 'fork', 'knife', 'blanket', 'crayon', 'backpack', 'helmet', 'bottle'],
-            8 => ['bike', 'canoe', 'raft', 'truck', 'taxi', 'tractor', 'wagon', 'scooter', 'ladder', 'basket'],
+            8 => ['bike', 'suitcase', 'raft', 'truck', 'taxi', 'tractor', 'wagon', 'scooter', 'ladder', 'basket'],
             9 => ['stop', 'jump', 'walk', 'stand', 'look', 'sing', 'open', 'close', 'push', 'pull'],
             10 => ['drop', 'pick', 'swim', 'climb', 'trace', 'travel', 'dash', 'kneel', 'sketch', 'leap'],
         ];
@@ -86,16 +88,19 @@ class CurriculumSeeder extends Seeder
         // echo word per level, "boat" -> "canoe" (banned: 1 char from L1 "goat"), and
         // "rock" -> "frog" (this list put "rock" in L1 and "lock" in L7 — a 1-char
         // pair, and a transcript of one for the other is unfixable under strict).
+        // 2026-10-20 ASR swaps: L3 "Canoe glides soft." -> "Cloud glides soft." (cloud
+        // is already an L3 echo), L8 "Hand takes prize." -> "Hand takes trophy."
+        // (prize/price is an s/z pair; trophy has no near neighbor).
         return [
             0 => 'The game can start. Now we play.',
             1 => 'Water drips down. Frog feels cold.',
             2 => 'Stream flows fast. Puppy runs wide.',
-            3 => 'Canoe glides soft. Wind blows hard.',
+            3 => 'Cloud glides soft. Wind blows hard.',
             4 => 'Fish swims deep. Melon rolls down.',
             5 => 'Rope pulls tight. Bean arrives safe.',
             6 => 'Gold shines bright. Lamp holds treasure.',
             7 => 'Key turns smooth. Knife slides apart.',
-            8 => 'Hand takes prize. Basket fills up.',
+            8 => 'Hand takes trophy. Basket fills up.',
             9 => 'Child can walk. Road looks clear.',
             10 => 'Camp fire burns. We drop the gear.',
         ];

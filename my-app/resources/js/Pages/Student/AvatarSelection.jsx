@@ -3,10 +3,10 @@ import { useState } from "react";
 import ArcadeBackground from "@/Components/Shared/ArcadeBackground";
 
 const AVATARS = [
-    { id: "juan", name: "Juan", url: "/images/avatars/juan/head.png", alt: "Champion Juan robot avatar" },
-    { id: "kyle", name: "Kyle", url: "/images/avatars/kyle/head.png", alt: "Stellar Kyle robot avatar" },
-    { id: "ana", name: "Ana", url: "/images/avatars/ana/head.png", alt: "Genius Ana robot avatar" },
-    { id: "leo", name: "Leo", url: "/images/avatars/leo/head.png", alt: "Stellar Scout Leo robot avatar" },
+    { id: "juan", name: "Tung-Tung-Tung-Sahur", url: "/images/avatars/juan/head.png", alt: "Tung-Tung-Tung-Sahur" },
+    { id: "kyle", name: "Ballerina-Cappuccina", url: "/images/avatars/kyle/head.png", alt: "Ballerina-Cappuccina" },
+    { id: "ana", name: "Chimpanzini-Bananini", url: "/images/avatars/ana/head.png", alt: "Chimpanzini-Bananini" },
+    { id: "leo", name: "Lirili-Larila", url: "/images/avatars/leo/head.png", alt: "Lirili-Larila" },
     { id: "zoe", name: "Zoe", url: "/images/avatars/zoe/head.png", alt: "Nova Navigator Zoe robot avatar" },
     { id: "sam", name: "Sam", url: "/images/avatars/sam/head.png", alt: "Comet Cadet Sam robot avatar" },
 ];

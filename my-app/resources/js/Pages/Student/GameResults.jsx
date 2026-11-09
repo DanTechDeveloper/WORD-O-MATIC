@@ -7,16 +7,6 @@ import DeadlineBanner from "@/Components/DeadlineBanner";
 import ArcadeBackground from "@/Components/Shared/ArcadeBackground";
 import { getDeadlineInfo } from "@/hooks/Student/useDeadlineStatus";
 
-const CONFETTI = [
-    { icon: "celebration", color: "text-accent" },
-    { icon: "star", color: "text-lime-400" },
-    { icon: "auto_awesome", color: "text-tertiary" },
-    { icon: "local_fire_department", color: "text-orange-400" },
-    { icon: "party_mode", color: "text-quest" },
-    { icon: "emoji_events", color: "text-amber-400" },
-    { icon: "bolt", color: "text-yellow-300" },
-];
-
 // ponytail: headlines stay short — the h1 is whitespace-nowrap, so long
 // lines overflow on small screens. Two words max per pool entry.
 const HEADLINES = {
@@ -52,7 +42,6 @@ export default function GameResults({
                 ? HEADLINES.mid
                 : HEADLINES.low;
     const headline = isPerfect ? "PERFECT!" : headlinePool[session.id % headlinePool.length];
-    const isCelebrating = !deadlineHit && !isPracticeMode && accuracyPct >= 80;
     const { flash, auth } = usePage().props;
     const isGlobalClosed = getDeadlineInfo(auth?.deadline).phase === "closed";
     const newBadgeSlugs = flash?.new_badges?.map((b) => b.slug) ?? [];
@@ -88,24 +77,6 @@ export default function GameResults({
             </Head>
             <div className="relative h-screen flex flex-col items-center justify-center px-4 xs:px-5 sm:px-6 py-8 sm:py-12">
 
-                {isCelebrating && (
-                    <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
-                        {CONFETTI.map((c, i) => (
-                            <span
-                                key={i}
-                                className={`material-symbols-outlined absolute text-3xl ${c.color}`}
-                                aria-hidden="true"
-                                style={{
-                                    left: `${10 + i * 12}%`,
-                                    top: `${-10 - i * 5}%`,
-                                    fontVariationSettings: "'FILL' 1",
-                                }}
-                            >
-                                {c.icon}
-                            </span>
-                        ))}
-                    </div>
-                )}
                 <div className="w-full max-w-[92vw] sm:max-w-lg mx-auto flex flex-col gap-6 sm:gap-8 animate-fade-in px-1 sm:px-0">
                     <div className="text-center px-2 sm:px-0 max-w-[98vw] sm:max-w-[64ch] mx-auto overflow-visible">
                         <h1 className="font-black text-primary uppercase leading-none tracking-tight whitespace-nowrap overflow-visible text-[clamp(1rem,5.2vw,2.8rem)] xs:text-[clamp(1.1rem,5vw,3rem)] sm:text-[clamp(1.5rem,4.5vw,3.5rem)] md:text-[clamp(2rem,4vw,4rem)]">
@@ -233,7 +204,7 @@ export default function GameResults({
                                     home
                                 </span>
                                 Home
-                            </Link>
+                            </Link> 
                         </div>
                     )}
                 </div>

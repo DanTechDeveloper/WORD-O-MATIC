@@ -33,9 +33,10 @@ If a word keeps failing, the fix is **the word in `CurriculumSeeder`** — pick 
 word the acoustic model can actually return — *not* loosening the matcher.
 Loosening it silently converts Wrong verdicts into false Corrects.
 
-`MAX_STITCH = 3` caps exact token joins in both directions: spoken-split
-("b a t" → "bat") and spoken-joined ("cupcake" → "cup cake"). Filler/stutter
-skip is unbounded on purpose (turn-taking).
+`MAX_STITCH = 2` caps exact token joins in both directions: spoken-split
+("ca t" → "cat") and spoken-joined ("cupcake" → "cup cake"). 3+ token
+letter spelling is rejected; filler/stutter skip is unbounded on purpose
+(turn-taking).
 
 ## Confidence gating
 

@@ -112,5 +112,6 @@ jobs:
           DB_DATABASE: ${{ secrets.AIVEN_DB_DATABASE }}
           DB_USERNAME: ${{ secrets.AIVEN_DB_USERNAME }}
           DB_PASSWORD: ${{ secrets.AIVEN_DB_PASSWORD }}
+          MYSQL_ATTR_SSL_CA: /app/isrgrootx1.pem
         run: |
           php artisan migrate:fresh --seed --force

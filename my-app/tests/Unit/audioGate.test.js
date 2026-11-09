@@ -103,7 +103,7 @@ describe("applyNoiseGate — near-field + floor tracking", () => {
     test("tunables exposed para sa field tuning", () => {
         expect(NOISE_GATE.openRatio).toBeGreaterThan(1);
         expect(NOISE_GATE.closeFraction).toBeLessThan(1);
-        expect(NOISE_GATE.hangover).toBe(12);
+        expect(NOISE_GATE.hangoverMs).toBe(96);
     });
 });
 

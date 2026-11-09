@@ -101,7 +101,7 @@ const baseProps = () => ({
 const dgMsg = (transcript, { isFinal = false, speechFinal = false, confidence = 0.9 } = {}) => ({
     type: "Results",
     is_final: isFinal,
-    speechFinal,
+    speech_final: speechFinal,
     channel: { alternatives: [{ transcript, confidence }] },
 });
 

@@ -310,6 +310,10 @@ export function useDeepgramRecognition({
                 sample_rate: 16000,
                 channels: 1,
                 interim_results: true,
+                // ponytail: endpointing makes Deepgram emit speech_final after
+                // ~300ms of silence, which drives the instant wrong-word verdict
+                // instead of the 1200ms settle fallback. Prior Approach A value.
+                endpointing: 300,
                 smart_format: false,
                 punctuate: false,
                 ...(keyterm.length ? { keyterm } : {}),

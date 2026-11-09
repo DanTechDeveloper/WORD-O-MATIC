@@ -19,12 +19,21 @@ function bump(path, conf) {
 // conn.on("message") — pure event -> processor dispatch, unit-testable without
 // mounting the hook (node env, no mic/WebSocket). The hook passes its refs
 // straight through; behavior is identical to the inline version.
-export function routeRecognitionMessage(data, stateRefs, timerRefs, timeoutRefs, propsRef) {
+export function routeRecognitionMessage(
+    data,
+    stateRefs,
+    timerRefs,
+    timeoutRefs,
+    propsRef,
+) {
     if (!data || data.type !== "Results") return;
     if (!propsRef.current?.isActive) return;
     if (propsRef.current?.muted) return;
     const isFinal = !!data.is_final;
-    const speechFinal = !!data.speechFinal;
+    // ponytail: Deepgram sends `speech_final` (snake_case); the camelCase
+    // variant never arrives, so reading only `data.speechFinal` made this
+    // always false in production and killed the instant wrong-word path.
+    const speechFinal = !!(data.speech_final ?? data.speechFinal);
     const alt = data.channel?.alternatives?.[0] ?? {};
     const transcript = alt.transcript ?? "";
     const confidence = typeof alt.confidence === "number" ? alt.confidence : 1;
@@ -155,12 +164,19 @@ export function alignSentence(full, lookahead) {
                 i++;
             }
             if (outcomes.length > 0) {
-                const correctCount = outcomes.filter((o) => o === "correct").length;
-                const isFull = outcomes.length === tw.length && correctCount === tw.length;
+                const correctCount = outcomes.filter(
+                    (o) => o === "correct",
+                ).length;
+                const isFull =
+                    outcomes.length === tw.length && correctCount === tw.length;
                 if (isFull) {
                     return outcomes;
                 }
-                if (!bestOutcomes || correctCount > bestOutcomes.filter((o) => o === "correct").length) {
+                if (
+                    !bestOutcomes ||
+                    correctCount >
+                        bestOutcomes.filter((o) => o === "correct").length
+                ) {
                     bestOutcomes = outcomes;
                 }
             }
@@ -286,7 +302,9 @@ export function processSentenceModeResult(
 
     // Prevent memory leaks: keep only the recent words in memory
     const rawLookahead = normalizeText(propsRef.current.lookahead);
-    const refWordCount = (rawLookahead || target).split(/\s+/).filter(Boolean).length;
+    const refWordCount = (rawLookahead || target)
+        .split(/\s+/)
+        .filter(Boolean).length;
     const maxWords = refWordCount + 5;
     const words = stateRefs.current.transcript.split(/\s+/).filter(Boolean);
     if (words.length > maxWords) {
@@ -387,10 +405,7 @@ export function processSentenceModeResult(
     // targetWord is normalizeText(undefined) = "". So isSingleWord was never
     // true here. The transcript is still bounded, by the refWordCount + 5 trim
     // above; that is the only limit, and it is applied to EVERY target.
-    if (
-        !stateRefs.current.hasMatched &&
-        isWordMatch(full, target)
-    ) {
+    if (!stateRefs.current.hasMatched && isWordMatch(full, target)) {
         bump("sentence.advance");
         stateRefs.current.hasMatched = true;
         stateRefs.current.mispronouncedSentence = false;
@@ -508,7 +523,8 @@ export function processWordModeResult(
         return;
     }
 
-    const confidence = typeof result.confidence === "number" ? result.confidence : 1;
+    const confidence =
+        typeof result.confidence === "number" ? result.confidence : 1;
     const isAuthoritative = !!result.isFinal || !!result.speechFinal;
     // ponytail: exact-match is already strict — confidence gates only the Wrong
     // path, never the accept. Soft-but-correct kids no longer false-negative.
