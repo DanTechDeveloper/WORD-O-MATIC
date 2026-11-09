@@ -94,6 +94,29 @@ function isStrictPrefix(full, ref) {
     );
 }
 
+// ponytail: fragment-prefix check — spoken is a truncated (incomplete) head of
+// target: all complete leading words match exactly, and the last spoken word
+// is a proper string-prefix of the corresponding target word (e.g. "ca" for
+// "cat", "the ca" for "the cat sat"). Such a final is an endpointing
+// artifact, not a wrong word — defer to the settle/5s watchdog instead of
+// instant-failing. Shared by Word Blast and Story Quest (parity).
+function isFragmentPrefix(spoken, target) {
+    const fw = normalizeText(spoken).split(/\s+/).filter(Boolean);
+    const tw = normalizeText(target).split(/\s+/).filter(Boolean);
+    if (fw.length === 0 || tw.length === 0) return false;
+    if (fw.length > tw.length) return false;
+    for (let i = 0; i < fw.length - 1; i++) {
+        if (fw[i] !== tw[i]) return false;
+    }
+    const spokenLast = fw[fw.length - 1];
+    const targetLast = tw[fw.length - 1];
+    return (
+        spokenLast.length > 0 &&
+        spokenLast.length < targetLast.length &&
+        targetLast.startsWith(spokenLast)
+    );
+}
+
 export function countConsecutiveMatches(full, lookahead) {
     const fw = normalizeText(full)
         .split(/\s+/)
@@ -464,6 +487,13 @@ export function processSentenceModeResult(
                 bump("sentence.prefixDeferred");
                 return;
             }
+            // Approach B parity: a truncated final that is a prefix of a target
+            // word (e.g. "the ca" for "the cat sat") is an endpointing artifact,
+            // not a wrong word — defer to the 5s watchdog instead of instant-fail.
+            if (isFragmentPrefix(full, target)) {
+                bump("sentence.fragmentDeferred");
+                return;
+            }
             bump("sentence.instantFail");
             stateRefs.current.mispronouncedSentence = true;
             propsRef.current.onMispronounced?.(full);
@@ -541,11 +571,15 @@ export function processWordModeResult(
     }
 
     // ponytail: BF29b — authoritative wrong with confidence >=0.6 fires immediately; B guard 1000ms defers so fast correct at 200ms wins
+    // Approach B: a truncated fragment that is an exact prefix of the target
+    // (e.g. Deepgram endpointing "ca" for "cat") must NOT instant-fail —
+    // more speech may still arrive. Defer to the settle/5s fallback instead.
     if (
         isAuthoritative &&
         confidence >= 0.6 &&
         !stateRefs.current.mispronouncedInWord &&
         !matchedTarget &&
+        !isFragmentPrefix(transcript, target) &&
         sinceSwitch >= 1000
     ) {
         bump("word.instantWrong", confidence);

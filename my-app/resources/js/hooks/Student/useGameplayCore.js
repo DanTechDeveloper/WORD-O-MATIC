@@ -412,6 +412,10 @@ export function useGameplayCore({
             if (wordRecognizedGuardRef.current) return;
             wordRecognizedGuardRef.current = true;
 
+            // ponytail: clear any stuck explosion so `muted` (ReadMode) can't
+            // stay true across a verdict boundary (see handleMispronounce).
+            setIsExploding(false);
+
             if (mispronounceGuardRef.current) {
                 mispronounceGuardRef.current = false;
                 clearTimeout(mispronounceTimerRef.current);
@@ -491,7 +495,12 @@ export function useGameplayCore({
         if (mispronounceGuardRef.current) return;
         mispronounceGuardRef.current = true;
 
+        // ponytail: a mispronounce verdict cancels any in-flight explosion
+        // (success) timer. Without this, isExploding stays true, `muted`
+        // (ReadMode passes muted=isExploding) stays true, and the mic stops
+        // sending PCM forever -> recognition appears to vanish after a verdict.
         clearTimeout(wordRecognizedTimerRef.current);
+        setIsExploding(false);
         wordRecognizedGuardRef.current = false;
         const wordObj = wordsRef.current[currentWordIndexRef.current];
         if (!wordObj) {
@@ -523,6 +532,7 @@ export function useGameplayCore({
         clearTimeout(mispronounceTimerRef.current);
         mispronounceTimerRef.current = setTimeout(() => {
             setIsMispronounced(false);
+            setIsExploding(false);
             mispronounceGuardRef.current = false;
             moveToNextWord();
         }, 800);
