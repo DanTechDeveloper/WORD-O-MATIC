@@ -66,7 +66,7 @@ ENV PORT=80 \
     CACHE_STORE=array \
     SESSION_DRIVER=cookie \
     QUEUE_CONNECTION=sync \
-    MYSQL_ATTR_SSL_CA=/app/ca.pem
+    MYSQL_ATTR_SSL_CA=/app/isrgrootx1.pem
 
 USER www-data
 
