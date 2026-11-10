@@ -20,14 +20,15 @@ class StudentReportMail extends Mailable
     public function envelope(): Envelope
     {
         // needsSupport is a legacy alias of support — normalize so both get the same subject.
-        // atRisk wording stays soft on purpose: subjects alarm parents faster than body copy.
+        // Subject wording matches the body label ("At Risk") so parents see one consistent
+        // status across the inbox preview and the report itself.
         $status = $this->data['status'] ?? null;
         $status = $status === 'needsSupport' ? 'support' : $status;
 
         $subject = match ($status) {
             'onTrack' => "Great News — {$this->data['name']} is On Track!",
             'support' => "Progress Update — {$this->data['name']} Needs Support",
-            'atRisk' => "Support Needed — {$this->data['name']}'s Progress Report",
+            'atRisk' => "At Risk — {$this->data['name']}'s Progress Report",
             'in_progress' => "Progress Update — {$this->data['name']} is In Progress",
             'notStarted' => "Getting Started — {$this->data['name']}'s Word-O-Matic Report",
             default => "Performance Report — {$this->data['name']}",

@@ -242,7 +242,7 @@ Two correctness guarantees are enforced as committed PHPUnit tests (`php artisan
 - **Atomic bulk roster creation** — a bulk student paste is created only if every row validates (same normalization rules as single-add; case/whitespace-insensitive intra-batch duplicate IDs rejected) and one bad row rejects the whole batch — no partial rosters. Locked by `AddStudentBulkTest` (22 cases: exact-50 boundary, dup handling, invalid gender/email, non-array input safety).
 - **Deadline data freeze** — once the report deadline passes, gameplay is blocked server-side: `finishRound()` logs the `GameSession` but skips all `ProgressService` updates, so teacher reports cannot drift after the deadline — post-deadline plays write zero progress/mastery rows, so `LevelService` level status can never advance after the deadline. PLAY AGAIN is disabled and completed level cards are non-clickable, with an amber banner on `LevelsPage.jsx`. Post-deadline sessions are permanently flagged `is_deadline_hit=true` — excluded from streak/accuracy badge metrics and shown with the non-scoring "TIME'S UP!" results view ("You played", no badges) even if the teacher later clears the deadline. The teacher-facing deadline banner is a single source of truth in `DashboardLayout.jsx` (page-aware message: deadline-specific copy on Reports, gameplay-locked copy elsewhere). No deadline set → gameplay fully open. Locked by `GameplayTest::test_round_logs_session_but_skips_progress_when_deadline_passed`, `GameplayTest::test_round_saves_progress_when_no_deadline_is_set`, `GameplayTest::test_deadline_hit_session_stays_excluded_after_deadline_cleared`.
 
-See `my-app/docs/CAVEATS.md` for the full tradeoff ledger (Bug fixes BF1–BF28).
+See `my-app/docs/CAVEATS.md` for the full tradeoff ledger (Bug fixes BF1–BF43).
 
 </details>
 
@@ -284,9 +284,9 @@ Foreign keys use **cascading deletes**. Deleting a user automatically removes st
 
 Three-tab Excel export available after deadline:
 
-- **Class Summary** (tab `Class Summary`): Per-student roster with Word Blast %, Story Quest %, **Final Average %**, and each student's own status category (column E), plus a Class Health Summary block (status + count) below the roster that feeds the pie; accuracy bar chart compares per-student Word Blast / Story Quest. Both charts are embedded on this tab in columns N–V (scroll past column M).
-- **Student Progress Summary** (tab `Student Progress Summary`): One row per student — identity + final status + combined Word Blast / Story Quest accuracy-and-level labels (e.g. `78% (Level 3 - Phonics Fundamentals)`) + **Final Average** (e.g. `87.5%`) + Top Struggle
-- **Words Needing Practice** (tab `Words Needing Practice`): Flat drill-down — one row per student-item still in training, sorted attempts-desc: Student Name, Student ID, Section, Mode, Level, Word/Sentence (3-5w Story Quest `40` width), Attempts; rows at/over `NEEDS_ATTENTION_ATTEMPTS=3` red-filled (`ReportService::sentenceStruggleRowsFrom`/`struggleRowsFrom`)
+- **Struggle Summary** (tab `Struggle Summary`): Per-student roster — Student Name, Student ID, Section, Hardest Module (Word Blast), Hardest Word (Word Blast). One row per student, focused on the single highest-struggle Word Blast module/word for teacher triage.
+- **Session History** (tab `Session History`): One row per played session — Student Name, Student ID, Section, Date/Time Played, Mode (Word Blast/Story Quest), Level, Score, Accuracy (%). Tutorial rows excluded. Sorted newest-first.
+- **Hardest Words - Story Quest** (tab `Hardest Words - Story Quest`): Per-student — Student Name, Hardest Module (Story Quest), Hardest Word (Story Quest), Recorded Attempts. Story Quest words are merged per sentence (duplicate texts collapsed, attempts summed) before ranking.
 
 </details>
 

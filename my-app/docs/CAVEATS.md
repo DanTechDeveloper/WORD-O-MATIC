@@ -59,6 +59,8 @@ fix" column names the event that should prompt the fix — not before (YAGNI).
 
 ## Bug fixes (verified by tests)
 
+> **Export sheet-name note (2026-10):** The Excel export's three sheets were renamed in a later pass. Rows below that reference "Class Summary", "Student Progress Summary", "Words Needing Practice", "ClassReportSheet", "SkillsWordsSheet", etc. describe the **historical** sheet names at the time of that fix — the current tabs are `Struggle Summary`, `Session History`, and `Hardest Words - Story Quest` (`ReportsExport::sheets()`). `REPORTS.md` is the current-state source for export structure.
+
 | # | Area | Was | Now | Locked by |
 |---|---|---|---|---|
 | BF1 | Accuracy | Tutorial module accuracy was included in the averaged `wordBlastAcc`/`storyQuestAcc` (ProgressService lines 84-87, `avg('accuracy')` with no tutorial filter). | Tutorial (`is_tutorial=true`) rows excluded via `when($tutorialModule, ...)`. | `ProgressServiceTest::test_tutorial_progress_does_not_pollute_accuracy`, `test_tutorial_paragraph_progress_does_not_pollute_accuracy`. |

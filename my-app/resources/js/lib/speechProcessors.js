@@ -1,20 +1,5 @@
 import { isWordMatch, normalizeText } from "@/lib/speechUtils";
 
-// ponytail: opt-in ASR counters — set window.__asrStats = {} in console to
-// measure conf histogram + settle-vs-5s-vs-authoritative fire rates. Zero cost
-// when absent (single typeof check), no behavior change.
-function bump(path, conf) {
-    try {
-        const w = typeof window !== "undefined" ? window.__asrStats : null;
-        if (!w) return;
-        const e = (w[path] ??= { n: 0, confSum: 0 });
-        e.n++;
-        if (typeof conf === "number") e.confSum += conf;
-    } catch {
-        /* noop */
-    }
-}
-
 // ponytail: Deepgram message router extracted from useDeepgramRecognition's
 // conn.on("message") — pure event -> processor dispatch, unit-testable without
 // mounting the hook (node env, no mic/WebSocket). The hook passes its refs
@@ -38,7 +23,6 @@ export function routeRecognitionMessage(
     const transcript = alt.transcript ?? "";
     const confidence = typeof alt.confidence === "number" ? alt.confidence : 1;
     if (!transcript && !isFinal && !speechFinal) return;
-    bump("route", confidence);
     const result = {
         isFinal,
         speechFinal,
@@ -91,29 +75,6 @@ function isStrictPrefix(full, ref) {
         fw.length > 0 &&
         fw.length < tw.length &&
         fw.every((w, i) => w === tw[i])
-    );
-}
-
-// ponytail: fragment-prefix check — spoken is a truncated (incomplete) head of
-// target: all complete leading words match exactly, and the last spoken word
-// is a proper string-prefix of the corresponding target word (e.g. "ca" for
-// "cat", "the ca" for "the cat sat"). Such a final is an endpointing
-// artifact, not a wrong word — defer to the settle/5s watchdog instead of
-// instant-failing. Shared by Word Blast and Story Quest (parity).
-function isFragmentPrefix(spoken, target) {
-    const fw = normalizeText(spoken).split(/\s+/).filter(Boolean);
-    const tw = normalizeText(target).split(/\s+/).filter(Boolean);
-    if (fw.length === 0 || tw.length === 0) return false;
-    if (fw.length > tw.length) return false;
-    for (let i = 0; i < fw.length - 1; i++) {
-        if (fw[i] !== tw[i]) return false;
-    }
-    const spokenLast = fw[fw.length - 1];
-    const targetLast = tw[fw.length - 1];
-    return (
-        spokenLast.length > 0 &&
-        spokenLast.length < targetLast.length &&
-        targetLast.startsWith(spokenLast)
     );
 }
 
@@ -275,7 +236,6 @@ export function armWordTimeout(
             // because the link can drop between arming and firing. `=== false`
             // so an undefined navigator.onLine (Node/SSR) fails open.
             if (navigator.onLine === false) return;
-            bump("word.timeout5s");
             stateRefs.current.mispronouncedInWord = true;
             propsRef.current.onMispronounced?.();
         }
@@ -336,6 +296,15 @@ export function processSentenceModeResult(
 
     const full = buildFullSentence(stateRefs.current.transcript, newInterim);
 
+    console.log("[ASR sentence]", {
+        full,
+        target,
+        hasAuthoritative,
+        confidence,
+        newFinals,
+        newInterim,
+    });
+
     armSentenceTimeout(stateRefs, timerRefs, propsRef);
 
     if (rawLookahead) {
@@ -355,7 +324,6 @@ export function processSentenceModeResult(
         ) {
             const outcomes = alignSentence(full, rawLookahead);
             if (outcomes && outcomes.length > 0) {
-                bump("sentence.align");
                 stateRefs.current.hasMatched = true;
                 stateRefs.current.mispronouncedSentence = false;
                 propsRef.current.onSentenceVerdict(outcomes);
@@ -374,7 +342,6 @@ export function processSentenceModeResult(
             // graceEnd drops the advance-count path too, not just Wrong verdicts.
             Date.now() >= timeoutRefs.current.graceEnd
         ) {
-            bump("sentence.advance");
             stateRefs.current.hasMatched = true;
             stateRefs.current.mispronouncedSentence = false;
             propsRef.current.onWordRecognized?.(advanceCount);
@@ -407,15 +374,11 @@ export function processSentenceModeResult(
                 // FIX: low-confidence zero-match finals (noise hallucinated as
                 // a word) also defer to the watchdog instead of instant-fail.
                 if (!full) {
-                    bump("sentence.emptyDeferred");
                     return;
                 }
-                bump("sentence.instantFail");
                 stateRefs.current.mispronouncedSentence = true;
                 propsRef.current.onMispronounced?.(full);
                 clearAllTimers(timerRefs.current);
-            } else if (advanceCount === 0) {
-                bump("sentence.lowConfDeferred");
             }
             return;
         }
@@ -429,7 +392,6 @@ export function processSentenceModeResult(
     // true here. The transcript is still bounded, by the refWordCount + 5 trim
     // above; that is the only limit, and it is applied to EVERY target.
     if (!stateRefs.current.hasMatched && isWordMatch(full, target)) {
-        bump("sentence.advance");
         stateRefs.current.hasMatched = true;
         stateRefs.current.mispronouncedSentence = false;
         propsRef.current.onWordRecognized?.();
@@ -478,23 +440,13 @@ export function processSentenceModeResult(
     if (hasAuthoritative) {
         if (!isWordMatch(full, target)) {
             if (confidence < 0.6) {
-                bump("sentence.lowConfDeferred");
                 return;
             }
             // Same pause tolerance as the lookahead path: an exact head of a
             // multi-word target is incomplete speech, not a wrong word.
             if (isStrictPrefix(full, target)) {
-                bump("sentence.prefixDeferred");
                 return;
             }
-            // Approach B parity: a truncated final that is a prefix of a target
-            // word (e.g. "the ca" for "the cat sat") is an endpointing artifact,
-            // not a wrong word — defer to the 5s watchdog instead of instant-fail.
-            if (isFragmentPrefix(full, target)) {
-                bump("sentence.fragmentDeferred");
-                return;
-            }
-            bump("sentence.instantFail");
             stateRefs.current.mispronouncedSentence = true;
             propsRef.current.onMispronounced?.(full);
             clearAllTimers(timerRefs.current);
@@ -515,9 +467,16 @@ export function processWordModeResult(
 
     const transcript = normalizeText(result[0]?.transcript);
     if (!transcript) {
-        bump("word.emptyDrop", result.confidence);
         return;
     }
+
+    console.log("[ASR word]", {
+        transcript,
+        target,
+        matched: isWordMatch(transcript, target),
+        confidence: result.confidence,
+        authoritative: !!result.isFinal || !!result.speechFinal,
+    });
 
     if (stateRefs.current.hasMatched) return;
 
@@ -541,9 +500,34 @@ export function processWordModeResult(
     // ponytail: A+B stale-tail guard — a late final for the PREVIOUS word
     // ("cat" tail arriving at t+80ms after switch to "dog") must not
     // instantly mispronounce the NEW word, nor falsely match it.
+    const transcriptWords = normalizeText(transcript)
+        .split(/\s+/)
+        .filter(Boolean);
+    const targetWords = normalizeText(target).split(/\s+/).filter(Boolean);
+    const containsTarget =
+        targetWords.length > 0 &&
+        targetWords.every((tw) => transcriptWords.includes(tw));
+    const prevTargetWords = normalizeText(
+        timeoutRefs.current.prevTarget || "",
+    )
+        .split(/\s+/)
+        .filter(Boolean);
+    const carriesPrev =
+        prevTargetWords.length > 0 &&
+        prevTargetWords.every((pw) => transcriptWords.includes(pw));
+    // Stale carryover: transcript still holds the previous target word but
+    // not the current one → Deepgram re-sending an old result. Defer.
+    const isStaleCarryover =
+        !containsTarget &&
+        carriesPrev &&
+        !!timeoutRefs.current.prevTarget &&
+        timeoutRefs.current.prevTarget !== target;
     const sinceSwitch = timeoutRefs.current.targetChangedAt
         ? Date.now() - timeoutRefs.current.targetChangedAt
         : Infinity;
+    if (isStaleCarryover) {
+        return;
+    }
     if (
         timeoutRefs.current.prevTarget &&
         timeoutRefs.current.prevTarget !== target &&
@@ -562,7 +546,6 @@ export function processWordModeResult(
     // endpointed fragment (stutter "ca" for "cat") must not lock out the true
     // word. The engine cancels the pending mispronounce advance on recognize.
     if (matchedTarget) {
-        bump("word.accept", confidence);
         stateRefs.current.hasMatched = true;
         stateRefs.current.mispronouncedInWord = false;
         propsRef.current.onWordRecognized?.();
@@ -571,18 +554,14 @@ export function processWordModeResult(
     }
 
     // ponytail: BF29b — authoritative wrong with confidence >=0.6 fires immediately; B guard 1000ms defers so fast correct at 200ms wins
-    // Approach B: a truncated fragment that is an exact prefix of the target
-    // (e.g. Deepgram endpointing "ca" for "cat") must NOT instant-fail —
-    // more speech may still arrive. Defer to the settle/5s fallback instead.
     if (
         isAuthoritative &&
         confidence >= 0.6 &&
         !stateRefs.current.mispronouncedInWord &&
         !matchedTarget &&
-        !isFragmentPrefix(transcript, target) &&
+        !isStaleCarryover &&
         sinceSwitch >= 1000
     ) {
-        bump("word.instantWrong", confidence);
         stateRefs.current.mispronouncedInWord = true;
         propsRef.current.onMispronounced?.(transcript);
         clearAllTimers(timerRefs.current);
@@ -598,7 +577,6 @@ export function processWordModeResult(
     if (!stateRefs.current.mispronouncedInWord && confidence >= 0.6) {
         const settleTarget = target;
         const settleTranscript = transcript;
-        const settleConf = confidence;
         clearTimeout(timerRefs.current.wordSettle);
         timerRefs.current.wordSettle = setTimeout(() => {
             const s = stateRefs.current;
@@ -609,10 +587,10 @@ export function processWordModeResult(
                 !s.mispronouncedInWord &&
                 timeoutRefs.current.target === settleTarget
             ) {
-                bump("word.settleFire", settleConf);
                 s.mispronouncedInWord = true;
                 propsRef.current.onMispronounced?.(settleTranscript);
             }
         }, 1200);
     }
 }
+

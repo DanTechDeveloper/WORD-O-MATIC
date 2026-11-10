@@ -93,7 +93,6 @@ export default function GameplayReadMode({ module, tutorialComplete = true, tuto
         handleFatalError,
         persistProgress,
         refillRoundClock,
-        targetWordFalsy,
     } = useWordBlastEngine({
         words: wordOrder,
         totalWords: module?.words?.length ?? 0,

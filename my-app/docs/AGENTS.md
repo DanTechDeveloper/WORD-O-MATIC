@@ -34,7 +34,7 @@ Audio chain (client-only, nothing leaves the device until the Deepgram send):
 | Action | Command |
 |---|---|
 | Dev server (4 processes) | `composer run dev` |
-| All tests | `composer run test` = `php artisan test` + `npx vitest run` |
+| All tests | `composer run test` = `php artisan test` (PHP only); `npm run test` = `npx vitest run` (JS only). Run both. |
 | Single test | `php artisan test --filter=TestName` |
 | Migrate | `php artisan migrate` (`06b648f` indexes `students(status,section)`) |
 | Build frontend | `npm run build` (`1.68s`, `1882 modules`) |

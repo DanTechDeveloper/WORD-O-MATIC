@@ -10,7 +10,6 @@ import {
     routeRecognitionMessage,
 } from "@/lib/speechProcessors";
 import { isReachable } from "@/utils/connection";
-import { isSfxPlaying, isBgmPlaying } from "@/utils/sounds";
 
 const MODEL = "nova-3";
 const LANGUAGE = "en-US";
@@ -311,10 +310,7 @@ export function useDeepgramRecognition({
                 sample_rate: 16000,
                 channels: 1,
                 interim_results: true,
-                // ponytail: endpointing makes Deepgram emit speech_final after
-                // ~300ms of silence, which drives the instant wrong-word verdict
-                // instead of the 1200ms settle fallback. Prior Approach A value.
-                endpointing: 300,
+
                 smart_format: false,
                 punctuate: false,
                 ...(keyterm.length ? { keyterm } : {}),
@@ -372,7 +368,11 @@ export function useDeepgramRecognition({
                         audio: {
                             channelCount: 1,
                             echoCancellation: true,
-                            noiseSuppression: true,
+                            // ponytail: RNNoise (ML denoise) owns noise suppression
+                            // on the denoise path; browser NS stacked on top fights
+                            // a quiet child's voice. Off here so only one NS stage
+                            // runs. Gate remains the backup separator.
+                            noiseSuppression: false,
                             autoGainControl: false,
                         },
                     });
@@ -381,7 +381,13 @@ export function useDeepgramRecognition({
                         try {
                             stream =
                                 await navigator.mediaDevices.getUserMedia({
-                                    audio: { channelCount: 1 },
+                                    audio: {
+                                        channelCount: 1,
+                                        // fallback path: RNNoise may not load,
+                                        // so keep browser NS as the single
+                                        // stage here.
+                                        noiseSuppression: true,
+                                    },
                                 });
                         } catch (e2) {
                             if (
@@ -457,9 +463,6 @@ export function useDeepgramRecognition({
 
                 const pushPcm = (float32) => {
                     if (propsRef.current?.muted) return;
-                    // ponytail: drop PCM while any SFX/BGM plays so playback never
-                    // reaches the ASR stream (echo protection, esp. headset mics).
-                    if (isSfxPlaying() || isBgmPlaying()) return;
                     if (!stateRefs.current.isMounted) return;
                     // ponytail: COUNTDOWN = preload-only (isActive false) — drop
                     // PCM frames until ACTIVE. Sending during preload burns ASR
