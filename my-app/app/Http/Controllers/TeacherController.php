@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\StudentBadges;
 use App\Models\Badges;
 use App\Models\GameSession;
 use App\Models\ParagraphModule;
@@ -146,10 +147,13 @@ class TeacherController extends Controller
     {
         $studentTs = StudentProfile::max('updated_at');
         $sessionId = GameSession::max('id');
+        $studentCount = User::where('role', 'student')->count();
 
         return ($studentTs ? Carbon::parse($studentTs)->toIso8601String() : '-')
             .'|'
-            .($sessionId ?? 0);
+            .($sessionId ?? 0)
+            .'|'
+            .$studentCount;
     }
 
     public function students(Request $request)
@@ -921,7 +925,18 @@ class TeacherController extends Controller
 
     public function destroy($id)
     {
-        User::where('role', 'student')->findOrFail($id)->delete();
+        $user = User::where('role', 'student')->findOrFail($id);
+
+        DB::transaction(function () use ($user) {
+            StudentWordProgress::where('user_id', $user->id)->delete();
+            StudentParagraphProgress::where('user_id', $user->id)->delete();
+            StudentWordMastery::where('user_id', $user->id)->delete();
+            StudentParagraphMastery::where('user_id', $user->id)->delete();
+            GameSession::where('user_id', $user->id)->delete();
+            StudentBadges::where('user_id', $user->id)->delete();
+            StudentProfile::where('user_id', $user->id)->delete();
+            $user->delete();
+        });
 
         return redirect()->back()->with('success', 'Student deleted successfully.');
     }
