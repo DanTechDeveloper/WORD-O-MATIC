@@ -50,7 +50,7 @@ Live prod DB is **Aiven MySQL 8.4 `sfo` (San Francisco)** — `1 CPU / 1GB RAM /
 
 ## Connection budget (multi-region traffic, sfo DB)
 
-Traffic is multi-region (`sin1` ~57% + `sfo1` ~39%), so the region is deliberately NOT pinned — pinning to `sfo1` would punish the Singapore majority. Defense is DB frugality instead:
+Traffic is now pinned to `sin1` (Singapore) via `"regions": ["sin1"]` in both `vercel.json` files — app and DB (TiDB Singapore) are co-located, so app↔DB latency is minimal (~0–5ms). Trade-off: US traffic (`sfo1` ~39%) now hits the Singapore edge (~150ms). Accepted for a PH school app; revert by removing the `regions` key if US latency complaints arise. Defense is DB frugality instead:
 
 - `Caddyfile` caps `num_threads 8` per container: concurrent PHP threads × instances must fit Aiven `max_connections` (check `SHOW VARIABLES LIKE 'max_connections'` before raising; queuing degrades as latency, exhaustion as 500s).
 - NO `PDO::ATTR_PERSISTENT`: FrankenPHP workers already reuse connections; persistent flags only add stale-connection risk on scale-out.
