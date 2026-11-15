@@ -55,6 +55,12 @@ export function useGameplayCore({
     resumeData,
     persistExtra,
     deferPersist = false,
+    // ponytail: optional ref the caller (Story Quest wrapper) keeps pointed at
+    // its own time-up handler. The 60s interval dispatches through it so a
+    // mode-specific rescue (e.g. SQ final-celebration -> COMPLETED) cannot be
+    // bypassed by the core interval closing over core.handleTimeUp. When absent
+    // we fall back to core's handler; Word Blast passes nothing.
+    timeUpRef,
 }) {
     const resume = useMemo(() => {
         // ponytail: tutorial (deferPersist) never resumes — an F5 restarts the
@@ -77,6 +83,9 @@ export function useGameplayCore({
         resume ? "ACTIVE" : "IDLE",
     );
     const [isMispronounced, setIsMispronounced] = useState(false);
+    // ponytail: distinguishes a 5s-silence watchdog verdict ("No speaking")
+    // from a spoken-but-wrong verdict ("NICE TRY!"). Subset of isMispronounced.
+    const [isNoSpeech, setIsNoSpeech] = useState(false);
     const [isExploding, setIsExploding] = useState(false);
     const [showPointsFeedback, setShowPointsFeedback] = useState(false);
     const [pointsFeedbackValue, setPointsFeedbackValue] = useState(0);
@@ -121,6 +130,8 @@ export function useGameplayCore({
     const onMispronounceRef = useRef(onMispronounce);
     const wordsRef = useRef(words);
     const wordRecognizedGuardRef = useRef(false);
+    const pendingAdvanceRef = useRef(0);
+    const pendingMispronounceRef = useRef(false);
     const maxStreakRef = useRef(maxStreak);
     const gameStateRef = useRef(gameState);
 
@@ -143,6 +154,30 @@ export function useGameplayCore({
         currentStreak,
         gameState,
     ]);
+
+    // ponytail: pause support — clear in-flight verdict timers when not ACTIVE so
+    // a paused round can't fire a stale mispronounce/word-recognized after resume.
+    useEffect(() => {
+        if (gameState !== "ACTIVE") {
+            // Preserve pending advances across pause; clear timers so they don't
+            // fire mid-pause, and finish them on resume (see ACTIVE effect below).
+            if (wordRecognizedTimerRef.current) {
+                // pendingAdvanceRef already holds the count from handleWordRecognized
+                clearTimeout(wordRecognizedTimerRef.current);
+                wordRecognizedTimerRef.current = null;
+                setIsExploding(false);
+                wordRecognizedGuardRef.current = false;
+            }
+            if (mispronounceTimerRef.current) {
+                pendingMispronounceRef.current = true;
+                clearTimeout(mispronounceTimerRef.current);
+                mispronounceTimerRef.current = null;
+                mispronounceGuardRef.current = false;
+                setIsMispronounced(false);
+                setIsNoSpeech(false);
+            }
+        }
+    }, [gameState]);
 
     // ponytail: clamp resume indices after words load (initial totalWords may be 0)
     useEffect(() => {
@@ -281,13 +316,19 @@ export function useGameplayCore({
     // would hand back word 7-of-10 with 2s left). Keeping the Story Quest
     // verdicts matters too: useStoryQuestEngine early-returns on
     // `verdicts[idx] !== undefined`, so clearing them makes every already-read
-    // sentence a silent dead input. resumeStorage.js needs no change — both
-    // resume writers are ACTIVE-gated, so the key reappears on its own.
+    // sentence a silent dead input.
+    // Drop the resume record here: writers are ACTIVE-gated so while IDLE the
+    // old snapshot would otherwise sit stale and a refresh could auto-resume a
+    // pre-refill state (wrong clock). The retry starts from the current in-memory
+    // position with a fresh 60s on next Play; if the user refreshes before that,
+    // they return to a clean IDLE rather than a stale ACTIVE restore.
     // The four visual clears are mandatory: clearAllTimers just orphaned their
     // timers, so nothing else would ever reset them.
     const refillRoundClock = useCallback(() => {
+        clearResumeSession(moduleId);
         setTimeLeft(60);
         setIsMispronounced(false);
+        setIsNoSpeech(false);
         setIsExploding(false);
         setFeedbackType(null);
         setFeedbackMessage("");
@@ -296,7 +337,7 @@ export function useGameplayCore({
         // handleFatalError consumed the one-shot save guard; the retry must persist.
         hasSaved.current = false;
         setGameState("IDLE");
-    }, []);
+    }, [moduleId]);
 
     useEffect(() => {
         if (gameState === "COMPLETED" || gameState === "GAMEOVER") {
@@ -395,6 +436,30 @@ export function useGameplayCore({
     const persistExtraRef = useRef(persistExtra);
     persistExtraRef.current = persistExtra;
 
+    // ponytail: interval dispatch ref — always points at the effective time-up
+    // handler (wrapper override if provided, else core). Lets the 1s tick call
+    // the latest handler without recreating the interval on every callback churn.
+    const internalTimeUpRef = useRef(null);
+
+    // ponytail: resume any advance frozen by a pause before checking completion.
+    useEffect(() => {
+        if (gameState !== "ACTIVE") return;
+        if (pendingAdvanceRef.current > 0) {
+            const adv = pendingAdvanceRef.current;
+            pendingAdvanceRef.current = 0;
+            wordRecognizedGuardRef.current = false;
+            setIsExploding(false);
+            moveToNextWord(adv);
+        }
+        if (pendingMispronounceRef.current) {
+            pendingMispronounceRef.current = false;
+            mispronounceGuardRef.current = false;
+            setIsMispronounced(false);
+            setIsNoSpeech(false);
+            moveToNextWord(1);
+        }
+    }, [gameState, moveToNextWord]);
+
     useEffect(() => {
         if (
             gameState === "ACTIVE" &&
@@ -420,6 +485,7 @@ export function useGameplayCore({
                 mispronounceGuardRef.current = false;
                 clearTimeout(mispronounceTimerRef.current);
                 setIsMispronounced(false);
+                setIsNoSpeech(false);
             }
 
             clearTimeout(mispronounceTimerRef.current);
@@ -436,6 +502,7 @@ export function useGameplayCore({
                 Math.min(count | 0 || 1, Math.max(remaining, 1)),
             );
 
+            pendingAdvanceRef.current = advance;
             setIsExploding(true);
             playSuccessSound();
             for (let k = 0; k < advance; k++) {
@@ -481,19 +548,22 @@ export function useGameplayCore({
             }
 
             setIsMispronounced(false);
+            setIsNoSpeech(false);
             wordRecognizedTimerRef.current = setTimeout(() => {
                 setIsExploding(false);
                 moveToNextWord(advance);
+                pendingAdvanceRef.current = 0;
                 wordRecognizedGuardRef.current = false;
             }, 500);
         },
         [moveToNextWord],
     );
 
-    const handleMispronounce = useCallback(() => {
+    const handleMispronounce = useCallback((ignored, silent = false) => {
         if (gameStateRef.current !== "ACTIVE") return;
         if (mispronounceGuardRef.current) return;
         mispronounceGuardRef.current = true;
+        setIsNoSpeech(silent);
 
         // ponytail: a mispronounce verdict cancels any in-flight explosion
         // (success) timer. Without this, isExploding stays true, `muted`
@@ -529,11 +599,14 @@ export function useGameplayCore({
         }, 700);
 
         setIsMispronounced(true);
+        pendingMispronounceRef.current = true;
         clearTimeout(mispronounceTimerRef.current);
         mispronounceTimerRef.current = setTimeout(() => {
             setIsMispronounced(false);
+            setIsNoSpeech(false);
             setIsExploding(false);
             mispronounceGuardRef.current = false;
+            pendingMispronounceRef.current = false;
             moveToNextWord();
         }, 800);
     }, [moveToNextWord]);
@@ -548,6 +621,8 @@ export function useGameplayCore({
             streakShakeTimer: streakShakeTimerRef.current,
         });
         setIsExploding(false);
+        pendingAdvanceRef.current = 0;
+        pendingMispronounceRef.current = false;
         if (!deferPersist) persistProgress();
         clearResume();
 
@@ -558,6 +633,11 @@ export function useGameplayCore({
         }
     }, [persistProgress, totalWords, clearResume, deferPersist]);
 
+    // Keep dispatch target current. If a caller supplied `timeUpRef` (e.g. SQ's
+    // wrapped handler), they own it and the interval reads from it; otherwise we
+    // fall back to core's own handler.
+    internalTimeUpRef.current = handleTimeUp;
+
     const handleFatalError = useCallback(() => {
         clearAllTimers({
             mispronounceTimer: mispronounceTimerRef.current,
@@ -567,6 +647,8 @@ export function useGameplayCore({
             scoreEmphasizeTimer: scoreEmphasizeTimerRef.current,
             streakShakeTimer: streakShakeTimerRef.current,
         });
+        pendingAdvanceRef.current = 0;
+        pendingMispronounceRef.current = false;
         if (!deferPersist) persistProgress();
         clearResume();
         setGameState("GAMEOVER");
@@ -578,14 +660,16 @@ export function useGameplayCore({
             setTimeLeft((prev) => {
                 if (prev <= 1) {
                     clearInterval(id);
-                    handleTimeUp();
+                    // ponytail: dispatch through ref so a wrapper (SQ final-celebration
+                    // rescue) can't be bypassed by this interval closing over core's handler.
+                    (timeUpRef?.current ?? internalTimeUpRef.current)?.();
                     return 0;
                 }
                 return prev - 1;
             });
         }, 1000);
         return () => clearInterval(id);
-    }, [gameState, handleTimeUp]);
+    }, [gameState, timeUpRef]);
 
     const countdownValue = useCountdown(gameState, () =>
         setGameState("ACTIVE"),
@@ -598,6 +682,9 @@ export function useGameplayCore({
         setIsSaving(false);
         wordRecognizedGuardRef.current = false;
         mispronounceGuardRef.current = false;
+        setIsNoSpeech(false);
+        pendingAdvanceRef.current = 0;
+        pendingMispronounceRef.current = false;
         setGameState((prev) => (prev === "IDLE" ? "COUNTDOWN" : prev));
     }, []);
 
@@ -610,6 +697,7 @@ export function useGameplayCore({
         maxStreak,
         currentStreak,
         isMispronounced,
+        isNoSpeech,
         isExploding,
         showPointsFeedback,
         pointsFeedbackValue,
@@ -632,6 +720,7 @@ export function useGameplayCore({
         addScore,
         persistProgress,
         refillRoundClock,
+        clearResume,
         targetWordFalsy: !targetWord,
     };
 }

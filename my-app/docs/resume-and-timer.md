@@ -39,6 +39,23 @@ timer — no "Tap to Start" overlay, no 3-2-1 countdown on resume.
 - A refresh at `10s` resumes at `10s` (engine hydrates `timeLeft` from storage).
   `GameplayHeader` no longer runs its own 60s interval.
 
+## In-round pause (not session resume)
+The pause button inside a live round is a different mechanism from the session
+resume above and must not be conflated:
+
+| | Session resume (this file) | In-round pause (`GAMEPLAY.md`) |
+|---|---|---|
+| Trigger | F5 / navigate away, then CONTINUE | Pause button on `GameplayHeader` |
+| Mechanism | `wordomaticResume:<moduleId>` in `sessionStorage` | `gameState = "PAUSED"` (in-memory) |
+| Timer | hydrates `timeLeft` from storage | stops via the existing `ACTIVE` gate |
+| On return | `gameState` boots straight to `ACTIVE` | `COUNTDOWN` 3-2-1 → `ACTIVE` |
+| Writes | writes on every `ACTIVE` turn | writes nothing |
+
+Pausing does **not** clear or write the resume key. Exiting to Home **does**
+clear it (`clearResume()` in `handleExitConfirm`), so an abandoned round shows
+PLAY on `LevelsPage`; the key survives only F5 / refresh / browser Back within
+the tab.
+
 ## Security note (out of scope here)
 Session storage persists per *tab*; it never crosses users (same-origin/tab-isolated).
 It only stores in-progress counters, not auth tokens.

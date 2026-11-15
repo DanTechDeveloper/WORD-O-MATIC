@@ -90,13 +90,18 @@ export function useStoryQuestEngine({ saveEndpoint = "/student/saveParagraphProg
     // with word ids per level, so without this a Story Quest record could be
     // resumed by Word Blast (and its pending commit replayed to the wrong
     // endpoint). Paragraphs are NEVER shuffled; this is identity, not order.
-    const core = useGameplayCore({ ...rest, saveEndpoint, persistExtra, scope: "para" });
+    // timeUpRef lets our wrapped handleTimeUp (final-celebration rescue) be the
+    // handler the 60s interval actually dispatches to.
+    const timeUpRef = useRef(null);
+    const core = useGameplayCore({ ...rest, saveEndpoint, persistExtra, scope: "para", timeUpRef });
 
     const [verdicts, setVerdicts] = useState(() => resume?.verdicts ?? {});
     const [sentenceScores, setSentenceScores] = useState(() => resume?.sentenceScores ?? []);
     const [sentenceFeedback, setSentenceFeedback] = useState(null);
     const [sentenceBreak, setSentenceBreak] = useState(false);
     const [isWrong, setIsWrong] = useState(false);
+    // ponytail: silence (5s watchdog) vs spoken-but-wrong, for coach bubble title.
+    const [isNoSpeech, setIsNoSpeech] = useState(false);
     const [justScored, setJustScored] = useState(false);
     // ponytail: mirror of Word Blast's streak feel for the straight-through
     // read — counts consecutive correct words, reset on a wrong verdict.
@@ -124,6 +129,19 @@ export function useStoryQuestEngine({ saveEndpoint = "/student/saveParagraphProg
     sentenceScoresRef.current = sentenceScores;
     verdictsRef.current = verdicts;
     gameStateRef.current = core.gameState;
+    // ponytail: pause support — clear in-flight SQ timers when not ACTIVE.
+    useEffect(() => {
+        if (core.gameState !== "ACTIVE") {
+            // Pause: clear only transient UI timers. Leave preview/final timers
+            // running so a paused celebration still completes on resume.
+            clearTimeout(wrongTimerRef.current);
+            clearTimeout(scoredTimerRef.current);
+            clearTimeout(streakShakeTimerRef.current);
+            wrongTimerRef.current = null;
+            scoredTimerRef.current = null;
+            streakShakeTimerRef.current = null;
+        }
+    }, [core.gameState]);
     onWordRecognizedRef.current = rest.onWordRecognized;
     onMispronounceRef.current = rest.onMispronounce;
 
@@ -216,7 +234,10 @@ export function useStoryQuestEngine({ saveEndpoint = "/student/saveParagraphProg
     const pulseWrong = useCallback(() => {
         setIsWrong(true);
         clearTimeout(wrongTimerRef.current);
-        wrongTimerRef.current = setTimeout(() => setIsWrong(false), 900);
+        wrongTimerRef.current = setTimeout(() => {
+            setIsWrong(false);
+            setIsNoSpeech(false);
+        }, 900);
     }, []);
 
     const pulseScored = useCallback(() => {
@@ -409,11 +430,12 @@ export function useStoryQuestEngine({ saveEndpoint = "/student/saveParagraphProg
         rest.words,
     ]);
 
-    const handleMispronounce = useCallback(() => {
+    const handleMispronounce = useCallback((ignored, silent = false) => {
         if (gameStateRef.current !== "ACTIVE" || sentenceBreak) return;
         const idx = core.currentWordIndex;
         if (idx >= core.totalWords) return;
         if (verdictsRef.current[idx] !== undefined) return;
+        setIsNoSpeech(silent);
 
         const wordObj = rest.words?.[idx];
         if (!wordObj) return;
@@ -443,14 +465,18 @@ export function useStoryQuestEngine({ saveEndpoint = "/student/saveParagraphProg
     ]);
 
     // Wrapped: never let the break outlive the round (timer keeps
-    // running through celebration by design — no pause). If time runs out
-    // mid final-celebration, the round is already complete — force the
-    // deferred move now (→ COMPLETED + persist) instead of GAMEOVER.
+    // running through celebration by design — no pause). If the round is already
+    // complete (verdicts/scores computed) but we’re in the silent preview or the
+    // final celebration, time expiring must force the deferred completion to
+    // COMPLETED — never GAMEOVER with words_processed left short.
     const handleTimeUp = useCallback(() => {
-        if (finalizingRef.current) {
+        if (completionGuardRef.current || finalizingRef.current) {
+            clearTimeout(previewTimerRef.current);
             clearTimeout(finalTimerRef.current);
+            previewTimerRef.current = null;
             finalTimerRef.current = null;
             finalizingRef.current = false;
+            completionGuardRef.current = false;
             setSentenceBreak(false);
             setSentenceFeedback(null);
             core.moveToNextWord(Math.max(1, core.totalWords - core.currentWordIndex));
@@ -467,6 +493,10 @@ export function useStoryQuestEngine({ saveEndpoint = "/student/saveParagraphProg
         core.handleFatalError();
     }, [clearBreak, core.handleFatalError]);
 
+    // Keep the interval's dispatch target pointing at our wrapped handler so a
+    // timer expiry during final celebration takes the rescue path above.
+    timeUpRef.current = handleTimeUp;
+
     return {
         ...core,
         // Neutralized: SQ has no per-word feedback machine.
@@ -478,6 +508,7 @@ export function useStoryQuestEngine({ saveEndpoint = "/student/saveParagraphProg
         // instead. Do not "fix" this — locked by storyQuestStreak.test.js.
         maxStreak: core.maxStreak,
         isMispronounced: isWrong,
+        isNoSpeech,
         isExploding: false,
         showPointsFeedback: false,
         pointsFeedbackValue: 0,

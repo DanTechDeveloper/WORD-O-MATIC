@@ -14,6 +14,13 @@ const GameplayHeader = memo(function GameplayHeader({
     timeLeft = 60,
     mode = "read",
     spotlight = null,
+    isPaused = false,
+    showExitConfirm = false,
+    onPause,
+    onResume,
+    onExitRequest,
+    onExitCancel,
+    onExitConfirm,
 }) {
     const onTimeUpRef = useRef(onTimeUp);
     onTimeUpRef.current = onTimeUp;
@@ -45,6 +52,18 @@ const GameplayHeader = memo(function GameplayHeader({
                     </span>
                 </div>
 
+                {/* Pause */}
+                <button
+                    type="button"
+                    onClick={onPause}
+                    disabled={!isActive || isPaused}
+                    data-sfx="major"
+                    className="flex items-center justify-center w-9 h-9 rounded-xl border-2 border-on-background/20 bg-on-background/10 text-on-background disabled:opacity-40"
+                    aria-label="Pause game"
+                >
+                    <span className="material-symbols-outlined text-base">pause</span>
+                </button>
+
                 {/* Live Timer */}
                 <div className={`flex items-center gap-1.5 bg-on-background/5 backdrop-blur-md px-3 py-1.5 rounded-xl border-2 border-on-background/10 shadow-xl${spot("timer")}`}>
                     <span className="material-symbols-outlined text-on-background/60 text-base">
@@ -63,7 +82,25 @@ const GameplayHeader = memo(function GameplayHeader({
 
             {/* ───── Desktop layout ───── */}
             <div className="hidden md:flex mt-3 sm:mt-4 md:mt-6 w-full max-w-7xl mx-auto flex-wrap items-center justify-between gap-3 sm:gap-4 md:gap-6 mb-6 sm:mb-8 md:mb-12 px-2 sm:px-0">
-                <div className="flex items-center gap-3 sm:gap-4 md:gap-6">
+                {/* Level Info */}
+                <div className="flex flex-col items-center order-2">
+                    <div className="bg-on-background/10 backdrop-blur-sm px-8 py-2 rounded-full border-2 border-on-background/20 mb-2 shadow-lg">
+                        <span className="text-on-background font-black tracking-tight text-sm italic uppercase">
+                            {`LEVEL ${level}`}
+                        </span>
+                    </div>
+                    <div className={`px-3 py-1 rounded-full border-2 border-on-background/20 text-[10px] font-black tracking-widest uppercase ${mode === "read" ? "bg-accent/20 text-accent border-accent/30" : "bg-quest/20 text-quest border-quest/30"}`}>
+                        {progressText}
+                    </div>
+                    <div className="w-24 h-1.5 bg-on-background/10 rounded-full overflow-hidden mt-1">
+                        <div
+                            className={`h-full rounded-full transition-all duration-500 ${mode === "read" ? "bg-accent" : "bg-quest"}`}
+                            style={{ width: `${progressPct}%` }}
+                        />
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-3 sm:gap-4 md:gap-6 order-1">
                     <div className={`flex items-center gap-2 sm:gap-3 md:gap-4 bg-on-background/5 backdrop-blur-md p-2 sm:p-3 md:p-4 rounded-2xl border-2 shadow-2xl${spot("score")} ${streakShake === "intense" ? "border-red-400/70 shadow-[0_0_25px_rgba(239,68,68,0.5)] animate-streak-shake-intense" : streakShake === "medium" ? "border-amber-400/70 shadow-[0_0_20px_rgba(251,191,36,0.45)] animate-streak-shake-medium" : streakShake ? "border-quest/60 shadow-[0_0_15px_rgba(56,189,248,0.4)] animate-streak-shake-subtle" : "border-on-background/10"}`}>
                         <div className="bg-primary p-1 sm:p-2 rounded-xl flex items-center justify-center shadow-[0_0_15px_rgba(var(--primary-rgb),0.5)]">
                             <span className="material-symbols-outlined text-on-primary text-2xl sm:text-3xl">
@@ -103,26 +140,8 @@ const GameplayHeader = memo(function GameplayHeader({
                     </div>
                 </div>
 
-                {/* Level Info */}
-                <div className="flex flex-col items-center">
-                    <div className="bg-on-background/10 backdrop-blur-sm px-8 py-2 rounded-full border-2 border-on-background/20 mb-2 shadow-lg">
-                        <span className="text-on-background font-black tracking-tight text-sm italic uppercase">
-                            {`LEVEL ${level}`}
-                        </span>
-                    </div>
-                    <div className={`px-3 py-1 rounded-full border-2 border-on-background/20 text-[10px] font-black tracking-widest uppercase ${mode === "read" ? "bg-accent/20 text-accent border-accent/30" : "bg-quest/20 text-quest border-quest/30"}`}>
-                        {progressText}
-                    </div>
-                    <div className="w-24 h-1.5 bg-on-background/10 rounded-full overflow-hidden mt-1">
-                        <div
-                            className={`h-full rounded-full transition-all duration-500 ${mode === "read" ? "bg-accent" : "bg-quest"}`}
-                            style={{ width: `${progressPct}%` }}
-                        />
-                    </div>
-                </div>
-
                 {/* Energy / Timer Bar */}
-                <div className={`w-full md:w-72 lg:w-80 flex flex-col gap-2 bg-on-background/5 backdrop-blur-md p-2 sm:p-3 md:p-4 rounded-2xl border-2 border-on-background/10 shadow-2xl${spot("timer")}`}>
+                <div className={`w-full md:w-72 lg:w-80 flex flex-col gap-2 bg-on-background/5 backdrop-blur-md p-2 sm:p-3 md:p-4 rounded-2xl border-2 border-on-background/10 shadow-2xl order-3${spot("timer")}`}>
                     <div className="flex justify-between items-end">
                         <p className="text-on-background/60 text-[10px] sm:text-xs font-black uppercase tracking-widest leading-none">
                             Energy / Timer
@@ -155,7 +174,55 @@ const GameplayHeader = memo(function GameplayHeader({
                         ></div>
                     </div>
                 </div>
+                {/* Pause (desktop) */}
+                <button
+                    type="button"
+                    onClick={onPause}
+                    disabled={!isActive || isPaused}
+                    data-sfx="major"
+                    className="hidden md:flex items-center justify-center w-12 h-12 rounded-2xl border-2 border-on-background/20 bg-on-background/10 text-on-background disabled:opacity-40 shrink-0 order-4"
+                    aria-label="Pause game"
+                >
+                    <span className="material-symbols-outlined">pause</span>
+                </button>
             </div>
+            {isPaused && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+                <div className="w-full max-w-sm rounded-3xl border-2 border-on-background/20 bg-surface-container-high p-6 shadow-2xl text-center">
+                    {!showExitConfirm ? (
+                        <>
+                            <h2 className="text-2xl font-black uppercase tracking-tight mb-2">Game Paused</h2>
+                            <p className="text-sm font-bold opacity-80 mb-6">Take a break. Your game is paused.</p>
+                            <div className="flex flex-col gap-3">
+                                <button type="button" onClick={onResume} data-sfx="major" className="w-full rounded-2xl bg-primary text-on-primary font-black py-3 uppercase tracking-wider">
+                                    Resume
+                                    <span className="block text-[10px] font-bold opacity-80 mt-1">Continue your current game</span>
+                                </button>
+                                <button type="button" onClick={onExitRequest} data-sfx="major" className="w-full rounded-2xl bg-on-background/10 text-on-background font-black py-3 uppercase tracking-wider">
+                                    Exit to Home
+                                    <span className="block text-[10px] font-bold opacity-80 mt-1">Leave the current game</span>
+                                </button>
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            <h2 className="text-2xl font-black uppercase tracking-tight mb-2">Are you sure you want to exit?</h2>
+                            <p className="text-sm font-bold opacity-80 mb-6">Your current game progress may be lost.</p>
+                            <div className="flex flex-col gap-3">
+                                <button type="button" onClick={onExitCancel} data-sfx="major" className="w-full rounded-2xl bg-primary text-on-primary font-black py-3 uppercase tracking-wider">
+                                    Continue Playing
+                                    <span className="block text-[10px] font-bold opacity-80 mt-1">Return to the pause screen</span>
+                                </button>
+                                <button type="button" onClick={onExitConfirm} data-sfx="major" className="w-full rounded-2xl bg-on-background/10 text-on-background font-black py-3 uppercase tracking-wider">
+                                    Exit to Home
+                                    <span className="block text-[10px] font-bold opacity-80 mt-1">Confirm exit</span>
+                                </button>
+                            </div>
+                        </>
+                    )}
+                </div>
+            </div>
+        )}
         </>
     );
 });

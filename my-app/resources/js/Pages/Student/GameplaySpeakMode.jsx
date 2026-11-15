@@ -1,5 +1,5 @@
 import SpeakModeMainContent from "@/Components/Student/SpeakModeMainContent";
-import { usePage } from "@inertiajs/react";
+import { usePage, router } from "@inertiajs/react";
 import axios from "axios";
 import GameplayHeader from "@/Components/Student/GameplayHeader";
 import Microphone from "@/Components/Student/Microphone";
@@ -46,6 +46,7 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true, tut
         currentWordIndex,
         wordsSmashed,
         isMispronounced,
+        isNoSpeech,
         scoreEmphasize,
         feedbackType,
         showPointsFeedback,
@@ -65,6 +66,7 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true, tut
         handleFatalError,
         persistProgress,
         refillRoundClock,
+        clearResume,
         verdicts,
         sentenceFeedback,
         sentenceBreak,
@@ -232,10 +234,43 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true, tut
     // anything or any verdict locked. Drives the karaoke mount states.
     const hasSpoken = progressCount > 0 || Object.keys(verdicts).length > 0;
 
+    // ponytail: pause state must be declared BEFORE the ASR hook reads it
+    // (`preload` keeps the socket warm while paused) — a later `const` is a
+    // temporal-dead-zone crash on every render.
+    const [isPaused, setIsPaused] = useState(false);
+    const [showExitConfirm, setShowExitConfirm] = useState(false);
+    const exitGuardRef = useMemo(() => ({ current: false }), []);
+
+    const handlePause = useCallback(() => {
+        if (gameState !== "ACTIVE") return;
+        setIsPaused(true);
+        setGameState("PAUSED");
+    }, [gameState, setGameState]);
+
+    const handleResume = useCallback(() => {
+        setShowExitConfirm(false);
+        setIsPaused(false);
+        setGameState("COUNTDOWN");
+    }, [setGameState]);
+
+    const handleExitRequest = useCallback(() => setShowExitConfirm(true), []);
+    const handleExitCancel = useCallback(() => setShowExitConfirm(false), []);
+    const handleExitConfirm = useCallback(() => {
+        if (exitGuardRef.current) return;
+        exitGuardRef.current = true;
+        setShowExitConfirm(false);
+        setIsPaused(false);
+        // Exit abandons the round: drop the tab resume record so LevelsPage
+        // offers PLAY. The pending key is deliberately untouched — it may be a
+        // failed final POST still awaiting replay.
+        clearResume();
+        router.visit("/student/dashboard");
+    }, [clearResume]);
+
     const { reconnecting } = useDeepgramRecognition({
         isActive: gameState === "ACTIVE",
-        preload: gameState === "COUNTDOWN" || gameState === "ACTIVE",
-        muted: sentenceBreak,
+        preload: gameState === "COUNTDOWN" || gameState === "ACTIVE" || isPaused,
+        muted: isPaused || sentenceBreak,
         targetWord: targetWord,
         targetIndex: currentWordIndex,
         keyterms: speakKeyterms,
@@ -266,6 +301,7 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true, tut
         },
         matchMode: "sentence",
     });
+
     const avatarUrl = auth?.user?.student?.avatar;
     const bodyUrl = avatarUrl?.replace("/head.png", "/body.png");
 
@@ -276,10 +312,21 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true, tut
     // time and React bails out of an identical setState, so a key off coachHint
     // would leave a repeat mispronounce with zero visual delta.
     const [coachSeq, setCoachSeq] = useState(0);
+    const coachTimerRef = useMemo(() => ({ current: null }), []);
 
     // hint rolls per trigger via Math.random
     const HINTS = useMemo(
         () => ["Try to come closer to the mic!", "Try louder!", "That's okay, you're doing great!"].map((h) => `HINT: ${h}`),
+        [],
+    );
+    const NO_SPEECH_HINTS = useMemo(
+        () => [
+            "HINT: I can't hear you yet try speaking!",
+            "HINT: Speak up, I'm listening!",
+            "HINT: Let's say the word together!",
+            "HINT: Your turn say it out loud!",
+            "HINT: I'm ready when you are!",
+        ],
         [],
     );
 
@@ -293,12 +340,16 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true, tut
     useEffect(() => {
         if (!isMispronounced) return;
         setCoachLeaving(false);
-        setCoachHint(HINTS[Math.floor(Math.random() * HINTS.length)]);
+        if (isNoSpeech) setCoachHint(NO_SPEECH_HINTS[Math.floor(Math.random() * NO_SPEECH_HINTS.length)]);
+        else setCoachHint(HINTS[Math.floor(Math.random() * HINTS.length)]);
         setCoachSeq((n) => n + 1);
         setCoachActive(true);
-        const t = setTimeout(() => setCoachActive(false), 1800);
-        return () => clearTimeout(t);
-    }, [isMispronounced, HINTS]);
+        if (coachTimerRef.current) clearTimeout(coachTimerRef.current);
+        coachTimerRef.current = setTimeout(() => setCoachActive(false), isNoSpeech ? 2500 : 1800);
+    }, [isMispronounced, isNoSpeech, HINTS, NO_SPEECH_HINTS]);
+    useEffect(() => () => {
+        if (coachTimerRef.current) clearTimeout(coachTimerRef.current);
+    }, []);
 
     useEffect(() => {
         if (feedbackType === "correct" && coachActive) {
@@ -325,6 +376,13 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true, tut
         timeLeft,
         mode: "speak",
         spotlight: null,
+        isPaused,
+        showExitConfirm,
+        onPause: handlePause,
+        onResume: handleResume,
+        onExitRequest: handleExitRequest,
+        onExitCancel: handleExitCancel,
+        onExitConfirm: handleExitConfirm,
     };
 
     return (
@@ -366,7 +424,7 @@ export default function GameplaySpeakMode({ module, tutorialComplete = true, tut
                         <AvatarSpeechBubble
                             key={coachSeq}
                             emoji="sentiment_very_satisfied"
-                            title="NICE TRY!"
+                            title={NO_SPEECH_HINTS.includes(coachHint) ? "NO SPEAKING!" : "NICE TRY!"}
                             message={coachHint}
                             bodyUrl={bodyUrl}
                             color="quest"

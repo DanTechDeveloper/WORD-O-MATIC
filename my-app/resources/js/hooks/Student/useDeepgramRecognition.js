@@ -313,7 +313,12 @@ export function useDeepgramRecognition({
 
                 smart_format: false,
                 punctuate: false,
-                ...(keyterm.length ? { keyterm } : {}),
+                // ponytail: keyterm MUST ride queryParams. As a top-level arg the
+                // SDK JSON-stringifies a non-string (keyterm=["a","b"] — one param
+                // in the wrong format); queryParams is merged after the SDK's own
+                // query object and hits its arrayFormat:"repeat" branch, which is
+                // the repeated keyterm=a&keyterm=b format Deepgram documents.
+                queryParams: keyterm.length ? { keyterm } : undefined,
             });
             if (!stateRefs.current.isMounted) {
                 conn.close();

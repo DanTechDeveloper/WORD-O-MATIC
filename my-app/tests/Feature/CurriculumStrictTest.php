@@ -26,9 +26,47 @@ class CurriculumStrictTest extends TestCase
         ['coast', 'toast'], ['brake', 'break'], ['flower', 'flour'], ['knight', 'night'],
     ];
 
+    // Story Quest chapter words are read inside a sentence, so short function
+    // words survive here where Word Blast's isolated 4+ floor would ban them. This
+    // is the allowlist: a NEW sub-4-letter chapter word fails the gate. Key 0 (the
+    // tutorial chapter) is frozen — it only changes with migrate:fresh — so it is
+    // listed rather than special-cased. L10 "the" and L8 "up" are the two weakest
+    // entries (mid-sentence required slot / sentence-final); they are documented
+    // exposure, not oversights.
+    private const SHORT_CHAPTER_WORDS = ['can', 'key', 'now', 'the', 'up', 'we'];
+
+    // One-edit pairs where at least one side is a chapter word — chapter↔chapter
+    // (hard/hand, flows/blows, glides/slides, turns/burns, cold/gold), chapter↔Word
+    // Blast (deer/deep, lamp/camp, snow/now) and stem/`-s` (look/looks, pull/pulls,
+    // swim/swims). Under strict exact matching a transcript of one side for the
+    // other is an unfixable false verdict, so a NEW pair fails here. Fixing a listed
+    // pair is a CONTENT change: re-seed, and check ParagraphModule::saveWithContent
+    // — it reuses rows by position, so a swap re-points already-earned mastery to
+    // the replacement word.
+    private const CHAPTER_CONFUSABLE_PAIRS = [
+        ['blows', 'flows'], ['burns', 'turns'], ['camp', 'lamp'], ['cold', 'gold'],
+        ['deep', 'deer'], ['glides', 'slides'], ['hand', 'hard'], ['look', 'looks'],
+        ['now', 'snow'], ['pull', 'pulls'], ['swim', 'swims'],
+    ];
+
     private function allWords(): array
     {
         return [...CurriculumSeeder::tutorialWords(), ...array_merge(...array_values(CurriculumSeeder::wordsByModule()))];
+    }
+
+    // ponytail: chapter words, not just Word Blast words. They are the Story Quest
+    // targets (one ParagraphWord per token), and until now nothing audited them —
+    // RISKY_PAIRS is applied to allWords() only.
+    private function chapterWords(): array
+    {
+        $words = [];
+        foreach (CurriculumSeeder::paragraphsByLevel() as $text) {
+            foreach (preg_split('/[\s.]+/', strtolower($text), -1, PREG_SPLIT_NO_EMPTY) as $word) {
+                $words[$word] = true;
+            }
+        }
+
+        return array_keys($words);
     }
 
     public function test_word_lists_shape(): void
@@ -89,6 +127,42 @@ class CurriculumStrictTest extends TestCase
                 $this->assertLessThanOrEqual(5, $count, "bagsak sentence: \"{$sentence}\"");
             }
         }
+    }
+
+    public function test_chapter_short_words_are_allowlisted(): void
+    {
+        $found = array_values(array_filter($this->chapterWords(), fn ($w) => strlen($w) < 4));
+        sort($found);
+
+        $this->assertSame(self::SHORT_CHAPTER_WORDS, $found, 'bagsak: chapter short-word set changed — found '.implode(', ', $found));
+    }
+
+    public function test_chapter_one_edit_pairs_are_documented(): void
+    {
+        $chapterWords = $this->chapterWords();
+        $all = array_values(array_unique([...$this->allWords(), ...$chapterWords]));
+        $pairs = [];
+
+        for ($i = 0; $i < count($all); $i++) {
+            for ($j = $i + 1; $j < count($all); $j++) {
+                if (levenshtein($all[$i], $all[$j]) > 1) {
+                    continue;
+                }
+                if (! in_array($all[$i], $chapterWords, true) && ! in_array($all[$j], $chapterWords, true)) {
+                    continue;
+                }
+                $pair = [$all[$i], $all[$j]];
+                sort($pair);
+                $pairs[] = $pair;
+            }
+        }
+        usort($pairs, fn ($a, $b) => strcmp($a[0].$a[1], $b[0].$b[1]));
+
+        $this->assertSame(
+            self::CHAPTER_CONFUSABLE_PAIRS,
+            $pairs,
+            'bagsak: chapter one-edit pair set changed — found '.implode(', ', array_map(fn ($p) => implode('/', $p), $pairs))
+        );
     }
 
     public function test_chapters_echo_exact_level_words(): void

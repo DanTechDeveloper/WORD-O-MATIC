@@ -214,6 +214,12 @@ Global data shared via `HandleInertiaRequests`: `auth.user`, `flash` (success, e
 - Persist/resume is tab-only (`sessionStorage`, key `wordomaticResume:<moduleId>`). Do not escalate to cross-run persistence without a TTL + server check.
 - To force-reset an in-progress round, clear `sessionStorage["wordomaticResume:<moduleId>"]` (or use `clearResumeSession`).
 
+## In-round Pause — See `docs/GAMEPLAY.md`
+- Pause is `gameState = "PAUSED"` (not a separate clock). Every `ACTIVE` gate already stops; resume is the normal `COUNTDOWN` 3-2-1.
+- `isPaused` is read by `useDeepgramRecognition`'s `preload`, so declare it **above** that call in both pages — a later `const` is a TDZ crash (`pauseModalSource.test.js` locks the order).
+- A pause mid-blast must preserve `pendingAdvanceRef` / `pendingMispronounceRef` and finish them on the next `ACTIVE` before the completion check (`pauseRace.test.js`).
+- Pause and resume write nothing: no progress POST, no mastery POST. "Exit to Home" writes nothing either, but it **clears** the resume session (`clearResume()`), so `LevelsPage` shows PLAY — CONTINUE now exists only for F5 / refresh / browser Back in the same tab. The pending key is not touched.
+
 ## Commands
 - `php artisan test` only runs PHP — JS/vitest/pint are not wired into it.
 # Engineering Principles, Mentorship, and Execution Safety

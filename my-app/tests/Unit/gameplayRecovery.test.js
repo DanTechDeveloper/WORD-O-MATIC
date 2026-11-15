@@ -963,6 +963,15 @@ describe("a finished round leaves no resume record, so the next play reshuffles"
         expect(readResumeSession(7, "word")).toBeNull();
         expect(readResumeSession(7, "para")).not.toBeNull();
     });
+
+    test("exiting abandons the round — clearResume drops the record", () => {
+        // handleExitConfirm calls this before router.visit, so an abandoned
+        // round shows PLAY on LevelsPage instead of CONTINUE.
+        const { result } = mount();
+        expect(mounted()).not.toBeNull();
+        act(() => result.current.clearResume());
+        expect(mounted()).toBeNull();
+    });
 });
 
 // ponytail: mic-denied was a ONE-WAY door. gameState latched at "DENIED" and

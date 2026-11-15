@@ -12,14 +12,15 @@ vi.mock("@inertiajs/react", () => ({ router: { on: vi.fn() } }));
 // These tests assert REASONABLE behavior, not current behavior — a red test
 // here means the source is illogical, fix the source, not the test.
 
-const dg = vi.hoisted(() => ({ conns: [] }));
+const dg = vi.hoisted(() => ({ conns: [], connectArgs: [] }));
 
 vi.mock("@deepgram/sdk", () => ({
     DeepgramClient: vi.fn(function () {
         return {
             listen: {
                 v1: {
-                    connect: vi.fn(async () => {
+                    connect: vi.fn(async (args) => {
+                        dg.connectArgs.push(args);
                         const conn = {
                             handlers: {},
                             on: vi.fn((ev, cb) => {
@@ -112,6 +113,7 @@ async function loadHook() {
     // module level, which must not leak between tests.
     vi.resetModules();
     dg.conns.length = 0;
+    dg.connectArgs.length = 0;
     const hookMod = await import("@/hooks/Student/useDeepgramRecognition.js");
     const sdkMod = await import("@deepgram/sdk");
     vi.mocked(sdkMod.DeepgramClient).mockClear();
@@ -129,6 +131,7 @@ async function renderOpen(stubs, props, useHook) {
 
 beforeEach(() => {
     dg.conns.length = 0;
+    dg.connectArgs.length = 0;
 });
 
 afterEach(() => {
@@ -543,5 +546,20 @@ describe("useDeepgramRecognition — RNNoise denoise path", () => {
         expect(window.AudioContext).toHaveBeenCalledWith({
             sampleRate: 16000,
         });
+    });
+});
+
+describe("useDeepgramRecognition — keyterm transport", () => {
+    // ponytail: a top-level `keyterm: [...]` is JSON-stringified by the SDK into
+    // ONE param (wrong format). Only queryParams is serialized with
+    // arrayFormat:"repeat", so moving the batch back there kills the feature
+    // silently — this locks the transport, not Deepgram's response to it.
+    test("keyterm batch rides queryParams, never the top-level arg", async () => {
+        const { useHook } = await loadHook();
+        const stubs = stubBrowser();
+        await renderOpen(stubs, baseProps(), useHook);
+
+        expect(dg.connectArgs[0].queryParams.keyterm).toEqual(["cat", "dog"]);
+        expect(dg.connectArgs[0].keyterm).toBeUndefined();
     });
 });

@@ -40,6 +40,19 @@
 - Past the report deadline, rounds are practice: only the level-unlock status advances (`ProgressService::recordWordPracticeUnlock` / `recordParagraphPracticeUnlock`) so level N+1 still opens; scores, badges, points, and leaderboards stay frozen (see CAVEATS.md BF7).
 - Direct URL access to a locked module (`gameplayReadMode/{level}`, `gameplaySpeakMode/{level}`) is blocked: `LevelService::isModuleAccessible()` redirects to the level-select page with a flash error.
 
+## Pause & Resume (in-round)
+
+Separate from the tab-scoped session resume in `resume-and-timer.md`: this is the
+pause button inside a live round, and it never writes progress.
+
+- **Button** — `GameplayHeader` renders it on mobile and desktop (`aria-label="Pause game"`), enabled only while `gameState === "ACTIVE"`.
+- **Pause** — `handlePause` sets `isPaused` and `gameState="PAUSED"`. `PAUSED` is not `ACTIVE`, so the 60s tick, the ASR `isActive` gate and the verdict timers all stop through the gates that already exist — there is no separate paused clock to maintain.
+- **Socket stays warm** — `preload: … || isPaused` keeps the Deepgram connection open (instant resume) while `muted: isPaused || …` stops the mic, so a paused round records nothing.
+- **Pause mid-blast** — `useGameplayCore` clears the in-flight verdict timers but keeps `pendingAdvanceRef` / `pendingMispronounceRef`; on the next `ACTIVE` it completes that advance **before** the completion check. Without it a paused blast never moved the index (empty screen) and left the mic dead.
+- **Resume** — `handleResume` → `COUNTDOWN` 3-2-1 → `ACTIVE`. No POST, no mastery write, no duplicate save.
+- **Exit to Home** — the pause modal's second button opens a confirm modal; confirming clears the tab resume record (`clearResume()`) and runs `router.visit("/student/dashboard")`. The round is not persisted **and** cannot be continued: `LevelsPage` offers PLAY, and the next play is a fresh 60s round with a new shuffle. Mastery rows already POSTed stay (sticky); no `GameSession` / `module_progress` row is written. CONTINUE survives only F5 / refresh / browser Back.
+- `isPaused` must be declared **above** the `useDeepgramRecognition` call in both pages (it is read by `preload`); a later `const` is a temporal-dead-zone crash. Locked by `tests/Unit/pauseModalSource.test.js`, behaviour by `tests/Unit/pauseRace.test.js`.
+
 ## Tutorial
 
 Dedicated tutorial modules (`is_tutorial=true`, `level=0`) seeded in `CurriculumSeeder`:
@@ -66,7 +79,7 @@ CONTINUE through every step — before the play action becomes available. Enforc
 A mispronunciation shows a reusable `AvatarSpeechBubble` that **cheers only** — no correction
 and no retry loop, in tutorial and real rounds alike. `GameplayReadMode.jsx` /
 `GameplaySpeakMode.jsx` hold `coachActive` / `coachLeaving` / `coachHint` / `coachSeq` driven
-by the engine's `isMispronounced` / `feedbackType`. **Every** mispronunciation re-fires: the
+by the engine's `isMispronounced` / `isNoSpeech` / `feedbackType`. **Every** mispronunciation re-fires: the
 effect's dep array is `[isMispronounced, ...]`, and `key={coachSeq}` remounts the bubble so
 `animate-fade-in` replays — `setCoachActive(true)` on an already-true value is a React bail-out,
 so without a changing key a repeat mistake repaints nothing. `coachSeq` is monotonic precisely
@@ -75,6 +88,15 @@ transition) on a correct hit — except in Word Blast, where the mispronounce pu
 the hide timer, so it persists until the next correct word. Rendered `bottom-right`, no
 `onClick`. The engine, speech hook, and `MainContent` components are untouched — the bubble is
 pure reuse. Locked by `tests/Unit/coachBubbleRetrigger.test.js`.
+
+**Silence is not a wrong answer.** The 5s silence watchdog passes `silent=true` to
+`onMispronounced`, which the engine exposes as `isNoSpeech`. The pages then pick from
+`NO_SPEECH_HINTS` ("I can't hear you yet…") instead of the 3 try-again hints, show it for
+**2500ms** instead of 1200-1800ms, and title the bubble **"NO SPEAKING!"** rather than
+"NICE TRY!". The title is derived (`NO_SPEECH_HINTS.includes(coachHint)`) so the heading and
+the message can never disagree. The hide timer lives in `coachTimerRef` (a `useMemo` ref in
+Speak Mode — `useRef` is banned there by a source lock) and is **not** cancelled on the
+`isMispronounced` false edge; cancelling it there cut the 2500ms window short.
 
 ### Completion congrats
 After both modes are done, the "Tutorial Complete" badge flashes on the Dashboard

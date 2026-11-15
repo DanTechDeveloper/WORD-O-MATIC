@@ -76,6 +76,20 @@ describe("alignSentence — mid-sentence substitution walk", () => {
         expect(alignSentence("the ca", "the cat sat")).toEqual(["correct"]);
     });
 
+    test("insertion -> cascade ang natira (kilalang limitasyon, hindi bug)", () => {
+        // ponytail: alignSentence walks position-for-position (speechProcessors.js
+        // walk), so ONE extra spoken token shifts every slot after it. isWordMatch
+        // deliberately skips extra tokens; alignSentence does not. Locked here so a
+        // future "why did 3 words go red for one filler" report starts from fact.
+        expect(alignSentence("the cat sat is very big", LOOK)).toEqual([
+            "correct",
+            "correct",
+            "wrong",
+            "wrong",
+            "wrong",
+        ]);
+    });
+
     test("bakanteng transcript -> null", () => {
         expect(alignSentence("", LOOK)).toBeNull();
         expect(alignSentence("   ", LOOK)).toBeNull();

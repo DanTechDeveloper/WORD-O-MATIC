@@ -6,7 +6,7 @@ import TutorialGuide, { nextStepIndex } from "@/Components/Student/TutorialGuide
 import DeniedModal from "@/Components/Student/DeniedModal";
 import TapToStartOverlay from "@/Components/Student/TapToStartOverlay";
 import { useEffect, useCallback, useState, useMemo } from "react";
-import { usePage } from "@inertiajs/react";
+import { usePage, router } from "@inertiajs/react";
 import axios from "axios";
 import { useWordBlastEngine } from "@/hooks/Student/useWordBlastEngine";
 import { useDeepgramRecognition } from "@/hooks/Student/useDeepgramRecognition";
@@ -73,6 +73,7 @@ export default function GameplayReadMode({ module, tutorialComplete = true, tuto
         wordsSmashed,
         currentStreak,
         isMispronounced,
+        isNoSpeech,
         isExploding,
         showPointsFeedback,
         pointsFeedbackValue,
@@ -93,6 +94,7 @@ export default function GameplayReadMode({ module, tutorialComplete = true, tuto
         handleFatalError,
         persistProgress,
         refillRoundClock,
+        clearResume,
     } = useWordBlastEngine({
         words: wordOrder,
         totalWords: module?.words?.length ?? 0,
@@ -122,6 +124,36 @@ export default function GameplayReadMode({ module, tutorialComplete = true, tuto
     const [guideDone, setGuideDone] = useState(() => !isTutorial || isResume);
     const guideStepObj = GUIDE_STEPS[guideStep];
     const guideArmed = isTutorial && !guideDone;
+
+    const [isPaused, setIsPaused] = useState(false);
+    const [showExitConfirm, setShowExitConfirm] = useState(false);
+    const exitGuardRef = useMemo(() => ({ current: false }), []);
+
+    const handlePause = useCallback(() => {
+        if (gameState !== "ACTIVE") return;
+        setIsPaused(true);
+        setGameState("PAUSED");
+    }, [gameState, setGameState]);
+
+    const handleResume = useCallback(() => {
+        setShowExitConfirm(false);
+        setIsPaused(false);
+        setGameState("COUNTDOWN");
+    }, [setGameState]);
+
+    const handleExitRequest = useCallback(() => setShowExitConfirm(true), []);
+    const handleExitCancel = useCallback(() => setShowExitConfirm(false), []);
+    const handleExitConfirm = useCallback(() => {
+        if (exitGuardRef.current) return;
+        exitGuardRef.current = true;
+        setShowExitConfirm(false);
+        setIsPaused(false);
+        // Exit abandons the round: drop the tab resume record so LevelsPage
+        // offers PLAY. The pending key is deliberately untouched — it may be a
+        // failed final POST still awaiting replay.
+        clearResume();
+        router.visit("/student/dashboard");
+    }, [clearResume]);
 
     // ponytail: Bubble → Action → Bubble — tap only advances tour steps; the
     // mic tap and the correct read advance their own steps (no blind increment).
@@ -223,11 +255,12 @@ export default function GameplayReadMode({ module, tutorialComplete = true, tuto
     );
 
     const cheerTimerRef = useMemo(() => ({ current: null }), []);
+    const coachTimerRef = useMemo(() => ({ current: null }), []);
 
     const { reconnecting } = useDeepgramRecognition({
         isActive: gameState === "ACTIVE",
-        preload: gameState === "COUNTDOWN" || gameState === "ACTIVE",
-        muted: isExploding,
+        preload: gameState === "COUNTDOWN" || gameState === "ACTIVE" || isPaused,
+        muted: isPaused || isExploding,
         targetWord: targetWord,
         keyterms: readKeyterms,
         onWordRecognized: (count) => {
@@ -290,17 +323,39 @@ export default function GameplayReadMode({ module, tutorialComplete = true, tuto
         () => ["Try to come closer to the mic!", "Try louder!", "That's okay, you're doing great!"].map((h) => `HINT: ${h}`),
         [],
     );
+    const NO_SPEECH_HINTS = useMemo(
+        () => [
+            "HINT: I can't hear you yet try speaking!",
+            "HINT: Speak up, I'm listening!",
+            "HINT: Let's say the word together!",
+            "HINT: Your turn say it out loud!",
+            "HINT: I'm ready when you are!",
+        ],
+        [],
+    );
 
     useEffect(() => {
         if (isMispronounced) {
             setCoachLeaving(false);
-            setCoachHint(HINTS[Math.floor(Math.random() * HINTS.length)]);
+            if (isNoSpeech) {
+                setCoachHint(NO_SPEECH_HINTS[Math.floor(Math.random() * NO_SPEECH_HINTS.length)]);
+            } else {
+                setCoachHint(HINTS[Math.floor(Math.random() * HINTS.length)]);
+            }
             setCoachSeq((n) => n + 1);
             setCoachActive(true);
-            const t = setTimeout(() => setCoachActive(false), isTutorial ? 1500 : 1200);
-            return () => clearTimeout(t);
+            if (coachTimerRef.current) clearTimeout(coachTimerRef.current);
+            coachTimerRef.current = setTimeout(
+                () => setCoachActive(false),
+                isNoSpeech ? 2500 : (isTutorial ? 1500 : 1200),
+            );
         }
-    }, [isMispronounced, isTutorial, HINTS]);
+    }, [isMispronounced, isNoSpeech, isTutorial, HINTS, NO_SPEECH_HINTS]);
+    // ponytail: unmount-only cleanup so the coach timer survives the
+    // isMispronounced false edge (800ms) and the bubble actually leaves.
+    useEffect(() => () => {
+        if (coachTimerRef.current) clearTimeout(coachTimerRef.current);
+    }, []);
 
     useEffect(() => {
         if (feedbackType === "correct" && coachActive) {
@@ -341,6 +396,13 @@ export default function GameplayReadMode({ module, tutorialComplete = true, tuto
         timeLeft,
         mode: "read",
         spotlight: guideArmed ? (guideStepObj?.spotlight ?? null) : null,
+        isPaused,
+        showExitConfirm,
+        onPause: handlePause,
+        onResume: handleResume,
+        onExitRequest: handleExitRequest,
+        onExitCancel: handleExitCancel,
+        onExitConfirm: handleExitConfirm,
     };
 
     return (
@@ -414,7 +476,7 @@ export default function GameplayReadMode({ module, tutorialComplete = true, tuto
                 <AvatarSpeechBubble
                     key={coachSeq}
                     emoji="sentiment_very_satisfied"
-                    title="NICE TRY!"
+                    title={NO_SPEECH_HINTS.includes(coachHint) ? "NO SPEAKING!" : "NICE TRY!"}
                     message={coachHint}
                     bodyUrl={bodyUrl}
                     color="accent"

@@ -201,7 +201,8 @@ export function armSentenceTimeout(stateRefs, timerRefs, propsRef) {
                 return;
             }
             s.mispronouncedSentence = true;
-            propsRef.current.onMispronounced?.(s.transcript);
+            // ponytail: watchdog = SILENCE (5s no speech).
+            propsRef.current.onMispronounced?.(s.transcript, true);
             timerRefs.current.sentence = null;
             return;
         }
@@ -237,7 +238,9 @@ export function armWordTimeout(
             // so an undefined navigator.onLine (Node/SSR) fails open.
             if (navigator.onLine === false) return;
             stateRefs.current.mispronouncedInWord = true;
-            propsRef.current.onMispronounced?.();
+            // ponytail: watchdog = SILENCE (5s no speech). Mark silent so the
+            // coach bubble says "No speaking" instead of "NICE TRY!".
+            propsRef.current.onMispronounced?.(undefined, true);
         }
     }, 5000);
 }
