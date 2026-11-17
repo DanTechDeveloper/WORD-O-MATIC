@@ -7,7 +7,7 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 vi.mock("@inertiajs/react", () => ({
     useForm: () => ({
         setData: vi.fn(),
-        post: vi.fn(),
+        post: (_url, opts) => opts?.onSuccess?.(),
         processing: false,
         errors: {},
         reset: vi.fn(),
@@ -78,5 +78,20 @@ describe("bulk add student modal parser", () => {
 
         expect(screen.getByText("This ID is already registered.")).toBeTruthy();
         expect(screen.getByText(/Deploy 0 Student/).disabled).toBe(true);
+    });
+
+    test("a successful deploy calls onCreated so the students list refreshes", () => {
+        const onCreated = vi.fn();
+        render(
+            <BulkAddStudentModal
+                isOpen={true}
+                onClose={() => {}}
+                onCreated={onCreated}
+            />,
+        );
+        paste("A, 2023-0001, S");
+        fireEvent.click(screen.getByText(/Deploy 1 Student/));
+
+        expect(onCreated).toHaveBeenCalledTimes(1);
     });
 });

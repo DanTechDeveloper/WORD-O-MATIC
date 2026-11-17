@@ -5,6 +5,7 @@ export default function AddStudentModal({
     isOpen,
     onClose,
     existingStudentIds = new Set(),
+    onCreated,
 }) {
     const { data, setData, post, processing, errors, reset } = useForm({
         fullName: "",
@@ -75,6 +76,7 @@ export default function AddStudentModal({
         e.preventDefault();
         post("/teacher/addStudent", {
             onSuccess: () => {
+                onCreated?.();
                 onClose();
                 reset();
             },

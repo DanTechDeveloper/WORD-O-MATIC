@@ -8,6 +8,11 @@ import { renderHook, act, waitFor } from "@testing-library/react";
 import { useLiveStats } from "@/hooks/Teacher/useLiveStats";
 import { isReachable, resetConnection } from "@/utils/connection";
 
+const { inertiaRouter } = vi.hoisted(() => ({
+    inertiaRouter: { on: vi.fn(() => () => {}) },
+}));
+vi.mock("@inertiajs/react", () => ({ router: inertiaRouter }));
+
 const read = (p) => fs.readFileSync(p, "utf8");
 // Several of these files explain a rule in a comment that quotes the code it
 // replaced ("this used to call markUnreachable", "deliberately no `animate-*`").
@@ -115,7 +120,10 @@ describe("live polling — the contract", () => {
         // DashboardLayout's useEffect([searchResults]) -> setActiveIndex(-1) and
         // resets the teacher's search selection on every tick.
         expect(hookCode).toContain("fetch(`${url}?${q}`");
-        expect(hookCode).not.toContain("router");
+        // router.on("finish") is fine — it only invalidates the cache. A
+        // router.get/post poll would replace page props on every tick.
+        expect(hookCode).not.toContain("router.get");
+        expect(hookCode).not.toContain("router.post");
     });
 
     test("students never poll — the 40-kids rule stands", () => {
@@ -347,6 +355,7 @@ describe("useLiveStats behaviour", () => {
     let visState;
 
     beforeEach(() => {
+        inertiaRouter.on.mockClear();
         // The connection store is a module singleton. Without this reset a test
         // that deliberately marked it unreachable would make every later test
         // bail on the !isReachable() gate and never fetch at all.
@@ -558,6 +567,45 @@ describe("useLiveStats behaviour", () => {
 
         await tick();
         await waitFor(() => expect(result.current.data?.totalStudents).toBe(9));
+    });
+
+    test("refresh() drops the cached payload so a teacher write shows immediately", async () => {
+        fetchMock.mockResolvedValue(
+            ok({ changed: true, watermark: "w1", totalStudents: 7 }),
+        );
+
+        const { result } = renderHook(() => useLiveStats());
+        await tick();
+        await waitFor(() => expect(result.current.data?.totalStudents).toBe(7));
+
+        act(() => result.current.refresh());
+        expect(result.current.data).toBeNull();
+
+        await tick();
+        // since is cleared, so the next tick is a full fetch, not changed:false.
+        expect(fetchMock.mock.calls[1][0]).toBe("/teacher/live-stats?");
+        await waitFor(() => expect(result.current.data?.totalStudents).toBe(7));
+    });
+
+    test("an Inertia visit invalidates the cached payload for every teacher page", async () => {
+        fetchMock.mockResolvedValue(
+            ok({ changed: true, watermark: "w1", totalStudents: 7 }),
+        );
+
+        const { result } = renderHook(() => useLiveStats());
+        await tick();
+        await waitFor(() => expect(result.current.data?.totalStudents).toBe(7));
+
+        const finish = inertiaRouter.on.mock.calls.find(([event]) => event === "finish")?.[1];
+        expect(finish).toBeTypeOf("function");
+
+        act(() => finish());
+        expect(result.current.data).toBeNull();
+
+        // The next tick is a full fetch — no stale `since`, no changed:false.
+        await tick();
+        expect(fetchMock.mock.calls[1][0]).toBe("/teacher/live-stats?");
+        await waitFor(() => expect(result.current.data?.totalStudents).toBe(7));
     });
 
     test("the first poll sends no since; later polls send the watermark", async () => {

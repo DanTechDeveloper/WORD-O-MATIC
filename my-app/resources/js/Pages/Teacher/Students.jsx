@@ -290,7 +290,7 @@ export default function Students({ data, sections, filters, existingStudentIds }
                                         >
                                             <img
                                                 alt={student.fullName}
-                                                src={student.avatar}
+                                                src={student.avatar || "/images/boy.svg"}
                                                 className="w-full h-full object-cover"
                                             />
                                         </div>
@@ -429,7 +429,7 @@ export default function Students({ data, sections, filters, existingStudentIds }
                                                 >
                                                     <img
                                                         alt={student.fullName}
-                                                        src={student.avatar}
+                                                        src={student.avatar || "/images/boy.svg"}
                                                     />
                                                 </div>
                                                 <div className="min-w-0">
@@ -581,11 +581,13 @@ export default function Students({ data, sections, filters, existingStudentIds }
                 isOpen={!!isAddModalOpen}
                 onClose={() => setIsAddModalOpen(false)}
                 existingStudentIds={existingIds}
+                onCreated={live.refresh}
             />
             <BulkAddStudentModal
                 isOpen={isBulkModalOpen}
                 onClose={() => setIsBulkModalOpen(false)}
                 existingStudentIds={existingIds}
+                onCreated={live.refresh}
             />
             <EditStudentModal
                 isOpen={!!editStudent}

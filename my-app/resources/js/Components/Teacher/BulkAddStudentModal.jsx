@@ -15,6 +15,7 @@ export default function BulkAddStudentModal({
     isOpen,
     onClose,
     existingStudentIds = new Set(),
+    onCreated,
 }) {
     const { setData, post, processing, errors, reset } = useForm({ students: [] });
     const [stage, setStage] = useState("paste");
@@ -118,6 +119,7 @@ export default function BulkAddStudentModal({
         );
         post("/teacher/addStudents", {
             onSuccess: () => {
+                onCreated?.();
                 onClose();
                 setRows([]);
                 setRawText("");

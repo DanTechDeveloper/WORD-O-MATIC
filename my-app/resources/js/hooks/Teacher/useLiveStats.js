@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { router } from "@inertiajs/react";
 import { isReachable, markReachable, subscribe } from "@/utils/connection";
 
 // ponytail: TEACHER-ONLY, and deliberately not shared with the student side.
@@ -195,7 +196,20 @@ export function useLiveStats({
         [],
     );
 
-    return { data, status };
+    // A teacher write (add/edit student) refreshes the server `data` prop via
+    // Inertia's redirect, but this hook's cached payload would otherwise win on
+    // the page for up to a poll tick. Clear both so the next tick is a full fetch.
+    const refresh = () => {
+        sinceRef.current = null;
+        setData(null);
+    };
+
+    // Any Inertia visit (filter, sort, pagination, add/edit/delete) already
+    // brought fresh server props. The cached poll payload must not outlive
+    // that — every page here prefers live.data over the server prop.
+    useEffect(() => router.on("finish", refresh), []);
+
+    return { data, status, refresh };
 }
 
 export default useLiveStats;
