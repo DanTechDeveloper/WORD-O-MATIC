@@ -2,6 +2,7 @@ import DashboardLayout from "@/Layouts/Teacher/DashboardLayout";
 import { Head, Link, router, usePage } from "@inertiajs/react";
 import { useRef, useState } from "react";
 import AddStudentModal from "@/Components/Teacher/AddStudentModal";
+import BulkAddStudentModal from "@/Components/Teacher/BulkAddStudentModal";
 import EditStudentModal from "@/Components/Teacher/EditStudentModal";
 import ConfirmDeleteModal from "@/Components/Teacher/ConfirmDeleteModal";
 import LiveStatusDot from "@/Components/Shared/LiveStatusDot";
@@ -64,6 +65,7 @@ export default function Students({ data, sections, filters, existingStudentIds }
     );
 
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
     const [editStudent, setEditStudent] = useState(null);
     const [confirmStudent, setConfirmStudent] = useState(null);
     const [statusTab, setStatusTab] = useState(filters.status ?? "");
@@ -182,6 +184,15 @@ export default function Students({ data, sections, filters, existingStudentIds }
                                 add_circle
                             </span>
                             Add Student
+                        </button>
+                        <button
+                            onClick={() => setIsBulkModalOpen(true)}
+                            className="w-full sm:w-auto bg-tertiary text-on-tertiary px-4 sm:px-6 py-3 rounded-xl border-b-[4px] border-tertiary-container font-black uppercase italic text-sm tracking-tighter hover:bg-tertiary-fixed transition-colors flex items-center justify-center gap-2"
+                        >
+                            <span className="material-symbols-outlined">
+                                playlist_add
+                            </span>
+                            Bulk Add
                         </button>
                         <div className="flex items-center flex-1 min-w-0 max-w-full bg-surface-container border-2 border-outline/20 rounded-xl p-1 overflow-x-auto">
                             {statusTabs.map((tab) => (
@@ -569,6 +580,11 @@ export default function Students({ data, sections, filters, existingStudentIds }
             <AddStudentModal
                 isOpen={!!isAddModalOpen}
                 onClose={() => setIsAddModalOpen(false)}
+                existingStudentIds={existingIds}
+            />
+            <BulkAddStudentModal
+                isOpen={isBulkModalOpen}
+                onClose={() => setIsBulkModalOpen(false)}
                 existingStudentIds={existingIds}
             />
             <EditStudentModal

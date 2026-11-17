@@ -479,6 +479,52 @@ class TeacherController extends Controller
         return redirect()->back()->with('success', 'Student added successfully.');
     }
 
+    public function storeBulk(Request $request)
+    {
+        // Structural check first so a non-array payload errors on `students`
+        // itself instead of on a phantom normalized row.
+        $request->validate(['students' => 'required|array|min:1|max:50']);
+
+        // Normalize before the row rules so Rule::unique sees trimmed IDs —
+        // same trap as store(): "2023-000001 " would pass unique then collide.
+        $request->merge([
+            'students' => collect($request->input('students'))
+                ->map(fn ($row) => $this->normalizeStudentRow(is_array($row) ? $row : []))
+                ->values()
+                ->all(),
+        ]);
+
+        $validated = $request->validate([
+            'students.*.fullName' => 'required|string|max:255',
+            'students.*.studentID' => ['required', 'string', 'max:50', Rule::unique('users', 'student_id')],
+            'students.*.section' => 'required|string|max:255',
+            'students.*.pin' => 'required|digits:4',
+            'students.*.gender' => 'nullable|in:male,female',
+            'students.*.parent_email' => 'nullable|email|max:255',
+        ]);
+
+        // Rule::unique can't see sibling rows in the same request. Catch
+        // intra-batch duplicates before any write — the batch is all-or-nothing.
+        $seen = [];
+        foreach ($validated['students'] as $i => $row) {
+            $id = strtolower($row['studentID']);
+            if (isset($seen[$id])) {
+                throw ValidationException::withMessages([
+                    "students.$i.studentID" => "\"{$row['studentID']}\" appears twice in this list.",
+                ]);
+            }
+            $seen[$id] = true;
+        }
+
+        DB::transaction(function () use ($validated) {
+            foreach ($validated['students'] as $row) {
+                $this->persistStudent($row);
+            }
+        });
+
+        return redirect()->back()->with('success', count($validated['students']).' students added successfully.');
+    }
+
     private function normalizeStudentRow(mixed $row): array
     {
         $parentEmail = trim((string) ($row['parent_email'] ?? ''));
