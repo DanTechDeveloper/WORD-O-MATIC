@@ -33,18 +33,18 @@ class CurriculumStrictTest extends TestCase
     // listed rather than special-cased. L10 "the" and L8 "up" are the two weakest
     // entries (mid-sentence required slot / sentence-final); they are documented
     // exposure, not oversights.
-    private const SHORT_CHAPTER_WORDS = ['can', 'key', 'now', 'the', 'up', 'we'];
+    private const SHORT_CHAPTER_WORDS = ['can', 'now', 'the', 'up', 'we'];
 
     // One-edit pairs where at least one side is a chapter word — chapter↔chapter
     // (hard/hand, flows/blows, glides/slides, turns/burns, cold/gold), chapter↔Word
-    // Blast (deer/deep, lamp/camp, snow/now) and stem/`-s` (look/looks, pull/pulls,
+    // Blast (deer/deep, snow/now) and stem/`-s` (look/looks, pull/pulls,
     // swim/swims). Under strict exact matching a transcript of one side for the
     // other is an unfixable false verdict, so a NEW pair fails here. Fixing a listed
     // pair is a CONTENT change: re-seed, and check ParagraphModule::saveWithContent
     // — it reuses rows by position, so a swap re-points already-earned mastery to
     // the replacement word.
     private const CHAPTER_CONFUSABLE_PAIRS = [
-        ['blows', 'flows'], ['burns', 'turns'], ['camp', 'lamp'], ['cold', 'gold'],
+        ['blows', 'flows'], ['burns', 'turns'], ['cold', 'gold'],
         ['deep', 'deer'], ['glides', 'slides'], ['hand', 'hard'], ['look', 'looks'],
         ['now', 'snow'], ['pull', 'pulls'], ['swim', 'swims'],
     ];

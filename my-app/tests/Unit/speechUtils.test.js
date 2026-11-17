@@ -181,15 +181,15 @@ describe("isWordMatch — SSOT strict exact-only (Word Blast + Story Quest)", ()
 describe("WORD BLAST curriculum (seeded words) — regression guard (verdict-gated)", () => {
     const wordsByModule = [
         ["lion", "frog", "fish", "bird", "duck", "goat", "wolf", "deer", "crab", "shark"],
-        ["kitten", "puppy", "calf", "pony", "pigeon", "turtle", "hamster", "monkey", "mouse", "hedgehog"],
+        ["kitten", "rabbit", "bunny", "pony", "pigeon", "turtle", "hamster", "monkey", "mouse", "hedgehog"],
         ["moon", "storm", "rain", "snow", "wind", "cloud", "fire", "sunshine", "breeze", "frost"],
         ["apple", "banana", "grape", "melon", "lemon", "plum", "corn", "milk", "rice", "cake"],
-        ["cheese", "mango", "honey", "walnut", "radish", "meat", "soup", "biscuit", "salt", "bean"],
-        ["desk", "chair", "table", "door", "window", "shelf", "lamp", "paper", "shoe", "shirt"],
+        ["cheese", "mango", "honey", "walnut", "radish", "meat", "soup", "biscuit", "salt", "seed"],
+        ["desk", "chair", "table", "door", "window", "shelf", "chest", "paper", "shoe", "shirt"],
         ["jacket", "plate", "spoon", "fork", "knife", "blanket", "crayon", "backpack", "helmet", "bottle"],
-        ["bike", "canoe", "raft", "truck", "taxi", "tractor", "wagon", "scooter", "ladder", "basket"],
+        ["bike", "canoe", "train", "truck", "taxi", "tractor", "wagon", "scooter", "ladder", "basket"],
         ["stop", "jump", "walk", "stand", "look", "sing", "open", "close", "push", "pull"],
-        ["drop", "pick", "swim", "climb", "trace", "travel", "dash", "kneel", "sketch", "leap"],
+        ["drop", "pick", "swim", "climb", "trace", "travel", "dash", "kneel", "sketch", "march"],
     ];
     test("every WORD BLAST word matches itself (d=0)", () => {
         for (const level of wordsByModule) for (const w of level) expect(isWordMatch(w, w)).toBe(true);

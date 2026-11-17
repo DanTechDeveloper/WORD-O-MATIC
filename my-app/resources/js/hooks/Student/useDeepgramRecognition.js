@@ -122,6 +122,11 @@ export function useDeepgramRecognition({
     });
 
     const connRef = useRef(null);
+    // ponytail: minimal in-flight guard for scope A — #7 recovery and mount
+    // effects can both trigger startConnection; without this, parallel attempts
+    // duplicate token fetches/conns before connRef is assigned. Cleared when the
+    // attempt ends (success path awaits waitForOpen, failures/early exits bail).
+    const attemptInFlightRef = useRef(false);
     // ponytail: the one thing the mic must not lie about. The page derives
     // isListening from gameState === "ACTIVE", which stays true through a
     // dropout — so after the network returns the UI said "Listening..." for
@@ -230,6 +235,7 @@ export function useDeepgramRecognition({
 
     const startConnection = async () => {
         if (
+            attemptInFlightRef.current ||
             !stateRefs.current.isMounted ||
             (!propsRef.current.isActive && !propsRef.current.preload) ||
             connRef.current
@@ -242,6 +248,8 @@ export function useDeepgramRecognition({
         // The store, not navigator.onLine: a WiFi link with no uplink reads as
         // online, so this used to wave the ladder at a server that never answers.
         if (!isReachable()) return;
+        attemptInFlightRef.current = true;
+        try {
 
         let token, baseUrl;
 
@@ -277,7 +285,15 @@ export function useDeepgramRecognition({
                 return;
             }
         }
-        if (!stateRefs.current.isMounted) return;
+        // ponytail: token fetch is async — the round may have ended (preload off,
+        // inactive) while we waited. Bail before creating audio/conn so a dead round
+        // can't spin up a stray mic pipeline. startConnection's own guards own any
+        // later lifecycle changes; this is the #8 revalidation after the fetch gap.
+        if (
+            !stateRefs.current.isMounted ||
+            (!propsRef.current.isActive && !propsRef.current.preload)
+        )
+            return;
 
         try {
             const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -320,9 +336,16 @@ export function useDeepgramRecognition({
                 // the repeated keyterm=a&keyterm=b format Deepgram documents.
                 queryParams: keyterm.length ? { keyterm } : undefined,
             });
-            if (!stateRefs.current.isMounted) {
-                conn.close();
-                audioCtxRef.current?.close();
+            if (
+                !stateRefs.current.isMounted ||
+                (!propsRef.current.isActive && !propsRef.current.preload)
+            ) {
+                try {
+                    conn.close();
+                } catch {
+                    /* noop */
+                }
+                audioCtxRef.current?.close().catch(() => {});
                 audioCtxRef.current = null;
                 return;
             }
@@ -616,6 +639,9 @@ export function useDeepgramRecognition({
                 e?.message || "connect_failed",
             );
         }
+        } finally {
+            attemptInFlightRef.current = false;
+        }
     };
 
     useEffect(() => {
@@ -697,9 +723,18 @@ export function useDeepgramRecognition({
         // ponytail: 500ms grace on session transitions (IDLE→ACTIVE flip) absorbs
         // the mic/connection resume transient, but per-word grace above is 800ms.
         timeoutRefs.current.graceEnd = Date.now() + 500;
-        if (propsRef.current?.isActive && connRef.current) {
-            armForCurrentTarget();
-        } else if (!propsRef.current?.isActive) {
+        if (propsRef.current?.isActive) {
+            if (connRef.current) {
+                armForCurrentTarget();
+            } else {
+                // ponytail: #7 — a preload socket can die during COUNTDOWN; the
+                // close handler bails while !isActive and leaves connRef null, so
+                // without this the round would go ACTIVE mic-less for the full 60s.
+                // startConnection's own guards (mounted/active|preload/reachable/
+                // connRef) make a redundant call harmless.
+                startConnection();
+            }
+        } else {
             clearAllTimers(timerRefs.current);
             // Round ended (or GAMEOVER/DENIED) — a stale true would keep the mic
             // reading "Reconnecting..." on the results screen.

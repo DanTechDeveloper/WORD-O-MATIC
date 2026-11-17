@@ -36,15 +36,15 @@ class CurriculumSeeder extends Seeder
             // 2026-10-20: canoe->suitcase (banked L8 alternate; "suit case" stitches in Word
             // Blast mode, and no seeded word is within Levenshtein 3 of it).
             1 => ['lion', 'frog', 'fish', 'bird', 'duck', 'goat', 'wolf', 'deer', 'crab', 'shark'],
-            2 => ['kitten', 'puppy', 'calf', 'pony', 'pigeon', 'turtle', 'hamster', 'monkey', 'mouse', 'hedgehog'],
+            2 => ['kitten', 'rabbit', 'bunny', 'pony', 'pigeon', 'turtle', 'hamster', 'monkey', 'mouse', 'hedgehog'],
             3 => ['moon', 'storm', 'rain', 'snow', 'wind', 'cloud', 'fire', 'sunshine', 'breeze', 'frost'],
             4 => ['apple', 'banana', 'grape', 'melon', 'lemon', 'plum', 'corn', 'milk', 'rice', 'cake'],
-            5 => ['cheese', 'mango', 'honey', 'walnut', 'radish', 'meat', 'soup', 'biscuit', 'salt', 'bean'],
-            6 => ['desk', 'chair', 'table', 'door', 'window', 'shelf', 'lamp', 'paper', 'shoe', 'shirt'],
+            5 => ['cheese', 'mango', 'honey', 'walnut', 'radish', 'meat', 'soup', 'biscuit', 'salt', 'seed'],
+            6 => ['desk', 'chair', 'table', 'door', 'window', 'shelf', 'chest', 'paper', 'shoe', 'shirt'],
             7 => ['jacket', 'plate', 'spoon', 'fork', 'knife', 'blanket', 'crayon', 'backpack', 'helmet', 'bottle'],
-            8 => ['bike', 'suitcase', 'raft', 'truck', 'taxi', 'tractor', 'wagon', 'scooter', 'ladder', 'basket'],
+            8 => ['bike', 'suitcase', 'train', 'truck', 'taxi', 'tractor', 'wagon', 'scooter', 'ladder', 'basket'],
             9 => ['stop', 'jump', 'walk', 'stand', 'look', 'sing', 'open', 'close', 'push', 'pull'],
-            10 => ['drop', 'pick', 'swim', 'climb', 'trace', 'travel', 'dash', 'kneel', 'sketch', 'leap'],
+            10 => ['drop', 'pick', 'swim', 'climb', 'trace', 'travel', 'dash', 'kneel', 'sketch', 'march'],
         ];
     }
 
@@ -94,12 +94,12 @@ class CurriculumSeeder extends Seeder
         return [
             0 => 'The game can start. Now we play.',
             1 => 'Water drips down. Frog feels cold.',
-            2 => 'Stream flows fast. Puppy runs wide.',
+            2 => 'River flows fast. Rabbit runs wide.',
             3 => 'Cloud glides soft. Wind blows hard.',
             4 => 'Fish swims deep. Melon rolls down.',
-            5 => 'Rope pulls tight. Bean arrives safe.',
-            6 => 'Gold shines bright. Lamp holds treasure.',
-            7 => 'Key turns smooth. Knife slides apart.',
+            5 => 'Rope pulls tight. Seed arrives safe.',
+            6 => 'Gold shines bright. Chest holds gold.',
+            7 => 'Latch turns smooth. Knife slides apart.',
             8 => 'Hand takes trophy. Basket fills up.',
             9 => 'Child can walk. Road looks clear.',
             10 => 'Camp fire burns. We drop the gear.',
@@ -109,7 +109,7 @@ class CurriculumSeeder extends Seeder
     public static function paraTitles(): array
     {
         return [
-            1 => 'Chapter 1: The Waterfall', 2 => 'Chapter 2: The Stream', 3 => 'Chapter 3: The Wind',
+            1 => 'Chapter 1: The Waterfall', 2 => 'Chapter 2: The River', 3 => 'Chapter 3: The Wind',
             4 => 'Chapter 4: The Deep Pond', 5 => 'Chapter 5: The Mango Tree', 6 => 'Chapter 6: The Golden Coin',
             7 => 'Chapter 7: The Lock', 8 => 'Chapter 8: The Wagon', 9 => 'Chapter 9: The Road Home',
             10 => 'Chapter 10: Campfire Night',

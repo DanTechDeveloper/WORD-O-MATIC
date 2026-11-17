@@ -180,6 +180,31 @@ describe("useDeepgramRecognition — lifecycle", () => {
         expect(Client).not.toHaveBeenCalled();
     });
 
+    test("round ends while token is in flight creates no client (#8)", async () => {
+        const { useHook, Client } = await loadHook();
+        stubBrowser();
+        let resolveFetch;
+        vi.mocked(fetch).mockImplementationOnce(
+            () => new Promise((r) => (resolveFetch = r)),
+        );
+        const props = { ...baseProps(), isActive: false, preload: true };
+        const { rerender } = renderHook((p) => useHook(p), {
+            initialProps: props,
+        });
+        await waitFor(() => expect(fetch).toHaveBeenCalled());
+        // Round ends before the grant returns; mounted but no longer desired.
+        rerender({ ...props, isActive: false, preload: false });
+        await act(async () => {
+            resolveFetch({
+                ok: true,
+                json: async () => ({ token: "tok", baseUrl: "http://dg", expires_in: 3600 }),
+            });
+        });
+        await act(async () => {});
+        expect(Client).not.toHaveBeenCalled();
+        expect(dg.conns.length).toBe(0);
+    });
+
     test("a close triggers one reconnect", async () => {
         const { useHook } = await loadHook();
         const stubs = stubBrowser();
@@ -197,6 +222,32 @@ describe("useDeepgramRecognition — lifecycle", () => {
         expect(dg.conns.length).toBe(2);
         expect(props.onRestartFailed).not.toHaveBeenCalled();
         vi.useRealTimers();
+    });
+
+    test("preload conn that dies during countdown recovers when round becomes ACTIVE (#7)", async () => {
+        const { useHook } = await loadHook();
+        const stubs = stubBrowser();
+        const props = { ...baseProps(), isActive: false, preload: true };
+        const { rerender } = renderHook((p) => useHook(p), {
+            initialProps: props,
+        });
+        await waitFor(() => expect(stubs.getUserMedia).toHaveBeenCalled());
+        await waitFor(() => expect(dg.conns.length).toBe(1));
+        const conn = dg.conns[0];
+
+        // Countdown drop: close bails while !isActive and must not schedule restart.
+        vi.useFakeTimers();
+        await act(async () => {
+            conn.handlers.close();
+            vi.advanceTimersByTime(5000);
+        });
+        await act(async () => {});
+        expect(dg.conns.length).toBe(1);
+        vi.useRealTimers();
+
+        // Becoming ACTIVE must recover the missing socket instead of running mic-less.
+        rerender({ ...props, isActive: true, preload: true });
+        await waitFor(() => expect(dg.conns.length).toBe(2));
     });
 });
 

@@ -4,6 +4,7 @@ import { isWordMatch, normalizeText } from "@/lib/speechUtils";
 // conn.on("message") — pure event -> processor dispatch, unit-testable without
 // mounting the hook (node env, no mic/WebSocket). The hook passes its refs
 // straight through; behavior is identical to the inline version.
+
 export function routeRecognitionMessage(
     data,
     stateRefs,
@@ -11,9 +12,15 @@ export function routeRecognitionMessage(
     timeoutRefs,
     propsRef,
 ) {
-    if (!data || data.type !== "Results") return;
-    if (!propsRef.current?.isActive) return;
-    if (propsRef.current?.muted) return;
+    if (!data || data.type !== "Results") {
+        return;
+    }
+    if (!propsRef.current?.isActive) {
+        return;
+    }
+    if (propsRef.current?.muted) {
+        return;
+    }
     const isFinal = !!data.is_final;
     // ponytail: Deepgram sends `speech_final` (snake_case); the camelCase
     // variant never arrives, so reading only `data.speechFinal` made this
@@ -22,7 +29,9 @@ export function routeRecognitionMessage(
     const alt = data.channel?.alternatives?.[0] ?? {};
     const transcript = alt.transcript ?? "";
     const confidence = typeof alt.confidence === "number" ? alt.confidence : 1;
-    if (!transcript && !isFinal && !speechFinal) return;
+    if (!transcript && !isFinal && !speechFinal) {
+        return;
+    }
     const result = {
         isFinal,
         speechFinal,
@@ -302,6 +311,7 @@ export function processSentenceModeResult(
     console.log("[ASR sentence]", {
         full,
         target,
+        lookahead: rawLookahead,
         hasAuthoritative,
         confidence,
         newFinals,
@@ -326,6 +336,12 @@ export function processSentenceModeResult(
             typeof propsRef.current.onSentenceVerdict === "function"
         ) {
             const outcomes = alignSentence(full, rawLookahead);
+            console.log("[ASR sentence verdict]", {
+                lookahead: rawLookahead,
+                advanceCount,
+                outcomes,
+                full,
+            });
             if (outcomes && outcomes.length > 0) {
                 stateRefs.current.hasMatched = true;
                 stateRefs.current.mispronouncedSentence = false;
@@ -345,6 +361,13 @@ export function processSentenceModeResult(
             // graceEnd drops the advance-count path too, not just Wrong verdicts.
             Date.now() >= timeoutRefs.current.graceEnd
         ) {
+            console.log("[ASR sentence advance]", {
+                lookahead: rawLookahead,
+                advanceCount,
+                fullMatch,
+                hasAuthoritative,
+                full,
+            });
             stateRefs.current.hasMatched = true;
             stateRefs.current.mispronouncedSentence = false;
             propsRef.current.onWordRecognized?.(advanceCount);
@@ -364,7 +387,14 @@ export function processSentenceModeResult(
         // straight-through tuloy ang basa kaya ang BLUE hindi dapat mag-freeze
         // kada advance. Authoritative verdicts nananatiling gated sa baba.
         if (!hasAuthoritative && propsRef.current.onProgress) {
-            if (advanceCount > 0) propsRef.current.onProgress(advanceCount);
+            if (advanceCount > 0) {
+                console.log("[ASR sentence progress]", {
+                    lookahead: rawLookahead,
+                    advanceCount,
+                    full,
+                });
+                propsRef.current.onProgress(advanceCount);
+            }
         }
 
         if (Date.now() < timeoutRefs.current.graceEnd) return;
@@ -379,6 +409,13 @@ export function processSentenceModeResult(
                 if (!full) {
                     return;
                 }
+                console.log("[ASR sentence mispronounce]", {
+                    lookahead: rawLookahead,
+                    advanceCount,
+                    confidence,
+                    hasAuthoritative,
+                    full,
+                });
                 stateRefs.current.mispronouncedSentence = true;
                 propsRef.current.onMispronounced?.(full);
                 clearAllTimers(timerRefs.current);
@@ -473,6 +510,11 @@ export function processWordModeResult(
         return;
     }
 
+    // ponytail: any received transcript is speech evidence — keep the 5s
+    // silence watchdog alive while the child is speaking (sentence mode does
+    // this; word mode must not fire isNoSpeech on heard-but-unresolved speech).
+    stateRefs.current.lastSpeechAt = Date.now();
+
     console.log("[ASR word]", {
         transcript,
         target,
@@ -510,9 +552,7 @@ export function processWordModeResult(
     const containsTarget =
         targetWords.length > 0 &&
         targetWords.every((tw) => transcriptWords.includes(tw));
-    const prevTargetWords = normalizeText(
-        timeoutRefs.current.prevTarget || "",
-    )
+    const prevTargetWords = normalizeText(timeoutRefs.current.prevTarget || "")
         .split(/\s+/)
         .filter(Boolean);
     const carriesPrev =
@@ -596,4 +636,3 @@ export function processWordModeResult(
         }, 1200);
     }
 }
-
