@@ -177,17 +177,11 @@ export default function Leaderboards({ leaderboard: serverLeaderboard, totalStud
                                         </span>
 
                                         <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-surface-container-lowest border-2 border-accent overflow-hidden shrink-0">
-                                            {s.avatar ? (
-                                                <img
-                                                    src={s.avatar}
-                                                    alt={s.name}
-                                                    className="w-full h-full object-cover"
-                                                />
-                                            ) : (
-                                                <span className="material-symbols-outlined text-lg sm:text-xl text-on-surface-variant">
-                                                    person
-                                                </span>
-                                            )}
+                                            <img
+                                                src={s.avatar || "/images/boy.svg"}
+                                                alt={s.name}
+                                                className="w-full h-full object-cover"
+                                            />
                                         </div>
 
                                         <div className="min-w-0 flex-1">

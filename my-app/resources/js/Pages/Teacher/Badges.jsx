@@ -258,7 +258,7 @@ export default function Badges({
                                             </span>
                                         </div>
                                         <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-surface-container-lowest border-2 border-accent overflow-hidden shrink-0">
-                                            {student.avatar ? <img src={student.avatar} alt={student.name} className="w-full h-full object-cover" /> : <span className="material-symbols-outlined text-on-surface-variant text-xs sm:text-sm md:text-base">person</span>}
+                                            <img src={student.avatar || "/images/boy.svg"} alt={student.name} className="w-full h-full object-cover" />
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <p className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-on-surface-variant">Student</p>
@@ -347,17 +347,11 @@ export default function Badges({
                                         <td className="px-3 sm:px-6 py-3 sm:py-4">
                                             <div className="flex items-center gap-2 sm:gap-3">
                                                 <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-surface-container-lowest border-2 border-accent overflow-hidden shrink-0">
-                                                    {student.avatar ? (
-                                                        <img
-                                                            src={student.avatar}
-                                                            alt={student.name}
-                                                            className="w-full h-full object-cover"
-                                                        />
-                                                    ) : (
-                                                        <span className="material-symbols-outlined text-on-surface-variant text-sm sm:text-base">
-                                                            person
-                                                        </span>
-                                                    )}
+                                                    <img
+                                                        src={student.avatar || "/images/boy.svg"}
+                                                        alt={student.name}
+                                                        className="w-full h-full object-cover"
+                                                    />
                                                 </div>
                                                 <span className="font-black text-white whitespace-normal break-words [overflow-wrap:anywhere] leading-tight block text-sm sm:text-base" title={student.name}>
                                                     {student.name}
