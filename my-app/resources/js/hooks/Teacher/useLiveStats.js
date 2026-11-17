@@ -51,6 +51,10 @@ export function useLiveStats({
     // hardcoded "live" no poll had earned.
     const [status, setStatus] = useState(() => (isReachable() ? "live" : "offline"));
     const sinceRef = useRef(null);
+    // A poll can be in flight when a teacher action invalidates the cache. Its
+    // response belongs to the old query — discard it instead of re-seeding
+    // `since` and freezing the page on stale data.
+    const epochRef = useRef(0);
     const failsRef = useRef(0);
     const nextAllowedRef = useRef(0);
     // One ref for both options so a changing prop never re-runs the effect (and
@@ -108,6 +112,7 @@ export function useLiveStats({
             // construction, with no params to thread and no drift to test for.
             const q = new URLSearchParams(window.location.search);
             if (sinceRef.current) q.set("since", sinceRef.current);
+            const epoch = epochRef.current;
 
             try {
                 const res = await fetch(`${url}?${q}`, {
@@ -117,6 +122,10 @@ export function useLiveStats({
                 if (!res.ok) throw new Error(`live-stats ${res.status}`);
                 const json = await res.json();
                 if (!mounted) return;
+                // After the mounted check: an invalidation mid-flight must not
+                // write stale data or a stale `since`, but must not count as a
+                // failure either (no backoff, no red dot).
+                if (epoch !== epochRef.current) return;
                 failsRef.current = 0;
                 nextAllowedRef.current = 0;
                 // A poll that succeeds PROVES the server is back. This is the
@@ -200,6 +209,7 @@ export function useLiveStats({
     // Inertia's redirect, but this hook's cached payload would otherwise win on
     // the page for up to a poll tick. Clear both so the next tick is a full fetch.
     const refresh = () => {
+        epochRef.current += 1;
         sinceRef.current = null;
         setData(null);
     };

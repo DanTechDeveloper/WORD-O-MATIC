@@ -608,6 +608,33 @@ describe("useLiveStats behaviour", () => {
         await waitFor(() => expect(result.current.data?.totalStudents).toBe(7));
     });
 
+    test("a response from a poll that was in flight during a refresh is discarded", async () => {
+        let resolveFetch;
+        fetchMock.mockImplementation(
+            () => new Promise((resolve) => { resolveFetch = resolve; }),
+        );
+
+        const { result } = renderHook(() => useLiveStats());
+        act(() => document.dispatchEvent(new Event("visibilitychange")));
+        await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+
+        const finish = inertiaRouter.on.mock.calls.find(([event]) => event === "finish")?.[1];
+        act(() => finish());
+        expect(result.current.data).toBeNull();
+
+        // The old response lands AFTER the invalidation — it must be ignored,
+        // including its stale watermark (no `since` on the next tick).
+        await act(async () => {
+            resolveFetch(ok({ changed: true, watermark: "stale", totalStudents: 99 }));
+        });
+        expect(result.current.data).toBeNull();
+
+        fetchMock.mockResolvedValue(ok({ changed: true, watermark: "fresh", totalStudents: 3 }));
+        await tick();
+        expect(fetchMock.mock.calls[1][0]).toBe("/teacher/live-stats?");
+        await waitFor(() => expect(result.current.data?.totalStudents).toBe(3));
+    });
+
     test("the first poll sends no since; later polls send the watermark", async () => {
         fetchMock.mockResolvedValue(
             ok({ changed: true, watermark: "2026-01-01T00:00:00Z|42" }),
