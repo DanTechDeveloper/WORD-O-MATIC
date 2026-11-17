@@ -459,6 +459,21 @@ describe("empty and malformed payloads must not crash", () => {
         expect(screen.getByRole("heading", { name: /Edge Casey/i })).toBeTruthy();
     });
 
+    test("a student with no avatar renders the local default, not an external placeholder", () => {
+        renderPage();
+        const avatar = screen.getByRole("img", { name: "Edge Casey" });
+        expect(avatar.getAttribute("src")).toBe("/images/boy.svg");
+        expect(avatar.getAttribute("src")).not.toContain("googleusercontent");
+    });
+
+    test("a custom avatar is preferred over the local default", () => {
+        renderPage({
+            student: { ...data().student, avatar: "/images/avatars/ana/head.png" },
+        });
+        expect(screen.getByRole("img", { name: "Edge Casey" }).getAttribute("src"))
+            .toBe("/images/avatars/ana/head.png");
+    });
+
     test("zero accuracies render N/A, not 0%", () => {
         // `src.student?.wordBlastAcc ? ... : "N/A"` — 0 is falsy, so a genuine
         // 0% accuracy is reported as N/A. Locked so a refactor cannot silently

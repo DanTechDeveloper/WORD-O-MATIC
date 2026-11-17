@@ -176,9 +176,7 @@ export default function StudentDetail({ data }) {
         id: src.student_id,
         section: src.student?.section,
         name: src.name,
-        avatar:
-            src.student?.avatar ||
-            "https://lh3.googleusercontent.com/aida-public/AB6AXuAgZOj0Csd-wTVehC2hKqya5LsWjibMtl2k7u0rwLw07NOodqBRyJcyz6B0y62wGMLC79R0wuZ-SV8Kr8YSHaqJwAVOBZDyviTPvbCDrAHaipLpSQOokfSwI9XsnNao1SCIhxKx3Mi5ETvcIpX9Ntt2OHt60MHNrAUovC6X0ncME1-6gTNBMsN5aKev3-NmGumU2wxIwgHHHUa723xho1Hohi3sOwLMcl2mY38bLFL8aQtMTcrcVRJ6MKFkfdO7JnGX-IZqR9qpKr6F",
+        avatar: src.student?.avatar || "/images/boy.svg",
         stats: [
             {
                 label: "Word Smashed",
